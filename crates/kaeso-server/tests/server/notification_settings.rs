@@ -12,6 +12,7 @@ use axum::http::{Method, Request, StatusCode, header};
 use common::App;
 use kaeso_core::id::{OrgId, UserId};
 use kaeso_core::notifications::Kind;
+use kaeso_server::jobs::Ran;
 use kaeso_server::services::notifications::unsubscribe_token;
 use kaeso_testkit::services::TestServices;
 use serde_json::{Value, json};
@@ -309,7 +310,7 @@ async fn a_muted_org_sends_no_alerts_and_shows_on_memberships() {
             .await
             .unwrap()
             .unwrap(),
-        "sent 0 key expiry warnings"
+        Ran::idle("sent 0 key expiry warnings")
     );
 
     let elsewhere = OrgId::from_uuid(uuid::Uuid::from_u128(1)).to_string();

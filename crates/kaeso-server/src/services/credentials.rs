@@ -615,7 +615,7 @@ fn touch(state: &AppState, resolved: &Resolved) {
 // Renews the accounts used within `RENEW_IF_USED_WITHIN` that a request would find due within
 // `RENEW_AHEAD`, so requests find a fresh token instead of waiting for the renewal. Returns a
 // summary for the job's log line.
-pub async fn renew_ahead(state: &AppState) -> Result<String, StoreError> {
+pub async fn renew_ahead(state: &AppState) -> Result<crate::jobs::Ran, StoreError> {
     let now = state.clock.now();
     let longest = renew_before(AuthMethod::ChatGpt).max(renew_before(AuthMethod::Grok));
     let soon = credentials::renewable(
@@ -652,7 +652,10 @@ pub async fn renew_ahead(state: &AppState) -> Result<String, StoreError> {
             }
         }
     }
-    Ok(format!("{renewed} accounts renewed ahead, {failed} failed"))
+    Ok(crate::jobs::Ran::of(
+        format!("{renewed} accounts renewed ahead, {failed} failed"),
+        renewed + failed > 0,
+    ))
 }
 
 pub async fn forget_org(state: &AppState, org: Uuid) {

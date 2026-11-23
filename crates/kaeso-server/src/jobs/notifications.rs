@@ -10,7 +10,7 @@ use time::macros::time;
 use time::{Date, Duration, OffsetDateTime, Time, Weekday};
 use uuid::Uuid;
 
-use crate::jobs::JobError;
+use crate::jobs::{JobError, Ran};
 use crate::platform::grants::{org_from_store, project_from_store};
 use crate::services::exchange_rates::Money;
 use crate::services::notifications::dispatch::{Send, deliver, org_holders, org_path};
@@ -21,7 +21,7 @@ const AT: Time = time!(8:31);
 const BATCH: i64 = 100;
 const TOP: usize = 5;
 
-pub async fn run(state: AppState) -> Result<String, JobError> {
+pub async fn run(state: AppState) -> Result<Ran, JobError> {
     let now = state.clock.now();
     let zone = crate::time_zone::or_utc(&instance::time_zone(&state.pg).await?);
     let local = crate::time_zone::local(now, &zone);
@@ -32,11 +32,13 @@ pub async fn run(state: AppState) -> Result<String, JobError> {
         local.date().previous_day().unwrap_or(local.date())
     };
     let cutoff = today.with_time(AT).assume_utc() - offset;
-    let mut done = vec![format!("{} digests", digests(&state, cutoff, now).await?)];
+    let digests = digests(&state, cutoff, now).await?;
+    let mut sent = digests;
+    let mut done = vec![format!("{digests} digests")];
     let mut failed = Vec::new();
     if local.time() >= AT && today.day() == 1 && first(&state, "cost", today).await {
         let outcome = cost_reports(&state, today).await;
-        settle(
+        sent += settle(
             &state,
             "cost",
             today,
@@ -52,7 +54,7 @@ pub async fn run(state: AppState) -> Result<String, JobError> {
         && first(&state, "weekly", today).await
     {
         let outcome = weekly(&state, today).await;
-        settle(
+        sent += settle(
             &state,
             "weekly",
             today,
@@ -70,7 +72,7 @@ pub async fn run(state: AppState) -> Result<String, JobError> {
         done.extend(failed);
         return Err(JobError::Incomplete(done.join(", ")));
     }
-    Ok(done.join(", "))
+    Ok(Ran::of(done.join(", "), sent > 0))
 }
 
 #[derive(Default)]
@@ -89,16 +91,21 @@ async fn settle(
     outcome: Result<Reports, JobError>,
     done: &mut Vec<String>,
     failed: &mut Vec<String>,
-) {
+) -> usize {
     match outcome {
-        Ok(r) if r.failed == 0 => done.push(format!("{} {label}", r.sent)),
+        Ok(r) if r.failed == 0 => {
+            done.push(format!("{} {label}", r.sent));
+            r.sent
+        }
         Ok(r) => {
             release(state, what, day).await;
             failed.push(format!("{} {label}, {} failed", r.sent, r.failed));
+            r.sent
         }
         Err(e) => {
             release(state, what, day).await;
             failed.push(format!("{label} failed: {e}"));
+            0
         }
     }
 }

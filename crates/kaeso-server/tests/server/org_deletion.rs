@@ -6,6 +6,7 @@ use axum::body::Body;
 use axum::http::{Method, Request, StatusCode, header};
 use common::{App, Owner, PASSWORD};
 use kaeso_core::clock::Clock;
+use kaeso_server::jobs::Ran;
 use kaeso_testkit::services::TestServices;
 use serde_json::{Value, json};
 use time::OffsetDateTime;
@@ -388,7 +389,7 @@ async fn the_org_is_deleted_for_good_when_its_grace_period_ends() {
             .await
             .unwrap()
             .unwrap(),
-        "deleted 0 organizations"
+        Ran::idle("deleted 0 organizations")
     );
     assert_eq!(
         app.get(&format!("/orgs/{org}/members"), &dev).await.status,
@@ -432,7 +433,7 @@ async fn the_org_is_deleted_for_good_when_its_grace_period_ends() {
             .await
             .unwrap()
             .unwrap(),
-        "deleted 1 organizations"
+        Ran::worked("deleted 1 organizations")
     );
     let left: i64 = redis::cmd("EXISTS")
         .arg(&counters)
@@ -790,7 +791,10 @@ async fn a_restore_under_way_when_the_date_passes_keeps_the_logs() {
         () = until_a_lock_is_awaited(&app.state.pg) => {}
     }
     restore.commit().await.unwrap();
-    assert_eq!(run.await.unwrap().unwrap(), "deleted 0 organizations");
+    assert_eq!(
+        run.await.unwrap().unwrap(),
+        Ran::idle("deleted 0 organizations")
+    );
     assert_eq!(
         logged(&app, org).await,
         1,

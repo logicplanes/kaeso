@@ -1,9 +1,145 @@
 use crate::common;
 
+use std::io;
+use std::sync::{Arc, Mutex};
+
 use axum::http::StatusCode;
 use common::App;
+use kaeso_server::jobs::Ran;
 use kaeso_testkit::services::TestServices;
-use serde_json::json;
+use serde_json::{Value, json};
+
+#[derive(Clone, Default)]
+struct Captured(Arc<Mutex<Vec<u8>>>);
+
+impl io::Write for Captured {
+    fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
+        self.0
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .extend_from_slice(bytes);
+        Ok(bytes.len())
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        Ok(())
+    }
+}
+
+impl<'a> tracing_subscriber::fmt::MakeWriter<'a> for Captured {
+    type Writer = Captured;
+
+    fn make_writer(&'a self) -> Captured {
+        self.clone()
+    }
+}
+
+impl Captured {
+    /// The "job ran" lines since the last call, as (level, job, summary).
+    fn job_runs(&self) -> Vec<(String, String, String)> {
+        let bytes = std::mem::take(
+            &mut *self
+                .0
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner),
+        );
+        String::from_utf8_lossy(&bytes)
+            .lines()
+            .filter_map(|l| serde_json::from_str::<Value>(l).ok())
+            .filter(|l| {
+                l.get("fields")
+                    .and_then(|f| f.get("message"))
+                    .and_then(Value::as_str)
+                    == Some("job ran")
+            })
+            .map(|l| {
+                let field = |name: &str| {
+                    l.get("fields")
+                        .and_then(|f| f.get(name))
+                        .and_then(Value::as_str)
+                        .unwrap_or_default()
+                        .to_owned()
+                };
+                (
+                    l.get("level")
+                        .and_then(Value::as_str)
+                        .unwrap_or_default()
+                        .to_owned(),
+                    field("job"),
+                    field("summary"),
+                )
+            })
+            .collect()
+    }
+}
+
+#[tokio::test]
+async fn job_runs_that_find_nothing_to_do_log_at_debug_and_runs_that_do_something_at_info() {
+    let logs = Captured::default();
+    let subscriber = tracing_subscriber::fmt()
+        .json()
+        .with_max_level(tracing::Level::DEBUG)
+        .with_writer(logs.clone())
+        .finish();
+    let _logging = tracing::subscriber::set_default(subscriber);
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    // Set the clock before `setup()` so the owner's session isn't already stale when `cleanup`
+    // runs; Wednesday afternoon ensures no weekly or monthly report is due.
+    app.clock.set(time::macros::datetime!(2026-11-18 15:00 UTC));
+    let owner = app.setup().await;
+    let jobs = kaeso_server::jobs::all();
+    for job in &jobs {
+        kaeso_server::jobs::tick(&app.state, *job).await;
+    }
+    let runs = logs.job_runs();
+    assert_eq!(runs.len(), jobs.len(), "{runs:#?}");
+    let info: Vec<_> = runs.iter().filter(|r| r.0 == "INFO").collect();
+    // The reference rates are fetched from a closed port here, and a failed fetch is worth a line.
+    assert!(
+        matches!(&info[..], [(_, job, summary)] if job == "exchange_rates" && summary.starts_with("failed: ")),
+        "only the failed fetch is at info: {runs:#?}"
+    );
+    for (level, job, summary) in &runs {
+        if job != "exchange_rates" {
+            assert_eq!(level, "DEBUG", "{job}: {summary}");
+        }
+    }
+    let webhooks = runs.iter().find(|r| r.1 == "webhooks").unwrap();
+    assert_eq!(webhooks.2, "no webhook deliveries due");
+
+    let project = common::first_project(&app, &owner).await;
+    let r = app
+        .post(
+            &format!("/orgs/{}/projects/{project}/keys", owner.org_id),
+            json!({ "name": "soon", "expires_in_days": 1 }),
+            Some(&owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
+    let warnings = jobs
+        .iter()
+        .find(|j| j.name == "key_expiry_warnings")
+        .unwrap();
+    kaeso_server::jobs::tick(&app.state, *warnings).await;
+    kaeso_server::jobs::tick(&app.state, *warnings).await;
+    assert_eq!(
+        logs.job_runs(),
+        [
+            (
+                "INFO".to_owned(),
+                "key_expiry_warnings".to_owned(),
+                "sent 1 key expiry warnings".to_owned()
+            ),
+            (
+                "DEBUG".to_owned(),
+                "key_expiry_warnings".to_owned(),
+                "sent 0 key expiry warnings".to_owned()
+            ),
+        ]
+    );
+    s.cleanup().await;
+}
 
 #[tokio::test]
 async fn every_job_runs_once_on_a_fresh_install() {
@@ -80,7 +216,7 @@ async fn service_account_keys_warn_the_project_admins() {
         .await
         .unwrap()
         .unwrap();
-    assert_eq!(outcome, "sent 1 key expiry warnings");
+    assert_eq!(outcome, Ran::worked("sent 1 key expiry warnings"));
     app.state.mailer.flush().await;
     let warned = |to: &str| {
         app.mail
@@ -153,7 +289,7 @@ async fn expiring_platform_keys_warn_who_may_rotate_them_once() {
         .await
         .unwrap()
         .unwrap();
-    assert_eq!(outcome, "sent 2 key expiry warnings");
+    assert_eq!(outcome, Ran::worked("sent 2 key expiry warnings"));
     app.state.mailer.flush().await;
     let warned = |to: &str| {
         app.mail
@@ -174,6 +310,6 @@ async fn expiring_platform_keys_warn_who_may_rotate_them_once() {
         .await
         .unwrap()
         .unwrap();
-    assert_eq!(again, "sent 0 key expiry warnings");
+    assert_eq!(again, Ran::idle("sent 0 key expiry warnings"));
     s.cleanup().await;
 }

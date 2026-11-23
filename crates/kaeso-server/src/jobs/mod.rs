@@ -40,12 +40,45 @@ fn panic_message(payload: &(dyn std::any::Any + Send)) -> String {
         .unwrap_or_else(|| "no message".to_owned())
 }
 
+/// What one run of a job did, in a few words for its log line. A run that found nothing to do
+/// is idle: jobs run every few seconds or minutes, and their idle runs would bury the runs that
+/// changed something, so those are logged at debug.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Ran {
+    pub summary: String,
+    pub idle: bool,
+}
+
+impl Ran {
+    pub fn worked(summary: impl Into<String>) -> Ran {
+        Ran {
+            summary: summary.into(),
+            idle: false,
+        }
+    }
+
+    pub fn idle(summary: impl Into<String>) -> Ran {
+        Ran {
+            summary: summary.into(),
+            idle: true,
+        }
+    }
+
+    /// Idle when `worked` is false.
+    pub fn of(summary: impl Into<String>, worked: bool) -> Ran {
+        Ran {
+            summary: summary.into(),
+            idle: !worked,
+        }
+    }
+}
+
 #[derive(Clone, Copy)]
 pub struct Job {
     pub name: &'static str,
     pub every: Duration,
     pub lock: i64,
-    pub run: fn(AppState) -> BoxFuture<'static, Result<String, JobError>>,
+    pub run: fn(AppState) -> BoxFuture<'static, Result<Ran, JobError>>,
 }
 
 pub fn all() -> Vec<Job> {
@@ -95,7 +128,7 @@ pub fn all() -> Vec<Job> {
             run: |s| {
                 Box::pin(async move {
                     if !crate::services::exchange_rates::due(&s).await? {
-                        return Ok("not due".into());
+                        return Ok(Ran::idle("not due"));
                     }
                     Ok(crate::services::exchange_rates::sync(&s).await?)
                 })
@@ -134,9 +167,12 @@ pub fn all() -> Vec<Job> {
             run: |s| {
                 Box::pin(async move {
                     let r = crate::services::lifecycle::run(&s).await?;
-                    Ok(format!(
-                        "{} announced, {} warned, {} moved, {} replacements added",
-                        r.announced, r.warned, r.moved, r.added
+                    Ok(Ran::of(
+                        format!(
+                            "{} announced, {} warned, {} moved, {} replacements added",
+                            r.announced, r.warned, r.moved, r.added
+                        ),
+                        r.announced + r.warned + r.moved + r.added > 0,
                     ))
                 })
             },
@@ -149,9 +185,9 @@ pub fn all() -> Vec<Job> {
             run: |s| {
                 Box::pin(async move {
                     let r = crate::services::lines::run(&s).await?;
-                    Ok(format!(
-                        "{} moved, {} waiting, {} held",
-                        r.moved, r.waiting, r.held
+                    Ok(Ran::of(
+                        format!("{} moved, {} waiting, {} held", r.moved, r.waiting, r.held),
+                        r.moved + r.waiting + r.held > 0,
                     ))
                 })
             },
@@ -168,7 +204,7 @@ pub fn all() -> Vec<Job> {
     ]
 }
 
-pub async fn run_once(state: &AppState, job: Job) -> Result<Option<String>, JobError> {
+pub async fn run_once(state: &AppState, job: Job) -> Result<Option<Ran>, JobError> {
     let st = state.clone();
     // A panic is caught inside the lock so the lock is released and the job's loop keeps running.
     let (outcome, events) = crate::services::notifications::dispatch::collecting(
@@ -187,8 +223,33 @@ pub async fn run_once(state: &AppState, job: Job) -> Result<Option<String>, JobE
     }
     match outcome? {
         None => Ok(None),
-        Some(Ok(summary)) => Ok(Some(summary)),
+        Some(Ok(ran)) => Ok(Some(ran)),
         Some(Err(e)) => Err(e),
+    }
+}
+
+/// Runs the job once, as its loop does: counts the run and logs it.
+pub async fn tick(state: &AppState, job: Job) {
+    match run_once(state, job).await {
+        Ok(Some(ran)) => {
+            metrics::counter!(crate::metrics::JOB_RUNS, "job" => job.name, "outcome" => "ok")
+                .increment(1);
+            let summary = ran.summary;
+            if ran.idle {
+                tracing::debug!(job = job.name, %summary, "job ran");
+            } else {
+                tracing::info!(job = job.name, %summary, "job ran");
+            }
+        }
+        Ok(None) => {
+            metrics::counter!(crate::metrics::JOB_RUNS, "job" => job.name, "outcome" => "skipped")
+                .increment(1);
+        }
+        Err(e) => {
+            metrics::counter!(crate::metrics::JOB_RUNS, "job" => job.name, "outcome" => "failed")
+                .increment(1);
+            tracing::error!(job = job.name, error = %e, "job failed");
+        }
     }
 }
 
@@ -205,19 +266,7 @@ pub fn spawn_all(state: &AppState, shutdown: &CancellationToken) {
                 () = tokio::time::sleep(jitter) => {}
             }
             loop {
-                match run_once(&state, job).await {
-                    Ok(Some(summary)) => {
-                        metrics::counter!(crate::metrics::JOB_RUNS, "job" => job.name, "outcome" => "ok").increment(1);
-                        tracing::info!(job = job.name, %summary, "job ran");
-                    }
-                    Ok(None) => {
-                        metrics::counter!(crate::metrics::JOB_RUNS, "job" => job.name, "outcome" => "skipped").increment(1);
-                    }
-                    Err(e) => {
-                        metrics::counter!(crate::metrics::JOB_RUNS, "job" => job.name, "outcome" => "failed").increment(1);
-                        tracing::error!(job = job.name, error = %e, "job failed");
-                    }
-                }
+                tick(&state, job).await;
                 tokio::select! {
                     () = shutdown.cancelled() => return,
                     () = tokio::time::sleep(job.every) => {}

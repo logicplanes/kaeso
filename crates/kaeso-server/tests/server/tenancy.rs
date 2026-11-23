@@ -4,6 +4,7 @@ use crate::common;
 
 use axum::http::{Method, StatusCode};
 use common::{App, Owner, PASSWORD};
+use kaeso_server::jobs::Ran;
 use kaeso_testkit::services::TestServices;
 use serde_json::{Value, json};
 
@@ -992,7 +993,7 @@ async fn deleting_an_org_waits_its_grace_period_and_can_be_undone() {
             .await
             .unwrap()
             .unwrap(),
-        "deleted 0 organizations"
+        Ran::idle("deleted 0 organizations")
     );
     app.clock.advance(time::Duration::days(8));
     s.clickhouse.migrate(&s.pg).await.unwrap();
@@ -1001,7 +1002,7 @@ async fn deleting_an_org_waits_its_grace_period_and_can_be_undone() {
             .await
             .unwrap()
             .unwrap(),
-        "deleted 1 organizations"
+        Ran::worked("deleted 1 organizations")
     );
     let (orgs, events): (i64, i64) = sqlx::query_as(
         "SELECT (SELECT count(*) FROM organizations), (SELECT count(*) FROM audit_events WHERE org_id IS NOT NULL)",

@@ -11,6 +11,7 @@ use axum::http::{Method, StatusCode};
 use common::v1::{Capture, Env, call, chat};
 use kaeso_core::clock::Clock;
 use kaeso_core::kpmr;
+use kaeso_server::jobs::Ran;
 use serde_json::{Value, json};
 use time::Duration;
 
@@ -89,7 +90,7 @@ async fn line(env: &Env, id: &str) -> Value {
         .clone()
 }
 
-async fn run_job(env: &Env) -> String {
+async fn run_job(env: &Env) -> Ran {
     let job = kaeso_server::jobs::all()
         .into_iter()
         .find(|j| j.name == "model_lines")
@@ -195,8 +196,11 @@ async fn follow_moves_ask_waits_delay_moves_later_and_pin_stays() {
     let id = |v: &Value| v["id"].as_str().unwrap().to_owned();
 
     publish(&env, "openai", lines("gpt-4o")).await;
-    assert_eq!(run_job(&env).await, "1 moved, 2 waiting, 0 held");
-    assert_eq!(run_job(&env).await, "0 moved, 0 waiting, 0 held");
+    assert_eq!(
+        run_job(&env).await,
+        Ran::worked("1 moved, 2 waiting, 0 held")
+    );
+    assert_eq!(run_job(&env).await, Ran::idle("0 moved, 0 waiting, 0 held"));
     assert_eq!(line(&env, &id(&follow)).await["model"], "gpt-4o");
     assert_eq!(line(&env, &id(&follow)).await["previous"], "gpt-4o-mini");
     let waiting = line(&env, &id(&ask)).await;
@@ -210,7 +214,10 @@ async fn follow_moves_ask_waits_delay_moves_later_and_pin_stays() {
     assert_eq!(line(&env, &id(&pin)).await["model"], "gpt-4o-mini");
 
     env.app.clock.advance(Duration::days(3));
-    assert_eq!(run_job(&env).await, "1 moved, 0 waiting, 0 held");
+    assert_eq!(
+        run_job(&env).await,
+        Ran::worked("1 moved, 0 waiting, 0 held")
+    );
     assert_eq!(line(&env, &id(&delay)).await["model"], "gpt-4o");
 
     let kept = action(&env, &id(&ask), "keep").await;
@@ -218,7 +225,7 @@ async fn follow_moves_ask_waits_delay_moves_later_and_pin_stays() {
         (kept.status, &kept.body["kept"]),
         (StatusCode::OK, &json!("gpt-4o"))
     );
-    assert_eq!(run_job(&env).await, "0 moved, 0 waiting, 0 held");
+    assert_eq!(run_job(&env).await, Ran::idle("0 moved, 0 waiting, 0 held"));
     let moved = action(&env, &id(&ask), "move").await;
     assert_eq!(
         (moved.status, &moved.body["model"]),
@@ -313,8 +320,11 @@ async fn a_line_without_a_provider_key_stays_and_says_why() {
     publish(&env, "mistral", json!({ "m-latest": at(&ids[0]) })).await;
     let added = add(&env, "mistral", "m-latest", json!({})).await;
     publish(&env, "mistral", json!({ "m-latest": at(&ids[1]) })).await;
-    assert_eq!(run_job(&env).await, "0 moved, 0 waiting, 1 held");
-    assert_eq!(run_job(&env).await, "0 moved, 0 waiting, 0 held");
+    assert_eq!(
+        run_job(&env).await,
+        Ran::worked("0 moved, 0 waiting, 1 held")
+    );
+    assert_eq!(run_job(&env).await, Ran::idle("0 moved, 0 waiting, 0 held"));
     let id = added["id"].as_str().unwrap();
     let held = format!(
         "No provider key for `mistral` is set up for this project, so the line stays on `{}`.",

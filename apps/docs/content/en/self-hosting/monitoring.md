@@ -137,6 +137,8 @@ docker compose logs -f gateway
 
 Every line a request causes carries its `request_id`, which the reply also sends in the `kaeso-request-id` header. Secrets, provider keys and authorization headers are never logged. `KAESO_LOG_LEVEL` sets the level or a filter, such as `info,kaeso_server=debug`, and `KAESO_LOG_FORMAT=text` writes plain lines for development.
 
+Background jobs log a run at `info` when it changed something, and a failed run at `error`. A run that found nothing to do is logged at `debug`; `info,kaeso_server::jobs=debug` shows those too.
+
 ## Next steps
 
 - [Troubleshooting](troubleshooting.md): Find the fix for a problem the health checks, metrics or logs show.

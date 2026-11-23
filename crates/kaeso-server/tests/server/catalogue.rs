@@ -828,7 +828,7 @@ async fn syncs_audit_price_changes_and_keep_delisted_models() {
     assert_eq!(g.body["listed"], true, "{:?}", g.body);
 }
 
-async fn run_sync_job(app: &App) -> String {
+async fn run_sync_job(app: &App) -> kaeso_server::jobs::Ran {
     let job = kaeso_server::jobs::all()
         .into_iter()
         .find(|j| j.name == "kpmr_sync")
@@ -868,13 +868,25 @@ async fn the_sync_job_runs_once_per_interval_and_an_hour_after_a_failure() {
     app.clock
         .set(after_the_built_in_snapshot(time::Duration::hours(6)));
 
-    assert_eq!(run_sync_job(&app).await, "unchanged");
-    assert_eq!(run_sync_job(&app).await, "not due");
+    assert_eq!(
+        run_sync_job(&app).await,
+        kaeso_server::jobs::Ran::idle("unchanged")
+    );
+    assert_eq!(
+        run_sync_job(&app).await,
+        kaeso_server::jobs::Ran::idle("not due")
+    );
     app.clock
         .advance(time::Duration::hours(6) - time::Duration::SECOND);
-    assert_eq!(run_sync_job(&app).await, "not due");
+    assert_eq!(
+        run_sync_job(&app).await,
+        kaeso_server::jobs::Ran::idle("not due")
+    );
     app.clock.advance(time::Duration::SECOND);
-    assert_eq!(run_sync_job(&app).await, "unchanged");
+    assert_eq!(
+        run_sync_job(&app).await,
+        kaeso_server::jobs::Ran::idle("unchanged")
+    );
     assert_eq!(served.lock().unwrap().not_modified, 1);
     app.clock.advance(time::Duration::hours(6));
 
@@ -884,7 +896,7 @@ async fn the_sync_job_runs_once_per_interval_and_an_hour_after_a_failure() {
     served.lock().unwrap().body = changed.to_string();
     assert_eq!(
         run_sync_job(&app).await,
-        "applied: 0 price changes, 0 delisted, 0 listed again"
+        kaeso_server::jobs::Ran::worked("applied: 0 price changes, 0 delisted, 0 listed again")
     );
     assert!(
         app.state
@@ -894,7 +906,10 @@ async fn the_sync_job_runs_once_per_interval_and_an_hour_after_a_failure() {
             .model("openai", "gpt-new")
             .is_some()
     );
-    assert_eq!(run_sync_job(&app).await, "not due");
+    assert_eq!(
+        run_sync_job(&app).await,
+        kaeso_server::jobs::Ran::idle("not due")
+    );
 
     app.clock.advance(time::Duration::hours(6));
     served.lock().unwrap().status = 500;
@@ -905,10 +920,16 @@ async fn the_sync_job_runs_once_per_interval_and_an_hour_after_a_failure() {
     assert!(kaeso_server::jobs::run_once(&app.state, job).await.is_err());
     app.clock
         .advance(time::Duration::hours(1) - time::Duration::SECOND);
-    assert_eq!(run_sync_job(&app).await, "not due");
+    assert_eq!(
+        run_sync_job(&app).await,
+        kaeso_server::jobs::Ran::idle("not due")
+    );
     app.clock.advance(time::Duration::SECOND);
     served.lock().unwrap().status = 200;
-    assert_eq!(run_sync_job(&app).await, "unchanged");
+    assert_eq!(
+        run_sync_job(&app).await,
+        kaeso_server::jobs::Ran::idle("unchanged")
+    );
 }
 
 #[tokio::test]
@@ -931,14 +952,20 @@ async fn by_default_the_sync_job_follows_the_interval_kpmr_suggests() {
         .set(after_the_built_in_snapshot(time::Duration::HOUR));
     assert_eq!(
         run_sync_job(&app).await,
-        "applied: 0 price changes, 0 delisted, 0 listed again"
+        kaeso_server::jobs::Ran::worked("applied: 0 price changes, 0 delisted, 0 listed again")
     );
     assert_eq!(app.state.kpmr.current().snapshot.refresh_seconds, Some(600));
     app.clock
         .advance(time::Duration::minutes(10) - time::Duration::SECOND);
-    assert_eq!(run_sync_job(&app).await, "not due");
+    assert_eq!(
+        run_sync_job(&app).await,
+        kaeso_server::jobs::Ran::idle("not due")
+    );
     app.clock.advance(time::Duration::SECOND);
-    assert_eq!(run_sync_job(&app).await, "unchanged");
+    assert_eq!(
+        run_sync_job(&app).await,
+        kaeso_server::jobs::Ran::idle("unchanged")
+    );
 }
 
 async fn store_as_an_older_build(
@@ -1029,18 +1056,27 @@ async fn an_upgrade_that_adds_a_provider_completes_newer_stored_data_and_syncs_i
         .find(|j| j.name == "kpmr_sync")
         .unwrap();
     assert!(kaeso_server::jobs::run_once(&app.state, job).await.is_err());
-    assert_eq!(run_sync_job(&app).await, "not due");
+    assert_eq!(
+        run_sync_job(&app).await,
+        kaeso_server::jobs::Ran::idle("not due")
+    );
     app.clock.advance(time::Duration::HOUR);
     served.lock().unwrap().status = 200;
     assert_eq!(
         run_sync_job(&app).await,
-        "applied: 0 price changes, 0 delisted, 0 listed again",
+        kaeso_server::jobs::Ran::worked("applied: 0 price changes, 0 delisted, 0 listed again"),
         "the same catalogue is applied again for the new provider"
     );
     assert_eq!(mistral_models(&app), built_in);
-    assert_eq!(run_sync_job(&app).await, "not due");
+    assert_eq!(
+        run_sync_job(&app).await,
+        kaeso_server::jobs::Ran::idle("not due")
+    );
     app.clock.advance(time::Duration::DAY);
-    assert_eq!(run_sync_job(&app).await, "unchanged");
+    assert_eq!(
+        run_sync_job(&app).await,
+        kaeso_server::jobs::Ran::idle("unchanged")
+    );
 
     kaeso_server::services::kpmr::init(&app.state)
         .await
@@ -1076,7 +1112,7 @@ async fn long_context_prices_an_older_build_did_not_store_are_no_price_change() 
 
     assert_eq!(
         run_sync_job(&app).await,
-        "applied: 0 price changes, 0 delisted, 0 listed again"
+        kaeso_server::jobs::Ran::worked("applied: 0 price changes, 0 delisted, 0 listed again")
     );
     let haiku = app
         .state
@@ -1094,7 +1130,7 @@ async fn long_context_prices_an_older_build_did_not_store_are_no_price_change() 
     app.clock.advance(time::Duration::DAY);
     assert_eq!(
         run_sync_job(&app).await,
-        "applied: 1 price changes, 0 delisted, 0 listed again",
+        kaeso_server::jobs::Ran::worked("applied: 1 price changes, 0 delisted, 0 listed again"),
         "a change to them afterwards is one"
     );
 }

@@ -10,6 +10,7 @@ use axum::http::{HeaderMap, Method, StatusCode, header};
 use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
 use common::{App, Owner};
+use kaeso_server::jobs::Ran;
 use kaeso_store::pg::updates::{self, ReleaseRow};
 use kaeso_testkit::services::TestServices;
 use serde_json::{Value, json};
@@ -672,7 +673,7 @@ async fn failed_checks_are_recorded_and_retried_when_the_feed_allows_not_at_once
         .await
         .unwrap()
         .unwrap();
-    assert_eq!(summary, "release list fetched");
+    assert_eq!(summary, Ran::worked("release list fetched"));
     let r = app.get("/instance/updates", &owner.cookie).await;
     assert_eq!(r.body["check"]["error"], Value::Null);
     assert_eq!(r.body["state"], "available");
@@ -692,13 +693,13 @@ async fn failed_checks_are_recorded_and_retried_when_the_feed_allows_not_at_once
         .await
         .unwrap()
         .unwrap();
-    assert_eq!(summary, "check not due");
+    assert_eq!(summary, Ran::idle("check not due"));
     app.clock.advance(time::Duration::minutes(6));
     let summary = kaeso_server::jobs::run_once(&app.state, job)
         .await
         .unwrap()
         .unwrap();
-    assert_eq!(summary, "releases unchanged");
+    assert_eq!(summary, Ran::idle("releases unchanged"));
     assert_eq!(job.every, std::time::Duration::from_secs(60));
     s.cleanup().await;
 }
@@ -1126,7 +1127,7 @@ async fn a_feed_that_asks_to_wait_for_ages_holds_checks_back_an_hour_and_an_admi
         .await
         .unwrap()
         .unwrap();
-    assert_eq!(summary, "check failed");
+    assert_eq!(summary, Ran::worked("check failed"));
     let first = app.get("/instance/updates", &owner.cookie).await;
     let error = first.body["check"]["error"].as_str().unwrap();
     assert!(error.contains("refused more requests"), "{error}");
@@ -1161,7 +1162,7 @@ async fn a_feed_that_asks_to_wait_for_ages_holds_checks_back_an_hour_and_an_admi
         .await
         .unwrap()
         .unwrap();
-    assert_eq!(summary, "check not due");
+    assert_eq!(summary, Ran::idle("check not due"));
     let after = app
         .post("/instance/updates/check", json!({}), Some(&owner.cookie))
         .await;
@@ -1209,14 +1210,14 @@ async fn a_wait_stored_by_an_older_version_holds_checks_back_an_hour_at_most() {
         .await
         .unwrap()
         .unwrap();
-    assert_eq!(summary, "check not due");
+    assert_eq!(summary, Ran::idle("check not due"));
     app.clock
         .advance(time::Duration::hours(1) + time::Duration::minutes(1));
     let summary = kaeso_server::jobs::run_once(&app.state, job)
         .await
         .unwrap()
         .unwrap();
-    assert_eq!(summary, "release list fetched");
+    assert_eq!(summary, Ran::worked("release list fetched"));
     assert_eq!(gh.lock().unwrap().requests.len(), 1);
     s.cleanup().await;
 }
@@ -1554,7 +1555,8 @@ async fn the_gateway_updates_by_itself_in_the_window_and_only_once() {
     let before = kaeso_server::jobs::run_once(&app.state, job)
         .await
         .unwrap()
-        .unwrap();
+        .unwrap()
+        .summary;
     assert!(before.ends_with("; no update window"), "{before}");
     assert!(updater.lock().unwrap().started.is_empty());
 
@@ -1562,7 +1564,8 @@ async fn the_gateway_updates_by_itself_in_the_window_and_only_once() {
     let during = kaeso_server::jobs::run_once(&app.state, job)
         .await
         .unwrap()
-        .unwrap();
+        .unwrap()
+        .summary;
     assert!(
         during.ends_with(&format!("update window: updating to {}", next_patch())),
         "{during}"
@@ -1582,7 +1585,8 @@ async fn the_gateway_updates_by_itself_in_the_window_and_only_once() {
     let later = kaeso_server::jobs::run_once(&app.state, job)
         .await
         .unwrap()
-        .unwrap();
+        .unwrap()
+        .summary;
     assert!(later.ends_with("; no update window"), "{later}");
     assert_eq!(
         updater.lock().unwrap().started.len(),
@@ -1632,7 +1636,8 @@ async fn a_major_release_waits_for_an_admin_even_in_the_window() {
     let summary = kaeso_server::jobs::run_once(&app.state, job)
         .await
         .unwrap()
-        .unwrap();
+        .unwrap()
+        .summary;
     assert!(
         summary.ends_with("update window: the release needs steps by hand"),
         "{summary}"
@@ -1665,7 +1670,8 @@ async fn without_the_updater_the_window_passes_quietly() {
     let summary = kaeso_server::jobs::run_once(&app.state, job)
         .await
         .unwrap()
-        .unwrap();
+        .unwrap()
+        .summary;
     assert!(
         summary.ends_with("update window: the updater isn't ready"),
         "{summary}"
@@ -1710,7 +1716,7 @@ async fn automatic_in_the_next_hour(
     (s, app, owner, gh, updater, window)
 }
 
-async fn run_update_check(app: &App) -> String {
+async fn run_update_check(app: &App) -> kaeso_server::jobs::Ran {
     kaeso_server::jobs::run_once(&app.state, update_check_job())
         .await
         .unwrap()
@@ -1724,14 +1730,20 @@ async fn a_window_that_couldnt_start_an_update_tries_again_until_it_closes() {
     app.clock.set(window + time::Duration::minutes(1));
     let failed = run_update_check(&app).await;
     assert!(
-        failed.ends_with("update window: releases couldn't be fetched"),
-        "{failed}"
+        !failed.idle
+            && failed
+                .summary
+                .ends_with("update window: releases couldn't be fetched"),
+        "{failed:?}"
     );
     app.clock.set(window + time::Duration::minutes(5));
     let waiting = run_update_check(&app).await;
     assert!(
-        waiting.ends_with("update window: releases couldn't be fetched"),
-        "{waiting}"
+        !waiting.idle
+            && waiting
+                .summary
+                .ends_with("update window: releases couldn't be fetched"),
+        "{waiting:?}"
     );
     assert_eq!(
         gh.lock().unwrap().requests.len(),
@@ -1744,8 +1756,11 @@ async fn a_window_that_couldnt_start_an_update_tries_again_until_it_closes() {
     app.clock.set(window + time::Duration::minutes(17));
     let not_ready = run_update_check(&app).await;
     assert!(
-        not_ready.ends_with("update window: the updater isn't ready"),
-        "{not_ready}"
+        !not_ready.idle
+            && not_ready
+                .summary
+                .ends_with("update window: the updater isn't ready"),
+        "{not_ready:?}"
     );
     assert!(updater.lock().unwrap().started.is_empty());
 
@@ -1753,8 +1768,11 @@ async fn a_window_that_couldnt_start_an_update_tries_again_until_it_closes() {
     app.clock.set(window + time::Duration::minutes(59));
     let started = run_update_check(&app).await;
     assert!(
-        started.ends_with(&format!("update window: updating to {}", next_patch())),
-        "{started}"
+        !started.idle
+            && started
+                .summary
+                .ends_with(&format!("update window: updating to {}", next_patch())),
+        "{started:?}"
     );
     assert_eq!(updater.lock().unwrap().started.len(), 1);
     s.cleanup().await;
@@ -1767,8 +1785,8 @@ async fn a_window_that_passes_without_an_update_waits_for_the_next() {
     app.clock.set(window + time::Duration::minutes(30));
     let not_ready = run_update_check(&app).await;
     assert!(
-        not_ready.ends_with("the updater isn't ready"),
-        "{not_ready}"
+        !not_ready.idle && not_ready.summary.ends_with("the updater isn't ready"),
+        "{not_ready:?}"
     );
     let shown = app.get("/instance/updates", &owner.cookie).await;
     assert_eq!(
@@ -1782,7 +1800,10 @@ async fn a_window_that_passes_without_an_update_waits_for_the_next() {
     updater.lock().unwrap().docker_down = false;
     app.clock.set(window + time::Duration::minutes(61));
     let closed = run_update_check(&app).await;
-    assert!(closed.ends_with("; no update window"), "{closed}");
+    assert!(
+        closed.idle && closed.summary.ends_with("; no update window"),
+        "{closed:?}"
+    );
     assert!(updater.lock().unwrap().started.is_empty());
     s.cleanup().await;
 }
@@ -1800,19 +1821,28 @@ async fn a_release_that_rolled_back_is_left_to_an_admin_until_a_newer_one_comes(
     app.clock.set(window + minute);
     let first = run_update_check(&app).await;
     assert!(
-        first.ends_with(&format!("updating to {}", next_patch())),
-        "{first}"
+        !first.idle
+            && first
+                .summary
+                .ends_with(&format!("updating to {}", next_patch())),
+        "{first:?}"
     );
     app.clock.set(window + minute * 2);
     let rolled = run_update_check(&app).await;
     assert!(
-        rolled.starts_with(&format!("update {} is rolled_back", next_patch())),
-        "{rolled}"
+        !rolled.idle
+            && rolled
+                .summary
+                .starts_with(&format!("update {} is rolled_back", next_patch())),
+        "{rolled:?}"
     );
 
     app.clock.set(window + day + minute);
     let next_day = run_update_check(&app).await;
-    assert!(next_day.ends_with(&skipped), "{next_day}");
+    assert!(
+        !next_day.idle && next_day.summary.ends_with(&skipped),
+        "{next_day:?}"
+    );
     assert_eq!(updater.lock().unwrap().started.len(), 1);
 
     let admin = app
@@ -1837,10 +1867,16 @@ async fn a_release_that_rolled_back_is_left_to_an_admin_until_a_newer_one_comes(
     .expect_status(StatusCode::ACCEPTED);
     app.clock.set(window + day + minute * 2);
     let by_hand = run_update_check(&app).await;
-    assert!(by_hand.ends_with(&skipped), "{by_hand}");
+    assert!(
+        !by_hand.idle && by_hand.summary.ends_with(&skipped),
+        "{by_hand:?}"
+    );
     app.clock.set(window + day * 2 + minute);
     let still = run_update_check(&app).await;
-    assert!(still.ends_with(&skipped), "{still}");
+    assert!(
+        !still.idle && still.summary.ends_with(&skipped),
+        "{still:?}"
+    );
     assert_eq!(updater.lock().unwrap().started.len(), 2);
 
     let v = semver::Version::parse(RUNNING).unwrap();
@@ -1852,8 +1888,8 @@ async fn a_release_that_rolled_back_is_left_to_an_admin_until_a_newer_one_comes(
     app.clock.set(window + day * 3 + minute);
     let newest = run_update_check(&app).await;
     assert!(
-        newest.ends_with(&format!("updating to {newer}")),
-        "{newest}"
+        !newest.idle && newest.summary.ends_with(&format!("updating to {newer}")),
+        "{newest:?}"
     );
     let started = updater.lock().unwrap().started.clone();
     assert_eq!(started.len(), 3);

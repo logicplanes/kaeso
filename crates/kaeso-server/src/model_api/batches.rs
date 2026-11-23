@@ -984,17 +984,26 @@ async fn account(
 }
 
 /// Asks the providers about the batches whose usage isn't recorded yet.
-pub(crate) async fn settle_open(state: &AppState) -> Result<String, kaeso_store::StoreError> {
+pub(crate) async fn settle_open(
+    state: &AppState,
+) -> Result<crate::jobs::Ran, kaeso_store::StoreError> {
     let open = store::open(&state.pg, 200).await?;
     let mut ended = 0;
+    let mut failed = 0;
     for row in open {
         match refresh(state, row).await {
             Ok(r) if r.accounted_at.is_some() || ENDED.contains(&r.status.as_str()) => ended += 1,
             Ok(_) => {}
-            Err(e) => tracing::warn!(error = %e.message, "cannot ask the provider about a batch"),
+            Err(e) => {
+                failed += 1;
+                tracing::warn!(error = %e.message, "cannot ask the provider about a batch");
+            }
         }
     }
-    Ok(format!("{ended} batches ended"))
+    Ok(crate::jobs::Ran::of(
+        format!("{ended} batches ended"),
+        ended + failed > 0,
+    ))
 }
 
 async fn cancel(state: &AppState, caller: &Caller, id: &str) -> Result<BatchRow, KppError> {

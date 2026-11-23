@@ -7,6 +7,7 @@ use std::time::Duration;
 use axum::http::{Method, StatusCode};
 use common::{App, Owner};
 use kaeso_core::clock::Clock;
+use kaeso_server::jobs::Ran;
 use kaeso_testkit::services::TestServices;
 use serde_json::{Value, json};
 
@@ -623,14 +624,14 @@ async fn users_manage_their_own_keys_and_get_expiry_warnings() {
             .await
             .unwrap()
             .unwrap(),
-        "sent 1 key expiry warnings"
+        Ran::worked("sent 1 key expiry warnings")
     );
     assert_eq!(
         kaeso_server::jobs::run_once(&app.state, job)
             .await
             .unwrap()
             .unwrap(),
-        "sent 0 key expiry warnings"
+        Ran::idle("sent 0 key expiry warnings")
     );
     app.clock
         .advance(time::Duration::days(6) + time::Duration::hours(1));
@@ -639,7 +640,7 @@ async fn users_manage_their_own_keys_and_get_expiry_warnings() {
             .await
             .unwrap()
             .unwrap(),
-        "sent 1 key expiry warnings"
+        Ran::worked("sent 1 key expiry warnings")
     );
     app.wait_for_mail("owner@example.com", 2).await;
     assert_eq!(
@@ -702,7 +703,7 @@ async fn users_manage_their_own_keys_and_get_expiry_warnings() {
             .await
             .unwrap()
             .unwrap(),
-        "sent 0 key expiry warnings"
+        Ran::idle("sent 0 key expiry warnings")
     );
     s.cleanup().await;
 }
