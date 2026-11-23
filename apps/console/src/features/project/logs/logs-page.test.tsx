@@ -962,6 +962,80 @@ describe("LogsPage", () => {
     vi.unstubAllGlobals();
   });
 
+  it("waits while Load more has focus, then takes focus to the first new request when it's pressed", async () => {
+    const observers: { callback: IntersectionObserverCallback; targets: Element[] }[] = [];
+    vi.stubGlobal(
+      "IntersectionObserver",
+      class {
+        targets: Element[] = [];
+        constructor(public callback: IntersectionObserverCallback) {
+          observers.push(this);
+        }
+        observe(el: Element) {
+          this.targets.push(el);
+        }
+        disconnect() {
+          this.targets = [];
+        }
+      },
+    );
+    signedIn();
+    projectData();
+    on("GET", LOGS, ({ query }: { query: URLSearchParams }) =>
+      query.get("after") === "cur_2" ? listPage([logRow({ id: "req_0002", endpoint: "/v1/embeddings" })]) : listPage([logRow()], "cur_2"),
+    );
+    const { user } = await renderApp(projectPath("logs"));
+
+    const more = await screen.findByRole("button", { name: "Load more" });
+    const watching = () => observers.filter((o) => o.targets.length > 0).at(-1);
+    await waitFor(() => expect(watching()).toBeDefined());
+    more.focus();
+    act(() => watching()?.callback([{ isIntersecting: true } as IntersectionObserverEntry], {} as IntersectionObserver));
+    expect(listQueries().some((q) => q.after === "cur_2")).toBe(false);
+    expect(more).toHaveFocus();
+
+    await user.keyboard("{Enter}");
+    const added = await screen.findByRole("row", { name: /\/v1\/embeddings/ });
+    await waitFor(() => expect(added).toHaveFocus());
+    expect(screen.getByText("1 more row loaded; all rows shown")).toBeInTheDocument();
+    vi.unstubAllGlobals();
+  });
+
+  it("loads by itself again once focus leaves Load more while the end of the list is in view", async () => {
+    const observers: { callback: IntersectionObserverCallback; targets: Element[] }[] = [];
+    vi.stubGlobal(
+      "IntersectionObserver",
+      class {
+        targets: Element[] = [];
+        constructor(public callback: IntersectionObserverCallback) {
+          observers.push(this);
+        }
+        observe(el: Element) {
+          this.targets.push(el);
+        }
+        disconnect() {
+          this.targets = [];
+        }
+      },
+    );
+    signedIn();
+    projectData();
+    on("GET", LOGS, ({ query }: { query: URLSearchParams }) =>
+      query.get("after") === "cur_2" ? listPage([logRow({ id: "req_0002", endpoint: "/v1/embeddings" })]) : listPage([logRow()], "cur_2"),
+    );
+    const { user } = await renderApp(projectPath("logs"));
+
+    const more = await screen.findByRole("button", { name: "Load more" });
+    const watching = () => observers.filter((o) => o.targets.length > 0).at(-1);
+    await waitFor(() => expect(watching()).toBeDefined());
+    more.focus();
+    act(() => watching()?.callback([{ isIntersecting: true } as IntersectionObserverEntry], {} as IntersectionObserver));
+    expect(listQueries().some((q) => q.after === "cur_2")).toBe(false);
+    await user.tab({ shift: true });
+    expect(await screen.findByRole("row", { name: /\/v1\/embeddings/ })).toBeInTheDocument();
+    vi.unstubAllGlobals();
+  });
+
   it("stops loading on its own after the next page fails, and Load more tries again", async () => {
     const observers: { live: boolean }[] = [];
     vi.stubGlobal(

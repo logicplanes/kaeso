@@ -95,6 +95,8 @@ const en: Readonly<Record<string, string>> = {
   "copyButton.copied": "Copied",
   "copyButton.copy": "Copy",
   "dataTable.loadFailed": "Couldn't load these rows",
+  "dataTable.moreRows": "{count, plural, one {# more row loaded} other {# more rows loaded}}",
+  "dataTable.moreRowsAll": "{count, plural, one {# more row loaded; all rows shown} other {# more rows loaded; all rows shown}}",
   "dataTable.narrowColumn": "Narrow column",
   "dataTable.noRows": "No rows",
   "dataTable.reloadToRetry": "Reload the page to try again.",

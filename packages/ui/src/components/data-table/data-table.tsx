@@ -354,16 +354,70 @@ function DataTableInner<T>(
   const cellRole = focusable ? "gridcell" : "cell";
   const bodyZone = focusable && rows.length > 0 && zone === "body";
   const stop = Math.min(focusRow, Math.max(rows.length - 1, 0));
-  const focusAt = (i: number) => {
-    const next = Math.max(0, Math.min(rows.length - 1, i));
-    setZone("body");
-    setFocusRow(next);
-    if (virtual) virtualizer.scrollToIndex(next, { align: "auto" });
-    const line = () => body.current?.querySelector<HTMLElement>(`[data-row-index="${next}"]`);
+  const focusLine = (i: number) => {
+    if (virtual) virtualizer.scrollToIndex(i, { align: "auto" });
+    const line = () => body.current?.querySelector<HTMLElement>(`[data-row-index="${i}"]`);
     const now = line();
     if (now) now.focus();
     else requestAnimationFrame(() => line()?.focus());
   };
+  const focusAt = (i: number) => {
+    const next = Math.max(0, Math.min(rows.length - 1, i));
+    setZone("body");
+    setFocusRow(next);
+    focusLine(next);
+  };
+
+  // A new page pushes a focused Load more out of view, so a page the button asked for takes focus to its first new row.
+  // Rows are told apart by id: a sort mixes new rows in with old ones, and live rows can arrive while a page loads.
+  const more = useRef<HTMLElement | null>(null);
+  const asked = useRef<{ seen: Set<string>; pressed: boolean } | null>(null);
+  const [landing, setLanding] = useState<string | null>(null);
+  const [said, setSaid] = useState("");
+  const seenNow = () => new Set(rows.map((r) => r.id));
+  const loadMore = () => {
+    asked.current = { seen: seenNow(), pressed: true };
+    setSaid("");
+    onLoadMore?.();
+  };
+  const wasLoading = useRef(false);
+  const settle = useRef(() => {});
+  settle.current = () => {
+    const ended = wasLoading.current && !loadingMore;
+    wasLoading.current = !!loadingMore;
+    if (loadingMore) {
+      asked.current = { seen: seenNow(), pressed: asked.current?.pressed ?? false };
+      if (!asked.current.pressed) setSaid("");
+      return;
+    }
+    const was = asked.current;
+    if (!was) return;
+    const fresh = rows.findIndex((r) => !was.seen.has(r.id));
+    // A load that ends without new rows failed; rows that come later aren't its page.
+    if (fresh < 0 && !ended) return;
+    asked.current = null;
+    if (fresh < 0) return;
+    const added = rows.reduce((n, r) => (was.seen.has(r.id) ? n : n + 1), 0);
+    setSaid(
+      hasMore
+        ? t("dataTable.moreRows", "{count, plural, one {# more row loaded} other {# more rows loaded}}", { count: added })
+        : t("dataTable.moreRowsAll", "{count, plural, one {# more row loaded; all rows shown} other {# more rows loaded; all rows shown}}", { count: added }),
+    );
+    const now = document.activeElement;
+    const atMore = !!more.current?.contains(now);
+    if (was.pressed && (atMore || !now || now === document.body)) {
+      if (focusable) focusAt(fresh);
+      else setLanding(rows[fresh]!.id);
+    } else if (atMore) more.current?.scrollIntoView({ block: "nearest" });
+  };
+  useLayoutEffect(() => settle.current(), [loadingMore, rows]);
+  const land = useRef(() => {});
+  land.current = () => {
+    const i = landing === null ? -1 : rows.findIndex((r) => r.id === landing);
+    if (i >= 0) focusLine(i);
+  };
+  useLayoutEffect(() => land.current(), [landing]);
+
   const focusHead = (i: number) => {
     const targets = headTargets(head.current);
     const target = targets[Math.max(0, Math.min(targets.length - 1, i))];
@@ -528,7 +582,8 @@ function DataTableInner<T>(
         data-fresh={freshRowIds?.has(row.id) || undefined}
         data-row-index={i}
         {...(forceRow && i === 0 ? { "data-force": forceRow } : {})}
-        tabIndex={focusable ? (bodyZone && i === stop ? 0 : -1) : undefined}
+        tabIndex={focusable ? (bodyZone && i === stop ? 0 : -1) : landing === row.id ? -1 : undefined}
+        {...(landing === row.id ? { onBlur: () => setLanding(null) } : {})}
         onFocus={(e) => {
           if (e.target !== e.currentTarget) return;
           setZone("body");
@@ -776,7 +831,12 @@ function DataTableInner<T>(
           )}
         </div>
       </div>
-      <Pagination variant="load-more" hasMore={!!hasMore} loading={loadingMore} onLoadMore={onLoadMore} />
+      <Pagination ref={more} variant="load-more" hasMore={!!hasMore} loading={loadingMore} {...(onLoadMore ? { onLoadMore: loadMore } : {})} />
+      {onLoadMore && (
+        <span role="status" className="sr-only">
+          {said}
+        </span>
+      )}
     </div>
   );
 }

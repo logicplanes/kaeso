@@ -22,7 +22,8 @@ export const docs = {
       loadingMore: "Shows that more rows are loading.",
       manualSorting: "Sorting happens on the server: the data arrives sorted.",
       onHiddenColumnsChange: "Called with the ids of the columns left out at the table's width, so a kept column can show what they held.",
-      onLoadMore: "Called to load the next rows.",
+      onLoadMore:
+        "Called to load the next rows. When Load more asked for them, focus moves to the first new row once they arrive; screen readers hear how many came.",
       onRetry: "Shows a Retry button when loading failed.",
       onRowClick: "Called when a row is clicked; rows then show that they can be opened.",
       onSelectionChange: "Called with the selected rows.",

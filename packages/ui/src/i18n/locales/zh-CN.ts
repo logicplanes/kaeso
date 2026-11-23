@@ -95,6 +95,8 @@ const zhCN: Readonly<Record<string, string>> = {
   "copyButton.copied": "已复制",
   "copyButton.copy": "复制",
   "dataTable.loadFailed": "无法加载这些行",
+  "dataTable.moreRows": "{count, plural, other {又加载了 # 行}}",
+  "dataTable.moreRowsAll": "{count, plural, other {又加载了 # 行；已全部显示}}",
   "dataTable.narrowColumn": "缩窄列",
   "dataTable.noRows": "暂无数据",
   "dataTable.reloadToRetry": "刷新页面后重试。",
