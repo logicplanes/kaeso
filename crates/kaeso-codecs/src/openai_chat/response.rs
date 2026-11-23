@@ -24,6 +24,12 @@ pub(crate) const FORM_THINKING: &str = "thinking";
 pub(crate) const FORM_REASONING_FIELD: &str = "reasoning_field";
 pub(crate) const CHOICE: &str = "choice";
 pub(crate) const MESSAGE: &str = "choice.message";
+pub(super) const EXCLUDED_REASONING_KEYS: &[&str] = &[
+    "reasoning_content",
+    "reasoning",
+    "reasoning_details",
+    "encrypted_content",
+];
 
 pub(crate) fn decode_response(body: &[u8], ctx: &EgressCtx) -> Result<Reply, KppError> {
     if ctx.kind != RequestKind::Generate {
@@ -419,7 +425,7 @@ pub(crate) fn encode_response(reply: &Reply, ctx: &EncodeCtx) -> Result<Vec<u8>,
     };
     let mut message = ext_nested(message, &resp.extras, MESSAGE);
     if reasoning_out == ReasoningOutput::Exclude {
-        for key in super::request::REPLAYED_REASONING {
+        for key in EXCLUDED_REASONING_KEYS {
             message.extra.shift_remove(*key);
             message.verbatim.shift_remove(*key);
         }

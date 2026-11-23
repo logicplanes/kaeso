@@ -140,7 +140,7 @@ fn describe(raw: &RawValue, err: &serde_json::Error) -> KppError {
             let subfields: &[(&str, Check, &str)] = &[
                 ("effort", string, "a string"),
                 ("summary", string, "a string"),
-                ("max_tokens", int, "a non-negative integer"),
+                ("max_tokens", int, "an integer from 1 to 4294967295"),
                 ("enabled", boolean, "true or false"),
                 ("exclude", boolean, "true or false"),
             ];
@@ -277,6 +277,8 @@ pub(super) fn decode(
                 && cfg.mode.is_none()
                 && cfg.budget_tokens.is_none()
                 && !cfg.exclude
+                && r.enabled.is_none()
+                && r.exclude.is_none()
             {
                 cfg.extras.form.insert(OBJECT.to_owned(), true.into());
             }
@@ -345,6 +347,11 @@ pub(super) fn decode(
             }
             if r.exclude.is_some() {
                 set_drop.push("exclude");
+            }
+            if r.effort.is_none()
+                && (r.max_tokens.is_some() || r.enabled.is_some() || r.exclude.is_some())
+            {
+                set_drop.push("effort");
             }
             let unset_drop: &[&str] = if r.effort.is_none() { &["effort"] } else { &[] };
             if !set_drop.is_empty() || !unset_drop.is_empty() {

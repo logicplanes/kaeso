@@ -773,4 +773,151 @@ fn openrouter_reasoning_fields_work_on_responses_requests_and_exclude_hides_reas
     let text = String::from_utf8(bytes).unwrap();
     assert!(!text.contains("Secret."), "{text}");
     assert!(text.contains("Hello."), "{text}");
+
+    // Review fix #1: same-dialect Responses reply with `exclude: true` keeps message `@out{i}` overrides.
+    let native_reply_body = serde_json::to_vec(&json!({
+        "id": "resp_native_1",
+        "object": "response",
+        "created_at": 1_700_000_000,
+        "status": "completed",
+        "model": "gpt-5.5",
+        "output": [
+            {
+                "id": "rs_real_0",
+                "type": "reasoning",
+                "summary": [{ "type": "summary_text", "text": "Hidden thought." }]
+            },
+            {
+                "id": "msg_real_1",
+                "type": "message",
+                "status": "completed",
+                "role": "assistant",
+                "phase": "final_answer",
+                "content": [{ "type": "output_text", "text": "Visible answer.", "annotations": [] }]
+            }
+        ],
+        "usage": {
+            "input_tokens": 10,
+            "input_tokens_details": { "cached_tokens": 0 },
+            "output_tokens": 20,
+            "output_tokens_details": { "reasoning_tokens": 12 },
+            "total_tokens": 30
+        }
+    }))
+    .unwrap();
+    let native_reply = OpenAiResponses::decode_response(
+        200,
+        &HeaderList::new(),
+        &native_reply_body,
+        &EgressCtx::for_kind(RequestKind::Generate, StreamMode::Off),
+    )
+    .unwrap();
+    let decode_v = |v: Value| {
+        let bytes = serde_json::to_vec(&v).unwrap();
+        decode_req(RequestKind::Generate, &bytes)
+    };
+    let excl_req = decode_v(json!({
+        "model": "gpt-5.5",
+        "input": "Hi",
+        "reasoning": { "effort": "high", "exclude": true }
+    }));
+    let native_out: Value = serde_json::from_slice(
+        &OpenAiResponses::encode_response(
+            &native_reply,
+            &crate::codec::EncodeCtx::for_request(excl_req.clone()),
+        )
+        .unwrap(),
+    )
+    .unwrap();
+    let output = native_out["output"].as_array().unwrap();
+    assert_eq!(output.len(), 1, "{native_out}");
+    assert_eq!(output[0]["type"], "message");
+    assert_eq!(output[0]["id"], "msg_real_1", "{native_out}");
+    assert_eq!(output[0]["phase"], "final_answer", "{native_out}");
+    assert_eq!(
+        native_out["usage"]["output_tokens_details"]["reasoning_tokens"],
+        12
+    );
+
+    // Review fix #4: same-dialect Responses stream with `exclude: true` strips reasoning from `response.completed`.
+    let native_sse = concat!(
+        "event: response.created\n",
+        "data: {\"type\":\"response.created\",\"sequence_number\":0,\"response\":{\"id\":\"resp_s1\",\"object\":\"response\",\"created_at\":1700000000,\"status\":\"in_progress\",\"model\":\"gpt-5.5\",\"output\":[]}}\n\n",
+        "event: response.output_item.added\n",
+        "data: {\"type\":\"response.output_item.added\",\"sequence_number\":1,\"output_index\":0,\"item\":{\"id\":\"rs_s0\",\"type\":\"reasoning\",\"summary\":[]}}\n\n",
+        "event: response.reasoning_summary_part.added\n",
+        "data: {\"type\":\"response.reasoning_summary_part.added\",\"sequence_number\":2,\"item_id\":\"rs_s0\",\"output_index\":0,\"summary_index\":0,\"part\":{\"type\":\"summary_text\",\"text\":\"\"}}\n\n",
+        "event: response.reasoning_summary_text.delta\n",
+        "data: {\"type\":\"response.reasoning_summary_text.delta\",\"sequence_number\":3,\"item_id\":\"rs_s0\",\"output_index\":0,\"summary_index\":0,\"delta\":\"Secret stream thought.\"}\n\n",
+        "event: response.output_item.done\n",
+        "data: {\"type\":\"response.output_item.done\",\"sequence_number\":4,\"output_index\":0,\"item\":{\"id\":\"rs_s0\",\"type\":\"reasoning\",\"summary\":[{\"type\":\"summary_text\",\"text\":\"Secret stream thought.\"}]}}\n\n",
+        "event: response.output_item.added\n",
+        "data: {\"type\":\"response.output_item.added\",\"sequence_number\":5,\"output_index\":1,\"item\":{\"id\":\"msg_s1\",\"type\":\"message\",\"status\":\"in_progress\",\"role\":\"assistant\",\"content\":[]}}\n\n",
+        "event: response.content_part.added\n",
+        "data: {\"type\":\"response.content_part.added\",\"sequence_number\":6,\"item_id\":\"msg_s1\",\"output_index\":1,\"content_index\":0,\"part\":{\"type\":\"output_text\",\"text\":\"\",\"annotations\":[]}}\n\n",
+        "event: response.output_text.delta\n",
+        "data: {\"type\":\"response.output_text.delta\",\"sequence_number\":7,\"item_id\":\"msg_s1\",\"output_index\":1,\"content_index\":0,\"delta\":\"Visible stream.\"}\n\n",
+        "event: response.content_part.done\n",
+        "data: {\"type\":\"response.content_part.done\",\"sequence_number\":8,\"item_id\":\"msg_s1\",\"output_index\":1,\"content_index\":0,\"part\":{\"type\":\"output_text\",\"text\":\"Visible stream.\",\"annotations\":[]}}\n\n",
+        "event: response.output_item.done\n",
+        "data: {\"type\":\"response.output_item.done\",\"sequence_number\":9,\"output_index\":1,\"item\":{\"id\":\"msg_s1\",\"type\":\"message\",\"status\":\"completed\",\"role\":\"assistant\",\"content\":[{\"type\":\"output_text\",\"text\":\"Visible stream.\",\"annotations\":[]}]}}\n\n",
+        "event: response.completed\n",
+        "data: {\"type\":\"response.completed\",\"sequence_number\":10,\"response\":{\"id\":\"resp_s1\",\"object\":\"response\",\"created_at\":1700000000,\"status\":\"completed\",\"model\":\"gpt-5.5\",\"extra_tag\":true,\"output\":[{\"id\":\"rs_s0\",\"type\":\"reasoning\",\"summary\":[{\"type\":\"summary_text\",\"text\":\"Secret stream thought.\"}]},{\"id\":\"msg_s1\",\"type\":\"message\",\"status\":\"completed\",\"role\":\"assistant\",\"content\":[{\"type\":\"output_text\",\"text\":\"Visible stream.\",\"annotations\":[]}]}]}}\n\n"
+    );
+    let mut dec = OpenAiResponses::stream_decoder(&EgressCtx::for_kind(
+        RequestKind::Generate,
+        StreamMode::on(true),
+    ));
+    let mut native_evs = dec.feed(native_sse.as_bytes());
+    native_evs.extend(dec.finish());
+    let mut native_enc =
+        OpenAiResponses::stream_encoder(&crate::codec::EncodeCtx::for_request(excl_req));
+    let mut native_bytes = Vec::new();
+    for ev in &native_evs {
+        native_bytes.extend(native_enc.encode(ev).unwrap());
+    }
+    native_bytes.extend(native_enc.finish().unwrap());
+    let native_text = String::from_utf8(native_bytes).unwrap();
+    assert!(
+        !native_text.contains("Secret stream thought"),
+        "{native_text}"
+    );
+    assert!(
+        !native_text.contains(r#""type":"reasoning""#),
+        "{native_text}"
+    );
+    assert!(native_text.contains("Visible stream."), "{native_text}");
+
+    // Review fix #5: `effort: null` + `max_tokens` keeps mapped effort, and `exclude: false` omits empty `reasoning: {}`.
+    let null_effort_budget = decode_v(json!({
+        "model": "gpt-5.5",
+        "input": "Hi",
+        "reasoning": { "effort": null, "max_tokens": 4096 }
+    }));
+    let encoded_budget: Value = serde_json::from_slice(
+        &OpenAiResponses::encode_request(
+            &null_effort_budget,
+            &mut EgressCtx::new(&null_effort_budget),
+        )
+        .unwrap()
+        .body,
+    )
+    .unwrap();
+    assert_eq!(encoded_budget["reasoning"], json!({ "effort": "medium" }));
+
+    let excl_false = decode_v(json!({
+        "model": "gpt-5.5",
+        "input": "Hi",
+        "reasoning": { "exclude": false }
+    }));
+    let encoded_excl_false: Value = serde_json::from_slice(
+        &OpenAiResponses::encode_request(&excl_false, &mut EgressCtx::new(&excl_false))
+            .unwrap()
+            .body,
+    )
+    .unwrap();
+    assert!(
+        encoded_excl_false.get("reasoning").is_none(),
+        "{encoded_excl_false}"
+    );
 }

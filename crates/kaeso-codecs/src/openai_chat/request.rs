@@ -145,7 +145,7 @@ fn describe(body: &[u8], err: &serde_json::Error) -> KppError {
     if let Some(Value::Object(reasoning)) = map.get("reasoning") {
         let subfields: &[(&str, Check, &str)] = &[
             ("effort", string, "a string"),
-            ("max_tokens", int, "an integer from 0 to 4294967295"),
+            ("max_tokens", int, "an integer from 1 to 4294967295"),
             ("enabled", boolean, "true or false"),
             ("exclude", boolean, "true or false"),
         ];

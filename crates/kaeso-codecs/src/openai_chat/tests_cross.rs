@@ -627,11 +627,15 @@ fn chat_replies_and_streams_include_or_exclude_reasoning_according_to_openrouter
         )),
         kaeso_kpp::StreamEvent::BlockDelta(kaeso_kpp::BlockDelta::new(
             0,
-            kaeso_kpp::Delta::ReasoningText("Step 1. ".into()),
+            kaeso_kpp::Delta::ReasoningText("Step 1.".into()),
         )),
         kaeso_kpp::StreamEvent::BlockDelta(kaeso_kpp::BlockDelta::new(
             0,
             kaeso_kpp::Delta::ReasoningSummary(kaeso_kpp::SummaryDelta::new(0, "Step 2.")),
+        )),
+        kaeso_kpp::StreamEvent::BlockDelta(kaeso_kpp::BlockDelta::new(
+            0,
+            kaeso_kpp::Delta::ReasoningSummary(kaeso_kpp::SummaryDelta::new(1, "Step 3.")),
         )),
         kaeso_kpp::StreamEvent::BlockStop(kaeso_kpp::BlockStop::new(0)),
         kaeso_kpp::StreamEvent::BlockStart(kaeso_kpp::BlockStart::new(
@@ -660,13 +664,21 @@ fn chat_replies_and_streams_include_or_exclude_reasoning_according_to_openrouter
         String::from_utf8(out).unwrap()
     };
     let streamed = encode_sse(req_with(json!({"effort": "max"})));
-    assert!(streamed.contains(r#""reasoning":"Step 1. ""#), "{streamed}");
-    assert!(streamed.contains(r#""reasoning":"Step 2.""#), "{streamed}");
+    assert!(streamed.contains(r#""reasoning":"Step 1.""#), "{streamed}");
+    assert!(
+        streamed.contains(r#""reasoning":"\n\nStep 2.""#),
+        "{streamed}"
+    );
+    assert!(
+        streamed.contains(r#""reasoning":"\n\nStep 3.""#),
+        "{streamed}"
+    );
     assert!(streamed.contains(r#""content":"Done.""#), "{streamed}");
 
     let streamed_excl = encode_sse(req_with(json!({"effort": "max", "exclude": true})));
     assert!(!streamed_excl.contains("Step 1"), "{streamed_excl}");
     assert!(!streamed_excl.contains("Step 2"), "{streamed_excl}");
+    assert!(!streamed_excl.contains("Step 3"), "{streamed_excl}");
     assert!(
         streamed_excl.contains(r#""content":"Done.""#),
         "{streamed_excl}"
@@ -726,4 +738,28 @@ fn chat_replies_and_streams_include_or_exclude_reasoning_according_to_openrouter
     assert!(!own_out.contains(r#""reasoning""#), "{own_out}");
     assert!(!own_out.contains(r#""reasoning_details""#), "{own_out}");
     assert!(own_out.contains("No"), "{own_out}");
+
+    // Review fix #3: `StreamEvent::Extra` chunks carrying only `reasoning_details` / `encrypted_content`
+    // are also hidden under `exclude: true`.
+    let extra_only_sse = concat!(
+        "data: {\"id\":\"chatcmpl_1\",\"object\":\"chat.completion.chunk\",\"created\":1700000000,\"model\":\"m\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"\"},\"finish_reason\":null}]}\n\n",
+        "data: {\"id\":\"chatcmpl_1\",\"object\":\"chat.completion.chunk\",\"created\":1700000000,\"model\":\"m\",\"choices\":[{\"index\":0,\"delta\":{\"reasoning_details\":[{\"type\":\"reasoning.encrypted\",\"data\":\"secret\"}],\"encrypted_content\":\"enc_secret\"},\"finish_reason\":null}]}\n\n",
+        "data: {\"id\":\"chatcmpl_1\",\"object\":\"chat.completion.chunk\",\"created\":1700000000,\"model\":\"m\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"Hi\"},\"finish_reason\":\"stop\"}]}\n\n",
+        "data: [DONE]\n\n"
+    );
+    let mut dec = OpenAiChat::stream_decoder(&own_stream_ctx);
+    let mut extra_events = dec.feed(extra_only_sse.as_bytes());
+    extra_events.extend(dec.finish());
+    let mut extra_enc =
+        OpenAiChat::stream_encoder(&EncodeCtx::for_request(req_with(json!({"exclude": true}))));
+    let mut extra_out = Vec::new();
+    for ev in &extra_events {
+        extra_out.extend(extra_enc.encode(ev).unwrap());
+    }
+    extra_out.extend(extra_enc.finish().unwrap());
+    let extra_out = String::from_utf8(extra_out).unwrap();
+    assert!(!extra_out.contains("reasoning_details"), "{extra_out}");
+    assert!(!extra_out.contains("encrypted_content"), "{extra_out}");
+    assert!(!extra_out.contains("secret"), "{extra_out}");
+    assert!(extra_out.contains(r#""content":"Hi""#), "{extra_out}");
 }

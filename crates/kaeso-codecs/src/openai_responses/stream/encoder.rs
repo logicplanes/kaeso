@@ -13,6 +13,7 @@ use crate::sse::{SseEvent, SseItem, write_item};
 
 pub(crate) struct Encoder {
     engine: Engine,
+    exclude_reasoning: bool,
     model: String,
     created_at: u64,
     pacer: Pacer,
@@ -21,13 +22,15 @@ pub(crate) struct Encoder {
 
 impl Encoder {
     pub(crate) fn new(ctx: &EncodeCtx) -> Encoder {
+        let exclude_reasoning = excludes_reasoning(ctx.request.as_deref());
         Encoder {
             engine: Engine::new(
                 echo_fields(ctx),
                 ctx.created_at.unwrap_or(0),
                 Namespaces::of(ctx.request.as_deref()),
             )
-            .with_exclude_reasoning(excludes_reasoning(ctx.request.as_deref())),
+            .with_exclude_reasoning(exclude_reasoning),
+            exclude_reasoning,
             created_at: ctx.created_at.unwrap_or(0),
             model: ctx
                 .request
@@ -42,6 +45,7 @@ impl Encoder {
     fn run(&mut self, event: &StreamEvent, out: &mut Vec<u8>) -> Result<(), KppError> {
         let empty = kaeso_kpp::Extras::default();
         let extras = event_extras(event).unwrap_or(&empty);
+        let exclude_reasoning = self.exclude_reasoning;
         let mut emit = |scope: &str, mut node: Node, seq: i64| -> Result<Emitted, KppError> {
             if skipped(extras, scope) {
                 return Ok(Emitted::Skipped(node));
@@ -50,6 +54,9 @@ impl Encoder {
                 node.insert("sequence_number", Node::Val(Value::from(seq)));
             }
             apply(extras, DIALECT, scope, &[], &mut node);
+            if exclude_reasoning {
+                strip_reasoning_from_terminal(&mut node);
+            }
             write_obj(out, &node)?;
             node.remove(EVENT_KEY);
             node.remove(SSE_KEY);
@@ -57,6 +64,36 @@ impl Encoder {
             Ok(Emitted::Written(node, sequence))
         };
         self.engine.step(event, &mut emit)
+    }
+}
+
+fn strip_reasoning_from_terminal(node: &mut Node) {
+    if !matches!(
+        node.get_str("type").as_deref(),
+        Some("response.completed" | "response.incomplete")
+    ) {
+        return;
+    }
+    let Some(mut response) = node.get("response") else {
+        return;
+    };
+    let Some(mut output) = response.get("output") else {
+        return;
+    };
+    if let Ok(Value::Array(items)) = output.to_value() {
+        let had_reasoning = items
+            .iter()
+            .any(|item| item.get("type").and_then(Value::as_str) == Some("reasoning"));
+        if had_reasoning {
+            let filtered: Vec<Node> = items
+                .into_iter()
+                .filter(|item| item.get("type").and_then(Value::as_str) != Some("reasoning"))
+                .map(Node::Val)
+                .collect();
+            output = Node::Arr(filtered);
+            response.insert("output", output);
+            node.insert("response", response);
+        }
     }
 }
 

@@ -3995,6 +3995,24 @@ fn openrouter_reasoning_object_follows_clamping_left_out_and_refusals() {
     let r = g.reasoning.as_ref().unwrap();
     assert!(r.exclude && r.effort.is_none());
 
+    // Review fix #2: `enabled: true` left out for a non-reasoning model stays omitted on `with_reasoning_object()`.
+    let mut req = decode_chat(serde_json::json!({"enabled": true, "exclude": true}));
+    let plan = prepare(&mut req, DialectId::OpenAiChat, &non_reasoning).unwrap();
+    assert_eq!(plan.left_out, ["reasoning"]);
+    let mut or_ctx = kaeso_codecs::EgressCtx::new(&req).with_chat_profile(
+        kaeso_codecs::openai_chat::ChatProfile::compatible("OpenRouter").with_reasoning_object(),
+    );
+    let encoded: serde_json::Value = serde_json::from_slice(
+        &<kaeso_codecs::openai_chat::OpenAiChat as kaeso_codecs::Codec>::encode_request(
+            &req,
+            &mut or_ctx,
+        )
+        .unwrap()
+        .body,
+    )
+    .unwrap();
+    assert_eq!(encoded["reasoning"], serde_json::json!({"exclude": true}));
+
     let mut req = decode_chat(serde_json::json!({"exclude": true}));
     let plan = prepare(&mut req, DialectId::OpenAiChat, &non_reasoning).unwrap();
     assert!(plan.left_out.is_empty() && plan.adapted.is_empty());

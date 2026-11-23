@@ -332,7 +332,7 @@ pub(super) fn decode_object(raw: &RawValue, origin: &Origin) -> Result<Response,
         let index = u32::try_from(i).unwrap_or(u32::MAX);
         let decoded = match ty.as_deref() {
             Some("message") => decode_message(item, origin, &w.id, index, &stop).map(|(bs, ov)| {
-                ranges.push(Value::from(vec![blocks.len(), bs.len()]));
+                ranges.push(Value::from(vec![blocks.len(), bs.len(), i]));
                 ov.record(&mut extras, &item_scope(i));
                 bs
             }),
@@ -447,7 +447,7 @@ pub(super) fn output_items(
         .form_value(DIALECT, BLOCKS)
         .and_then(Value::as_u64)
         .is_some_and(|n| usize::try_from(n).ok() == Some(resp.blocks.len()));
-    let ranges: Vec<(usize, usize)> = resp
+    let ranges: Vec<(usize, usize, Option<usize>)> = resp
         .extras
         .form_value(DIALECT, MESSAGES)
         .and_then(Value::as_array)
@@ -457,7 +457,11 @@ pub(super) fn output_items(
                 .filter_map(|r| {
                     let at = usize::try_from(r.get(0)?.as_u64()?).ok()?;
                     let n = usize::try_from(r.get(1)?.as_u64()?).ok()?;
-                    Some((at, n))
+                    let orig = r
+                        .get(2)
+                        .and_then(Value::as_u64)
+                        .and_then(|u| usize::try_from(u).ok());
+                    Some((at, n, orig))
                 })
                 .collect()
         })
@@ -470,13 +474,15 @@ pub(super) fn output_items(
         if let Some(r) = ranges
             .iter()
             .enumerate()
-            .position(|(k, (at, _))| *at == i && !used.get(k).copied().unwrap_or(true))
+            .position(|(k, (at, _, _))| *at == i && !used.get(k).copied().unwrap_or(true))
         {
             if let Some(u) = used.get_mut(r) {
                 *u = true;
             }
-            let n = ranges.get(r).map_or(0, |(_, n)| *n);
-            let index = items.len();
+            let (n, orig) = ranges.get(r).map_or((0, None), |(_, n, orig)| (*n, *orig));
+            let index = orig
+                .or_else(|| resp.blocks.get(i).and_then(item_marker))
+                .unwrap_or(items.len());
             let parts: Vec<Node> = resp
                 .blocks
                 .iter()
@@ -498,7 +504,11 @@ pub(super) fn output_items(
         let index32 = u32::try_from(index).unwrap_or(u32::MAX);
         if is_message_part(block) {
             let marker = item_marker(block);
-            let next_range = ranges.iter().map(|(at, _)| *at).filter(|at| *at > i).min();
+            let next_range = ranges
+                .iter()
+                .map(|(at, _, _)| *at)
+                .filter(|at| *at > i)
+                .min();
             let run: Vec<&Block> = resp
                 .blocks
                 .iter()

@@ -156,4 +156,4 @@ Gemini 应用收不到其他服务商的推理，因为思考 part 无法承载�
 
 - 设置了 `reasoning.summary` 的 Responses 应用会以推理摘要的形式收到 Claude 的思考，并以 `response.reasoning_summary_text.delta` 事件流式传输。网关会向 Claude 请求摘要形式的思考，否则 Claude Opus 4.7 及更高版本会隐藏它。
 - 开启了思考的 Anthropic 应用会以思考文本的形式收到 OpenAI 模型的推理摘要。除非应用把 `thinking.display` 设为 `omitted`，网关都会向 OpenAI 请求这些摘要。OpenAI 可能拒绝向未经其验证的组织提供摘要，Kaeso 会把它的错误原样传回。
-- 发送 OpenRouter `reasoning` 对象且未设 `exclude: true` 的 Chat Completions 应用会在 `message.reasoning` 和流式 `delta.reasoning` 中收到可读推理，并向 Claude 请求摘要思考、向 OpenAI Responses 请求 `summary: "auto"`、向 Gemini 请求思考内容。设置 `exclude: true` 时，回复中不包含推理。其他 Chat Completions 应用看不到推理内容，Gemini 应用看不到其他服务商的推理内容。
+- 使用 OpenRouter `reasoning` 对象且未设 `exclude: true` 的 Chat Completions 应用会在 `message.reasoning` 和 `delta.reasoning` 中收到可读推理。网关会向 Claude 请求摘要思考、向 OpenAI Responses 请求 `summary: "auto"`、向 Gemini 请求思考内容。设置 `exclude: true` 时，回复中不包含推理。其他 Chat Completions 应用看不到推理内容，Gemini 应用看不到其他服务商的推理内容。

@@ -13,8 +13,9 @@ use serde_json::{Map, Value};
 use super::DIALECT;
 use super::convert::to_raw;
 use super::error::error_body;
-use super::request::REPLAYED_REASONING;
-use super::response::{ReasoningOutput, chat_reasoning_output, encode_finish, encode_usage};
+use super::response::{
+    EXCLUDED_REASONING_KEYS, ReasoningOutput, chat_reasoning_output, encode_finish, encode_usage,
+};
 use super::stream::{
     CHUNK_OBJECT, ENVELOPE_FIELDS, ENVELOPE_KEYS, FORM_CHUNK, FORM_CONTENT_SLOTS, FORM_EMPTY_TEXT,
     FORM_ENV, FORM_ENV_ABSENT, FORM_IN_CHUNK, FORM_NO_DONE, FORM_PART, FORM_REASONING_FIELD,
@@ -54,6 +55,9 @@ struct Chunk {
 pub(crate) struct ChatStreamEncoder {
     include_usage: bool,
     reasoning_output: ReasoningOutput,
+    reasoning_written: bool,
+    last_summary_index: Option<u32>,
+    sent_own_role: bool,
     created_at: u64,
     started: bool,
     envelope: Obj,
@@ -81,6 +85,9 @@ impl ChatStreamEncoder {
                 }
             ),
             reasoning_output: chat_reasoning_output(ctx),
+            reasoning_written: false,
+            last_summary_index: None,
+            sent_own_role: false,
             created_at: ctx.created_at.unwrap_or(0),
             started: false,
             envelope: Obj::new(),
@@ -179,6 +186,10 @@ impl ChatStreamEncoder {
                     });
                     chunk.has_choice = true;
                 }
+                BlockHeader::Reasoning(_) => {
+                    self.reasoning_written = false;
+                    self.last_summary_index = None;
+                }
                 _ => {}
             },
             StreamEvent::BlockDelta(delta) => match &delta.delta {
@@ -216,6 +227,9 @@ impl ChatStreamEncoder {
                         ReasoningOutput::Default => own && delta.extras.is_from(DIALECT),
                     };
                     if keep {
+                        if !text.is_empty() {
+                            self.reasoning_written = true;
+                        }
                         chunk
                             .reasoning
                             .get_or_insert_with(String::new)
@@ -227,10 +241,15 @@ impl ChatStreamEncoder {
                     if !own && self.reasoning_output == ReasoningOutput::Include =>
                 {
                     if !summary.text.is_empty() {
-                        chunk
-                            .reasoning
-                            .get_or_insert_with(String::new)
-                            .push_str(&summary.text);
+                        let buf = chunk.reasoning.get_or_insert_with(String::new);
+                        if self.reasoning_written
+                            && self.last_summary_index != Some(summary.summary_index)
+                        {
+                            buf.push_str("\n\n");
+                        }
+                        buf.push_str(&summary.text);
+                        self.reasoning_written = true;
+                        self.last_summary_index = Some(summary.summary_index);
                         chunk.has_choice = true;
                     }
                 }
@@ -321,13 +340,26 @@ impl ChatStreamEncoder {
             }
             StreamEvent::Extra(item) if item.origin.is(DIALECT) => {
                 let raw = item.raw.as_raw();
-                if self.include_usage {
-                    self.usage_sent |= carries_usage(raw);
-                    crate::sse::write_frame_extra(&mut out, raw).map_err(internal)?;
+                let owned_raw;
+                let frame = if self.reasoning_output == ReasoningOutput::Exclude {
+                    match without_reasoning_extra(raw).map_err(internal)? {
+                        Unasked::Keep => raw,
+                        Unasked::Trimmed(trimmed) => {
+                            owned_raw = trimmed;
+                            &owned_raw
+                        }
+                        Unasked::Hidden => return Ok(out),
+                    }
                 } else {
-                    match without_usage(raw).map_err(internal)? {
+                    raw
+                };
+                if self.include_usage {
+                    self.usage_sent |= carries_usage(frame);
+                    crate::sse::write_frame_extra(&mut out, frame).map_err(internal)?;
+                } else {
+                    match without_usage(frame).map_err(internal)? {
                         Unasked::Keep => {
-                            crate::sse::write_frame_extra(&mut out, raw).map_err(internal)?;
+                            crate::sse::write_frame_extra(&mut out, frame).map_err(internal)?;
                         }
                         Unasked::Trimmed(trimmed) => {
                             crate::sse::write_frame_extra(&mut out, &trimmed).map_err(internal)?;
@@ -410,11 +442,11 @@ impl ChatStreamEncoder {
         if self.reasoning_output == ReasoningOutput::Exclude {
             chunk.reasoning = None;
             let mut stripped = false;
-            for key in REPLAYED_REASONING {
+            for key in EXCLUDED_REASONING_KEYS {
                 stripped |= chunk.delta_fields.shift_remove(*key).is_some();
             }
             if let Some(Value::Object(dv)) = chunk.form.get_mut("dv") {
-                for key in REPLAYED_REASONING {
+                for key in EXCLUDED_REASONING_KEYS {
                     stripped |= dv.remove(*key).is_some();
                 }
             }
@@ -427,12 +459,16 @@ impl ChatStreamEncoder {
                 && chunk.finish.is_none()
                 && chunk.usage.is_none()
                 && chunk.delta_fields.is_empty()
-                && chunk.form.get("role").is_none()
-                && chunk.form.get(FORM_EMPTY_TEXT) != Some(&Value::Bool(true))
                 && chunk.form.get(FORM_CONTENT_SLOTS).is_none()
             {
-                return Ok(out);
+                let has_role = chunk.form.get("role").is_some();
+                if !has_role || self.sent_own_role {
+                    return Ok(out);
+                }
             }
+        }
+        if own && chunk.form.get("role").is_some() {
+            self.sent_own_role = true;
         }
         let form = &chunk.form;
         if own
@@ -791,6 +827,52 @@ enum Unasked {
     Keep,
     Trimmed(Box<RawValue>),
     Hidden,
+}
+
+fn without_reasoning_extra(raw: &RawValue) -> Result<Unasked, serde_json::Error> {
+    let mut frame: Value = serde_json::from_str(raw.get())?;
+    let Some(Value::Object(data)) = frame.get_mut("data") else {
+        return Ok(Unasked::Keep);
+    };
+    let mut stripped = false;
+    if let Some(Value::Array(choices)) = data.get_mut("choices") {
+        for choice in choices {
+            if let Some(Value::Object(delta)) = choice.get_mut("delta") {
+                for key in EXCLUDED_REASONING_KEYS {
+                    stripped |= delta.remove(*key).is_some();
+                }
+            }
+        }
+    }
+    if !stripped {
+        return Ok(Unasked::Keep);
+    }
+    let has_usage = data.get("usage").is_some_and(|u| !u.is_null());
+    let has_content = data
+        .get("choices")
+        .and_then(Value::as_array)
+        .is_some_and(|choices| {
+            choices.iter().any(|choice| {
+                choice.get("finish_reason").is_some_and(|f| !f.is_null())
+                    || choice
+                        .get("delta")
+                        .and_then(Value::as_object)
+                        .is_some_and(|delta| {
+                            delta.iter().any(|(k, v)| match k.as_str() {
+                                "role" => false,
+                                "content" => {
+                                    v.as_str().is_some_and(|s| !s.is_empty())
+                                        || v.as_array().is_some_and(|a| !a.is_empty())
+                                }
+                                _ => !v.is_null(),
+                            })
+                        })
+            })
+        });
+    if !has_usage && !has_content {
+        return Ok(Unasked::Hidden);
+    }
+    serde_json::value::to_raw_value(&frame).map(Unasked::Trimmed)
 }
 
 fn without_usage(raw: &RawValue) -> Result<Unasked, serde_json::Error> {

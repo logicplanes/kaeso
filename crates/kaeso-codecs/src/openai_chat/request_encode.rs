@@ -211,11 +211,16 @@ fn encode_reasoning(req: &GenerateRequest, profile: &ChatProfile, w: &mut ChatRe
         if matches!(effort_source, Some("top_level" | "both")) {
             w.reasoning_effort = effort_wire;
         }
+        let reasoning_active = matches!(
+            cfg.mode,
+            Some(ReasoningMode::Adaptive | ReasoningMode::Enabled)
+        ) || cfg.effort.is_some()
+            || cfg.budget_tokens.is_some();
         let enabled = match cfg.extras.form_value(DIALECT, FORM_REASONING_ENABLED) {
             Some(Value::Bool(false)) => {
                 (cfg.mode == Some(ReasoningMode::Disabled)).then_some(false)
             }
-            Some(Value::Bool(true)) => Some(true),
+            Some(Value::Bool(true)) => reasoning_active.then_some(true),
             _ => match cfg.mode {
                 Some(ReasoningMode::Disabled) => Some(false),
                 Some(ReasoningMode::Adaptive) if obj_effort.is_none() => Some(true),
