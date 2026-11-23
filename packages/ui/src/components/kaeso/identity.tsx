@@ -26,11 +26,12 @@ export const providerName = (id: string, name?: string | undefined) => name?.tri
 
 const MARK_SIZE = { sm: "size-10", md: "size-12", lg: "size-16", xl: "size-24" } as const;
 
-function MarkGlyph({ mark, className }: { mark: ProviderMark; className: string }) {
+/** A mark's glyph on the 24px grid: one path in the tile's colour, or coloured parts. */
+export const MarkGlyph = forwardRef<SVGSVGElement, { mark: ProviderMark; className: string }>(function MarkGlyph({ mark, className }, ref) {
   // useId's characters aren't all valid in a url(#…) reference.
   const uid = useId().replace(/[^\w-]/g, "");
   return (
-    <svg viewBox="0 0 24 24" fill="currentColor" fillRule="evenodd" aria-hidden focusable="false" className={className}>
+    <svg ref={ref} viewBox="0 0 24 24" fill="currentColor" fillRule="evenodd" aria-hidden focusable="false" className={className}>
       {mark.parts ? (
         <>
           <defs>
@@ -53,7 +54,8 @@ function MarkGlyph({ mark, className }: { mark: ProviderMark; className: string 
       )}
     </svg>
   );
-}
+});
+MarkGlyph.displayName = "MarkGlyph";
 
 export interface ProviderTile {
   mark: ProviderMark | undefined;

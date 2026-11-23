@@ -1269,5 +1269,12 @@
   "Several versions: \"Python · Node · curl\", shown as pill tabs in the title bar, the chosen one raised on the plate as in a segmented control.": "多个版本：“Python · Node · curl”，在标题栏中以胶囊标签页显示，所选版本像分段控件一样在底板上凸起。",
   "What screen readers hear as the value when `valueLabel` is not plain text, such as a shortened figure with the exact one in a tooltip: \"10,624,184 of 100,000,000\".": "当 `valueLabel` 不是纯文本时（例如缩写的数字，精确值在提示中），屏幕阅读器读出的值：\"已用 10,624,184，共 100,000,000\"。",
   "Writes `cost` in place of the dollar format, such as in another currency at the day's rate.": "以此写出 `cost`，取代美元格式，例如按当日汇率换算为其他货币。",
-  "Called when it opens or closes, with why: `item-press` when a chosen item closed it, `escape-key`, `outside-press` or `trigger-press` otherwise.": "打开或关闭时调用，并说明原因：选中某一项而关闭时为 `item-press`，否则为 `escape-key`、`outside-press` 或 `trigger-press`。"
+  "Called when it opens or closes, with why: `item-press` when a chosen item closed it, `escape-key`, `outside-press` or `trigger-press` otherwise.": "打开或关闭时调用，并说明原因：选中某一项而关闭时为 `item-press`，否则为 `escape-key`、`outside-press` 或 `trigger-press`。",
+  "A source's client, such as Claude Code, Codex or LiteLLM, as a tile with its mark, and its name beside it.": "来源的客户端（如 Claude Code、Codex 或 LiteLLM），显示为带标志的图块，旁边是它的名称。",
+  "Kinds": "类型",
+  "The source's kind, such as `claude_code`; a kind without a mark shows the source icon.": "来源的类型，例如 `claude_code`；没有标志的类型显示来源图标。",
+  "The name beside the tile, or the tile's accessible name; the kind's product name by default.": "图块旁的名称或图块的无障碍名称；默认是该类型的产品名称。",
+  "The tile's size, as a provider's tile.": "图块的尺寸，与服务商图块相同。",
+  "Shows the name beside the tile.": "在图块旁显示名称。",
+  "Hides the tile from assistive technology, where the text beside it already names the client.": "在旁边的文字已说明客户端时，对辅助技术隐藏该图块。"
 }

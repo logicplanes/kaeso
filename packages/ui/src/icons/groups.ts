@@ -25,6 +25,8 @@ export const ICON_GROUPS = {
     "condition",
     "split",
     "gateway",
+    "source",
+    "api",
     "database",
     "update",
     "security",

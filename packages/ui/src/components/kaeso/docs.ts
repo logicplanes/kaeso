@@ -173,6 +173,17 @@ export const docs = {
       snippets: "What follows the secret: the SDK snippets for calling models (default), other snippets (a key for the Platform API), or none (`false`).",
     },
   },
+  SourceBadge: {
+    description:
+      "A source's client, such as Claude Code, Codex or LiteLLM, as a tile the size of a provider's with its mark in the text colour, and its name beside it.",
+    props: {
+      kind: "The source's kind, such as `claude_code`; a kind without a mark shows the source icon.",
+      name: "The name beside the tile, or the tile's accessible name; the kind's product name by default.",
+      size: "The tile's size, as a provider's tile.",
+      withName: "Shows the name beside the tile.",
+      decorative: "Hides the tile from assistive technology, where the text beside it already names the client.",
+    },
+  },
   StatusCode: {
     description:
       "An HTTP status: the code in mono, in its class color. Without `showText`, its phrase is in a tooltip that hover and keyboard focus open, with a focus ring.",

@@ -96,6 +96,8 @@ import {
   File01Icon,
   AudioWave01Icon,
   Mic01Icon,
+  Radar01Icon,
+  ApiIcon,
 } from "@hugeicons/core-free-icons";
 
 export const icons = {
@@ -122,6 +124,8 @@ export const icons = {
   condition: GitBranchIcon,
   split: PercentCircleIcon,
   gateway: ArrowDataTransferVerticalIcon,
+  source: Radar01Icon,
+  api: ApiIcon,
   database: Database01Icon,
   update: PackageReceive01Icon,
   security: LockKeyIcon,

@@ -1,0 +1,1 @@
+{"requests":[{"id":"req_0001","duration_ms":1200,"provider":"openai","model":"gpt-5.4-mini","status":200,"usage":{"input_tokens":1200,"output_tokens":300},"user_email":"ada@example.com"}],"tool_calls":[{"id":"call_0001","duration_ms":80,"server":"linear","tool":"list_issues","user_email":"ada@example.com"}]}

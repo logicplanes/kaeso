@@ -62,6 +62,7 @@
   "shell.page.providers": "Anbieter",
   "shell.page.requestLogs": "Anfrageprotokolle",
   "shell.page.serviceAccounts": "Dienstkonten",
+  "shell.page.sources": "Quellen",
   "shell.palette.darkTheme": "Dunkles Design verwenden",
   "shell.palette.empty": "Keine Treffer. Ein anderes Wort versuchen.",
   "shell.palette.find": "Suchen (in den ersten 100 jeder Liste)",

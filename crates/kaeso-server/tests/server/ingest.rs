@@ -573,3 +573,25 @@ async fn a_source_that_sends_too_many_batches_is_asked_to_wait() {
     assert_eq!(last, StatusCode::TOO_MANY_REQUESTS);
     assert!(headers.contains_key("retry-after"));
 }
+
+#[tokio::test]
+async fn the_consoles_http_example_is_taken_as_it_is() {
+    let env = env().await;
+    let (_, key) = source(&env, "http").await;
+    let (status, _, body) = post(
+        &env,
+        "/ingest/v1/events",
+        Some(&key),
+        "application/json",
+        false,
+        fixture("http-example.json"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    let answer: Value = serde_json::from_slice(&body).unwrap();
+    assert_eq!(
+        answer,
+        json!({ "requests": 1, "tool_calls": 1, "duplicates": 0, "refused": 0, "refusal": null }),
+        "the setup snippet's body must stay one that Kaeso takes"
+    );
+}

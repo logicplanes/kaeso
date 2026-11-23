@@ -41,4 +41,6 @@ export type { ProviderPickerOption, ProviderPickerProps } from "./provider-picke
 export { GrantSummary, KAESO_GRANT_SUMMARY_DEFAULT_VARIANTS, KAESO_GRANT_SUMMARY_VARIANTS } from "./grant-summary.js";
 export type { GrantSummaryProps } from "./grant-summary.js";
 export { CLIENT_MARKS, ClientButton, KAESO_CLIENT_BUTTON_DEFAULT_VARIANTS, KAESO_CLIENT_BUTTON_VARIANTS } from "./client-button.js";
+export { KAESO_SOURCE_BADGE_DEFAULT_VARIANTS, KAESO_SOURCE_BADGE_VARIANTS, SOURCE_MARKS, SOURCE_NAMES, SourceBadge } from "./source-badge.js";
+export type { SourceBadgeProps } from "./source-badge.js";
 export type { ClientButtonProps, ClientMark } from "./client-button.js";
