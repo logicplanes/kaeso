@@ -329,7 +329,7 @@ These tables compare Kaeso with the gateways people most often weigh it against,
 
 ### Performance on BerriAI's benchmark
 
-We ran [`BerriAI/ai-gateway-bench`](https://github.com/BerriAI/ai-gateway-bench) (`44365ca`) with Kaeso 0.7 beside the four gateways that benchmark compares, each pinned to two dedicated cores on the same 4-vCPU machine (median of three randomized rounds; full method, image digests, scripts and raw JSON on [kaeso.app/benchmarks](https://kaeso.app/benchmarks), [performance docs](https://docs.kaeso.app/self-hosting/performance) and [Kaeso on LiteLLM's own benchmark](https://kaeso.app/articles/kaeso-on-litellms-benchmark)):
+We ran [`BerriAI/ai-gateway-bench`](https://github.com/BerriAI/ai-gateway-bench) (`44365ca`) with Kaeso 0.7 beside the four gateways that benchmark compares, each pinned to two dedicated cores on the same 4-vCPU machine (median of three randomized rounds; full method, image digests, scripts and raw JSON on [kaeso.app/benchmarks](https://kaeso.app/benchmarks), product-by-product pages on [kaeso.app/compare](https://kaeso.app/compare), [performance docs](https://docs.kaeso.app/self-hosting/performance) and [Kaeso on LiteLLM's own benchmark](https://kaeso.app/articles/kaeso-on-litellms-benchmark)):
 
 | Gateway                            | Requests/s (64 clients) | Added p50 / p99 (16 clients) | CPU per request | Peak memory                        | Checked and kept per request                           |
 | ---------------------------------- | ----------------------- | ---------------------------- | --------------- | ---------------------------------- | ------------------------------------------------------ |

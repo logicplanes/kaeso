@@ -1,6 +1,6 @@
 [package]
 name = "kaeso-kpp"
-description = "KPP, the Kaeso Provider Protocol: Kaeso's canonical in-process format for model requests, responses, streams and errors."
+description = "KPP, the Kaeso Provider Protocol: the canonical in-process format for model requests, responses, streams and errors in the Kaeso open-source AI gateway."
 version.workspace = true
 edition.workspace = true
 rust-version = "1.85"
