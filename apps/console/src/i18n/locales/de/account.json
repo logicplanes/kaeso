@@ -215,8 +215,6 @@
   "account.connections.disconnected": "Von {name} getrennt",
   "account.connections.disconnectTitle": "Von {name} trennen?",
   "account.connections.disconnectHint": "Seine Tools funktionieren für Sie nicht mehr, bis Sie sich wieder verbinden.",
-  "account.sendTestEmail": "Test-E-Mail senden",
-  "account.testEmailSent": "Test-E-Mail gesendet",
   "account.noEmailTitle": "Diese Installation sendet keine E-Mails",
   "account.noEmailHint": "Sie schreibt E-Mails nur in ihr Protokoll; bitten Sie einen Instanz-Admin, SMTP einzurichten.",
   "account.alwaysSent": "Immer gesendet",

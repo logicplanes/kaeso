@@ -52,7 +52,6 @@ pub fn routes(s: &Secure) -> OpenApiRouter<AppState> {
         .routes(s.route(Access::Me(AccountView), routes!(notifications::get)))
         .routes(s.route(Access::Me(AccountNotificationsManage), routes!(notifications::update)))
         .routes(s.route(Access::Me(AccountNotificationsManage), routes!(notifications::mute)))
-        .routes(s.route(Access::Me(AccountNotificationsManage), routes!(notifications::test)))
         .routes(s.route(Access::Public, routes!(notifications::unsubscribe_link, notifications::unsubscribe)))
         .routes(s.route(Access::Account, routes!(account::delete_account)))
         .routes(s.route(Access::Me(AccountKeysView), routes!(keys::list)))

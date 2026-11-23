@@ -1,4 +1,4 @@
-import type { NotificationDelivery, NotificationKindView, NotificationSettings, TestEmailResult } from "~/api/generated/types";
+import type { NotificationDelivery, NotificationKindView, NotificationSettings } from "~/api/generated/types";
 
 function kind(
   key: string,
@@ -72,5 +72,3 @@ export function notificationSettings(
     ],
   };
 }
-
-export const testEmailSent: TestEmailResult = { status: "sent", to: "owner@example.com" };

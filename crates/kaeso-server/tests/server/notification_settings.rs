@@ -324,7 +324,7 @@ async fn a_muted_org_sends_no_alerts_and_shows_on_memberships() {
 }
 
 #[tokio::test]
-async fn a_test_email_goes_out_at_most_once_a_minute() {
+async fn an_account_sends_itself_no_test_email() {
     let s = TestServices::start().await;
     let app = App::start(&s).await;
     let owner = app.setup().await;
@@ -332,38 +332,9 @@ async fn a_test_email_goes_out_at_most_once_a_minute() {
 
     let r = app
         .post("/me/notifications/test", json!({}), Some(&owner.cookie))
-        .await
-        .expect_status(StatusCode::OK);
-    assert_eq!(
-        r.body,
-        json!({ "status": "sent", "to": "owner@example.com" })
-    );
-    app.wait_for_mail("owner@example.com", before + 1).await;
-    assert_eq!(
-        app.mail
-            .to("owner@example.com")
-            .last()
-            .unwrap()
-            .kind
-            .as_str(),
-        "test"
-    );
-
-    let again = app
-        .post("/me/notifications/test", json!({}), Some(&owner.cookie))
         .await;
-    assert_eq!(
-        again.status,
-        StatusCode::TOO_MANY_REQUESTS,
-        "{:?}",
-        again.body
-    );
-    assert!(
-        again.body["error"]["message"]
-            .as_str()
-            .unwrap()
-            .starts_with("You sent a test email a moment ago; try again in ")
-    );
+    assert_eq!(r.status, StatusCode::NOT_FOUND, "{:?}", r.body);
+    assert_eq!(app.mail.to("owner@example.com").len(), before);
 }
 
 #[tokio::test]
