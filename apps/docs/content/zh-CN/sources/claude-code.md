@@ -38,11 +38,11 @@ export OTEL_EXPORTER_OTLP_HEADERS="Authorization=Bearer sk-kso-src-…"
 export OTEL_LOG_TOOL_DETAILS=1
 ```
 
-请保留 `OTEL_EXPORTER_OTLP_PROTOCOL`：某些 Claude Code 版本没有它就什么也不导出。团队可以在 Claude Code 的托管设置中设置这些变量，让每个成员的 Claude Code 都上报到同一个来源，每个请求计入其邮箱地址对应的成员。
+请保留 `OTEL_EXPORTER_OTLP_PROTOCOL`：某些 Claude Code 版本没有它就什么也不导出。团队可以在 Claude Code 的托管设置中设置这些变量。这样每个成员的 Claude Code 都会上报到同一个来源，每个请求计入它所指明的成员。
 
 ## 指明 MCP 工具
 
-设置 `OTEL_LOG_TOOL_DETAILS=1` 后，Claude Code 会指明每次调用的 MCP 服务器和工具，例如 `linear` 和 `list_issues`。不设置时，Kaeso 仍会记录每次 MCP 调用，但服务器未知。Claude Code 自带工具的调用（例如读取文件或运行命令）不予保留。
+设置 `OTEL_LOG_TOOL_DETAILS=1` 后，Claude Code 会指明每次调用的 MCP 服务器和工具，例如 `linear` 和 `list_issues`。不设置时，Kaeso 仍会记录每次 MCP 调用，但记为 `mcp_tool`，没有服务器和工具名称。Claude Code 自带工具的调用（例如读取文件或运行命令）不予保留。
 
 ## 保留提示词
 

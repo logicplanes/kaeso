@@ -54,10 +54,11 @@ service:
 | `gen_ai.usage.input_tokens`、`gen_ai.usage.output_tokens` | Token，缓存分开计数 |
 | `gen_ai.usage.cache_read.input_tokens`、`gen_ai.usage.cache_write.input_tokens`、`gen_ai.usage.reasoning.output_tokens` | 缓存读取和写入，以及推理 |
 | `gen_ai.response.id` | 请求的 ID，因此重复发送的调用只计一次 |
-| `error.type`、`http.response.status_code` | 是否失败 |
+| Span 的状态 `ERROR`、`http.response.status_code` | 是否失败；`error.type` 说明原因 |
+| `gen_ai.usage.cost` 或 `gen_ai.cost` | Kaeso 没有该模型价格时使用的费用 |
 | `user.email`，或带有邮箱地址的 `enduser.id` | 请求计入的成员 |
 
-`gen_ai.operation.name` 为 `execute_tool` 且 `mcp.method.name` 为 `tools/call` 的 Span 是一次 MCP 工具调用，以 `gen_ai.tool.name` 和 `server.address` 命名。汇总其他调用的 Span（例如 `invoke_agent`）不计数，因此代理的调用只计一次。同一次调用既有 Span 又有日志事件时，两者指向同一个 Span，只计一次。
+`gen_ai.operation.name` 为 `execute_tool`，或 `mcp.method.name` 为 `tools/call` 的 Span 是一次 MCP 工具调用，以 `gen_ai.tool.name` 以及 `mcp.server.name` 或 `server.address` 命名。汇总其他调用的 Span（例如 `invoke_agent`）不计数，因此代理的调用只计一次。同一次调用既有 Span 又有日志事件时，两者指向同一个 Span，只计一次。
 
 ## 保留提示词
 

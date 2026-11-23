@@ -43,7 +43,7 @@ Every record needs an `id` that is unique within the source. Send a record again
 | `stream` | Whether the reply was streamed |
 | `client` | The app that sent it, such as `nightly-evals/1.4` |
 | `user_email` | The member it counts for, when the source matches members by email |
-| `tags` | Up to ten tags, as the gateway's `kaeso-tags` header takes them |
+| `tags` | Up to ten tags; Kaeso drops the rest |
 | `provider_request_id` | The provider's id of the request |
 | `prompt`, `reply` | The last prompt and the reply, kept only when the source keeps content |
 

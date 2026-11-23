@@ -6,7 +6,7 @@ order: 6
 
 OpenRouter's Broadcast sends a trace of every request you make to OpenRouter to a destination of your choice. With a Kaeso source as an OpenTelemetry collector destination, each request becomes an observed request in the project, with its model, tokens and cost.
 
-[Add a source](index.md#add-a-source) of the kind **OpenRouter**. Then, in OpenRouter's settings under **Broadcast**, add an **OpenTelemetry Collector** destination with these values:
+[Add a source](index.md#add-a-source) of the kind **OpenRouter**. Then, in OpenRouter's Broadcast settings, add an OpenTelemetry Collector destination with these values:
 
 ```text
 https://kaeso.example.com/ingest/otlp/v1/traces

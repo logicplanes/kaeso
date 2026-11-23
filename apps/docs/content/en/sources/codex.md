@@ -28,7 +28,7 @@ Codex leaves your prompts out of its events. To keep them, turn on **Keep prompt
 
 | Codex event | In Kaeso |
 | --- | --- |
-| `codex.sse_event` of a completed response | A request: model, tokens, cached and reasoning tokens, time to the first token |
+| `codex.sse_event` of a completed response | A request: model, tokens, cached and reasoning tokens, the time until the response began |
 | `codex.api_request` that failed, or a failed response | A failed request with its status and message |
 | `codex.tool_result` of an MCP tool | A tool call with its server, tool, duration and outcome |
 

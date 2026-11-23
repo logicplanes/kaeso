@@ -43,7 +43,7 @@ Jeder Datensatz braucht eine `id`, die innerhalb der Quelle eindeutig ist. Sende
 | `stream` | Ob die Antwort gestreamt wurde |
 | `client` | Die App, die sie gesendet hat, etwa `nightly-evals/1.4` |
 | `user_email` | Das Mitglied, für das sie zählt, wenn die Quelle Mitglieder per E-Mail zuordnet |
-| `tags` | Bis zu zehn Tags, wie sie der Header `kaeso-tags` des Gateways annimmt |
+| `tags` | Bis zu zehn Tags; Kaeso verwirft den Rest |
 | `provider_request_id` | Die ID der Anfrage beim Anbieter |
 | `prompt`, `reply` | Der letzte Prompt und die Antwort, nur behalten, wenn die Quelle Inhalte behält |
 

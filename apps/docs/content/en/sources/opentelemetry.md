@@ -54,10 +54,11 @@ A span or a log event is a request when its `gen_ai.operation.name` is `chat`, `
 | `gen_ai.usage.input_tokens`, `gen_ai.usage.output_tokens` | Tokens, with the cache counted apart |
 | `gen_ai.usage.cache_read.input_tokens`, `gen_ai.usage.cache_write.input_tokens`, `gen_ai.usage.reasoning.output_tokens` | Cache reads and writes, and reasoning |
 | `gen_ai.response.id` | The request's id, so a call sent twice counts once |
-| `error.type`, `http.response.status_code` | Whether it failed |
+| The span's status `ERROR`, `http.response.status_code` | Whether it failed; `error.type` names why |
+| `gen_ai.usage.cost`, or `gen_ai.cost` | The cost, used when Kaeso has no price for the model |
 | `user.email`, or `enduser.id` with an email address | The member it counts for |
 
-A span with `gen_ai.operation.name` `execute_tool` and `mcp.method.name` `tools/call` is an MCP tool call, named by `gen_ai.tool.name` and `server.address`. A span that sums other calls, such as `invoke_agent`, isn't counted, so an agent's calls count once. When a call has both a span and a log event, both name the same span and count once.
+A span with `gen_ai.operation.name` `execute_tool`, or with `mcp.method.name` `tools/call`, is an MCP tool call, named by `gen_ai.tool.name` and by `mcp.server.name` or `server.address`. A span that sums other calls, such as `invoke_agent`, isn't counted, so an agent's calls count once. When a call has both a span and a log event, both name the same span and count once.
 
 ## Keep the prompts
 

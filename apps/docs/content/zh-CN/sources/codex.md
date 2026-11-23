@@ -28,7 +28,7 @@ Codex 的事件默认不含您的提示词。要保留它们，请为来源开�
 
 | Codex 事件 | 在 Kaeso 中 |
 | --- | --- |
-| 已完成响应的 `codex.sse_event` | 一个请求：模型、Token、缓存和推理 Token、首 Token 时间 |
+| 已完成响应的 `codex.sse_event` | 一个请求：模型、Token、缓存和推理 Token、响应开始前的时间 |
 | 失败的 `codex.api_request` 或失败的响应 | 带有状态和消息的失败请求 |
 | MCP 工具的 `codex.tool_result` | 带有服务器、工具、耗时和结果的工具调用 |
 

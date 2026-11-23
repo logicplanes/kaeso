@@ -23,11 +23,11 @@ Starten Sie den Proxy neu und senden Sie ihm eine Anfrage. LiteLLM sendet seine 
 
 ## Stapel klein halten
 
-LiteLLM sendet bis zu 512 Logs pro Stapel, jedes mit den Nachrichten und der Antwort der Anfrage. Kaeso nimmt höchstens 8 MiB pro Stapel, deshalb setzen Sie `DEFAULT_BATCH_SIZE=50` in der Umgebung des Proxys, wenn seine Anfragen lang sind. Einen abgelehnten Stapel sendet LiteLLM nicht erneut.
+LiteLLM sendet bis zu 512 Logs pro Stapel, jedes mit den Nachrichten und der Antwort der Anfrage. Kaeso nimmt höchstens 8 MiB pro Stapel, deshalb setzen Sie `DEFAULT_BATCH_SIZE=50` in der Umgebung des Proxys, wenn seine Anfragen lang sind. Standardmäßig sendet LiteLLM einen abgelehnten Stapel nicht erneut.
 
 ## Wessen Anfragen es sind
 
-Jedes Log nennt den LiteLLM-Schlüssel seines Aufrufers und die E-Mail-Adresse des Benutzers dieses Schlüssels, wenn LiteLLM sie kennt. Ordnet die Quelle Mitglieder per E-Mail zu, zählt die Anfrage für das Mitglied mit dieser Adresse. Sonst zählt sie für das Mitglied oder Dienstkonto der Quelle. Die eigenen LiteLLM-Tags der Anfrage werden ihre Tags in Kaeso.
+Jedes Log trägt die E-Mail-Adresse des Benutzers des LiteLLM-Schlüssels, wenn LiteLLM sie kennt. Ordnet die Quelle Mitglieder per E-Mail zu, zählt die Anfrage für das Mitglied mit dieser Adresse. Sonst zählt sie für das Mitglied oder Dienstkonto der Quelle. Die eigenen LiteLLM-Tags der Anfrage werden ihre Tags in Kaeso.
 
 ## Prompts behalten
 

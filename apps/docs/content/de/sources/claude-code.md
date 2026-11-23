@@ -38,11 +38,11 @@ export OTEL_EXPORTER_OTLP_HEADERS="Authorization=Bearer sk-kso-src-…"
 export OTEL_LOG_TOOL_DETAILS=1
 ```
 
-Behalten Sie `OTEL_EXPORTER_OTLP_PROTOCOL`: Manche Versionen von Claude Code exportieren ohne sie nichts. Ein Team kann die Variablen in den verwalteten Einstellungen von Claude Code setzen, sodass das Claude Code jedes Mitglieds an dieselbe Quelle meldet und jede Anfrage für das Mitglied zählt, dessen E-Mail-Adresse sie nennt.
+Behalten Sie `OTEL_EXPORTER_OTLP_PROTOCOL`: Manche Versionen von Claude Code exportieren ohne sie nichts. Ein Team kann die Variablen in den verwalteten Einstellungen von Claude Code setzen. Dann meldet das Claude Code jedes Mitglieds an dieselbe Quelle, und jede Anfrage zählt für das Mitglied, das sie nennt.
 
 ## MCP-Tools benennen
 
-Mit `OTEL_LOG_TOOL_DETAILS=1` nennt Claude Code den MCP-Server und das Tool jedes Aufrufs, etwa `linear` und `list_issues`. Ohne die Variable protokolliert Kaeso jeden MCP-Aufruf trotzdem, aber mit unbekanntem Server. Aufrufe der eigenen Tools von Claude Code, etwa Dateien lesen oder Befehle ausführen, behält Kaeso nicht.
+Mit `OTEL_LOG_TOOL_DETAILS=1` nennt Claude Code den MCP-Server und das Tool jedes Aufrufs, etwa `linear` und `list_issues`. Ohne die Variable protokolliert Kaeso jeden MCP-Aufruf trotzdem, aber als `mcp_tool`, ohne Server- und Toolnamen. Aufrufe der eigenen Tools von Claude Code, etwa Dateien lesen oder Befehle ausführen, behält Kaeso nicht.
 
 ## Prompts behalten
 

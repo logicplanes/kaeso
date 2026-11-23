@@ -6,7 +6,7 @@ order: 6
 
 OpenRouter 的 Broadcast 会把您发往 OpenRouter 的每个请求的链路追踪发送到您选择的目标。把 Kaeso 来源设为 OpenTelemetry Collector 目标后，每个请求都会成为项目中的已观测请求，带有模型、Token 和费用。
 
-[添加一个](index.md#添加来源)类型为 **OpenRouter** 的来源。然后在 OpenRouter 设置的 **Broadcast** 下添加一个 **OpenTelemetry Collector** 目标，填入以下值：
+[添加一个](index.md#添加来源)类型为 **OpenRouter** 的来源。然后在 OpenRouter 的 Broadcast 设置中添加一个 OpenTelemetry Collector 目标，填入以下值：
 
 ```text
 https://kaeso.example.com/ingest/otlp/v1/traces

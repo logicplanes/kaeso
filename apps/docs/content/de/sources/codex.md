@@ -28,7 +28,7 @@ Codex lässt Ihre Prompts aus seinen Ereignissen heraus. Um sie zu behalten, sch
 
 | Ereignis von Codex | In Kaeso |
 | --- | --- |
-| `codex.sse_event` einer abgeschlossenen Antwort | Eine Anfrage: Modell, Tokens, gecachte und Reasoning-Tokens, Zeit bis zum ersten Token |
+| `codex.sse_event` einer abgeschlossenen Antwort | Eine Anfrage: Modell, Tokens, gecachte und Reasoning-Tokens, die Zeit bis zum Beginn der Antwort |
 | Ein fehlgeschlagenes `codex.api_request` oder eine fehlgeschlagene Antwort | Eine fehlgeschlagene Anfrage mit Status und Meldung |
 | `codex.tool_result` eines MCP-Tools | Ein Tool-Aufruf mit Server, Tool, Dauer und Ergebnis |
 

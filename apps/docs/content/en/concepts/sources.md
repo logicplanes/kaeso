@@ -40,13 +40,13 @@ A source belongs to one project and has a kind, which decides how Kaeso reads wh
 
 OTLP goes to `/ingest/otlp/v1/logs`, `/ingest/otlp/v1/traces` and `/ingest/otlp/v1/metrics`, as protobuf or JSON, gzipped or not. JSON goes to `/ingest/v1/events`, `/ingest/v1/litellm` and `/ingest/v1/antigravity`. Every deployment template routes `/ingest` to the gateway.
 
-Kaeso counts requests only from log events and spans. Metrics keep a source's status current but never add requests, so a client that exports both isn't counted twice. Of the tool calls a client reports, only MCP tool calls are kept; its own tools, such as a shell, are left out.
+Kaeso counts requests only from log events and spans. Metrics keep a source's status current but never add requests, so a client that exports both isn't counted twice. Of the tool calls that Claude Code, Codex, Gemini CLI and OpenTelemetry report, only MCP tool calls are kept; a client's own tools, such as a shell, are left out.
 
 ## Whose requests they are
 
 A request counts for a member, or for a service account, like any request through the gateway. When the event names an email address and the source matches members by email, the request counts for the organization member with that address. Otherwise it counts for the source's member or service account, chosen when the source is added.
 
-Either way, the member must be able to see the project. A source whose requests would count for nobody who can is refused, so a request never counts for someone outside the project.
+Either way, the member must be able to see the project, and a service account must still be active in it. A record that would count for nobody who can is refused, so a request never counts for someone outside the project.
 
 ## Tokens and cost
 
@@ -58,7 +58,15 @@ A request costs what the project's catalogue says the model costs. Without a cat
 
 Clients send an event again when an export failed, so Kaeso keeps each request and tool call once. A source that reports the same id within seven days counts it once, and its activity counts the rest as duplicates.
 
-Kaeso refuses a record that names no model or tool, has no id, is more than seven days old or more than five minutes in the future, counts more than 100 million tokens or costs more than $10,000. A refused record changes nothing, and the source's sheet shows the reason for the last one.
+Kaeso refuses a record that:
+
+- names no model or no tool, or has no id;
+- is more than seven days old, or more than five minutes in the future;
+- has a token count over 100 million, or costs more than $10,000;
+- has a status that isn't an HTTP status;
+- would count for nobody who can see the project.
+
+A refused record changes nothing, and the source's sheet shows the reason for the last one. A batch that Kaeso can't read is refused whole.
 
 ## Limits and alerts
 

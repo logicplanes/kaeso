@@ -43,7 +43,7 @@ Kaeso 会回答它保留了哪些内容：
 | `stream` | 回复是否以流式返回 |
 | `client` | 发送请求的应用，例如 `nightly-evals/1.4` |
 | `user_email` | 来源按邮箱匹配成员时，请求计入的成员 |
-| `tags` | 最多十个标签，与网关的 `kaeso-tags` 请求头接受的标签相同 |
+| `tags` | 最多十个标签；其余的 Kaeso 会丢弃 |
 | `provider_request_id` | 服务商的请求 ID |
 | `prompt`、`reply` | 最后一个提示词和回复，仅在来源保留内容时保留 |
 

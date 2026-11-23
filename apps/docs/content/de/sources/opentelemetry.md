@@ -54,10 +54,11 @@ Ein Span oder ein Log-Ereignis ist eine Anfrage, wenn sein `gen_ai.operation.nam
 | `gen_ai.usage.input_tokens`, `gen_ai.usage.output_tokens` | Tokens, mit dem Cache getrennt gezählt |
 | `gen_ai.usage.cache_read.input_tokens`, `gen_ai.usage.cache_write.input_tokens`, `gen_ai.usage.reasoning.output_tokens` | Cache-Lese- und -Schreibvorgänge und Reasoning |
 | `gen_ai.response.id` | Die ID der Anfrage, sodass ein doppelt gesendeter Aufruf einmal zählt |
-| `error.type`, `http.response.status_code` | Ob sie fehlschlug |
+| Der Status `ERROR` des Spans, `http.response.status_code` | Ob sie fehlschlug; `error.type` nennt den Grund |
+| `gen_ai.usage.cost` oder `gen_ai.cost` | Die Kosten, wenn Kaeso keinen Preis für das Modell hat |
 | `user.email` oder `enduser.id` mit einer E-Mail-Adresse | Das Mitglied, für das sie zählt |
 
-Ein Span mit `gen_ai.operation.name` `execute_tool` und `mcp.method.name` `tools/call` ist ein MCP-Tool-Aufruf, benannt nach `gen_ai.tool.name` und `server.address`. Ein Span, der andere Aufrufe zusammenfasst, etwa `invoke_agent`, zählt nicht, sodass die Aufrufe eines Agents einmal zählen. Hat ein Aufruf einen Span und ein Log-Ereignis, nennen beide denselben Span und zählen einmal.
+Ein Span mit `gen_ai.operation.name` `execute_tool` oder mit `mcp.method.name` `tools/call` ist ein MCP-Tool-Aufruf, benannt nach `gen_ai.tool.name` und nach `mcp.server.name` oder `server.address`. Ein Span, der andere Aufrufe zusammenfasst, etwa `invoke_agent`, zählt nicht, sodass die Aufrufe eines Agents einmal zählen. Hat ein Aufruf einen Span und ein Log-Ereignis, nennen beide denselben Span und zählen einmal.
 
 ## Prompts behalten
 

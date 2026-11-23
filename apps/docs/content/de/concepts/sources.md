@@ -40,13 +40,13 @@ Eine Quelle gehört zu einem Projekt und hat eine Art, die bestimmt, wie Kaeso l
 
 OTLP geht an `/ingest/otlp/v1/logs`, `/ingest/otlp/v1/traces` und `/ingest/otlp/v1/metrics`, als Protobuf oder JSON, mit gzip oder ohne. JSON geht an `/ingest/v1/events`, `/ingest/v1/litellm` und `/ingest/v1/antigravity`. Jede Deployment-Vorlage leitet `/ingest` an das Gateway.
 
-Kaeso zählt Anfragen nur aus Log-Ereignissen und Spans. Metriken halten den Status einer Quelle aktuell, fügen aber nie Anfragen hinzu, sodass ein Client, der beides exportiert, nicht doppelt zählt. Von den Tool-Aufrufen, die ein Client meldet, behält Kaeso nur MCP-Tool-Aufrufe; seine eigenen Tools, etwa eine Shell, bleiben außen vor.
+Kaeso zählt Anfragen nur aus Log-Ereignissen und Spans. Metriken halten den Status einer Quelle aktuell, fügen aber nie Anfragen hinzu, sodass ein Client, der beides exportiert, nicht doppelt zählt. Von den Tool-Aufrufen, die Claude Code, Codex, Gemini CLI und OpenTelemetry melden, behält Kaeso nur MCP-Tool-Aufrufe; die eigenen Tools eines Clients, etwa eine Shell, bleiben außen vor.
 
 ## Wessen Anfragen es sind
 
 Eine Anfrage zählt für ein Mitglied oder für ein Dienstkonto, wie jede Anfrage über das Gateway. Nennt das Ereignis eine E-Mail-Adresse und ordnet die Quelle Mitglieder per E-Mail zu, zählt die Anfrage für das Mitglied der Organisation mit dieser Adresse. Sonst zählt sie für das Mitglied oder Dienstkonto der Quelle, das beim Hinzufügen gewählt wurde.
 
-In beiden Fällen muss das Mitglied das Projekt sehen können. Eine Quelle, deren Anfragen für niemanden zählen würden, der das kann, wird abgelehnt, sodass eine Anfrage nie für jemanden außerhalb des Projekts zählt.
+In beiden Fällen muss das Mitglied das Projekt sehen können, und ein Dienstkonto muss darin noch aktiv sein. Ein Datensatz, der für niemanden zählen würde, der das kann, wird abgelehnt, sodass eine Anfrage nie für jemanden außerhalb des Projekts zählt.
 
 ## Tokens und Kosten
 
@@ -58,7 +58,15 @@ Eine Anfrage kostet, was der Katalog des Projekts für das Modell angibt. Ohne K
 
 Clients senden ein Ereignis erneut, wenn ein Export fehlschlug, deshalb behält Kaeso jede Anfrage und jeden Tool-Aufruf einmal. Meldet eine Quelle dieselbe ID innerhalb von sieben Tagen, zählt Kaeso sie einmal, und die Aktivität der Quelle zählt den Rest als Duplikate.
 
-Kaeso lehnt einen Datensatz ab, der kein Modell oder Tool nennt, keine ID hat, älter als sieben Tage ist oder mehr als fünf Minuten in der Zukunft liegt, mehr als 100 Millionen Tokens zählt oder mehr als 10.000 $ kostet. Ein abgelehnter Datensatz ändert nichts, und die Detailansicht der Quelle zeigt den Grund für den letzten.
+Kaeso lehnt einen Datensatz ab, der:
+
+- kein Modell oder kein Tool nennt oder keine ID hat;
+- älter als sieben Tage ist oder mehr als fünf Minuten in der Zukunft liegt;
+- eine Token-Zahl über 100 Millionen hat oder mehr als 10.000 $ kostet;
+- einen Status hat, der kein HTTP-Status ist;
+- für niemanden zählen würde, der das Projekt sehen kann.
+
+Ein abgelehnter Datensatz ändert nichts, und die Detailansicht der Quelle zeigt den Grund für den letzten. Einen Stapel, den Kaeso nicht lesen kann, lehnt es ganz ab.
 
 ## Limits und Warnungen
 

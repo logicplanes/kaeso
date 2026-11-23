@@ -28,7 +28,7 @@ Kaeso shows the source's key once, with the exact lines that connect its client:
 | **Disabled** | Kaeso refuses what it sends until it's turned on again |
 | **Archived** | Its key no longer works; its requests stay |
 
-Open a source to see its activity by day, with the duplicates Kaeso left out and what it refused, the reason for the last refusal and its setup lines with a placeholder for the key. **See requests** opens the request log with only its requests.
+Open a source to see its activity by day, with the duplicates Kaeso left out and what it refused. Its sheet also shows the reason for the last refusal and its setup lines, with a placeholder for the key. **See requests** opens the request log with only its requests.
 
 In the request log, an observed request has the **Observed** tag and names its source where a key would be. The **Reported by** filter shows one source's requests, and the **Source** filter all observed ones. **Analytics** breaks usage down **By source**, the gateway's own requests apart from each source's, and the tool-call log shows the MCP calls a source reported.
 

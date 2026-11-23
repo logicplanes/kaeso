@@ -6,7 +6,7 @@ order: 6
 
 Der Broadcast von OpenRouter sendet einen Trace jeder Anfrage, die Sie an OpenRouter stellen, an ein Ziel Ihrer Wahl. Mit einer Kaeso-Quelle als Ziel vom Typ OpenTelemetry-Collector wird jede Anfrage eine beobachtete Anfrage im Projekt, mit Modell, Tokens und Kosten.
 
-[Fügen Sie eine Quelle](index.md#quelle-hinzufügen) der Art **OpenRouter** hinzu. Ergänzen Sie dann in den Einstellungen von OpenRouter unter **Broadcast** ein Ziel **OpenTelemetry Collector** mit diesen Werten:
+[Fügen Sie eine Quelle](index.md#quelle-hinzufügen) der Art **OpenRouter** hinzu. Ergänzen Sie dann in den Broadcast-Einstellungen von OpenRouter ein Ziel vom Typ OpenTelemetry Collector mit diesen Werten:
 
 ```text
 https://kaeso.example.com/ingest/otlp/v1/traces

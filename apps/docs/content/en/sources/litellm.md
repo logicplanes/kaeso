@@ -23,11 +23,11 @@ Restart the proxy and send it a request. LiteLLM sends its logs in batches, ever
 
 ## Keep batches small
 
-LiteLLM sends up to 512 logs a batch, each with the request's messages and reply. Kaeso takes at most 8 MiB a batch, so set `DEFAULT_BATCH_SIZE=50` in the proxy's environment if its requests are long. LiteLLM doesn't send a refused batch again.
+LiteLLM sends up to 512 logs a batch, each with the request's messages and reply. Kaeso takes at most 8 MiB a batch, so set `DEFAULT_BATCH_SIZE=50` in the proxy's environment if its requests are long. By default, LiteLLM doesn't send a refused batch again.
 
 ## Whose requests they are
 
-Each log names the LiteLLM key its caller used, and the email address of the key's user when LiteLLM knows it. When the source matches members by email, the request counts for the member with that address. Otherwise it counts for the source's member or service account. The request's own LiteLLM tags become its tags in Kaeso.
+Each log carries the email address of the LiteLLM key's user when LiteLLM knows it. When the source matches members by email, the request counts for the member with that address. Otherwise it counts for the source's member or service account. The request's own LiteLLM tags become its tags in Kaeso.
 
 ## Keep the prompts
 
