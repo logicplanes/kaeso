@@ -230,6 +230,10 @@ pub struct McpServerView {
     #[doc = "Whether a tool's changed definition is approved as Kaeso finds it. Off holds the\n\
         tool until someone approves the change."]
     pub auto_approve_tool_changes: bool,
+    #[doc = "Deprecated: `auto_approve_tool_changes` as 0.7.0 named it, `accept` when on and\n\
+        `hold` when off."]
+    #[schema(deprecated)]
+    pub change_policy: McpChangePolicy,
     #[doc = "How the last check went."]
     pub status: McpServerStatus,
     #[doc = "Why the last check failed."]
@@ -296,6 +300,7 @@ fn view(
         }),
         scopes: row.scopes.clone(),
         auto_approve_tool_changes: row.auto_approve_tool_changes,
+        change_policy: McpChangePolicy::of(row.auto_approve_tool_changes),
         status: McpServerStatus::of(&row.status),
         last_error: row.last_error.clone(),
         last_checked_at: row.last_checked_at,
@@ -738,6 +743,43 @@ pub struct McpOAuthClient {
     pub client_secret: Option<SecretString>,
 }
 
+/// How 0.7.0 named whether changed tools are approved as they come.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum McpChangePolicy {
+    #[doc = "The tool is held until someone approves the change."]
+    Hold,
+    #[doc = "The change is approved as it comes."]
+    Accept,
+}
+
+impl McpChangePolicy {
+    fn of(auto_approve: bool) -> McpChangePolicy {
+        if auto_approve {
+            McpChangePolicy::Accept
+        } else {
+            McpChangePolicy::Hold
+        }
+    }
+}
+
+// Apps written for 0.7.0 still send `change_policy`; it means what `auto_approve_tool_changes`
+// does, and the two may not disagree.
+fn auto_approve(
+    flag: Option<bool>,
+    policy: Option<McpChangePolicy>,
+) -> Result<Option<bool>, ApiError> {
+    let from_policy = policy.map(|p| p == McpChangePolicy::Accept);
+    match (flag, from_policy) {
+        (Some(a), Some(b)) if a != b => Err(ApiError::invalid(
+            "change_policy",
+            "Leave out `change_policy`, or make it agree with `auto_approve_tool_changes`.",
+        )),
+        (Some(a), _) => Ok(Some(a)),
+        (None, b) => Ok(b),
+    }
+}
+
 #[derive(Deserialize, ToSchema)]
 #[serde(deny_unknown_fields)]
 #[schema(description = "A new MCP server.")]
@@ -767,6 +809,11 @@ pub struct McpServerCreate {
     #[doc = "Whether its changed tools are approved as Kaeso finds them; `true` when absent."]
     #[serde(default)]
     pub auto_approve_tool_changes: Option<bool>,
+    #[doc = "Deprecated: `auto_approve_tool_changes` as 0.7.0 named it, `accept` for `true` and\n\
+        `hold` for `false`."]
+    #[serde(default)]
+    #[schema(deprecated)]
+    pub change_policy: Option<McpChangePolicy>,
     #[doc = "Projects that use it from the start."]
     #[serde(default)]
     pub projects: Option<Vec<ProjectId>>,
@@ -825,7 +872,8 @@ pub async fn create(
         ));
     }
     let projects = org_projects(&state, org, req.projects.as_deref().unwrap_or_default()).await?;
-    let auto_approve = req.auto_approve_tool_changes.unwrap_or(true);
+    let auto_approve =
+        auto_approve(req.auto_approve_tool_changes, req.change_policy)?.unwrap_or(true);
     let id = Uuid::now_v7();
     let (kind, by) = creator_of(&ctx);
     let mut tx = state.pg.begin().await?;
@@ -902,6 +950,10 @@ pub struct McpServerUpdate {
     #[doc = "Whether its changed tools are approved as Kaeso finds them. Switching it on also\n\
         approves the changes held for review now."]
     pub auto_approve_tool_changes: Option<bool>,
+    #[doc = "Deprecated: `auto_approve_tool_changes` as 0.7.0 named it, `accept` for `true` and\n\
+        `hold` for `false`."]
+    #[schema(deprecated)]
+    pub change_policy: Option<McpChangePolicy>,
     #[doc = "The projects that use it, replacing the list; projects left out stop offering its\n\
         tools."]
     pub projects: Option<Vec<ProjectId>>,
@@ -945,7 +997,10 @@ pub async fn update(
         &Changes {
             name: name.as_deref(),
             handle,
-            auto_approve_tool_changes: req.auto_approve_tool_changes,
+            auto_approve_tool_changes: auto_approve(
+                req.auto_approve_tool_changes,
+                req.change_policy,
+            )?,
         },
     )
     .await?
@@ -1228,6 +1283,9 @@ pub struct McpRefreshView {
     #[doc = "Tools whose changed definition was approved as Kaeso found it, on a server that\n\
         auto-approves tool changes."]
     pub auto_approved: Vec<String>,
+    #[doc = "Deprecated: `auto_approved` as 0.7.0 named it."]
+    #[schema(deprecated)]
+    pub accepted: Vec<String>,
     #[doc = "How many tools the server no longer lists."]
     pub removed: usize,
     #[doc = "Tools Kaeso left out."]
@@ -1297,6 +1355,7 @@ pub async fn refresh(
     Ok(Json(McpRefreshView {
         added: synced.added,
         held: synced.changed,
+        accepted: synced.auto_approved.clone(),
         auto_approved: synced.auto_approved,
         removed: synced.removed,
         skipped: synced
