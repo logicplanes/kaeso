@@ -2,7 +2,9 @@ use std::collections::BTreeMap;
 
 use kaeso_crypto::{CryptoError, KeyRing, Sealed};
 use kaeso_store::StoreError;
-use kaeso_store::pg::{credentials, guardrails, mcp_connections, mcp_servers, oidc, totp};
+use kaeso_store::pg::{
+    credentials, guardrails, mcp_connections, mcp_servers, oidc, totp, webhooks,
+};
 use sqlx::PgPool;
 
 #[derive(Debug, thiserror::Error)]
@@ -151,6 +153,26 @@ pub async fn rewrap(pg: &PgPool, ring: &KeyRing) -> Result<RewrapReport, MasterK
             && mcp_servers::set_wrapped_key(
                 pg,
                 s.server_id,
+                &sealed.wrapped_key,
+                &new.wrapped_key,
+                &new.key_id,
+            )
+            .await?
+        {
+            report.rewrapped += 1;
+        }
+    }
+    for w in webhooks::all_sealed(pg).await? {
+        let sealed = Sealed {
+            ciphertext: w.ciphertext,
+            nonce: w.nonce,
+            wrapped_key: w.wrapped_key,
+            key_id: w.key_id,
+        };
+        if let Some(new) = kaeso_crypto::rewrap(ring, &sealed)?
+            && webhooks::set_wrapped_key(
+                pg,
+                w.id,
                 &sealed.wrapped_key,
                 &new.wrapped_key,
                 &new.key_id,
