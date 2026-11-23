@@ -2325,6 +2325,13 @@ async fn attempt(
                 catalogue_model_id: entry.id,
                 response_id: None,
             });
+    if plan.dialect == DialectId::OpenAiResponses
+        && eff.provider.responses().stores_responses
+        && !keeping.as_ref().is_some_and(|k| k.records)
+        && let Request::Generate(g) = &mut req
+    {
+        kaeso_codecs::openai_responses::without_store(g);
+    }
     let chatgpt = account.filter(|a| a.method == AuthMethod::ChatGpt);
     if let Some(a) = chatgpt {
         let stage =

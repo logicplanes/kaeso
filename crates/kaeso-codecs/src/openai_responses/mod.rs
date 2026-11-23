@@ -33,9 +33,9 @@ pub const RESPONSES_PATH: &str = "/v1/responses";
 
 pub const INPUT_TOKENS_PATH: &str = "/v1/responses/input_tokens";
 
-pub use plan::for_chatgpt_plan;
+pub use plan::{for_chatgpt_plan, without_store};
 pub use profile::{InputItems, ReasoningReplay, ResponsesProfile, WebSearchTool, XAI_INPUT_ITEMS};
-pub use stored::{StoredState, stored_state};
+pub use stored::{StoredState, has_item_reference, stored_state};
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 #[non_exhaustive]

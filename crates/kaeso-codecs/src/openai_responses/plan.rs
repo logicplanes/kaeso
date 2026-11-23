@@ -78,3 +78,12 @@ pub fn for_chatgpt_plan(req: &mut GenerateRequest) {
         forget(&mut message.extras, |path| path == ROLE);
     }
 }
+
+/// Sets `store: false` on a Responses-format request unless it already sets `store: false`, so
+/// a provider that keeps responses by default does not keep this one.
+pub fn without_store(req: &mut GenerateRequest) {
+    if req.extras.is_from(DIALECT) && super::stored::stored_state(req).store != Some(false) {
+        forget(&mut req.extras, |path| path == "store");
+        form_set_insert(&mut req.extras, "store".to_owned(), Value::Bool(false));
+    }
+}

@@ -83,11 +83,17 @@ pub async fn admit(
     asked: &Asked<'_>,
     req: &Request,
 ) -> Result<Option<Keeping>, Refusal> {
-    let Request::Generate(g) = req else {
+    let (Request::Generate(g) | Request::CountTokens(g)) = req else {
         return Ok(None);
     };
     if asked.ingress != DialectId::OpenAiResponses {
         return Ok(None);
+    }
+    if kaeso_codecs::openai_responses::has_item_reference(g) {
+        return Err(Refusal::Final(refused(
+            "input",
+            "`item_reference` items point to provider-stored state Kaeso cannot check for this project; send the items themselves in `input` instead.".to_owned(),
+        )));
     }
     let wanted: StoredState = kaeso_codecs::openai_responses::stored_state(g);
     let field = wanted.field();
@@ -163,7 +169,7 @@ pub async fn admit(
         None => None,
     };
     Ok(Some(Keeping {
-        records: wanted.store != Some(false),
+        records: matches!(req, Request::Generate(_)) && wanted.store != Some(false),
         continues,
     }))
 }

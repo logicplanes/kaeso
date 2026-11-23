@@ -600,6 +600,195 @@ async fn resolve(
     Ok((entry.id, eff, credential))
 }
 
+async fn check_stored_lines(
+    state: &AppState,
+    caller: &Caller,
+    checked: &Checked,
+    joined: Vec<u8>,
+) -> Result<Vec<u8>, KppError> {
+    use serde::ser::SerializeMap as _;
+    type Pairs<'a> = Vec<(String, &'a serde_json::value::RawValue)>;
+    fn read_pairs(raw: &[u8]) -> Option<Pairs<'_>> {
+        struct V;
+        impl<'de> serde::de::Visitor<'de> for V {
+            type Value = Pairs<'de>;
+            fn expecting(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                f.write_str("a JSON object")
+            }
+            fn visit_map<A: serde::de::MapAccess<'de>>(
+                self,
+                mut map: A,
+            ) -> Result<Self::Value, A::Error> {
+                let mut out: Pairs<'de> = Vec::new();
+                let mut idx: Option<std::collections::HashMap<String, usize>> = None;
+                while let Some((k, v)) =
+                    map.next_entry::<String, &'de serde_json::value::RawValue>()?
+                {
+                    if let Some(m) = &mut idx {
+                        if let Some(&p) = m.get(&k) {
+                            if let Some(slot) = out.get_mut(p) {
+                                slot.1 = v;
+                            }
+                        } else {
+                            m.insert(k.clone(), out.len());
+                            out.push((k, v));
+                        }
+                    } else if let Some((_, slot)) = out.iter_mut().find(|(ek, _)| ek == &k) {
+                        *slot = v;
+                    } else {
+                        out.push((k, v));
+                        if out.len() > 16 {
+                            idx = Some(
+                                out.iter()
+                                    .enumerate()
+                                    .map(|(p, (ek, _))| (ek.clone(), p))
+                                    .collect(),
+                            );
+                        }
+                    }
+                }
+                Ok(out)
+            }
+        }
+        let mut de = serde_json::Deserializer::from_slice(raw);
+        let pairs = serde::Deserializer::deserialize_map(&mut de, V).ok()?;
+        de.end().ok()?;
+        Some(pairs)
+    }
+    fn write_pairs(pairs: &Pairs<'_>) -> String {
+        struct Obj<'a>(&'a Pairs<'a>);
+        impl serde::Serialize for Obj<'_> {
+            fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+                let mut m = s.serialize_map(Some(self.0.len()))?;
+                for (k, v) in self.0 {
+                    m.serialize_entry(k, v)?;
+                }
+                m.end()
+            }
+        }
+        serde_json::to_string(&Obj(pairs)).unwrap_or_else(|_| "{}".to_owned())
+    }
+    if checked.endpoint != "/v1/responses" {
+        return Ok(joined);
+    }
+    let false_raw = serde_json::value::RawValue::from_string("false".to_owned())
+        .map_err(|e| invalid("file", e.to_string()))?;
+    let mut out = Vec::with_capacity(joined.len() + 64);
+    for (idx, raw) in joined.split(|b| *b == b'\n').enumerate() {
+        if raw.iter().all(u8::is_ascii_whitespace) {
+            continue;
+        }
+        let n = idx + 1;
+        let mut outer =
+            read_pairs(raw).ok_or_else(|| at_line(n, "it isn't a JSON object.".to_owned()))?;
+        let body_raw = outer
+            .iter()
+            .find(|(k, _)| k == "body")
+            .map(|(_, v)| *v)
+            .ok_or_else(|| at_line(n, "`body` must be an object.".to_owned()))?;
+        let checked_body = kaeso_codecs::limits::Checked::new(
+            DialectId::OpenAiResponses,
+            body_raw.get().as_bytes(),
+        )
+        .map_err(|e| at_line(n, e.message))?;
+        let req = dispatch::decode_checked_request(
+            RequestKind::Generate,
+            &checked_body,
+            &HeaderList::new(),
+        )
+        .map_err(|e| at_line(n, e.message))?;
+        crate::services::stored_responses::admit(
+            state,
+            &crate::services::stored_responses::Asked {
+                caller,
+                ingress: DialectId::OpenAiResponses,
+                egress: DialectId::OpenAiResponses,
+                provider: &checked.provider,
+                model: &checked.upstream_model,
+                credential: &checked.credential,
+            },
+            &req,
+        )
+        .await
+        .map_err(|r| match r {
+            crate::services::stored_responses::Refusal::Unsupported(e)
+            | crate::services::stored_responses::Refusal::Final(e) => at_line(n, e.message),
+        })?;
+        let wants_store = match &req {
+            kaeso_kpp::Request::Generate(g) => {
+                kaeso_codecs::openai_responses::stored_state(g).store == Some(true)
+            }
+            _ => false,
+        };
+        if checked.provider.responses().stores_responses && !wants_store {
+            let mut inner = read_pairs(body_raw.get().as_bytes())
+                .ok_or_else(|| at_line(n, "`body` must be an object.".to_owned()))?;
+            if let Some((_, slot)) = inner.iter_mut().find(|(k, _)| k == "store") {
+                *slot = &false_raw;
+            } else {
+                inner.push(("store".to_owned(), &false_raw));
+            }
+            let rewritten = serde_json::value::RawValue::from_string(write_pairs(&inner))
+                .map_err(|e| at_line(n, e.to_string()))?;
+            if let Some((_, slot)) = outer.iter_mut().find(|(k, _)| k == "body") {
+                *slot = &rewritten;
+            }
+            out.extend_from_slice(write_pairs(&outer).as_bytes());
+        } else {
+            out.extend_from_slice(raw);
+        }
+        out.push(b'\n');
+    }
+    Ok(out)
+}
+
+async fn recheck_stored_batch_file(
+    state: &AppState,
+    caller: &Caller,
+    file: &FileRow,
+    endpoint: &str,
+    upstream_model: &str,
+) -> Result<(), KppError> {
+    if endpoint != "/v1/responses" {
+        return Ok(());
+    }
+    let (provider, credential) = reach(state, caller, &file.provider, file.credential_id).await?;
+    if !provider.responses().stores_responses {
+        return Ok(());
+    }
+    let sent = send(
+        state,
+        &provider,
+        &credential,
+        "GET",
+        format!("/v1/files/{}/content", file.upstream_id),
+        HeaderList::new(),
+        Bytes::new(),
+    )
+    .await?;
+    if !(200..300).contains(&sent.status) {
+        return Err(dispatch::decode_error(
+            D,
+            sent.status,
+            &sent.headers,
+            &sent.body,
+        ));
+    }
+    let dummy = Checked {
+        endpoint: "/v1/responses",
+        entry: file.catalogue_model_id.unwrap_or_default(),
+        model: file.model.clone().unwrap_or_default(),
+        upstream_model: upstream_model.to_owned(),
+        provider,
+        credential,
+        lines: Vec::new(),
+    };
+    check_stored_lines(state, caller, &dummy, sent.body.to_vec())
+        .await
+        .map(|_| ())
+        .map_err(|e| e.with_param("input_file_id"))
+}
+
 fn file_view(f: &FileRow) -> Value {
     json!({
         "id": BatchFileId::from_uuid(f.id).to_string(),
@@ -693,6 +882,7 @@ async fn upload(
     pipeline::admit_follow_up(state, caller, Some(checked.entry)).await?;
     let mut joined = checked.lines.join(&b'\n');
     joined.push(b'\n');
+    let joined = check_stored_lines(state, caller, &checked, joined).await?;
     let form = FormWriter::write(&[
         FormField::Text("purpose", "batch"),
         FormField::File("file", &filename, "application/jsonl", &joined),
@@ -923,6 +1113,7 @@ async fn create(state: &AppState, caller: &Caller, body: &[u8]) -> Result<BatchR
     {
         return Err(unknown());
     }
+    recheck_stored_batch_file(state, caller, &file, &endpoint, &upstream_model).await?;
     let eff = crate::services::catalogue::effective(state, entry_ref, &models.providers)
         .ok_or_else(unknown)?;
     let percent = kaeso_core::cost::batch_percent(eff.provider.id()).ok_or_else(unknown)?;
@@ -1207,6 +1398,26 @@ async fn account(
                 _ => None,
             };
         let mut o = pipeline::blank_outcome(RequestId::new());
+        if dialect == DialectId::OpenAiResponses
+            && (200..300).contains(&status)
+            && reply.get("store").and_then(Value::as_bool) == Some(true)
+            && let Some(u) = &usage
+        {
+            crate::services::stored_responses::record(
+                state,
+                &caller_of(row),
+                o.request_id.uuid(),
+                &crate::services::stored_responses::Kept {
+                    credential: row.credential_id,
+                    provider: provider.id().to_owned(),
+                    model: row.upstream_model.clone(),
+                    catalogue_model_id: row.catalogue_model_id,
+                    response_id: reply.get("id").and_then(Value::as_str).map(str::to_owned),
+                },
+                kaeso_core::cost::total_tokens(u),
+            )
+            .await;
+        }
         o.caller = Some(caller_of(row));
         o.ingress = dialect;
         o.egress = Some(dialect);
