@@ -61,9 +61,7 @@ pub struct PassthroughSummary {
 pub trait StreamPassthrough: Send + sealed::Sealed {
     fn feed(&mut self, chunk: &[u8], out: &mut Vec<u8>) -> PassthroughStep;
     fn finish(&mut self, out: &mut Vec<u8>) -> PassthroughStep;
-    fn flush_error(&mut self) -> Option<KppError> {
-        None
-    }
+    fn flush_eof_error(&mut self, out: &mut Vec<u8>) -> PassthroughStep;
     fn encode_error(&mut self, err: &KppError) -> Vec<u8>;
     fn keepalive(&mut self) -> Vec<u8>;
     fn summary(&self) -> PassthroughSummary;
@@ -101,6 +99,11 @@ pub fn for_stream(
         }
         DialectId::OpenAiResponses => {
             if crate::openai_responses::response::excludes_reasoning(encode.request.as_deref()) {
+                return None;
+            }
+            if !crate::openai_responses::namespaces::Namespaces::of(encode.request.as_deref())
+                .is_empty()
+            {
                 return None;
             }
             Some(Box::new(ResponsesPassthrough::new(egress)))
@@ -236,13 +239,34 @@ impl RawSseFramer {
         if !matches!(trailing.last(), Some(b'\n' | b'\r')) {
             return Err(SseError::Truncated);
         }
-        on_frame(&trailing);
+        if !trailing.iter().all(|&b| b == b'\n' || b == b'\r') {
+            on_frame(&trailing);
+        }
+        Ok(())
+    }
+
+    // Dispatches a trailing line-terminated frame (e.g. a CR-only stream whose final `\r` waited
+    // for a possible `\n`) without consuming unterminated bytes that `finish` must reject.
+    fn finish_terminated<F>(&mut self, mut on_frame: F) -> Result<(), SseError>
+    where
+        F: FnMut(&[u8]),
+    {
+        if self.buf.is_empty() || !matches!(self.buf.last(), Some(b'\n' | b'\r')) {
+            return Ok(());
+        }
+        let trailing = std::mem::take(&mut self.buf);
+        if std::str::from_utf8(&trailing).is_err() {
+            return Err(SseError::InvalidUtf8);
+        }
+        if !trailing.iter().all(|&b| b == b'\n' || b == b'\r') {
+            on_frame(&trailing);
+        }
         Ok(())
     }
 }
 
 // Finds the byte offset right after the blank line terminating the frame starting at `from`, or
-// right after a standalone comment line followed by a blank line.
+// right after a standalone comment line terminator.
 fn find_frame_end(bytes: &[u8], from: usize) -> Option<usize> {
     let mut i = from;
     let mut saw_content = false;
@@ -252,6 +276,7 @@ fn find_frame_end(bytes: &[u8], from: usize) -> Option<usize> {
         }
         let rel = rest.iter().position(|&b| b == b'\n' || b == b'\r')?;
         let line_len = rel;
+        let is_comment = !saw_content && line_len > 0 && rest.starts_with(b":");
         let term = *rest.get(rel)?;
         i += rel + 1;
         if term == b'\r' {
@@ -261,6 +286,9 @@ fn find_frame_end(bytes: &[u8], from: usize) -> Option<usize> {
                 // Wait for the next chunk in case `\r` is the first half of `\r\n`.
                 None => return None,
             }
+        }
+        if is_comment {
+            return Some(i);
         }
         if line_len == 0 {
             if saw_content {
@@ -272,6 +300,28 @@ fn find_frame_end(bytes: &[u8], from: usize) -> Option<usize> {
         saw_content = true;
     }
     None
+}
+
+fn split_sse_lines(mut text: &str) -> impl Iterator<Item = (&str, &str)> {
+    std::iter::from_fn(move || {
+        if text.is_empty() {
+            return None;
+        }
+        match text.find(['\r', '\n']) {
+            Some(pos) => {
+                let (line, rest) = text.split_at(pos);
+                let eol_len = if rest.starts_with("\r\n") { 2 } else { 1 };
+                let (eol, tail) = rest.split_at(eol_len);
+                text = tail;
+                Some((line, eol))
+            }
+            None => {
+                let line = text;
+                text = "";
+                Some((line, ""))
+            }
+        }
+    })
 }
 
 struct ParsedFrame<'a> {
@@ -291,8 +341,7 @@ fn parse_frame(raw: &[u8]) -> ParsedFrame<'_> {
     let mut has_field = false;
     let mut has_comment = false;
 
-    for raw_line in text.split('\n') {
-        let line = raw_line.strip_suffix('\r').unwrap_or(raw_line);
+    for (line, _) in split_sse_lines(text) {
         if line.is_empty() {
             continue;
         }
@@ -338,6 +387,100 @@ where
     <&'de RawValue>::deserialize(deserializer).map(Some)
 }
 
+trait FrameState {
+    fn origin(&self) -> &Origin;
+    fn is_inert(&self) -> bool;
+    fn set_inert(&mut self);
+    fn process_frame(&mut self, raw: &[u8], out: &mut Vec<u8>, step: &mut PassthroughStep);
+}
+
+fn feed_framer<S: FrameState>(
+    framer: &mut RawSseFramer,
+    state: &mut S,
+    chunk: &[u8],
+    out: &mut Vec<u8>,
+) -> PassthroughStep {
+    let mut step = PassthroughStep::default();
+    if state.is_inert() {
+        return step;
+    }
+    let mut framed_err = None;
+    let res = framer.feed(chunk, |frame| {
+        if framed_err.is_none() && !state.is_inert() {
+            state.process_frame(frame, out, &mut step);
+            if step.error.is_some() {
+                framed_err = step.error.take();
+            }
+        }
+    });
+    if let Some(err) = framed_err {
+        step.error = Some(err);
+    } else if let Err(e) = res
+        && !state.is_inert()
+    {
+        state.set_inert();
+        step.error = Some(KppError::from(e).with_origin(state.origin().clone()));
+    }
+    step
+}
+
+fn finish_framer<S: FrameState>(
+    framer: &mut RawSseFramer,
+    state: &mut S,
+    out: &mut Vec<u8>,
+) -> (PassthroughStep, bool) {
+    let mut step = PassthroughStep::default();
+    if state.is_inert() {
+        return (step, true);
+    }
+    let mut framed_err = None;
+    let res = framer.finish(|frame| {
+        if framed_err.is_none() && !state.is_inert() {
+            state.process_frame(frame, out, &mut step);
+            if step.error.is_some() {
+                framed_err = step.error.take();
+            }
+        }
+    });
+    if let Some(err) = framed_err {
+        step.error = Some(err);
+        return (step, true);
+    }
+    if let Err(e) = res {
+        state.set_inert();
+        step.error = Some(KppError::from(e).with_origin(state.origin().clone()));
+        return (step, true);
+    }
+    (step, false)
+}
+
+fn flush_eof_framer<S: FrameState>(
+    framer: &mut RawSseFramer,
+    state: &mut S,
+    out: &mut Vec<u8>,
+) -> PassthroughStep {
+    let mut step = PassthroughStep::default();
+    if state.is_inert() {
+        return step;
+    }
+    let mut framed_err = None;
+    let res = framer.finish_terminated(|frame| {
+        if framed_err.is_none() && !state.is_inert() {
+            state.process_frame(frame, out, &mut step);
+            if step.error.is_some() {
+                framed_err = step.error.take();
+            }
+        }
+    });
+    if let Some(err) = framed_err {
+        step.error = Some(err);
+    } else if let Err(e) = res {
+        state.set_inert();
+        step.error = Some(KppError::from(e).with_origin(state.origin().clone()));
+    }
+    step
+}
+
 // ---------- OpenAI Chat Completions passthrough ----------
 
 struct ChatPassthrough {
@@ -348,6 +491,7 @@ struct ChatPassthrough {
 struct ChatState {
     origin: Origin,
     include_usage: bool,
+    reasons_first: bool,
     error_detail: &'static [&'static str],
     id: String,
     model: String,
@@ -355,6 +499,8 @@ struct ChatState {
     running_usage: Option<Usage>,
     stop: StopReason,
     started: bool,
+    has_text: bool,
+    has_reasoning: bool,
     finished: bool,
     done: bool,
     complete: bool,
@@ -371,6 +517,7 @@ impl ChatPassthrough {
             state: ChatState {
                 origin: ctx.origin(DialectId::OpenAiChat),
                 include_usage,
+                reasons_first: !ctx.chat_profile.reply.reasoning_fields.is_empty(),
                 error_detail: ctx.chat_profile.reply.error_detail,
                 id: String::new(),
                 model: String::new(),
@@ -378,6 +525,8 @@ impl ChatPassthrough {
                 running_usage: None,
                 stop: StopReason::EndTurn,
                 started: false,
+                has_text: false,
+                has_reasoning: false,
                 finished: false,
                 done: false,
                 complete: false,
@@ -568,68 +717,18 @@ impl ChatState {
                         );
                         return;
                     }
-                    if let Some(delta) = &ch.delta {
-                        if let Some(content) = &delta.content {
-                            step.saw_output = true;
-                            if let TextOrOther::Text(text) = content
-                                && !text.is_empty()
-                            {
-                                self.tally.add(text.len(), false);
-                            }
-                        }
-                        if let Some(refusal) = &delta.refusal {
-                            step.saw_output = true;
-                            if !refusal.is_empty() {
-                                self.tally.add(refusal.len(), false);
-                            }
-                        }
-                        for r in [&delta.reasoning, &delta.reasoning_content]
-                            .into_iter()
-                            .flatten()
-                        {
-                            step.saw_output = true;
-                            if let TextOrOther::Text(text) = r
-                                && !text.is_empty()
-                            {
-                                self.tally.add(text.len(), true);
-                            }
-                        }
-                        if let Some(tcs) = &delta.tool_calls
-                            && !tcs.is_empty()
-                        {
-                            step.saw_output = true;
-                            for tc in tcs {
-                                if let Some(args) =
-                                    tc.function.as_ref().and_then(|f| f.arguments.as_ref())
-                                    && !args.is_empty()
-                                {
-                                    self.tally.add(args.len(), false);
-                                }
-                            }
-                        }
-                        if delta.audio.is_some() {
-                            step.saw_output = true;
-                        }
-                    }
-                    if let Some(finish) = ch.finish_reason.as_deref()
-                        && !finish.is_empty()
-                    {
-                        if finish == "error" {
-                            let raw_val =
-                                serde_json::from_str::<Value>(&frame.data).unwrap_or(Value::Null);
-                            self.inert = true;
-                            step.error = Some(
-                                KppError::provider(
-                                    "The provider ended the stream with `finish_reason: \"error\"` and no details.",
-                                )
-                                .with_origin(self.origin.clone())
-                                .with_raw(raw_val),
-                            );
-                            return;
-                        }
-                        self.finished = true;
-                        self.stop = crate::openai_chat::response::decode_finish(finish);
-                        step.saw_output = true;
+                    if ch.finish_reason.as_deref() == Some("error") {
+                        let raw_val =
+                            serde_json::from_str::<Value>(&frame.data).unwrap_or(Value::Null);
+                        self.inert = true;
+                        step.error = Some(
+                            KppError::provider(
+                                "The provider ended the stream with `finish_reason: \"error\"` and no details.",
+                            )
+                            .with_origin(self.origin.clone())
+                            .with_raw(raw_val),
+                        );
+                        return;
                     }
                 }
                 false
@@ -637,27 +736,100 @@ impl ChatState {
             None => false,
         };
 
-        let mut has_non_null_usage = false;
+        let mut decoded_usage = None;
         if let Some(usage_raw) = tap.usage
             && usage_raw.get() != "null"
         {
-            has_non_null_usage = true;
             let raw_json = RawJson::from(usage_raw);
             match crate::openai_chat::response::decode_usage(&raw_json, &self.origin) {
-                Ok(decoded) => {
-                    if self.finished {
-                        self.running_usage = None;
-                        self.usage = decoded;
-                        self.tally.final_usage = true;
-                    } else {
-                        self.running_usage = Some(decoded);
-                    }
-                }
+                Ok(decoded) => decoded_usage = Some(decoded),
                 Err(err) => {
                     self.inert = true;
                     step.error = Some(err.with_origin(self.origin.clone()));
                     return;
                 }
+            }
+        }
+
+        if let Some(ch) = tap.choices.as_deref().and_then(|c| c.first()) {
+            if let Some(delta) = &ch.delta {
+                for r in [&delta.reasoning, &delta.reasoning_content]
+                    .into_iter()
+                    .flatten()
+                {
+                    match r {
+                        TextOrOther::Text(text) if !text.is_empty() => {
+                            self.has_reasoning = true;
+                            step.saw_output = true;
+                            self.tally.add(text.len(), true);
+                        }
+                        TextOrOther::Text(_) if self.has_reasoning => {
+                            step.saw_output = true;
+                        }
+                        TextOrOther::Text(_) => {}
+                        TextOrOther::Other(_) => {
+                            self.has_reasoning = true;
+                            step.saw_output = true;
+                        }
+                    }
+                }
+                if let Some(content) = &delta.content {
+                    match content {
+                        TextOrOther::Text(text)
+                            if text.is_empty()
+                                && !self.has_text
+                                && (self.reasons_first || self.finished) => {}
+                        TextOrOther::Text(text) => {
+                            self.has_text = true;
+                            step.saw_output = true;
+                            if !text.is_empty() {
+                                self.tally.add(text.len(), false);
+                            }
+                        }
+                        TextOrOther::Other(_) => {
+                            step.saw_output = true;
+                        }
+                    }
+                }
+                if let Some(refusal) = &delta.refusal {
+                    step.saw_output = true;
+                    if !refusal.is_empty() {
+                        self.tally.add(refusal.len(), false);
+                    }
+                }
+                if let Some(tcs) = &delta.tool_calls
+                    && !tcs.is_empty()
+                {
+                    step.saw_output = true;
+                    for tc in tcs {
+                        if let Some(args) = tc.function.as_ref().and_then(|f| f.arguments.as_ref())
+                            && !args.is_empty()
+                        {
+                            self.tally.add(args.len(), false);
+                        }
+                    }
+                }
+                if delta.audio.is_some() {
+                    step.saw_output = true;
+                }
+            }
+            if let Some(finish) = ch.finish_reason.as_deref()
+                && !finish.is_empty()
+            {
+                self.finished = true;
+                self.stop = crate::openai_chat::response::decode_finish(finish);
+                step.saw_output = true;
+            }
+        }
+
+        let has_non_null_usage = decoded_usage.is_some();
+        if let Some(decoded) = decoded_usage {
+            if self.finished {
+                self.running_usage = None;
+                self.usage = decoded;
+                self.tally.final_usage = true;
+            } else {
+                self.running_usage = Some(decoded);
             }
         }
 
@@ -688,30 +860,38 @@ fn write_without_usage(
     if map.shift_remove("usage").is_none() {
         return false;
     }
+    let start = out.len();
     if has_non_plain_framing {
         // Preserve non-data SSE fields (id, retry, etc.) by rewriting only the `data:` line.
         let Ok(text) = std::str::from_utf8(raw) else {
             return false;
         };
         let mut wrote_data = false;
-        for line in text.split_inclusive('\n') {
-            let trimmed = line.trim_end_matches(['\r', '\n']);
-            if trimmed.starts_with("data:") {
+        for (line, eol) in split_sse_lines(text) {
+            if line == "data" || line.starts_with("data:") {
                 if !wrote_data {
                     out.extend_from_slice(b"data: ");
                     if serde_json::to_writer(&mut *out, &map).is_err() {
+                        out.truncate(start);
                         return false;
                     }
-                    out.extend_from_slice(b"\n");
+                    out.extend_from_slice(if eol.is_empty() {
+                        b"\n"
+                    } else {
+                        eol.as_bytes()
+                    });
                     wrote_data = true;
                 }
             } else {
                 out.extend_from_slice(line.as_bytes());
+                out.extend_from_slice(eol.as_bytes());
             }
+        }
+        if !wrote_data {
+            out.truncate(start);
         }
         return wrote_data;
     }
-    let start = out.len();
     out.extend_from_slice(b"data: ");
     if serde_json::to_writer(&mut *out, &map).is_err() {
         out.truncate(start);
@@ -721,55 +901,32 @@ fn write_without_usage(
     true
 }
 
+impl FrameState for ChatState {
+    fn origin(&self) -> &Origin {
+        &self.origin
+    }
+
+    fn is_inert(&self) -> bool {
+        self.inert
+    }
+
+    fn set_inert(&mut self) {
+        self.inert = true;
+    }
+
+    fn process_frame(&mut self, raw: &[u8], out: &mut Vec<u8>, step: &mut PassthroughStep) {
+        ChatState::process_frame(self, raw, out, step);
+    }
+}
+
 impl StreamPassthrough for ChatPassthrough {
     fn feed(&mut self, chunk: &[u8], out: &mut Vec<u8>) -> PassthroughStep {
-        let mut step = PassthroughStep::default();
-        if self.state.inert {
-            return step;
-        }
-        let state = &mut self.state;
-        let mut framed_err = None;
-        let res = self.framer.feed(chunk, |frame| {
-            if framed_err.is_none() && !state.inert {
-                state.process_frame(frame, out, &mut step);
-                if step.error.is_some() {
-                    framed_err = step.error.take();
-                }
-            }
-        });
-        if let Some(err) = framed_err {
-            step.error = Some(err);
-        } else if let Err(e) = res
-            && !self.state.inert
-        {
-            self.state.inert = true;
-            step.error = Some(KppError::from(e).with_origin(self.state.origin.clone()));
-        }
-        step
+        feed_framer(&mut self.framer, &mut self.state, chunk, out)
     }
 
     fn finish(&mut self, out: &mut Vec<u8>) -> PassthroughStep {
-        let mut step = PassthroughStep::default();
-        if self.state.inert {
-            return step;
-        }
-        let state = &mut self.state;
-        let mut framed_err = None;
-        let res = self.framer.finish(|frame| {
-            if framed_err.is_none() && !state.inert {
-                state.process_frame(frame, out, &mut step);
-                if step.error.is_some() {
-                    framed_err = step.error.take();
-                }
-            }
-        });
-        if let Some(err) = framed_err {
-            step.error = Some(err);
-            return step;
-        }
-        if let Err(e) = res {
-            self.state.inert = true;
-            step.error = Some(KppError::from(e).with_origin(self.state.origin.clone()));
+        let (mut step, early) = finish_framer(&mut self.framer, &mut self.state, out);
+        if early {
             return step;
         }
         if self.state.inert || self.state.done {
@@ -794,6 +951,10 @@ impl StreamPassthrough for ChatPassthrough {
             );
         }
         step
+    }
+
+    fn flush_eof_error(&mut self, out: &mut Vec<u8>) -> PassthroughStep {
+        flush_eof_framer(&mut self.framer, &mut self.state, out)
     }
 
     fn encode_error(&mut self, err: &KppError) -> Vec<u8> {
@@ -1058,6 +1219,7 @@ impl ResponsesState {
                 }
                 self.done = true;
                 self.complete = true;
+                self.inert = true;
                 step.saw_output = true;
                 step.ended = true;
                 step.events = step.events.saturating_add(1);
@@ -1075,7 +1237,11 @@ impl ResponsesState {
                 step.events = step.events.saturating_add(1);
                 out.extend_from_slice(raw);
             }
-            Some("response.reasoning_text.delta" | "response.reasoning_summary_text.delta") => {
+            Some(
+                "response.reasoning.delta"
+                | "response.reasoning_text.delta"
+                | "response.reasoning_summary_text.delta",
+            ) => {
                 if let Some(delta) = tap.delta {
                     self.tally.add(delta.len(), true);
                 }
@@ -1084,22 +1250,22 @@ impl ResponsesState {
                 out.extend_from_slice(raw);
             }
             Some("response.output_item.added") => {
-                if tap
-                    .item
-                    .is_some_and(|i| type_tag(i).ok().flatten().as_deref() == Some("function_call"))
-                {
+                let item_ty = tap.item.and_then(|i| type_tag(i).ok().flatten());
+                if item_ty.as_deref() == Some("function_call") {
                     self.called = true;
                 }
+                if item_ty.as_deref() != Some("message") {
+                    step.saw_output = true;
+                }
+                step.events = step.events.saturating_add(1);
+                out.extend_from_slice(raw);
+            }
+            Some(ty) if is_responses_output_event(ty) => {
                 step.saw_output = true;
                 step.events = step.events.saturating_add(1);
                 out.extend_from_slice(raw);
             }
-            Some(_) => {
-                step.saw_output = true;
-                step.events = step.events.saturating_add(1);
-                out.extend_from_slice(raw);
-            }
-            None => {
+            Some(_) | None => {
                 step.events = step.events.saturating_add(1);
                 out.extend_from_slice(raw);
             }
@@ -1107,72 +1273,109 @@ impl ResponsesState {
     }
 }
 
+fn is_responses_output_event(ty: &str) -> bool {
+    matches!(
+        ty,
+        "response.content_part.added"
+            | "response.content_part.done"
+            | "response.output_text.done"
+            | "response.output_text.annotation.added"
+            | "response.refusal.done"
+            | "response.function_call_arguments.done"
+            | "response.reasoning.done"
+            | "response.reasoning_text.done"
+            | "response.reasoning_summary_part.added"
+            | "response.reasoning_summary_part.done"
+            | "response.reasoning_summary_text.done"
+            | "response.output_item.done"
+    ) || ty.starts_with("response.image_generation_call.")
+        || ty.starts_with("response.web_search_call.")
+        || ty.starts_with("response.file_search_call.")
+        || ty.starts_with("response.code_interpreter_call.")
+        || ty.starts_with("response.mcp_call.")
+        || ty.starts_with("response.custom_tool_call.")
+}
+
+impl FrameState for ResponsesState {
+    fn origin(&self) -> &Origin {
+        &self.origin
+    }
+
+    fn is_inert(&self) -> bool {
+        self.inert
+    }
+
+    fn set_inert(&mut self) {
+        self.inert = true;
+    }
+
+    fn process_frame(&mut self, raw: &[u8], out: &mut Vec<u8>, step: &mut PassthroughStep) {
+        ResponsesState::process_frame(self, raw, out, step);
+    }
+}
+
 impl StreamPassthrough for ResponsesPassthrough {
     fn feed(&mut self, chunk: &[u8], out: &mut Vec<u8>) -> PassthroughStep {
-        let mut step = PassthroughStep::default();
-        if self.state.inert {
-            return step;
-        }
-        let state = &mut self.state;
-        let mut framed_err = None;
-        let res = self.framer.feed(chunk, |frame| {
-            if framed_err.is_none() && !state.inert {
-                state.process_frame(frame, out, &mut step);
-                if step.error.is_some() {
-                    framed_err = step.error.take();
-                }
-            }
-        });
-        if let Some(err) = framed_err {
-            step.error = Some(err);
-        } else if let Err(e) = res
-            && !self.state.inert
-        {
-            self.state.inert = true;
-            step.error = Some(KppError::from(e).with_origin(self.state.origin.clone()));
-        }
-        step
+        feed_framer(&mut self.framer, &mut self.state, chunk, out)
     }
 
     fn finish(&mut self, out: &mut Vec<u8>) -> PassthroughStep {
-        let mut step = PassthroughStep::default();
-        if self.state.inert {
+        let (mut step, early) = finish_framer(&mut self.framer, &mut self.state, out);
+        if early {
+            if step.error.is_none()
+                && let Some(err) = self.state.held_error.take()
+            {
+                step.error = Some(err);
+            }
             return step;
         }
-        let state = &mut self.state;
-        let mut framed_err = None;
-        let res = self.framer.finish(|frame| {
-            if framed_err.is_none() && !state.inert {
-                state.process_frame(frame, out, &mut step);
-                if step.error.is_some() {
-                    framed_err = step.error.take();
-                }
-            }
-        });
-        if let Some(err) = framed_err.or_else(|| self.state.held_error.take()) {
+        if let Some(err) = self.state.held_error.take() {
             self.state.inert = true;
             step.error = Some(err);
-            return step;
-        }
-        if let Err(e) = res {
-            self.state.inert = true;
-            step.error = Some(KppError::from(e).with_origin(self.state.origin.clone()));
             return step;
         }
         self.state.inert = true;
         step
     }
 
-    fn flush_error(&mut self) -> Option<KppError> {
-        self.state.held_error.take()
+    fn flush_eof_error(&mut self, out: &mut Vec<u8>) -> PassthroughStep {
+        let mut step = flush_eof_framer(&mut self.framer, &mut self.state, out);
+        if step.error.is_none()
+            && let Some(err) = self.state.held_error.take()
+        {
+            self.state.inert = true;
+            step.error = Some(err);
+        }
+        step
     }
 
     fn encode_error(&mut self, err: &KppError) -> Vec<u8> {
-        let body = crate::openai_responses::error::stream_error_event(err);
+        let is_event = |v: &Value| v.get("type").and_then(Value::as_str).is_some();
+        let mine = err
+            .origin
+            .as_ref()
+            .is_some_and(|o| o.is(DialectId::OpenAiResponses));
         let mut out = Vec::new();
-        out.extend_from_slice(b"event: error\ndata: ");
-        let _ = serde_json::to_writer(&mut out, &body);
-        out.extend_from_slice(b"\n\n");
+        let write_ev = |out: &mut Vec<u8>, v: &Value| {
+            let ty = v.get("type").and_then(Value::as_str).unwrap_or("error");
+            out.extend_from_slice(b"event: ");
+            out.extend_from_slice(ty.as_bytes());
+            out.extend_from_slice(b"\ndata: ");
+            let _ = serde_json::to_writer(&mut *out, v);
+            out.extend_from_slice(b"\n\n");
+        };
+        match &err.raw {
+            Some(v) if mine && is_event(v) => write_ev(&mut out, v),
+            Some(Value::Array(list)) if mine && !list.is_empty() && list.iter().all(is_event) => {
+                for v in list {
+                    write_ev(&mut out, v);
+                }
+            }
+            _ => {
+                let body = crate::openai_responses::error::stream_error_event(err);
+                write_ev(&mut out, &body);
+            }
+        }
         out
     }
 
@@ -1399,17 +1602,18 @@ impl AnthropicState {
             Some("message_stop") => {
                 self.done = true;
                 self.complete = true;
+                self.inert = true;
                 step.saw_output = true;
                 step.ended = true;
                 step.events = step.events.saturating_add(1);
                 out.extend_from_slice(raw);
             }
-            Some(_) => {
+            Some("content_block_start" | "content_block_stop") => {
                 step.saw_output = true;
                 step.events = step.events.saturating_add(1);
                 out.extend_from_slice(raw);
             }
-            None => {
+            Some(_) | None => {
                 step.events = step.events.saturating_add(1);
                 out.extend_from_slice(raw);
             }
@@ -1417,55 +1621,32 @@ impl AnthropicState {
     }
 }
 
+impl FrameState for AnthropicState {
+    fn origin(&self) -> &Origin {
+        &self.origin
+    }
+
+    fn is_inert(&self) -> bool {
+        self.inert
+    }
+
+    fn set_inert(&mut self) {
+        self.inert = true;
+    }
+
+    fn process_frame(&mut self, raw: &[u8], out: &mut Vec<u8>, step: &mut PassthroughStep) {
+        AnthropicState::process_frame(self, raw, out, step);
+    }
+}
+
 impl StreamPassthrough for AnthropicPassthrough {
     fn feed(&mut self, chunk: &[u8], out: &mut Vec<u8>) -> PassthroughStep {
-        let mut step = PassthroughStep::default();
-        if self.state.inert {
-            return step;
-        }
-        let state = &mut self.state;
-        let mut framed_err = None;
-        let res = self.framer.feed(chunk, |frame| {
-            if framed_err.is_none() && !state.inert {
-                state.process_frame(frame, out, &mut step);
-                if step.error.is_some() {
-                    framed_err = step.error.take();
-                }
-            }
-        });
-        if let Some(err) = framed_err {
-            step.error = Some(err);
-        } else if let Err(e) = res
-            && !self.state.inert
-        {
-            self.state.inert = true;
-            step.error = Some(KppError::from(e).with_origin(self.state.origin.clone()));
-        }
-        step
+        feed_framer(&mut self.framer, &mut self.state, chunk, out)
     }
 
     fn finish(&mut self, out: &mut Vec<u8>) -> PassthroughStep {
-        let mut step = PassthroughStep::default();
-        if self.state.inert {
-            return step;
-        }
-        let state = &mut self.state;
-        let mut framed_err = None;
-        let res = self.framer.finish(|frame| {
-            if framed_err.is_none() && !state.inert {
-                state.process_frame(frame, out, &mut step);
-                if step.error.is_some() {
-                    framed_err = step.error.take();
-                }
-            }
-        });
-        if let Some(err) = framed_err {
-            step.error = Some(err);
-            return step;
-        }
-        if let Err(e) = res {
-            self.state.inert = true;
-            step.error = Some(KppError::from(e).with_origin(self.state.origin.clone()));
+        let (mut step, early) = finish_framer(&mut self.framer, &mut self.state, out);
+        if early {
             return step;
         }
         if !self.state.done {
@@ -1479,6 +1660,10 @@ impl StreamPassthrough for AnthropicPassthrough {
         }
         self.state.inert = true;
         step
+    }
+
+    fn flush_eof_error(&mut self, out: &mut Vec<u8>) -> PassthroughStep {
+        flush_eof_framer(&mut self.framer, &mut self.state, out)
     }
 
     fn encode_error(&mut self, err: &KppError) -> Vec<u8> {
@@ -1638,7 +1823,7 @@ mod tests {
         assert!(!step.saw_output);
         let err = step
             .error
-            .or_else(|| pass.flush_error())
+            .or_else(|| pass.flush_eof_error(&mut out).error)
             .expect("error at start");
         assert_eq!(err.kind, kaeso_kpp::ErrorKind::ProviderError);
         assert!(!String::from_utf8_lossy(&out).contains("event: error"));
@@ -1750,92 +1935,540 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "microbenchmark: cargo test -p kaeso-codecs --release bench_streaming_codecs -- --ignored --nocapture"]
-    fn bench_streaming_codecs() {
-        let resp_bytes = fixture("openai_responses/streams/recorded-text-basic-stream.sse");
-        let resp_chunks: Vec<&[u8]> = resp_bytes.split_inclusive(|b| *b == b'\n').collect();
-        let iters = 2_000u32;
+    fn for_stream_rejects_unsupported_modes_and_namespaces() {
+        let ectx = EgressCtx::for_kind(RequestKind::Generate, StreamMode::on(false));
+        let enc = EncodeCtx::new(RequestKind::Generate, StreamMode::on(false));
+        assert!(for_stream(DialectId::Gemini, &ectx, &enc).is_none());
 
-        let t0 = std::time::Instant::now();
-        for _ in 0..iters {
-            let ectx = EgressCtx::for_kind(RequestKind::Generate, StreamMode::on(false));
-            let enc_ctx = EncodeCtx::new(RequestKind::Generate, StreamMode::on(false));
-            let mut dec = dispatch::stream_decoder(DialectId::OpenAiResponses, &ectx).unwrap();
-            let mut enc = dispatch::stream_encoder(DialectId::OpenAiResponses, &enc_ctx).unwrap();
-            let mut out = Vec::new();
-            for c in &resp_chunks {
-                for ev in dec.feed(c) {
-                    out.extend_from_slice(&enc.encode(&ev).unwrap());
-                }
-            }
-            for ev in dec.finish() {
-                out.extend_from_slice(&enc.encode(&ev).unwrap());
-            }
-            out.extend_from_slice(&enc.finish().unwrap());
-            std::hint::black_box(&out);
-        }
-        let full_same = t0.elapsed().as_secs_f64() * 1e6 / f64::from(iters);
+        let embed_e = EgressCtx::for_kind(RequestKind::Embed, StreamMode::on(false));
+        let embed_c = EncodeCtx::new(RequestKind::Embed, StreamMode::on(false));
+        assert!(for_stream(DialectId::OpenAiChat, &embed_e, &enc).is_none());
+        assert!(for_stream(DialectId::OpenAiChat, &ectx, &embed_c).is_none());
 
-        let t1 = std::time::Instant::now();
-        for _ in 0..iters {
-            let ectx = EgressCtx::for_kind(RequestKind::Generate, StreamMode::on(false));
-            let enc_ctx = EncodeCtx::new(RequestKind::Generate, StreamMode::on(false));
-            let mut pass = for_stream(DialectId::OpenAiResponses, &ectx, &enc_ctx).unwrap();
-            let mut out = Vec::new();
-            for c in &resp_chunks {
-                let _ = pass.feed(c, &mut out);
-            }
-            let _ = pass.finish(&mut out);
-            std::hint::black_box(&out);
-        }
-        let pass_same = t1.elapsed().as_secs_f64() * 1e6 / f64::from(iters);
+        let mut with_tools = ectx.clone();
+        with_tools
+            .tool_names
+            .insert("short".to_owned(), "very_long_tool_name".to_owned());
+        assert!(for_stream(DialectId::OpenAiChat, &with_tools, &enc).is_none());
 
-        let t2 = std::time::Instant::now();
-        for _ in 0..iters {
-            let mut ectx = EgressCtx::for_kind(RequestKind::Generate, StreamMode::on(false));
-            ectx.preserve_wire = true;
-            let enc_ctx = EncodeCtx::new(RequestKind::Generate, StreamMode::on(false));
-            let mut dec = dispatch::stream_decoder(DialectId::OpenAiResponses, &ectx).unwrap();
-            let mut enc = dispatch::stream_encoder(DialectId::OpenAiChat, &enc_ctx).unwrap();
-            let mut out = Vec::new();
-            for c in &resp_chunks {
-                for ev in dec.feed(c) {
-                    out.extend_from_slice(&enc.encode(&ev).unwrap());
-                }
-            }
-            for ev in dec.finish() {
-                out.extend_from_slice(&enc.encode(&ev).unwrap());
-            }
-            out.extend_from_slice(&enc.finish().unwrap());
-            std::hint::black_box(&out);
-        }
-        let cross_full = t2.elapsed().as_secs_f64() * 1e6 / f64::from(iters);
+        let mut with_ids = ectx.clone();
+        with_ids
+            .tool_ids
+            .insert("id1".to_owned(), "orig1".to_owned());
+        assert!(for_stream(DialectId::AnthropicMessages, &with_ids, &enc).is_none());
 
-        let t3 = std::time::Instant::now();
-        for _ in 0..iters {
-            let mut ectx = EgressCtx::for_kind(RequestKind::Generate, StreamMode::on(false));
-            ectx.preserve_wire = false;
-            let enc_ctx = EncodeCtx::new(RequestKind::Generate, StreamMode::on(false));
-            let mut dec = dispatch::stream_decoder(DialectId::OpenAiResponses, &ectx).unwrap();
-            let mut enc = dispatch::stream_encoder(DialectId::OpenAiChat, &enc_ctx).unwrap();
-            let mut out = Vec::new();
-            for c in &resp_chunks {
-                for ev in dec.feed(c) {
-                    out.extend_from_slice(&enc.encode(&ev).unwrap());
-                }
-            }
-            for ev in dec.finish() {
-                out.extend_from_slice(&enc.encode(&ev).unwrap());
-            }
-            out.extend_from_slice(&enc.finish().unwrap());
-            std::hint::black_box(&out);
-        }
-        let cross_fast = t3.elapsed().as_secs_f64() * 1e6 / f64::from(iters);
+        let mut thinking_parts = ectx.clone();
+        thinking_parts.chat_profile.reply.reasoning = ReplyReasoning::ThinkingParts;
+        assert!(for_stream(DialectId::OpenAiChat, &thinking_parts, &enc).is_none());
 
-        eprintln!(
-            "responses->responses: full={full_same:.1}us passthrough={pass_same:.1}us ({:.1}x)\nresponses->chat:      preserve_wire=true={cross_full:.1}us preserve_wire=false={cross_fast:.1}us ({:.1}x)",
-            full_same / pass_same,
-            cross_full / cross_fast,
+        let mut exclude_chat = EncodeCtx::new(RequestKind::Generate, StreamMode::on(false));
+        let mut chat_req = kaeso_kpp::GenerateRequest::new("gpt-4o-mini");
+        let mut r = kaeso_kpp::ReasoningConfig::default();
+        r.exclude = true;
+        chat_req.reasoning = Some(r.clone());
+        exclude_chat.request = Some(std::sync::Arc::new(kaeso_kpp::Request::Generate(chat_req)));
+        assert!(for_stream(DialectId::OpenAiChat, &ectx, &exclude_chat).is_none());
+
+        let mut exclude_resp = EncodeCtx::new(RequestKind::Generate, StreamMode::on(false));
+        let mut resp_req = kaeso_kpp::GenerateRequest::new("gpt-4o-mini");
+        resp_req.reasoning = Some(r);
+        exclude_resp.request = Some(std::sync::Arc::new(kaeso_kpp::Request::Generate(resp_req)));
+        assert!(for_stream(DialectId::OpenAiResponses, &ectx, &exclude_resp).is_none());
+
+        // Responses requests declaring tool namespaces must stay on the full codec path so the
+        // encoder can re-nest tool names on the way out.
+        let mut ns_resp = EncodeCtx::new(RequestKind::Generate, StreamMode::on(false));
+        let mut ns_req = kaeso_kpp::GenerateRequest::new("gpt-4o-mini");
+        ns_req
+            .tools
+            .push(kaeso_kpp::ToolDef::Unknown(kaeso_kpp::RawItem::new(
+                Origin::new(DialectId::OpenAiResponses),
+                RawJson::from_serialize(&serde_json::json!({
+                    "type": "namespace",
+                    "name": "math",
+                    "description": "math tools",
+                    "tools": [{"type": "function", "name": "add"}]
+                }))
+                .unwrap(),
+            )));
+        ns_resp.request = Some(std::sync::Arc::new(kaeso_kpp::Request::Generate(ns_req)));
+        assert!(for_stream(DialectId::OpenAiResponses, &ectx, &ns_resp).is_none());
+    }
+
+    #[test]
+    fn raw_sse_framer_edge_cases() {
+        let mut frames = Vec::new();
+        let mut framer = RawSseFramer::new();
+        // Split UTF-8 BOM across chunks + standalone comment + CRLF + CR-only frame.
+        framer
+            .feed(&[0xEF, 0xBB], |f| frames.push(f.to_vec()))
+            .unwrap();
+        framer
+            .feed(
+                b"\xBF: keepalive\n\r\ndata: one\r\n\r\ndata: two\r\r",
+                |f| frames.push(f.to_vec()),
+            )
+            .unwrap();
+        framer
+            .finish_terminated(|f| frames.push(f.to_vec()))
+            .unwrap();
+        framer.finish(|f| frames.push(f.to_vec())).unwrap();
+        assert_eq!(frames.len(), 3);
+        assert_eq!(frames[0], b": keepalive\n");
+        assert!(String::from_utf8_lossy(&frames[1]).contains("data: one"));
+        assert_eq!(frames[2], b"data: two\r\r");
+
+        // Non-BOM leading bytes are preserved.
+        let mut f2 = RawSseFramer::new();
+        let mut got = Vec::new();
+        f2.feed(b"data: a\n\n", |f| got.push(f.to_vec())).unwrap();
+        assert_eq!(got, vec![b"data: a\n\n".to_vec()]);
+
+        // Invalid UTF-8 in fast path and buffered path and finish.
+        let mut f3 = RawSseFramer::new();
+        assert_eq!(
+            f3.feed(b"data: \xFF\n\n", |_| {}),
+            Err(SseError::InvalidUtf8)
         );
+        let mut f4 = RawSseFramer::new();
+        f4.feed(b"data: ", |_| {}).unwrap();
+        assert_eq!(f4.feed(b"\xFF\n\n", |_| {}), Err(SseError::InvalidUtf8));
+        let mut f5 = RawSseFramer::new();
+        f5.feed(b"data: \xFF\n", |_| {}).unwrap();
+        assert_eq!(f5.finish(|_| {}), Err(SseError::InvalidUtf8));
+
+        // Truncated unterminated line at EOF.
+        let mut f6 = RawSseFramer::new();
+        f6.feed(b"data: partial", |_| {}).unwrap();
+        // `finish_terminated` leaves unterminated bytes for `finish`.
+        let mut flushed = Vec::new();
+        f6.finish_terminated(|f| flushed.push(f.to_vec())).unwrap();
+        assert!(flushed.is_empty());
+        assert_eq!(f6.finish(|_| {}), Err(SseError::Truncated));
+
+        // Partial BOM at EOF also triggers Truncated.
+        let mut f7 = RawSseFramer::new();
+        f7.feed(&[0xEF], |_| {}).unwrap();
+        assert_eq!(f7.finish(|_| {}), Err(SseError::InvalidUtf8));
+
+        // TooLarge in fast path, tail, and buffered path.
+        let mut f8 = RawSseFramer {
+            max_bytes: 8,
+            ..RawSseFramer::new()
+        };
+        assert!(matches!(
+            f8.feed(b"data: 123456789\n\n", |_| {}),
+            Err(SseError::TooLarge { limit: 8 })
+        ));
+        let mut f9 = RawSseFramer {
+            max_bytes: 8,
+            ..RawSseFramer::new()
+        };
+        assert!(matches!(
+            f9.feed(b"data: 123456789", |_| {}),
+            Err(SseError::TooLarge { limit: 8 })
+        ));
+        let mut f10 = RawSseFramer {
+            max_bytes: 8,
+            ..RawSseFramer::new()
+        };
+        f10.feed(b"data: 1", |_| {}).unwrap();
+        assert!(matches!(
+            f10.feed(b"23456789", |_| {}),
+            Err(SseError::TooLarge { limit: 8 })
+        ));
+        let mut f11 = RawSseFramer {
+            max_bytes: 8,
+            ..RawSseFramer::new()
+        };
+        f11.feed(b"data: 1", |_| {}).unwrap();
+        assert!(matches!(
+            f11.feed(b"23\n\n", |_| {}),
+            Err(SseError::TooLarge { limit: 8 })
+        ));
+        let mut f12 = RawSseFramer {
+            max_bytes: 10,
+            ..RawSseFramer::new()
+        };
+        f12.feed(b"a:1\n", |_| {}).unwrap();
+        assert!(matches!(
+            f12.feed(b"\n12345678901", |_| {}),
+            Err(SseError::TooLarge { limit: 10 })
+        ));
+
+        // Trailing blank line only at EOF is ignored rather than dispatched.
+        let mut f13 = RawSseFramer::new();
+        let mut blank_frames = Vec::new();
+        f13.feed(b"\r", |f| blank_frames.push(f.to_vec())).unwrap();
+        f13.finish(|f| blank_frames.push(f.to_vec())).unwrap();
+        assert!(blank_frames.is_empty());
+    }
+
+    #[test]
+    fn chat_passthrough_errors_validation_and_edge_cases() {
+        let ectx = EgressCtx::for_kind(RequestKind::Generate, StreamMode::on(false));
+        let enc_no = EncodeCtx::new(RequestKind::Generate, StreamMode::on(false));
+
+        // Non-plain framing with CR-only line endings + usage stripping + bare `data` line.
+        let non_plain = concat!(
+            ": comment\n",
+            "id: 1\rretry: 1000\rdata: {\"id\":\"c1\",\"object\":\"chat.completion.chunk\",\"model\":\"m\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"hi\"},\"finish_reason\":null}],\"usage\":{\"prompt_tokens\":3,\"completion_tokens\":1,\"total_tokens\":4}}\r\r",
+            "event: custom\ndata: {\"note\":\"keep\"}\n\n",
+            "data: {\"id\":\"c1\",\"object\":\"chat.completion.chunk\",\"model\":\"m\",\"choices\":[{\"index\":0,\"delta\":{\"refusal\":\"no\",\"reasoning\":\"r1\",\"reasoning_content\":\"r2\",\"tool_calls\":[{\"index\":0,\"function\":{\"arguments\":\"{}\"}}],\"audio\":{\"data\":\"AA==\"}},\"finish_reason\":\"stop\"}]}\n\n"
+        );
+        let mut pass = for_stream(DialectId::OpenAiChat, &ectx, &enc_no).unwrap();
+        assert_eq!(pass.keepalive(), keepalive::COMMENT_FRAME);
+        let (out, errs, ended) = feed_chunked(pass.as_mut(), non_plain.as_bytes(), 17);
+        assert!(errs.is_empty() && ended);
+        let text = String::from_utf8(out).unwrap();
+        assert!(text.contains("id: 1\rretry: 1000\rdata: ") && !text.contains("\"usage\""));
+        assert!(text.contains(": comment\n"));
+        let summary = pass.summary();
+        assert_eq!(summary.usage.input_tokens, 3);
+        assert_eq!(summary.usage.output_tokens, 1);
+        assert!(summary.complete && summary.tally.final_usage);
+        assert_eq!(summary.tally.reasoning_deltas, 2);
+        assert_eq!(summary.tally.reasoning_bytes, 4);
+        assert!(pass.keepalive().is_empty());
+        // Feeding after inert is a no-op.
+        let mut extra = Vec::new();
+        assert_eq!(pass.feed(b"data: [DONE]\n\n", &mut extra).events, 0);
+        assert!(extra.is_empty());
+
+        // Validation errors must not mark `saw_output = true` on the same chunk.
+        let cases: &[(&str, &str)] = &[
+            (
+                "finish_reason error",
+                "data: {\"id\":\"c1\",\"model\":\"m\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"x\"},\"finish_reason\":\"error\"}]}\n\n",
+            ),
+            (
+                "n > 1",
+                "data: {\"id\":\"c1\",\"model\":\"m\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"a\"}},{\"index\":1,\"delta\":{\"content\":\"b\"}}]}\n\n",
+            ),
+            (
+                "index != 0",
+                "data: {\"id\":\"c1\",\"model\":\"m\",\"choices\":[{\"index\":1,\"delta\":{\"content\":\"a\"}}]}\n\n",
+            ),
+            (
+                "invalid usage",
+                "data: {\"id\":\"c1\",\"model\":\"m\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"a\"}}],\"usage\":\"bad\"}\n\n",
+            ),
+            (
+                "event error",
+                "event: error\ndata: {\"error\":{\"message\":\"boom\",\"type\":\"server_error\"}}\n\n",
+            ),
+            (
+                "inline error",
+                "data: {\"error\":{\"message\":\"boom\",\"type\":\"server_error\"}}\n\n",
+            ),
+            (
+                "object error",
+                "data: {\"object\":\"error\",\"message\":\"boom\"}\n\n",
+            ),
+            ("invalid json", "data: {not json}\n\n"),
+            ("done before finish", "data: [DONE]\n\n"),
+        ];
+        for (label, raw) in cases {
+            let mut p = for_stream(DialectId::OpenAiChat, &ectx, &enc_no).unwrap();
+            let mut o = Vec::new();
+            let step = p.feed(raw.as_bytes(), &mut o);
+            assert!(step.error.is_some(), "{label} should error");
+            assert!(
+                !step.saw_output,
+                "{label} must not set saw_output before error"
+            );
+            let encoded = p.encode_error(step.error.as_ref().unwrap());
+            assert!(String::from_utf8_lossy(&encoded).starts_with("data: {"));
+        }
+
+        // CR-only error at EOF is caught by `flush_eof_error` during peek.
+        let mut p = for_stream(DialectId::OpenAiChat, &ectx, &enc_no).unwrap();
+        let mut o = Vec::new();
+        let s1 = p.feed(
+            b"event: error\rdata: {\"error\":{\"message\":\"cr boom\"}}\r\r",
+            &mut o,
+        );
+        assert!(s1.error.is_none());
+        let s2 = p.flush_eof_error(&mut o);
+        assert!(s2.error.is_some() && !s2.saw_output);
+
+        // `reasons_first` profile ignores opening empty `content: ""` for `saw_output`.
+        let mut ds_ctx = EgressCtx::for_kind(RequestKind::Generate, StreamMode::on(false));
+        ds_ctx.chat_profile.reply.reasoning_fields = &["reasoning_content"];
+        let mut p = for_stream(DialectId::OpenAiChat, &ds_ctx, &enc_no).unwrap();
+        let mut o = Vec::new();
+        let s1 = p.feed(
+            b"data: {\"id\":\"c1\",\"model\":\"m\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"\",\"reasoning_content\":\"\"},\"finish_reason\":null}]}\n\n",
+            &mut o,
+        );
+        assert!(!s1.saw_output);
+        let s2 = p.feed(
+            b"data: {\"error\":{\"message\":\"fail after open\"}}\n\n",
+            &mut o,
+        );
+        assert!(s2.error.is_some() && !s2.saw_output);
+
+        // Incomplete stream EOF error & summary fallback to running usage.
+        let mut p = for_stream(DialectId::OpenAiChat, &ectx, &enc_no).unwrap();
+        let mut o = Vec::new();
+        let _ = p.feed(
+            b"data: {\"id\":\"c1\",\"model\":\"m\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"hi\"},\"finish_reason\":null}],\"usage\":{\"prompt_tokens\":4,\"completion_tokens\":2,\"total_tokens\":6}}\n\n",
+            &mut o,
+        );
+        let fin = p.finish(&mut o);
+        assert!(fin.error.is_some());
+        let sum = p.summary();
+        assert_eq!(sum.usage.input_tokens, 4);
+        assert!(sum.tally.final_usage);
+
+        // Truncated SSE error on finish.
+        let mut p = for_stream(DialectId::OpenAiChat, &ectx, &enc_no).unwrap();
+        let mut o = Vec::new();
+        let _ = p.feed(b"data: {\"id\":\"c1\"", &mut o);
+        assert!(p.finish(&mut o).error.is_some());
+
+        // `write_without_usage` truncates on failure and handles bare `data` line.
+        let mut buf = b"prefix".to_vec();
+        assert!(!write_without_usage(
+            "not json",
+            b"not json",
+            false,
+            &mut buf
+        ));
+        assert!(!write_without_usage(
+            "{\"a\":1}",
+            b"data: {\"a\":1}\n\n",
+            false,
+            &mut buf
+        ));
+        assert!(!write_without_usage(
+            "{\"a\":1,\"usage\":null}",
+            b"id: 1\n\n",
+            true,
+            &mut buf,
+        ));
+        assert_eq!(buf, b"prefix");
+        assert!(write_without_usage(
+            "{\"a\":1,\"usage\":null}",
+            b"id: 1\ndata\n\n",
+            true,
+            &mut buf,
+        ));
+        assert!(String::from_utf8_lossy(&buf).contains("id: 1\ndata: {\"a\":1}\n"));
+    }
+
+    #[test]
+    fn responses_passthrough_errors_and_edge_cases() {
+        let ectx = EgressCtx::for_kind(RequestKind::Generate, StreamMode::on(false));
+        let enc = EncodeCtx::new(RequestKind::Generate, StreamMode::on(false));
+
+        // `response.output_item.added` for `message` and unknown events keep `saw_output = false`;
+        // `response.reasoning.delta` tallies reasoning bytes; `response.completed` sets inert.
+        let mut pass = for_stream(DialectId::OpenAiResponses, &ectx, &enc).unwrap();
+        assert_eq!(pass.keepalive(), keepalive::COMMENT_FRAME);
+        let mut out = Vec::new();
+        let s0 = pass.feed(
+            concat!(
+                ": ping\n",
+                "event: response.created\ndata: {\"type\":\"response.created\",\"response\":{\"id\":\"r1\",\"model\":\"gpt-4o-mini\",\"usage\":{\"input_tokens\":3,\"output_tokens\":0,\"total_tokens\":3}}}\n\n",
+                "event: response.in_progress\ndata: {\"type\":\"response.in_progress\"}\n\n",
+                "event: response.output_item.added\ndata: {\"type\":\"response.output_item.added\",\"item\":{\"type\":\"message\"}}\n\n",
+                "event: response.custom_unknown\ndata: {\"type\":\"response.custom_unknown\"}\n\n",
+                "data: {}\n\n"
+            )
+            .as_bytes(),
+            &mut out,
+        );
+        assert!(!s0.saw_output && s0.error.is_none());
+
+        let s1 = pass.feed(
+            concat!(
+                "event: response.reasoning.delta\ndata: {\"type\":\"response.reasoning.delta\",\"delta\":\"think\"}\n\n",
+                "event: response.content_part.added\ndata: {\"type\":\"response.content_part.added\"}\n\n",
+                "event: response.completed\ndata: {\"type\":\"response.completed\",\"response\":{\"id\":\"r1\",\"model\":\"gpt-4o-mini\",\"status\":\"completed\",\"output\":[],\"usage\":{\"input_tokens\":3,\"output_tokens\":2,\"total_tokens\":5}}}\n\n"
+            )
+            .as_bytes(),
+            &mut out,
+        );
+        assert!(s1.saw_output && s1.ended && s1.error.is_none());
+        assert_eq!(pass.summary().tally.reasoning_deltas, 1);
+        assert_eq!(pass.summary().tally.reasoning_bytes, 5);
+        assert!(pass.keepalive().is_empty());
+        // Inert after `response.completed`: subsequent frames are ignored.
+        let len_before = out.len();
+        assert_eq!(
+            pass.feed(
+                b"data: {\"type\":\"response.output_text.delta\",\"delta\":\"late\"}\n\n",
+                &mut out
+            )
+            .events,
+            0
+        );
+        assert_eq!(out.len(), len_before);
+
+        // Native `encode_error` replays single and paired native raw events, falls back for foreign.
+        let mut p_err = for_stream(DialectId::OpenAiResponses, &ectx, &enc).unwrap();
+        let mut err_out = Vec::new();
+        let pair = concat!(
+            "event: error\ndata: {\"type\":\"error\",\"code\":\"rate_limit\",\"message\":\"slow down\",\"param\":\"model\"}\n\n",
+            "event: response.failed\ndata: {\"type\":\"response.failed\",\"response\":{\"id\":\"r1\",\"status\":\"failed\",\"error\":{\"code\":\"rate_limit\",\"message\":\"slow down\"}}}\n\n"
+        );
+        let step = p_err.feed(pair.as_bytes(), &mut err_out);
+        let err = step.error.expect("paired error");
+        let encoded = String::from_utf8(p_err.encode_error(&err)).unwrap();
+        assert!(encoded.contains("event: error\ndata: "));
+        assert!(encoded.contains("event: response.failed\ndata: "));
+
+        let single_native = KppError::provider("oops")
+            .with_origin(Origin::new(DialectId::OpenAiResponses))
+            .with_raw(serde_json::json!({"type": "response.failed", "message": "oops"}));
+        let single_enc = String::from_utf8(p_err.encode_error(&single_native)).unwrap();
+        assert!(single_enc.starts_with("event: response.failed\ndata: "));
+
+        let foreign = KppError::provider("foreign").with_origin(Origin::new(DialectId::OpenAiChat));
+        let foreign_enc = String::from_utf8(p_err.encode_error(&foreign)).unwrap();
+        assert!(foreign_enc.starts_with("event: error\ndata: "));
+
+        // Error cases: invalid JSON, standalone `response.failed` (with and without response),
+        // missing response on `response.completed`, invalid usage on `response.completed`, truncated.
+        for raw in [
+            "data: {bad\n\n",
+            "event: response.failed\ndata: {\"type\":\"response.failed\"}\n\n",
+            "event: response.failed\ndata: {\"type\":\"response.failed\",\"response\":{\"id\":\"r1\",\"status\":\"failed\",\"error\":{\"code\":\"server_error\",\"message\":\"bad\"}}}\n\n",
+            "event: response.completed\ndata: {\"type\":\"response.completed\"}\n\n",
+            "event: response.completed\ndata: {\"type\":\"response.completed\",\"response\":{\"id\":\"r1\",\"model\":\"m\",\"status\":\"completed\",\"usage\":\"bad\"}}\n\n",
+        ] {
+            let mut p = for_stream(DialectId::OpenAiResponses, &ectx, &enc).unwrap();
+            let mut o = Vec::new();
+            assert!(p.feed(raw.as_bytes(), &mut o).error.is_some(), "{raw}");
+        }
+
+        // Held error flushed by `finish` and by `flush_eof_error` on CR-only input.
+        let mut p1 = for_stream(DialectId::OpenAiResponses, &ectx, &enc).unwrap();
+        let mut o1 = Vec::new();
+        assert!(
+            p1.feed(
+                b"event: error\ndata: {\"type\":\"error\",\"message\":\"solo\"}\n\n",
+                &mut o1
+            )
+            .error
+            .is_none()
+        );
+        assert!(p1.finish(&mut o1).error.is_some());
+
+        let mut p2 = for_stream(DialectId::OpenAiResponses, &ectx, &enc).unwrap();
+        let mut o2 = Vec::new();
+        let _ = p2.feed(
+            b"event: error\rdata: {\"type\":\"error\",\"message\":\"cr\"}\r\r",
+            &mut o2,
+        );
+        assert!(p2.flush_eof_error(&mut o2).error.is_some());
+
+        // Truncated SSE error on finish.
+        let mut p3 = for_stream(DialectId::OpenAiResponses, &ectx, &enc).unwrap();
+        let mut o3 = Vec::new();
+        let _ = p3.feed(b"data: {\"type\":\"response.created\"", &mut o3);
+        assert!(p3.finish(&mut o3).error.is_some());
+
+        // Cross-dialect `preserve_wire = false` decoder reports truncated stream on `finish`.
+        let mut cross_ctx = EgressCtx::for_kind(RequestKind::Generate, StreamMode::on(false));
+        cross_ctx.preserve_wire = false;
+        let mut dec = dispatch::stream_decoder(DialectId::OpenAiResponses, &cross_ctx).unwrap();
+        let _ = dec.feed(
+            b"event: response.created\ndata: {\"type\":\"response.created\",\"response\":{\"id\":\"r1\",\"model\":\"gpt-4o-mini\",\"status\":\"in_progress\"}}\n\n",
+        );
+        let fin = dec.finish();
+        assert!(
+            fin.iter()
+                .any(|e| matches!(e, kaeso_kpp::StreamEvent::Error(_))),
+            "preserve_wire=false must emit an error on truncated Responses stream: {fin:?}"
+        );
+    }
+
+    #[test]
+    fn anthropic_passthrough_errors_and_edge_cases() {
+        let ectx = EgressCtx::for_kind(RequestKind::Generate, StreamMode::on(false));
+        let enc = EncodeCtx::new(RequestKind::Generate, StreamMode::on(false));
+
+        let mut pass = for_stream(DialectId::AnthropicMessages, &ectx, &enc).unwrap();
+        assert_eq!(pass.keepalive(), keepalive::PING_FRAME);
+        let mut out = Vec::new();
+        let s0 = pass.feed(
+            concat!(
+                ": comment\n",
+                "event: ping\ndata: {\"type\":\"ping\"}\n\n",
+                "event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"m1\",\"model\":\"claude\",\"usage\":{\"input_tokens\":10,\"output_tokens\":0}}}\n\n",
+                "event: unknown_ev\ndata: {\"type\":\"unknown_ev\"}\n\n",
+                "data: {}\n\n"
+            )
+            .as_bytes(),
+            &mut out,
+        );
+        assert!(!s0.saw_output && s0.error.is_none());
+
+        let s1 = pass.feed(
+            concat!(
+                "event: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"text\",\"text\":\"\"}}\n\n",
+                "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"hi\"}}\n\n",
+                "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"{}\"}}\n\n",
+                "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":2,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"hmm\"}}\n\n",
+                "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":2,\"delta\":{\"type\":\"signature_delta\",\"signature\":\"sig\"}}\n\n",
+                "event: content_block_stop\ndata: {\"type\":\"content_block_stop\",\"index\":0}\n\n",
+                "event: message_delta\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"stop_sequence\",\"stop_sequence\":\"END\"},\"usage\":{\"output_tokens\":5}}\n\n",
+                "event: message_stop\ndata: {\"type\":\"message_stop\"}\n\n"
+            )
+            .as_bytes(),
+            &mut out,
+        );
+        assert!(s1.saw_output && s1.ended && s1.error.is_none());
+        let sum = pass.summary();
+        assert_eq!(sum.stop, StopReason::StopSequence("END".to_owned()));
+        assert_eq!(sum.usage.input_tokens, 10);
+        assert_eq!(sum.usage.output_tokens, 5);
+        assert_eq!(sum.tally.reasoning_deltas, 1);
+        assert_eq!(sum.tally.reasoning_bytes, 3);
+        assert!(pass.keepalive().is_empty());
+        // Inert after `message_stop`.
+        assert_eq!(
+            pass.feed(b"event: ping\ndata: {\"type\":\"ping\"}\n\n", &mut out)
+                .events,
+            0
+        );
+
+        // Error events: `event: error`, JSON `{"type":"error"}`, invalid JSON, incomplete EOF,
+        // truncated EOF, and CR-only EOF error.
+        for raw in [
+            "event: error\ndata: {\"type\":\"error\",\"error\":{\"type\":\"overloaded_error\",\"message\":\"busy\"}}\n\n",
+            "data: {\"type\":\"error\",\"error\":{\"type\":\"api_error\",\"message\":\"bad\"}}\n\n",
+            "data: {not json\n\n",
+        ] {
+            let mut p = for_stream(DialectId::AnthropicMessages, &ectx, &enc).unwrap();
+            let mut o = Vec::new();
+            let step = p.feed(raw.as_bytes(), &mut o);
+            assert!(step.error.is_some() && !step.saw_output, "{raw}");
+            let encoded = String::from_utf8(p.encode_error(step.error.as_ref().unwrap())).unwrap();
+            assert!(encoded.starts_with("event: error\ndata: "));
+        }
+
+        let mut p_inc = for_stream(DialectId::AnthropicMessages, &ectx, &enc).unwrap();
+        let mut o_inc = Vec::new();
+        let _ = p_inc.feed(
+            b"event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"m1\",\"model\":\"c\"}}\n\n",
+            &mut o_inc,
+        );
+        assert!(p_inc.finish(&mut o_inc).error.is_some());
+
+        let mut p_trunc = for_stream(DialectId::AnthropicMessages, &ectx, &enc).unwrap();
+        let mut o_trunc = Vec::new();
+        let _ = p_trunc.feed(b"data: {\"type\":\"ping\"", &mut o_trunc);
+        assert!(p_trunc.finish(&mut o_trunc).error.is_some());
+
+        let mut p_cr = for_stream(DialectId::AnthropicMessages, &ectx, &enc).unwrap();
+        let mut o_cr = Vec::new();
+        let _ = p_cr.feed(
+            b"event: error\rdata: {\"type\":\"error\",\"error\":{\"type\":\"api_error\",\"message\":\"cr\"}}\r\r",
+            &mut o_cr,
+        );
+        assert!(p_cr.flush_eof_error(&mut o_cr).error.is_some());
     }
 }

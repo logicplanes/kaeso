@@ -377,6 +377,7 @@ impl ChatStreamEncoder {
 
     fn start(&mut self, start: &ResponseStart, own: bool, chunk: &mut Chunk) {
         self.started = true;
+        self.foreign_text_prefix = None;
         self.start_usage = start.usage.clone();
         if own {
             self.envelope = start_envelope(start);

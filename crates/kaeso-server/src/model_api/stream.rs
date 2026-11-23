@@ -709,8 +709,15 @@ pub(super) async fn peek_passthrough(
                 break;
             }
             None => {
-                if let Some(err) = passthrough.flush_error() {
-                    return Err(err);
+                let step = passthrough.flush_eof_error(&mut out);
+                events = events.saturating_add(step.events);
+                ended |= step.ended;
+                saw_output |= step.saw_output;
+                if let Some(err) = step.error {
+                    if !saw_output {
+                        return Err(err);
+                    }
+                    provider_error = Some(err);
                 }
                 eof = true;
                 break;
@@ -1601,13 +1608,19 @@ impl Pump {
             }
             if !p.bytes.is_empty() {
                 if !self.app.reply(p.bytes).await {
-                    self.gone = true;
+                    self.gone = cut_off(
+                        &mut self.app,
+                        &mut self.engine,
+                        &mut self.broken,
+                        self.last_event_at,
+                    )
+                    .await;
                 } else if p.ends {
                     self.last_event_at
                         .get_or_insert(self.app.progress.bytes.saturating_sub(tail_len));
                 }
             }
-            if self.broken.is_none() && to_app.is_none() {
+            if !self.gone && self.broken.is_none() && to_app.is_none() {
                 // Close the body channel before background accounting so the HTTP layer can flush
                 // the terminating chunk immediately.
                 self.app.close();

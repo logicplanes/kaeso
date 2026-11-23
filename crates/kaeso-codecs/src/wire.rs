@@ -444,17 +444,36 @@ mod one_pass {
             })
         }
 
-        fn deserialize_unit<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
-            self.inner.deserialize_unit(NullVisitor {
-                inner: visitor,
-                is_null: self.is_null,
-            })
+        fn deserialize_newtype_struct<V: Visitor<'de>>(
+            self,
+            name: &'static str,
+            visitor: V,
+        ) -> Result<V::Value, Self::Error> {
+            self.inner.deserialize_newtype_struct(name, visitor)
+        }
+
+        fn deserialize_struct<V: Visitor<'de>>(
+            self,
+            name: &'static str,
+            fields: &'static [&'static str],
+            visitor: V,
+        ) -> Result<V::Value, Self::Error> {
+            self.inner.deserialize_struct(name, fields, visitor)
+        }
+
+        fn deserialize_enum<V: Visitor<'de>>(
+            self,
+            name: &'static str,
+            variants: &'static [&'static str],
+            visitor: V,
+        ) -> Result<V::Value, Self::Error> {
+            self.inner.deserialize_enum(name, variants, visitor)
         }
 
         serde::forward_to_deserialize_any! {
-            bool i8 i16 i32 i64 i128 u8 u16 u32 u64 u128 f32 f64 char str string bytes
-            byte_buf unit_struct newtype_struct seq tuple tuple_struct map struct enum
-            identifier ignored_any
+            bool i8 i16 i32 i64 i128 u8 u16 u32 u64 u128 f32 f64 char str string
+            bytes byte_buf unit unit_struct seq tuple tuple_struct map identifier
+            ignored_any
         }
     }
 

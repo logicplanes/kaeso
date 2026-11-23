@@ -69,11 +69,16 @@ impl Charge {
         if wanted <= held {
             return Ok(());
         }
-        // Acquire in 16 KiB steps when memory is free so small SSE chunks don't hit the
-        // semaphore on every KiB; fall back to the exact need when memory is tight.
-        let step = 16u32.min(self.memory.kib);
-        let optimistic = wanted.next_multiple_of(step).min(self.memory.kib);
-        if optimistic > wanted
+        // Acquire in 16 KiB steps when at least half of the budget is free so small SSE chunks
+        // don't hit the semaphore on every KiB; fall back to the exact need when memory is tight.
+        let step = 16u32;
+        let half = usize::try_from(self.memory.kib / 2).unwrap_or(usize::MAX);
+        if self.memory.kib >= 64
+            && self.memory.permits.available_permits() >= half
+            && let Some(optimistic) = wanted
+                .checked_next_multiple_of(step)
+                .map(|n| n.min(self.memory.kib))
+            && optimistic > wanted
             && let Ok(more) = self
                 .memory
                 .permits

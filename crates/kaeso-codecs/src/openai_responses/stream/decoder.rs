@@ -1094,7 +1094,12 @@ impl StreamDecoder for Decoder {
         if !self.inert {
             self.release(&mut out);
         }
-        if !self.inert && self.engine.open() {
+        let open = if self.ctx.preserve_wire {
+            self.engine.open()
+        } else {
+            self.started && !self.terminated
+        };
+        if !self.inert && open {
             self.fail(
                 &mut out,
                 KppError::provider("The provider's stream ended before the response was complete."),
