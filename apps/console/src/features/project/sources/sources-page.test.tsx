@@ -150,7 +150,7 @@ describe("SourcesPage", () => {
     await user.click(within(dialog).getByRole("button", { name: "Add source" }));
 
     expect(await notifications().findByText("Source Codex added")).toBeInTheDocument();
-    expect(requests("POST", SOURCES).map((r) => r.body)).toEqual([{ kind: "codex", name: "Codex", match_members: true, content: false }]);
+    expect(requests("POST", SOURCES).map((r) => r.body)).toEqual([{ kind: "codex", name: "Codex", match_members: false, content: false }]);
     const result = await screen.findByRole("dialog", { name: /Connect Codex/ });
     expect(within(result).getByRole("textbox", { name: "Key for Codex" })).toHaveTextContent(KEY);
     expect(within(result).getByText("~/.codex/config.toml")).toBeInTheDocument();
@@ -192,12 +192,14 @@ describe("SourcesPage", () => {
     await user.type(name, "Scripts");
     await user.click(within(dialog).getByRole("combobox", { name: "Counts for" }));
     await user.click(await screen.findByRole("option", { name: "ci-deploy (service account)" }));
-    await user.click(within(dialog).getByRole("checkbox", { name: /Match members by email/ }));
+    const matching = within(dialog).getByRole("checkbox", { name: /Match members by email/ });
+    expect(matching).not.toBeChecked();
+    await user.click(matching);
     await user.click(within(dialog).getByRole("button", { name: "Add source" }));
 
     await waitFor(() =>
       expect(requests("POST", SOURCES).map((r) => r.body)).toEqual([
-        { kind: "http", name: "Scripts", match_members: false, content: false, service_account_id: "sa_deploy" },
+        { kind: "http", name: "Scripts", match_members: true, content: false, service_account_id: "sa_deploy" },
       ]),
     );
     const result = await screen.findByRole("dialog", { name: /Connect Scripts/ });
