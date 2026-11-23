@@ -34,6 +34,7 @@ type BatchKey = (
     String,
     String,
     Option<Uuid>,
+    Option<Uuid>,
 );
 
 // Rows a flush took stay counted until PostgreSQL has them: a limit counter rebuilt while the
@@ -74,6 +75,7 @@ fn key_of(row: &UsageRow) -> BatchKey {
         row.ingress_dialect.clone(),
         row.egress_dialect.clone(),
         row.credential_id,
+        row.source_id,
     )
 }
 
@@ -179,6 +181,7 @@ type UniqueKey<'a> = (
     &'a str,
     &'a str,
     Option<Uuid>,
+    Option<Uuid>,
 );
 
 fn unique_key(r: &UsageRow) -> UniqueKey<'_> {
@@ -193,6 +196,7 @@ fn unique_key(r: &UsageRow) -> UniqueKey<'_> {
         &r.ingress_dialect,
         &r.egress_dialect,
         r.credential_id,
+        r.source_id,
     )
 }
 
@@ -390,6 +394,9 @@ pub fn cost_known(outcome: &Outcome) -> bool {
     {
         return false;
     }
+    if outcome.prices.is_none() && outcome.observed_cost.is_some() {
+        return true;
+    }
     cost::is_priced(&usage, outcome.prices.as_ref(), outcome.media.as_ref())
 }
 
@@ -427,9 +434,12 @@ pub fn costed(outcome: &Outcome) -> (Usage, Decimal) {
     {
         return (usage, Decimal::ZERO);
     }
-    let c = outcome.prices.as_ref().map_or(Decimal::ZERO, |p| {
-        cost::cost_with_media(&usage, p, outcome.media.as_ref())
-    });
+    let c = outcome
+        .prices
+        .as_ref()
+        .map_or(outcome.observed_cost.unwrap_or(Decimal::ZERO), |p| {
+            cost::cost_with_media(&usage, p, outcome.media.as_ref())
+        });
     (usage, c)
 }
 
@@ -483,6 +493,7 @@ pub async fn account(state: &AppState, outcome: &Outcome) {
             .map(|d| d.as_str().to_owned())
             .unwrap_or_default(),
         credential_id: outcome.credential_id,
+        source_id: outcome.source_id,
         requests: i64::from(!completes_job(outcome)),
         errors: i64::from(outcome.is_error() && !completes_job(outcome)),
         input_tokens: i(usage.input_tokens),
@@ -493,36 +504,18 @@ pub async fn account(state: &AppState, outcome: &Outcome) {
         cost: c,
         media: media_sums(outcome),
     });
-    let (Some(entry), Some(provider)) = (outcome.catalogue_model_id, outcome.provider) else {
-        return;
+    // An observed request counts toward the limits whether or not the project lists its model;
+    // the gateway's own metrics describe only what the gateway did.
+    let observed = outcome.source == crate::model_api::hooks::Source::Observed;
+    let entry = if observed {
+        outcome.catalogue_model_id.unwrap_or_default()
+    } else {
+        let (Some(entry), Some(provider)) = (outcome.catalogue_model_id, outcome.provider) else {
+            return;
+        };
+        provider_metrics(outcome, provider, &usage, c);
+        entry
     };
-    for (kind, n) in [
-        ("input", usage.input_tokens),
-        ("output", usage.output_tokens),
-        ("cache_read", usage.cache_read_tokens),
-        ("cache_write", usage.cache_write_tokens),
-        ("reasoning", usage.reasoning_tokens.unwrap_or(0)),
-    ] {
-        if n > 0 {
-            metrics::counter!(crate::metrics::TOKENS, "provider" => provider, "kind" => kind)
-                .increment(n);
-        }
-    }
-    let micro = (c * Decimal::from(1_000_000)).round();
-    metrics::counter!(crate::metrics::COST, "provider" => provider)
-        .increment(rust_decimal::prelude::ToPrimitive::to_u64(&micro).unwrap_or(0));
-    if let Some(t) = outcome.ttfb {
-        metrics::histogram!(crate::metrics::TIME_TO_FIRST_BYTE, "provider" => provider)
-            .record(t.as_secs_f64());
-    }
-    if let Some(t) = outcome.overhead {
-        metrics::histogram!(crate::metrics::GATEWAY_OVERHEAD, "provider" => provider)
-            .record(t.as_secs_f64());
-    }
-    if let Some(t) = outcome.upload {
-        metrics::histogram!(crate::metrics::REQUEST_UPLOAD, "provider" => provider)
-            .record(t.as_secs_f64());
-    }
     let request_id = outcome.request_id.to_string();
     let at = outcome.started_at;
     let charge = Charge {
@@ -593,6 +586,36 @@ pub async fn account(state: &AppState, outcome: &Outcome) {
                 .increment(1);
             tracing::warn!(error = %e, "cannot add usage to the limit counters; PostgreSQL still records it and the counters are rebuilt from it");
         }
+    }
+}
+
+fn provider_metrics(outcome: &Outcome, provider: &'static str, usage: &Usage, c: Decimal) {
+    for (kind, n) in [
+        ("input", usage.input_tokens),
+        ("output", usage.output_tokens),
+        ("cache_read", usage.cache_read_tokens),
+        ("cache_write", usage.cache_write_tokens),
+        ("reasoning", usage.reasoning_tokens.unwrap_or(0)),
+    ] {
+        if n > 0 {
+            metrics::counter!(crate::metrics::TOKENS, "provider" => provider, "kind" => kind)
+                .increment(n);
+        }
+    }
+    let micro = (c * Decimal::from(1_000_000)).round();
+    metrics::counter!(crate::metrics::COST, "provider" => provider)
+        .increment(rust_decimal::prelude::ToPrimitive::to_u64(&micro).unwrap_or(0));
+    if let Some(t) = outcome.ttfb {
+        metrics::histogram!(crate::metrics::TIME_TO_FIRST_BYTE, "provider" => provider)
+            .record(t.as_secs_f64());
+    }
+    if let Some(t) = outcome.overhead {
+        metrics::histogram!(crate::metrics::GATEWAY_OVERHEAD, "provider" => provider)
+            .record(t.as_secs_f64());
+    }
+    if let Some(t) = outcome.upload {
+        metrics::histogram!(crate::metrics::REQUEST_UPLOAD, "provider" => provider)
+            .record(t.as_secs_f64());
     }
 }
 
@@ -811,6 +834,7 @@ mod tests {
             ingress_dialect: "anthropic_messages".into(),
             egress_dialect: "anthropic_messages".into(),
             credential_id: None,
+            source_id: None,
             requests: 1,
             errors: 0,
             input_tokens: 1,

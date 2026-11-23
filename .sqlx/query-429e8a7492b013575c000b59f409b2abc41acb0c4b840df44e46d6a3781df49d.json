@@ -1,0 +1,259 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, org_id, project_id, kind, name, secret_prefix, secret_last4, user_id, service_account_id, match_members, content, disabled_at, archived_at, first_event_at, last_event_at, last_error_at, last_error, created_by, created_at, updated_at FROM sources WHERE org_id = $1 AND project_id = ANY($2) AND archived_at IS NULL AND ($3::uuid IS NULL OR id < $3) ORDER BY id DESC LIMIT $4",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "sources",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "org_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "sources",
+            "name": "org_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "project_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "sources",
+            "name": "project_id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "kind",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "sources",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "name",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "sources",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "secret_prefix",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "sources",
+            "name": "secret_prefix"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "secret_last4",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "sources",
+            "name": "secret_last4"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "user_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "sources",
+            "name": "user_id"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "service_account_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "sources",
+            "name": "service_account_id"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "match_members",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "sources",
+            "name": "match_members"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "content",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "sources",
+            "name": "content"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "disabled_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "sources",
+            "name": "disabled_at"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "archived_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "sources",
+            "name": "archived_at"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
+        "name": "first_event_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "sources",
+            "name": "first_event_at"
+          }
+        }
+      },
+      {
+        "ordinal": 14,
+        "name": "last_event_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "sources",
+            "name": "last_event_at"
+          }
+        }
+      },
+      {
+        "ordinal": 15,
+        "name": "last_error_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "sources",
+            "name": "last_error_at"
+          }
+        }
+      },
+      {
+        "ordinal": 16,
+        "name": "last_error",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "sources",
+            "name": "last_error"
+          }
+        }
+      },
+      {
+        "ordinal": 17,
+        "name": "created_by",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "sources",
+            "name": "created_by"
+          }
+        }
+      },
+      {
+        "ordinal": 18,
+        "name": "created_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "sources",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 19,
+        "name": "updated_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "sources",
+            "name": "updated_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "UuidArray",
+        "Uuid",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "429e8a7492b013575c000b59f409b2abc41acb0c4b840df44e46d6a3781df49d"
+}

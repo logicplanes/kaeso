@@ -54,8 +54,8 @@ An organization role also holds rights in every project, on top of the member's 
 | Project role | Rights |
 | --- | --- |
 | Admin | All project rights |
-| Developer | The Viewer's, and `api.request`, `playground.use`, `keys.own.create`, `keys.own.manage`, `logs.content.view`, `tools.manage` |
-| Viewer | `project.view`, `project.members.view`, `service_accounts.view`, `keys.all.view`, `models.view`, `tools.view`, `tools.use`, `limits.view`, `logs.metadata.view`, `usage.view`, `costs.view` |
+| Developer | The Viewer's, and `api.request`, `playground.use`, `keys.own.create`, `keys.own.manage`, `logs.content.view`, `tools.manage`, `sources.manage` |
+| Viewer | `project.view`, `project.members.view`, `service_accounts.view`, `keys.all.view`, `models.view`, `tools.view`, `tools.use`, `limits.view`, `logs.metadata.view`, `sources.view`, `usage.view`, `costs.view` |
 
 Two organization rights also reach into every project. `projects.view.all` gives `project.view`, and `projects.archive.any` gives `project.view` and `project.archive`.
 
@@ -253,6 +253,8 @@ Every change of roles and rights follows these rules:
 | `logs.content.view` | View prompts and outputs | See request and response bodies in the logs. | sensitive; needs `logs.metadata.view` |
 | `logs.export` | Export logs | Export the project's request logs. | sensitive; needs `logs.metadata.view` |
 | `logs.content.manage` | Switch content logging | Switch content logging and kept media on or off for this project. | sensitive |
+| `sources.view` | View sources | See the project's sources, how each is set up and what it reported last (never keys). |  |
+| `sources.manage` | Manage sources | Add, change, disable and archive the project's sources and replace their keys. | needs `sources.view` |
 
 ### Usage & costs
 

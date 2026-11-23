@@ -54,8 +54,8 @@ Eine Organisationsrolle enthält auch Rechte in jedem Projekt, zusätzlich zur e
 | Projektrolle | Rechte |
 | --- | --- |
 | Admin | Alle Projektrechte |
-| Entwickler | Die des Betrachters und `api.request`, `playground.use`, `keys.own.create`, `keys.own.manage`, `logs.content.view`, `tools.manage` |
-| Betrachter | `project.view`, `project.members.view`, `service_accounts.view`, `keys.all.view`, `models.view`, `tools.view`, `tools.use`, `limits.view`, `logs.metadata.view`, `usage.view`, `costs.view` |
+| Entwickler | Die des Betrachters und `api.request`, `playground.use`, `keys.own.create`, `keys.own.manage`, `logs.content.view`, `tools.manage`, `sources.manage` |
+| Betrachter | `project.view`, `project.members.view`, `service_accounts.view`, `keys.all.view`, `models.view`, `tools.view`, `tools.use`, `limits.view`, `logs.metadata.view`, `sources.view`, `usage.view`, `costs.view` |
 
 Zwei Organisationsrechte reichen ebenfalls in jedes Projekt. `projects.view.all` gibt `project.view`, und `projects.archive.any` gibt `project.view` und `project.archive`.
 
@@ -253,6 +253,8 @@ Die [Platform API](../api/platform-api.md) beschreibt die Routen für Rechte, Ro
 | `logs.content.view` | Prompts und Ausgaben ansehen | Anfrage- und Antwortinhalte in den Protokollen sehen. | sensibel; erfordert `logs.metadata.view` |
 | `logs.export` | Protokolle exportieren | Die Anfrageprotokolle des Projekts exportieren. | sensibel; erfordert `logs.metadata.view` |
 | `logs.content.manage` | Inhaltsprotokollierung schalten | Inhaltsprotokollierung und aufbewahrte Medien für dieses Projekt ein- oder ausschalten. | sensibel |
+| `sources.view` | Quellen ansehen | Die Quellen des Projekts sehen, wie jede eingerichtet ist und was sie zuletzt gemeldet hat (nie Schlüssel). |  |
+| `sources.manage` | Quellen verwalten | Quellen des Projekts hinzufügen, ändern, deaktivieren und archivieren und ihre Schlüssel ersetzen. | erfordert `sources.view` |
 
 ### Nutzung & Kosten
 

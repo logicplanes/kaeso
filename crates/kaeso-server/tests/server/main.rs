@@ -130,6 +130,7 @@ mod route_rights;
 mod scim;
 mod setup_email;
 mod shared_links;
+mod sources;
 mod sso_groups;
 mod stored_responses;
 mod streams;

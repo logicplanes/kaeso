@@ -493,6 +493,18 @@ const NAMES: &[(&str, &str, &str, &str)] = &[
         "查看服务账号",
     ),
     (
+        "sources.manage",
+        "Manage sources",
+        "Quellen verwalten",
+        "管理来源",
+    ),
+    (
+        "sources.view",
+        "View sources",
+        "Quellen ansehen",
+        "查看来源",
+    ),
+    (
         "tools.manage",
         "Manage tools",
         "Tools verwalten",

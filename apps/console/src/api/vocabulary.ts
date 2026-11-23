@@ -262,6 +262,14 @@ const rights: Readonly<Record<string, () => [string, string]>> = {
     t("rights.logsContentManage.name", "Switch content logging"),
     t("rights.logsContentManage.description", "Switch content logging and kept media on or off for this project."),
   ],
+  "sources.view": () => [
+    t("rights.sourcesView.name", "View sources"),
+    t("rights.sourcesView.description", "See the project's sources, how each is set up and what it reported last (never keys)."),
+  ],
+  "sources.manage": () => [
+    t("rights.sourcesManage.name", "Manage sources"),
+    t("rights.sourcesManage.description", "Add, change, disable and archive the project's sources and replace their keys."),
+  ],
   "usage.view": () => [t("rights.usageView.name", "View usage"), t("rights.usageView.description", "See the project's usage.")],
   "costs.view": () => [t("rights.costsView.name", "View costs"), t("rights.costsView.description", "See the project's costs.")],
   "project.audit_log.view": () => [

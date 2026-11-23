@@ -162,6 +162,7 @@ impl ProjectPreset {
             R::ToolsUse,
             R::LimitsView,
             R::LogsMetadataView,
+            R::SourcesView,
             R::UsageView,
             R::CostsView,
         ]
@@ -177,6 +178,7 @@ impl ProjectPreset {
                     R::KeysOwnManage,
                     R::LogsContentView,
                     R::ToolsManage,
+                    R::SourcesManage,
                 ]
                 .into_iter()
                 .collect(),

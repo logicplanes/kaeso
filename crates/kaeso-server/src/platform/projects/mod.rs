@@ -13,6 +13,7 @@ pub mod playground;
 pub mod playground_media;
 pub mod project;
 pub mod service_accounts;
+pub mod sources;
 pub mod tools;
 
 use kaeso_core::rights::{OrgRight, ProjectRight as R};
@@ -57,6 +58,12 @@ pub fn routes(s: &Secure) -> OpenApiRouter<AppState> {
         .routes(s.route(Access::Project(R::ServiceAccountsView), routes!(service_accounts::get)))
         .routes(s.route(Access::Project(R::ServiceAccountsRightsUpdate), routes!(service_accounts::update)))
         .routes(s.route(Access::Project(R::ServiceAccountsArchive), routes!(service_accounts::archive)))
+        .routes(s.route(Access::Project(R::SourcesView), routes!(sources::list)))
+        .routes(s.route(Access::Project(R::SourcesManage), routes!(sources::create)))
+        .routes(s.route(Access::Project(R::SourcesView), routes!(sources::get)))
+        .routes(s.route(Access::Project(R::SourcesManage), routes!(sources::update)))
+        .routes(s.route(Access::Project(R::SourcesManage), routes!(sources::rotate)))
+        .routes(s.route(Access::Project(R::SourcesManage), routes!(sources::archive)))
         .routes(s.route(Access::Project(R::KeysOwnCreate), routes!(keys::create)))
         .routes(s.route(Access::Project(R::ServiceAccountsKeysCreate), routes!(keys::create_for_service_account)))
         .routes(s.route(Access::Project(R::KeysAllView), routes!(keys::list)))

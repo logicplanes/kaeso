@@ -183,6 +183,7 @@ public_id!(GuardrailId, "grd_");
 public_id!(BatchFileId, "file_");
 public_id!(BatchId, "batch_");
 public_id!(SharedLinkId, "shl_");
+public_id!(SourceId, "src_");
 
 #[cfg(test)]
 mod tests {

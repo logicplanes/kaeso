@@ -44,6 +44,8 @@ pub enum Source {
     #[default]
     Api,
     Playground,
+    /// A request a source reported; Kaeso never made it and can't refuse it.
+    Observed,
 }
 
 impl Source {
@@ -51,6 +53,7 @@ impl Source {
         match self {
             Source::Api => "api",
             Source::Playground => "playground",
+            Source::Observed => "observed",
         }
     }
 }
@@ -166,6 +169,8 @@ pub struct Outcome {
     /// how much of them is left.
     pub sees_limits: bool,
     pub source: Source,
+    /// The source that reported an observed request.
+    pub source_id: Option<Uuid>,
     pub ingress: DialectId,
     pub kind: RequestKind,
     pub egress: Option<DialectId>,
@@ -178,6 +183,8 @@ pub struct Outcome {
     pub model_id: Option<String>,
     pub response_model: Option<String>,
     pub prices: Option<Fields>,
+    /// What a source said an observed request cost, used when Kaeso has no prices for its model.
+    pub observed_cost: Option<rust_decimal::Decimal>,
     pub stream: bool,
     pub status: u16,
     pub error_kind: Option<String>,

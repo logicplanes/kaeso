@@ -1300,6 +1300,8 @@ async fn tool_calls_are_logged_and_deleted_with_the_request_log() {
         response_bytes: 512,
         has_content: true,
         expires_at: at(0) + Duration::days(30),
+        source_id: Uuid::nil(),
+        server_name: String::new(),
     };
     let (first, second, third) = (Uuid::now_v7(), Uuid::now_v7(), Uuid::now_v7());
     let rows = [

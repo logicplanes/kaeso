@@ -488,6 +488,7 @@ fn usage_row(
         ingress_dialect: "anthropic_messages".into(),
         egress_dialect: "anthropic_messages".into(),
         credential_id: None,
+        source_id: None,
         requests: 1,
         errors: 0,
         input_tokens,
