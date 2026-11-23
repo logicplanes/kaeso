@@ -21,6 +21,7 @@
     <a href="https://kaeso.app"><b>Website</b></a> ·
     <a href="https://docs.kaeso.app"><b>Documentation</b></a> (<a href="https://docs.kaeso.app/de">Deutsch</a>, <a href="https://docs.kaeso.app/zh-CN">简体中文</a>) ·
     <a href="https://demo.kaeso.app"><b>Live demo</b></a> ·
+    <a href="https://kaeso.app/benchmarks"><b>Benchmarks</b></a> ·
     <a href="https://kaeso.app/articles"><b>Articles</b></a> ·
     <a href="CHANGELOG.md"><b>Changelog</b></a>
   </p>
@@ -73,7 +74,9 @@ On a cloud or a hosting platform, the [platform templates](https://docs.kaeso.ap
   <a href="https://docs.kaeso.app/self-hosting/platforms/kubernetes">Kubernetes</a>
 </p>
 
-Updates install from the console's **Updates** page or with the installer's `--update`, and check the install's settings before they switch anything ([upgrades](https://docs.kaeso.app/self-hosting/upgrades)).
+[Where to run Kaeso](https://kaeso.app/articles/where-to-run-kaeso) compares the deployment paths, with step-by-step guides for a [Linux server](https://kaeso.app/articles/deploy-kaeso-on-a-linux-server), [Kubernetes](https://kaeso.app/articles/deploy-kaeso-on-kubernetes), [Hetzner Cloud](https://kaeso.app/articles/deploy-kaeso-on-hetzner-cloud), [OVHcloud](https://kaeso.app/articles/deploy-kaeso-on-ovhcloud), [Scaleway](https://kaeso.app/articles/deploy-kaeso-on-scaleway), [Oracle Cloud](https://kaeso.app/articles/deploy-kaeso-on-oracle-cloud), [Proxmox VE](https://kaeso.app/articles/deploy-kaeso-on-proxmox) and a [Raspberry Pi](https://kaeso.app/articles/deploy-kaeso-on-a-raspberry-pi). (The DigitalOcean button carries a referral code that credits Kaeso's account, and the Railway button uses a template that pays a referral share to the template author; each platform guide also shows the non-referral CLI or repo path.)
+
+Updates install from the console's **Updates** page or with the installer's `--update`, and check the install's settings before they switch anything ([upgrades](https://docs.kaeso.app/self-hosting/upgrades), [how Kaeso updates itself](https://kaeso.app/articles/updates-and-config-check)).
 
 ## Send your first request
 
@@ -93,24 +96,24 @@ Built in are Amazon Bedrock, Anthropic, AssemblyAI, Azure, Baidu Qianfan, Basete
 
 <table>
   <tr>
-    <td width="50%" valign="top"><b>One format in, any provider out</b><br>Apps speak OpenAI Chat Completions or Responses, Anthropic Messages, Gemini or ElevenLabs; Kaeso encodes each request for the provider and translates the reply and the stream back (<a href="https://docs.kaeso.app/concepts/format-translation">format translation</a>).</td>
-    <td width="50%" valign="top"><b>More than chat</b><br>Embeddings, reranking in Cohere's format, decision models that answer typed questions with probabilities, images, video, speech, transcription, sound effects, music and OpenAI-format batches, with the same keys, limits and logs (<a href="https://docs.kaeso.app/api">API reference</a>).</td>
+    <td width="50%" valign="top"><b>One format in, any provider out</b><br>Apps speak OpenAI Chat Completions or Responses, Anthropic Messages, Gemini or ElevenLabs; Kaeso encodes each request for the provider and translates the reply and the stream back (<a href="https://docs.kaeso.app/concepts/format-translation">format translation</a>, <a href="https://kaeso.app/articles/gemini-apps-through-kaeso">Gemini apps</a>).</td>
+    <td width="50%" valign="top"><b>More than chat</b><br>Embeddings, reranking in Cohere's format, decision models that answer typed questions with probabilities, images, video, speech, transcription, sound effects, music and OpenAI-format batches, with the same keys, limits and logs (<a href="https://docs.kaeso.app/api">API reference</a>, <a href="https://kaeso.app/articles/media-through-one-gateway">media guide</a>).</td>
   </tr>
   <tr>
-    <td width="50%" valign="top"><b>Routes that hold up</b><br>Alias routes with conditions, weighted splits and fallbacks, retries after dropped connections and 5xx answers, key pools that spread a project over several keys of one provider, and a response cache (<a href="https://docs.kaeso.app/concepts/alias-routes">alias routes</a>).</td>
-    <td width="50%" valign="top"><b>Model lifecycle</b><br>Replies from retiring models carry <code>Deprecation</code> and <code>Sunset</code> headers, projects see who still calls them, aliases move to the replacement, and model lines such as <code>claude-opus-latest</code> follow the newest model (<a href="https://docs.kaeso.app/concepts/model-lifecycle">model lifecycle</a>).</td>
+    <td width="50%" valign="top"><b>Routes that hold up</b><br>Alias routes with conditions, weighted splits and fallbacks, retries after dropped connections and 5xx answers, key pools that spread a project over several keys of one provider, and a response cache (<a href="https://docs.kaeso.app/concepts/alias-routes">alias routes</a>, <a href="https://kaeso.app/articles/retries-and-fallbacks">retries and fallbacks</a>).</td>
+    <td width="50%" valign="top"><b>Model lifecycle</b><br>Replies from retiring models carry <code>Deprecation</code> and <code>Sunset</code> headers, projects see who still calls them, aliases move to the replacement, and model lines such as <code>claude-opus-latest</code> follow the newest model (<a href="https://docs.kaeso.app/concepts/model-lifecycle">model lifecycle</a>, <a href="https://kaeso.app/articles/kpmr-and-model-lifecycle">KPMR and retirements</a>).</td>
   </tr>
   <tr>
-    <td width="50%" valign="top"><b>People and access</b><br>Single sign-on per organization over OpenID Connect for any number of people, roles and projects from your identity provider's groups, SCIM 2.0, organization and project roles with single rights, and audit logs (<a href="https://docs.kaeso.app/console/members-and-roles">members and roles</a>).</td>
-    <td width="50%" valign="top"><b>Spend under control</b><br>Hard or soft budgets and rate limits per project, member, service account or key, checked before the provider is called; prices from KPMR, shown in your currency; alerts by email or signed webhook (<a href="https://docs.kaeso.app/console/limits-and-budgets">limits and budgets</a>).</td>
+    <td width="50%" valign="top"><b>People and access</b><br>Single sign-on per organization over OpenID Connect for any number of people, roles and projects from your identity provider's groups, SCIM 2.0, organization and project roles with single rights, and audit logs (<a href="https://docs.kaeso.app/console/members-and-roles">members and roles</a>, <a href="https://kaeso.app/articles/sso-scim-and-roles">SSO, SCIM and roles</a>).</td>
+    <td width="50%" valign="top"><b>Spend under control</b><br>Hard or soft budgets and rate limits per project, member, service account or key, checked before the provider is called; prices from <a href="https://docs.kaeso.app/kpmr">KPMR</a>, shown in your currency; alerts by email or signed webhook (<a href="https://docs.kaeso.app/console/limits-and-budgets">limits and budgets</a>, <a href="https://kaeso.app/articles/budgets-limits-and-usage">hard budgets and currencies</a>).</td>
   </tr>
   <tr>
-    <td width="50%" valign="top"><b>Guardrails</b><br>Built-in rules find keys, tokens, email addresses, IBANs and card numbers and mask or block them, and your own HTTP services can allow, block or rewrite a request before the model sees it (<a href="https://docs.kaeso.app/console/guardrails">guardrails</a>).</td>
-    <td width="50%" valign="top"><b>Logs you decide on</b><br>Every request with its model, status, tokens, cost, timing and caller; content only where the organization, the project or the request allows it; OpenTelemetry traces and Prometheus metrics for your own tools (<a href="https://docs.kaeso.app/console/request-logs">request logs</a>).</td>
+    <td width="50%" valign="top"><b>Guardrails</b><br>Built-in rules find keys, tokens, email addresses, IBANs and card numbers and mask or block them, and your own HTTP services can allow, block or rewrite a request before the model sees it (<a href="https://docs.kaeso.app/console/guardrails">guardrails</a>, <a href="https://kaeso.app/articles/guardrails-in-kaeso">guardrails guide</a>).</td>
+    <td width="50%" valign="top"><b>Logs you decide on</b><br>Every request with its model, status, tokens, cost, timing and caller; content only where the organization, the project or the request allows it; OpenTelemetry traces and Prometheus metrics for your own tools (<a href="https://docs.kaeso.app/console/request-logs">request logs</a>, <a href="https://kaeso.app/articles/request-logs-and-privacy">logs and privacy</a>).</td>
   </tr>
   <tr>
-    <td width="50%" valign="top"><b>An MCP portal per project</b><br>Connect your MCP servers once, review their tools, and let claude.ai, ChatGPT, Cursor or any MCP client call them through one signed-in portal (<a href="https://docs.kaeso.app/concepts/mcp-portal">MCP portal</a>).</td>
-    <td width="50%" valign="top"><b>Verifiable releases</b><br>Every image, chart and release file carries signed build provenance that <code>gh attestation verify</code> checks, and the updater installs nothing whose signatures don't match (<a href="https://docs.kaeso.app/self-hosting/upgrades">upgrades</a>).</td>
+    <td width="50%" valign="top"><b>An MCP portal per project</b><br>Connect your MCP servers once, review their tools, and let claude.ai, ChatGPT, Cursor or any MCP client call them through one signed-in portal (<a href="https://docs.kaeso.app/concepts/mcp-portal">MCP portal</a>, <a href="https://kaeso.app/articles/mcp-portal">MCP portal guide</a>).</td>
+    <td width="50%" valign="top"><b>Verifiable releases</b><br>Every image, chart and release file carries signed build provenance that <code>gh attestation verify</code> checks, and the updater installs nothing whose signatures don't match (<a href="https://docs.kaeso.app/self-hosting/upgrades">upgrades</a>, <a href="https://kaeso.app/articles/updates-and-config-check">updater and config check</a>).</td>
   </tr>
 </table>
 
@@ -126,17 +129,17 @@ Decision models, reranking, guardrails, webhooks, SCIM, key pools, batches and t
     </td>
     <td width="50%" valign="top">
       <img alt="A guardrail's built-in rules tried on sample text: an order number, an email address and an API key are replaced by placeholders before the model sees them" src="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/feature-guardrails.webp" width="100%">
-      <p><a href="https://docs.kaeso.app/console/guardrails">Guardrails</a></p>
+      <p><a href="https://docs.kaeso.app/console/guardrails">Guardrails</a> · <a href="https://kaeso.app/articles/guardrails-in-kaeso">Article</a></p>
     </td>
   </tr>
   <tr>
     <td width="50%" valign="top">
       <img alt="An OpenAI key assigned to a project with a weight of 30, beside the project's other OpenAI keys" src="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/feature-key-pools.webp" width="100%">
-      <p><a href="https://docs.kaeso.app/console/provider-keys#choose-which-key-a-project-uses">Key pools</a></p>
+      <p><a href="https://docs.kaeso.app/console/provider-keys#choose-which-key-a-project-uses">Key pools</a> · <a href="https://kaeso.app/articles/provider-key-pools">Article</a></p>
     </td>
     <td width="50%" valign="top">
       <img alt="A deprecated model with its announcement, shutdown date, replacement and new prices, the aliases that still use it and who called it in the last 30 days" src="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/feature-model-lifecycle.webp" width="100%">
-      <p><a href="https://docs.kaeso.app/concepts/model-lifecycle">Model lifecycle</a></p>
+      <p><a href="https://docs.kaeso.app/concepts/model-lifecycle">Model lifecycle</a> · <a href="https://kaeso.app/articles/kpmr-and-model-lifecycle">Article</a></p>
     </td>
   </tr>
   <tr>
@@ -146,7 +149,7 @@ Decision models, reranking, guardrails, webhooks, SCIM, key pools, batches and t
     </td>
     <td width="50%" valign="top">
       <img alt="An organization's provisioning settings with its SCIM base URL, token and last activity, above the mapping of the identity provider's groups" src="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/feature-scim.webp" width="100%">
-      <p><a href="https://docs.kaeso.app/api/scim">SCIM 2.0 and SSO groups</a></p>
+      <p><a href="https://docs.kaeso.app/api/scim">SCIM 2.0 and SSO groups</a> · <a href="https://kaeso.app/articles/sso-scim-and-roles">Article</a></p>
     </td>
   </tr>
 </table>
@@ -178,7 +181,7 @@ The pages below show the console with sample data. The [live demo](https://demo.
         <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/console-models-dark.webp">
         <img alt="The project's model catalogue: Anthropic and OpenAI models with their aliases, capabilities, context windows, prices and release dates, two of them marked deprecated" src="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/console-models-light.webp" width="100%">
       </picture>
-      <p><b><a href="https://docs.kaeso.app/console/models-and-aliases">Models</a></b><br>A catalogue per project with the prices, capabilities and status of every model from KPMR, the Kaeso Provider &amp; Model Registry.</p>
+      <p><b><a href="https://docs.kaeso.app/console/models-and-aliases">Models</a></b><br>A catalogue per project with the prices, capabilities and status of every model from <a href="https://docs.kaeso.app/kpmr">KPMR</a>, the Kaeso Provider &amp; Model Registry.</p>
     </td>
     <td width="50%" valign="top">
       <picture>
@@ -232,11 +235,11 @@ flowchart LR
   gateway -- MCP --> servers
 ```
 
-The gateway is one Rust process with no garbage collector between your app and the provider. Run several behind Caddy or a load balancer and they share everything a request depends on ([multiple gateways](https://docs.kaeso.app/self-hosting/scaling)). The [gateway benchmark](https://docs.kaeso.app/development/benchmark) in this repository measures the time and memory Kaeso adds, so you can run it on your own hardware.
+The gateway is one Rust process with no garbage collector between your app and the provider. Run several behind Caddy or a load balancer and they share everything a request depends on ([multiple gateways](https://docs.kaeso.app/self-hosting/scaling)). See [performance](https://docs.kaeso.app/self-hosting/performance) and [kaeso.app/benchmarks](https://kaeso.app/benchmarks) for how Kaeso compares with LiteLLM, Bifrost and Portkey on BerriAI's [`ai-gateway-bench`](https://github.com/BerriAI/ai-gateway-bench), and the [gateway benchmark](https://docs.kaeso.app/development/benchmark) in this repository to measure Kaeso on your own hardware.
 
 ## How it compares
 
-These tables compare Kaeso with the gateways people most often weigh it against, as their own documentation, pricing pages and licenses describe them. They were read on 21 November 2026 and every entry is sourced below. Products change: [open an issue](https://github.com/logicplanes/kaeso/issues/new/choose) when an entry is out of date, and we'll correct it.
+These tables compare Kaeso with the gateways people most often weigh it against, as their own documentation, pricing pages and licenses describe them. They were read on 23 November 2026 and every entry is sourced below. Products change: [open an issue](https://github.com/logicplanes/kaeso/issues/new/choose) when an entry is out of date, and we'll correct it.
 
 **Yes** means the free or open-source version has it. **Paid** means a paid plan or enterprise license has it. **Partial** is explained in a note. **–** means we didn't find it in their documentation.
 
@@ -324,6 +327,21 @@ These tables compare Kaeso with the gateways people most often weigh it against,
 | OpenRouter            | A 5.5% fee on credits on Standard and 8% on Business, Enterprise on request.                                                 |
 | Cloudflare AI Gateway | Core features free; a 5% fee on Unified Billing credits; logs billed as Workers Logs.                                        |
 
+### Performance on BerriAI's benchmark
+
+We ran [`BerriAI/ai-gateway-bench`](https://github.com/BerriAI/ai-gateway-bench) (`44365ca`) with Kaeso 0.7 beside the four gateways that benchmark compares, each pinned to two dedicated cores on the same 4-vCPU machine (median of three randomized rounds; full method, image digests, scripts and raw JSON on [kaeso.app/benchmarks](https://kaeso.app/benchmarks), [performance docs](https://docs.kaeso.app/self-hosting/performance) and [Kaeso on LiteLLM's own benchmark](https://kaeso.app/articles/kaeso-on-litellms-benchmark)):
+
+| Gateway                            | Requests/s (64 clients) | Added p50 / p99 (16 clients) | CPU per request | Peak memory                        | Checked and kept per request                           |
+| ---------------------------------- | ----------------------- | ---------------------------- | --------------- | ---------------------------------- | ------------------------------------------------------ |
+| **Kaeso 0.7**                      | 6,338                   | +0.54 / +1.47 ms             | 314 µs          | 164 + 271 MB (PostgreSQL + Valkey) | Project API key, model allow-list, usage in PostgreSQL |
+| **Kaeso 0.7, request logs on**     | 5,324                   | +0.62 / +1.45 ms             | 373 µs          | 450 + 1,163 MB (+ ClickHouse)      | Same, plus every request logged to ClickHouse          |
+| LiteLLM Rust (`main` at `d4e8f96`) | 3,211                   | +0.69 / +2.26 ms             | 573 µs          | 86 MB                              | One static master key; no database                     |
+| Bifrost 2.6.0                      | 2,806                   | +0.71 / +4.08 ms             | 708 µs          | 405 MB                             | No key; logging and stores off                         |
+| Portkey 1.15.2                     | 779                     | +3.13 / +20.40 ms            | 1,449 µs        | 293 MB                             | No key; logging off                                    |
+| LiteLLM Python 1.110.2             | 74                      | +188 / +216 ms               | 13,563 µs       | 743 MB                             | One static master key; no database                     |
+
+Where LiteLLM Rust is ahead: it used at most 86 MB of memory and needs no database (Kaeso reached 164 MB plus 271 MB for PostgreSQL and Valkey), and with a single client at a time its p99 was +0.98 ms against Kaeso's +1.66 ms. Added time to first token (+0.87 vs +0.96 ms) and the replayed Claude Code session (+41.5 vs +41.0 ms) were within each other's range. Kaeso's author ran this single-host benchmark; [how to benchmark an AI gateway without fooling yourself](https://kaeso.app/articles/benchmarking-ai-gateways-honestly) documents the methodology and how to rerun it on your own machine.
+
 ### When another tool fits better
 
 Kaeso runs as containers next to PostgreSQL, ClickHouse and Valkey, on at least 2 vCPUs and 4 GB of memory ([requirements](https://docs.kaeso.app/self-hosting/requirements)), and it has no hosted version and no paid support. If you want a hosted service with nothing to run, OpenRouter or Cloudflare AI Gateway fit better, and OpenRouter bills hundreds of models through one account. If your platform team already runs Kong or Envoy Gateway, Kong AI Gateway or Agent Router put model traffic under the same policies and Kubernetes resources. LiteLLM serves more kinds of endpoints, such as realtime, OCR and vector stores, and comes as a Python SDK as well as a proxy. Helicone goes further into observability, with sessions, evaluations, datasets and prompt management. If you need a vendor contract, LiteLLM, Bifrost, Portkey, Helicone and Kong sell enterprise plans.
@@ -367,9 +385,9 @@ TensorZero is not in the tables: its website says it is no longer maintained.
 33. <a id="note-33"></a>MCP server portals are a separate Cloudflare One product.
 
 <details>
-<summary><b>Sources</b>, all read on 21 November 2026</summary>
+<summary><b>Sources</b>, all read on 23 November 2026</summary>
 
-**Kaeso:** [license](LICENSE), [installation](https://docs.kaeso.app/self-hosting/installation), [Kubernetes](https://docs.kaeso.app/self-hosting/platforms/kubernetes), [single sign-on and SCIM](https://docs.kaeso.app/console/organizations-and-projects#single-sign-on), [roles](https://docs.kaeso.app/console/members-and-roles), [audit log](https://docs.kaeso.app/console/organizations-and-projects#read-the-audit-log), [budgets](https://docs.kaeso.app/console/limits-and-budgets), [guardrails](https://docs.kaeso.app/console/guardrails), [model API](https://docs.kaeso.app/api/model-api), [ElevenLabs API](https://docs.kaeso.app/api/elevenlabs), [rerank](https://docs.kaeso.app/api/rerank), [batches](https://docs.kaeso.app/api/batches), [images](https://docs.kaeso.app/api/images), [videos](https://docs.kaeso.app/api/videos), [audio](https://docs.kaeso.app/api/audio), [key pools](https://docs.kaeso.app/console/provider-keys#choose-which-key-a-project-uses), [fallbacks and retries](https://docs.kaeso.app/concepts/alias-routes#fallbacks), [model lifecycle](https://docs.kaeso.app/concepts/model-lifecycle), [MCP portal](https://docs.kaeso.app/concepts/mcp-portal), [keeping content out of the log](https://docs.kaeso.app/api/model-api#keeping-content-out-of-the-log), [requirements](https://docs.kaeso.app/self-hosting/requirements).
+**Kaeso:** [license](LICENSE), [installation](https://docs.kaeso.app/self-hosting/installation), [Kubernetes](https://docs.kaeso.app/self-hosting/platforms/kubernetes), [single sign-on and SCIM](https://docs.kaeso.app/console/organizations-and-projects#single-sign-on), [roles](https://docs.kaeso.app/console/members-and-roles), [audit log](https://docs.kaeso.app/console/organizations-and-projects#read-the-audit-log), [budgets](https://docs.kaeso.app/console/limits-and-budgets), [guardrails](https://docs.kaeso.app/console/guardrails), [model API](https://docs.kaeso.app/api/model-api), [ElevenLabs API](https://docs.kaeso.app/api/elevenlabs), [rerank](https://docs.kaeso.app/api/rerank), [batches](https://docs.kaeso.app/api/batches), [images](https://docs.kaeso.app/api/images), [videos](https://docs.kaeso.app/api/videos), [audio](https://docs.kaeso.app/api/audio), [key pools](https://docs.kaeso.app/console/provider-keys#choose-which-key-a-project-uses), [fallbacks and retries](https://docs.kaeso.app/concepts/alias-routes#fallbacks), [KPMR](https://docs.kaeso.app/kpmr), [model lifecycle](https://docs.kaeso.app/concepts/model-lifecycle), [MCP portal](https://docs.kaeso.app/concepts/mcp-portal), [keeping content out of the log](https://docs.kaeso.app/api/model-api#keeping-content-out-of-the-log), [performance](https://docs.kaeso.app/self-hosting/performance), [benchmarks](https://kaeso.app/benchmarks), [requirements](https://docs.kaeso.app/self-hosting/requirements).
 
 **LiteLLM:** [license](https://github.com/BerriAI/litellm/blob/main/LICENSE), [enterprise license](https://github.com/BerriAI/litellm/blob/main/litellm/enterprise/LICENSE.md), [repository](https://github.com/BerriAI/litellm), [pricing](https://www.litellm.ai/pricing), [enterprise features](https://docs.litellm.ai/docs/enterprise), [Docker](https://docs.litellm.ai/docs/proxy/docker_quick_start), [Helm](https://docs.litellm.ai/docs/proxy/deploy), [SSO](https://docs.litellm.ai/docs/proxy/admin_ui_sso), [SCIM](https://docs.litellm.ai/docs/tutorials/scim_litellm), [roles](https://docs.litellm.ai/docs/proxy/access_control), [audit logs](https://docs.litellm.ai/docs/proxy/audit_logs), [budgets](https://docs.litellm.ai/docs/proxy/users), [PII masking](https://docs.litellm.ai/docs/proxy/guardrails/pii_masking_v2), [generic guardrail API](https://docs.litellm.ai/docs/adding_provider/generic_guardrail_api), [supported endpoints](https://docs.litellm.ai/docs/supported_endpoints), [Responses](https://docs.litellm.ai/docs/response_api), [Anthropic format](https://docs.litellm.ai/docs/anthropic_unified), [generateContent](https://docs.litellm.ai/docs/generateContent), [pass-through](https://docs.litellm.ai/docs/pass_through/intro), [rerank](https://docs.litellm.ai/docs/rerank), [batches](https://docs.litellm.ai/docs/batches), [images](https://docs.litellm.ai/docs/image_generation), [speech](https://docs.litellm.ai/docs/text_to_speech), [transcription](https://docs.litellm.ai/docs/audio_transcription), [music](https://docs.litellm.ai/release_notes/v1.102.0/v1-102-0), [load balancing](https://docs.litellm.ai/docs/proxy/load_balancing), [fallbacks and retries](https://docs.litellm.ai/docs/proxy/reliability), [deprecation alerts](https://docs.litellm.ai/blog/model-deprecation-alerts), [MCP gateway](https://docs.litellm.ai/docs/mcp), [logging](https://docs.litellm.ai/docs/proxy/logging).
 
