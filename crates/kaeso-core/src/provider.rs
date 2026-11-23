@@ -1282,6 +1282,7 @@ pub const PROVIDERS: &[Provider] = &[
         chat: ChatProfile::compatible("OpenRouter")
             .any_audio_format()
             .with_video_url()
+            .with_reasoning_object()
             .reasoning_fields(&["reasoning"])
             .error_detail(&["error", "metadata", "raw"]),
         responses: ResponsesProfile::compatible("OpenRouter"),
@@ -1385,7 +1386,9 @@ pub const PROVIDERS: &[Provider] = &[
         reasoning_beyond_output_limit: false,
         listing: ModelListing::Complete,
         end_user_limit: None,
-        chat: ChatProfile::compatible("Vercel").reasoning_fields(&["reasoning"]),
+        chat: ChatProfile::compatible("Vercel")
+            .with_reasoning_object()
+            .reasoning_fields(&["reasoning"]),
         responses: ResponsesProfile::compatible("Vercel"),
         messages: MessagesProfile::compatible("Vercel"),
         gemini: GeminiProfile::GOOGLE_AI_STUDIO,
@@ -1488,6 +1491,7 @@ pub const PROVIDERS: &[Provider] = &[
         end_user_limit: None,
         chat: ChatProfile::compatible("Ollama Cloud")
             .max_tokens()
+            .with_reasoning_object()
             .reasoning_fields(&["reasoning"])
             .refusing(&["logit_bias", "logprobs", "top_logprobs"]),
         responses: ResponsesProfile::compatible("Ollama Cloud"),

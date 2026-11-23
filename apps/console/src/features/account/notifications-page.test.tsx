@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { screen, waitFor } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import { signedIn } from "~/test/fixtures";
-import { notificationSettings, testEmailSent } from "~/test/fixtures/notifications";
+import { notificationSettings } from "~/test/fixtures/notifications";
 import { apiError, on, requests } from "~/test/network";
 import { notifications } from "~/test/fixtures/org";
 import { renderApp } from "~/test/render";
@@ -80,27 +80,28 @@ describe("notification settings", () => {
     await waitFor(() => expect(screen.getByRole("combobox", { name: "Member changes" })).toBeEnabled());
   });
 
-  it("sends a test email", async () => {
+  it("has a title and description and no action beside them, only the choices of each email", async () => {
     signedIn();
     on("GET", "me/notifications", notificationSettings());
-    on("POST", "me/notifications/test", testEmailSent);
-    const { user } = await renderApp(PATH);
-    await user.click(await screen.findByRole("button", { name: "Send a test email" }));
-    expect(await notifications().findByText("Test email sent")).toBeInTheDocument();
-    expect(requests("POST", "me/notifications/test")).toHaveLength(1);
+    await renderApp(PATH);
+    const page = screen.getByRole("main");
+    expect(await within(page).findByRole("heading", { level: 1, name: "Notifications" })).toBeInTheDocument();
+    expect(within(page).getByText("The emails Kaeso sends you, and when they go out.")).toBeInTheDocument();
+    await within(page).findByRole("switch", { name: "Weekly summary" });
+    expect(
+      within(page)
+        .queryAllByRole("button")
+        .map((b) => b.getAttribute("aria-label") ?? b.textContent),
+    ).toEqual(["Open navigation"]);
   });
 
   it("says when the install doesn't send email and offers no choices", async () => {
     signedIn();
     on("GET", "me/notifications", notificationSettings({ sends_email: false }));
-    const { user } = await renderApp(PATH);
+    await renderApp(PATH);
     expect(await screen.findByText("It writes emails to its log instead; ask an instance admin to set up SMTP.")).toBeInTheDocument();
     for (const name of ["Budget alerts", "Your key expires", "Member changes"]) expect(screen.getByRole("combobox", { name })).toBeDisabled();
     expect(screen.getByRole("switch", { name: "Weekly summary" })).toHaveAttribute("aria-disabled", "true");
-    const test = screen.getByRole("button", { name: "Send a test email" });
-    expect(test).toHaveAttribute("aria-disabled", "true");
-    await user.click(test);
-    expect(requests("POST", "me/notifications/test")).toHaveLength(0);
   });
 
   it("names an email or area a newer gateway adds in its own words", async () => {

@@ -15,7 +15,8 @@ Quellen: die [API-Referenz](https://openrouter.ai/docs/api_reference/overview), 
 
 | OpenRouter-Feld | KPP | Hinweise |
 |---|---|---|
-| `provider`, `models`, `transforms`, `usage`, `reasoning` (Anfrage) | Extras | Abgelehnt, wenn die Anfrage an einen anderen Dialekt geht, wie andere Felder, die nur Chat kennt. |
+| `provider`, `models`, `transforms`, `usage` | Extras | Abgelehnt, wenn die Anfrage an einen anderen Dialekt geht, wie andere Felder, die nur Chat kennt. |
+| `reasoning` (Anfrage: `effort`, `max_tokens`, `enabled`, `exclude`) | `reasoning` typisiert | Bleibt für OpenRouter über `with_reasoning_object()` als `reasoning` erhalten und wird für andere Anbieter und Formate übersetzt ([OpenAI Chat](openai-chat.md#anfrage-createchatcompletionrequest), [Reasoning](reasoning.md)). |
 | `message.reasoning`, `delta.reasoning` | `Block::Reasoning` | Über `reasoning_fields` des Profils. Chat-Apps erhalten sie unverändert zurück; Apps von Anthropic Messages erhalten einen `thinking`-Block und Apps von Responses ein Reasoning-Item ([Reasoning](reasoning.md)). |
 | `message.reasoning_details`, `delta.reasoning_details` | Extras | Dasselbe Reasoning in OpenRouters strukturierter Form; Chat-Apps erhalten es unverändert zurück, andere Dialekte erhalten den Text aus `reasoning`. |
 | `provider`, `native_finish_reason` an einer Antwort | Extras | Gegenüber anderen Dialekten weggelassen. |
@@ -32,7 +33,8 @@ Quellen: Vercels Seiten [Chat Completions](https://vercel.com/docs/ai-gateway/sd
 
 | Vercel-Feld | KPP | Hinweise |
 |---|---|---|
-| `providerOptions` (Routing unter `gateway`, etwa `order`, `only`, `sort`, `models`, `byok`, `tags`, `user`), `models`, `provider`, `reasoning` (Anfrage) | Extras | Abgelehnt, wenn die Anfrage an einen anderen Dialekt geht, wie andere Felder, die nur Chat kennt (`requests/gateway-options`). |
+| `providerOptions` (Routing unter `gateway`, etwa `order`, `only`, `sort`, `models`, `byok`, `tags`, `user`), `models`, `provider` | Extras | Abgelehnt, wenn die Anfrage an einen anderen Dialekt geht, wie andere Felder, die nur Chat kennt (`requests/gateway-options`). |
+| `reasoning` (Anfrage) | `reasoning` typisiert | Bleibt für Vercel über `with_reasoning_object()` als `reasoning` erhalten, wie bei OpenRouter. |
 | `message.reasoning`, `delta.reasoning` | `Block::Reasoning` | Über `reasoning_fields` des Profils, wie bei OpenRouter. |
 | `message.reasoning_details`, `delta.reasoning_details` | Extras | Dasselbe Reasoning in OpenRouters strukturierter Form, mit `format: "unknown"` für Modelle, die weder von OpenAI noch von Anthropic sind. |
 | `provider_metadata` an der Nachricht und am Delta des letzten Chunks (`gateway.routing`, `cost`, `marketCost`, `gatewayCost`, `generationId`), `generationId` auf oberster Ebene | Extras | Gegenüber anderen Dialekten weggelassen. Die `clientSessionId` der Aufzeichnungen, ein Fingerabdruck des Clients, ist durch Nullen ersetzt. |

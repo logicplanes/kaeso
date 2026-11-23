@@ -6436,60 +6436,6 @@
         "x-kaeso-access": "right:account.notifications.manage"
       }
     },
-    "/platform/v1/me/notifications/test": {
-      "post": {
-        "tags": [
-          "me"
-        ],
-        "summary": "Sends a test email to the user's address, at most once a minute.",
-        "description": "**Access:** a signed-in console session, or an agent granted `account.notifications.manage`.",
-        "operationId": "postMeNotificationsTest",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TestEmailResult"
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/InvalidRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthenticated"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          },
-          "409": {
-            "$ref": "#/components/responses/Conflict"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/Internal"
-          },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          }
-        },
-        "security": [
-          {
-            "session": []
-          },
-          {
-            "agent": []
-          }
-        ],
-        "x-kaeso-access": "right:account.notifications.manage"
-      }
-    },
     "/platform/v1/me/orgs": {
       "post": {
         "tags": [

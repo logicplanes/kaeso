@@ -332,7 +332,7 @@ pub(super) fn decode_object(raw: &RawValue, origin: &Origin) -> Result<Response,
         let index = u32::try_from(i).unwrap_or(u32::MAX);
         let decoded = match ty.as_deref() {
             Some("message") => decode_message(item, origin, &w.id, index, &stop).map(|(bs, ov)| {
-                ranges.push(Value::from(vec![blocks.len(), bs.len()]));
+                ranges.push(Value::from(vec![blocks.len(), bs.len(), i]));
                 ov.record(&mut extras, &item_scope(i));
                 bs
             }),
@@ -384,7 +384,7 @@ pub(super) fn decode_object(raw: &RawValue, origin: &Origin) -> Result<Response,
             None,
         )
     } else {
-        canonical(&resp, None, &Namespaces::default())
+        canonical(&resp, None, &Namespaces::default(), false)
     };
     Overrides::diff_entries(&canon, raw, fields, &["output"]).record(&mut resp.extras, "");
     Ok(resp)
@@ -429,14 +429,25 @@ fn is_message_part(b: &Block) -> bool {
     matches!(b, Block::Text(_) | Block::Refusal(_))
 }
 
-pub(super) fn output_items(resp: &Response, namespaces: &Namespaces) -> Vec<Node> {
+pub(super) fn excludes_reasoning(req: Option<&kaeso_kpp::Request>) -> bool {
+    matches!(
+        req,
+        Some(kaeso_kpp::Request::Generate(g)) if g.reasoning.as_ref().is_some_and(|r| r.exclude)
+    )
+}
+
+pub(super) fn output_items(
+    resp: &Response,
+    namespaces: &Namespaces,
+    exclude_reasoning: bool,
+) -> Vec<Node> {
     let target = Origin::new(DIALECT);
     let unchanged = resp
         .extras
         .form_value(DIALECT, BLOCKS)
         .and_then(Value::as_u64)
         .is_some_and(|n| usize::try_from(n).ok() == Some(resp.blocks.len()));
-    let ranges: Vec<(usize, usize)> = resp
+    let ranges: Vec<(usize, usize, Option<usize>)> = resp
         .extras
         .form_value(DIALECT, MESSAGES)
         .and_then(Value::as_array)
@@ -446,7 +457,11 @@ pub(super) fn output_items(resp: &Response, namespaces: &Namespaces) -> Vec<Node
                 .filter_map(|r| {
                     let at = usize::try_from(r.get(0)?.as_u64()?).ok()?;
                     let n = usize::try_from(r.get(1)?.as_u64()?).ok()?;
-                    Some((at, n))
+                    let orig = r
+                        .get(2)
+                        .and_then(Value::as_u64)
+                        .and_then(|u| usize::try_from(u).ok());
+                    Some((at, n, orig))
                 })
                 .collect()
         })
@@ -459,13 +474,15 @@ pub(super) fn output_items(resp: &Response, namespaces: &Namespaces) -> Vec<Node
         if let Some(r) = ranges
             .iter()
             .enumerate()
-            .position(|(k, (at, _))| *at == i && !used.get(k).copied().unwrap_or(true))
+            .position(|(k, (at, _, _))| *at == i && !used.get(k).copied().unwrap_or(true))
         {
             if let Some(u) = used.get_mut(r) {
                 *u = true;
             }
-            let n = ranges.get(r).map_or(0, |(_, n)| *n);
-            let index = items.len();
+            let (n, orig) = ranges.get(r).map_or((0, None), |(_, n, orig)| (*n, *orig));
+            let index = orig
+                .or_else(|| resp.blocks.get(i).and_then(item_marker))
+                .unwrap_or(items.len());
             let parts: Vec<Node> = resp
                 .blocks
                 .iter()
@@ -487,7 +504,11 @@ pub(super) fn output_items(resp: &Response, namespaces: &Namespaces) -> Vec<Node
         let index32 = u32::try_from(index).unwrap_or(u32::MAX);
         if is_message_part(block) {
             let marker = item_marker(block);
-            let next_range = ranges.iter().map(|(at, _)| *at).filter(|at| *at > i).min();
+            let next_range = ranges
+                .iter()
+                .map(|(at, _, _)| *at)
+                .filter(|at| *at > i)
+                .min();
             let run: Vec<&Block> = resp
                 .blocks
                 .iter()
@@ -525,6 +546,7 @@ pub(super) fn output_items(resp: &Response, namespaces: &Namespaces) -> Vec<Node
                 apply(&c.extras, DIALECT, "", &[], &mut node);
                 items.push(node);
             }
+            Block::Reasoning(_) if exclude_reasoning => {}
             Block::Reasoning(r) => {
                 let id = generated_id("rs", &resp.id, index32);
                 match reasoning_reply_policy(r.origin.as_ref(), DIALECT) {
@@ -569,6 +591,7 @@ fn canonical(
     resp: &Response,
     echo: Option<(&[(String, Node)], u64)>,
     namespaces: &Namespaces,
+    exclude_reasoning: bool,
 ) -> Node {
     let (status, incomplete) = status_for(&resp.stop);
     response_object(
@@ -576,7 +599,7 @@ fn canonical(
         &resp.model,
         status,
         incomplete,
-        Node::Arr(output_items(resp, namespaces)),
+        Node::Arr(output_items(resp, namespaces, exclude_reasoning)),
         usage_node(&resp.usage),
         echo,
     )
@@ -589,7 +612,13 @@ pub(super) fn encode(reply: &Reply, ctx: &EncodeCtx) -> Result<Vec<u8>, KppError
             let echo = (!native).then(|| echo_fields(ctx));
             let created = ctx.created_at.unwrap_or(0);
             let namespaces = Namespaces::of(ctx.request.as_deref());
-            let mut node = canonical(resp, echo.as_deref().map(|e| (e, created)), &namespaces);
+            let exclude_reasoning = excludes_reasoning(ctx.request.as_deref());
+            let mut node = canonical(
+                resp,
+                echo.as_deref().map(|e| (e, created)),
+                &namespaces,
+                exclude_reasoning,
+            );
             apply(&resp.extras, DIALECT, "", &[], &mut node);
             to_body(&node)
         }

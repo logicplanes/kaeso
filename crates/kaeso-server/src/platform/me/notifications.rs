@@ -8,24 +8,15 @@ use kaeso_store::pg::{members, notifications, users};
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 
-use crate::auth::throttle::{self, Outage, Throttle};
 use crate::config::MailTransport;
 use crate::platform::access::{Ctx, agent_scope};
 use crate::platform::audit::Action;
-use crate::platform::auth::refused;
 use crate::platform::error::{ApiError, ApiResult};
-use crate::platform::instance::settings::TestEmailResult;
 use crate::platform::json::Body;
 use crate::platform::params::{Path, Query};
 use crate::services::notifications::{self as service, Reason};
 use crate::state::AppState;
 
-const TEST_EMAILS_PER_USER: Throttle = Throttle {
-    name: "test_email",
-    limit: 1,
-    window: std::time::Duration::from_secs(60),
-    on_outage: Outage::Allow,
-};
 const INVALID_LINK: &str =
     "This unsubscribe link is invalid; choose your emails under Account › Notifications.";
 
@@ -295,45 +286,6 @@ pub async fn mute(
         .await?;
     tx.commit().await?;
     Ok(Json(req))
-}
-
-#[utoipa::path(
-    post,
-    path = "/me/notifications/test",
-    summary = "Sends a test email to the user's address, at most once a minute.",
-    tag = "me",
-    responses((status = 200, body = TestEmailResult))
-)]
-pub async fn test(State(state): State<AppState>, ctx: Ctx) -> ApiResult<Json<TestEmailResult>> {
-    let user = me(&state, &ctx).await?;
-    let to = user
-        .email
-        .clone()
-        .ok_or_else(|| ApiError::Conflict("Your account has no email address.".into()))?;
-    throttle::hit(&state, TEST_EMAILS_PER_USER, &user.id.to_string())
-        .await
-        .map_err(|r| {
-            refused(r, |retry_after| {
-                format!(
-                    "You sent a test email a moment ago; try again in {}.",
-                    throttle::wait(retry_after)
-                )
-            })
-        })?;
-    let lang =
-        crate::services::mail_lang::of_user(&state.pg, user.id, ctx.accept_language.as_deref())
-            .await;
-    state
-        .mailer
-        .send_now(kaeso_mail::templates::test(lang, &to))
-        .await
-        .map_err(|e| {
-            tracing::warn!(error = %e, "test email not sent");
-            ApiError::Unavailable(
-                "The email was not sent; ask an instance admin to check the mail settings.".into(),
-            )
-        })?;
-    Ok(Json(TestEmailResult { status: "sent", to }))
 }
 
 async fn unsubscribing(state: &AppState, token: &str) -> ApiResult<(users::User, Kind, Delivery)> {

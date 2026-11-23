@@ -263,3 +263,503 @@ fn anthropic_fixture_responses_become_chat_completions() {
         assert!(back.is_ok(), "{name}: {back:?}");
     }
 }
+
+#[test]
+fn openrouter_reasoning_object_crosses_to_anthropic_gemini_responses_and_openai_chat() {
+    let (_, body) = fixtures("openai_chat", "requests", "json")
+        .into_iter()
+        .find(|(n, _)| n == "openrouter-reasoning")
+        .unwrap();
+    let req = OpenAiChat::decode_request(RequestKind::Generate, &body, &HeaderList::new()).unwrap();
+    let mut anthropic_req = req.clone();
+    if let Request::Generate(g) = &mut anthropic_req {
+        g.sampling.max_output_tokens = Some(16_384);
+    }
+
+    let mut ctx = EgressCtx::new(&anthropic_req);
+    crate::dispatch::check(DialectId::AnthropicMessages, &anthropic_req, &ctx).unwrap();
+    let enc =
+        crate::dispatch::encode_request(DialectId::AnthropicMessages, &anthropic_req, &mut ctx)
+            .unwrap();
+    let anthropic: serde_json::Value = serde_json::from_slice(&enc.body).unwrap();
+    assert_eq!(
+        anthropic["thinking"],
+        json!({"type": "adaptive", "display": "summarized"})
+    );
+    assert_eq!(anthropic["output_config"]["effort"], "max");
+    assert_eq!(anthropic["stream"], true);
+    assert_eq!(anthropic["tools"][0]["name"], "get_weather");
+
+    let mut ctx = EgressCtx::new(&req);
+    crate::dispatch::check(DialectId::Gemini, &req, &ctx).unwrap();
+    let enc = crate::dispatch::encode_request(DialectId::Gemini, &req, &mut ctx).unwrap();
+    let gemini: serde_json::Value = serde_json::from_slice(&enc.body).unwrap();
+    assert_eq!(
+        gemini["generationConfig"]["thinkingConfig"],
+        json!({"thinkingLevel": "HIGH", "includeThoughts": true})
+    );
+
+    let mut ctx = EgressCtx::new(&req);
+    crate::dispatch::check(DialectId::OpenAiResponses, &req, &ctx).unwrap();
+    let enc = crate::dispatch::encode_request(DialectId::OpenAiResponses, &req, &mut ctx).unwrap();
+    let responses: serde_json::Value = serde_json::from_slice(&enc.body).unwrap();
+    assert_eq!(
+        responses["reasoning"],
+        json!({"effort": "max", "summary": "auto"})
+    );
+
+    let mut ctx = EgressCtx::new(&req);
+    OpenAiChat::check(&req, &ctx).unwrap();
+    let enc = OpenAiChat::encode_request(&req, &mut ctx).unwrap();
+    let chat: serde_json::Value = serde_json::from_slice(&enc.body).unwrap();
+    assert_eq!(chat["reasoning_effort"], "max");
+    assert!(chat.get("reasoning").is_none(), "{chat}");
+}
+
+#[test]
+fn openrouter_reasoning_fields_translate_across_dialects() {
+    let decode_chat = |body: serde_json::Value| {
+        OpenAiChat::decode_request(
+            RequestKind::Generate,
+            body.to_string().as_bytes(),
+            &HeaderList::new(),
+        )
+    };
+    let encode_to = |dialect: DialectId, req: &Request, adaptive: Option<bool>| {
+        let mut req = req.clone();
+        if dialect == DialectId::AnthropicMessages
+            && let Request::Generate(g) = &mut req
+            && g.sampling.max_output_tokens.is_none()
+        {
+            g.sampling.max_output_tokens = Some(16_384);
+        }
+        let mut ctx = EgressCtx::new(&req);
+        if let Some(a) = adaptive {
+            ctx = ctx.with_adaptive_thinking(a);
+        }
+        crate::dispatch::check(dialect, &req, &ctx).unwrap();
+        let enc = crate::dispatch::encode_request(dialect, &req, &mut ctx).unwrap();
+        serde_json::from_slice::<serde_json::Value>(&enc.body).unwrap()
+    };
+
+    let req = decode_chat(json!({
+        "model": "m",
+        "messages": [{"role": "user", "content": "hi"}],
+        "reasoning": {"max_tokens": 4096}
+    }))
+    .unwrap();
+    let anth = encode_to(DialectId::AnthropicMessages, &req, None);
+    assert_eq!(
+        anth["thinking"],
+        json!({"type": "enabled", "budget_tokens": 4096, "display": "summarized"})
+    );
+    let gem = encode_to(DialectId::Gemini, &req, None);
+    assert_eq!(
+        gem["generationConfig"]["thinkingConfig"],
+        json!({"thinkingBudget": 4096, "includeThoughts": true})
+    );
+    let resp = encode_to(DialectId::OpenAiResponses, &req, None);
+    assert_eq!(
+        resp["reasoning"],
+        json!({"effort": "medium", "summary": "auto"})
+    );
+
+    let req_on = decode_chat(json!({
+        "model": "m",
+        "messages": [{"role": "user", "content": "hi"}],
+        "reasoning": {"enabled": true}
+    }))
+    .unwrap();
+    let anth_on = encode_to(DialectId::AnthropicMessages, &req_on, None);
+    assert_eq!(
+        anth_on["thinking"],
+        json!({"type": "adaptive", "display": "summarized"})
+    );
+    let gem_on = encode_to(DialectId::Gemini, &req_on, None);
+    assert_eq!(
+        gem_on["generationConfig"]["thinkingConfig"],
+        json!({"thinkingBudget": -1, "includeThoughts": true})
+    );
+
+    let req_off = decode_chat(json!({
+        "model": "m",
+        "messages": [{"role": "user", "content": "hi"}],
+        "reasoning": {"enabled": false}
+    }))
+    .unwrap();
+    let anth_off = encode_to(DialectId::AnthropicMessages, &req_off, None);
+    assert_eq!(anth_off["thinking"], json!({"type": "disabled"}));
+    let gem_off = encode_to(DialectId::Gemini, &req_off, None);
+    assert_eq!(
+        gem_off["generationConfig"]["thinkingConfig"],
+        json!({"thinkingBudget": 0})
+    );
+    let resp_off = encode_to(DialectId::OpenAiResponses, &req_off, None);
+    assert_eq!(resp_off["reasoning"], json!({"effort": "none"}));
+    let chat_off = encode_to(DialectId::OpenAiChat, &req_off, None);
+    assert_eq!(chat_off["reasoning_effort"], "none");
+
+    let req_excl = decode_chat(json!({
+        "model": "m",
+        "messages": [{"role": "user", "content": "hi"}],
+        "reasoning": {"effort": "high", "exclude": true}
+    }))
+    .unwrap();
+    let anth_excl = encode_to(DialectId::AnthropicMessages, &req_excl, Some(false));
+    assert_eq!(
+        anth_excl["thinking"],
+        json!({"type": "enabled", "budget_tokens": 16_383})
+    );
+    assert!(anth_excl["thinking"].get("display").is_none());
+    let gem_excl = encode_to(DialectId::Gemini, &req_excl, None);
+    assert_eq!(
+        gem_excl["generationConfig"]["thinkingConfig"],
+        json!({"thinkingLevel": "HIGH"})
+    );
+    let resp_excl = encode_to(DialectId::OpenAiResponses, &req_excl, None);
+    assert_eq!(resp_excl["reasoning"], json!({"effort": "high"}));
+
+    let req_empty = decode_chat(json!({
+        "model": "m",
+        "messages": [{"role": "user", "content": "hi"}],
+        "reasoning": {}
+    }))
+    .unwrap();
+    assert!(
+        encode_to(DialectId::AnthropicMessages, &req_empty, None)
+            .get("thinking")
+            .is_none()
+    );
+    assert!(
+        encode_to(DialectId::Gemini, &req_empty, None)
+            .get("generationConfig")
+            .is_none()
+    );
+
+    let req_minimal = decode_chat(json!({
+        "model": "m",
+        "messages": [{"role": "user", "content": "hi"}],
+        "reasoning": {"effort": "minimal"}
+    }))
+    .unwrap();
+    let mut anth_min = req_minimal.clone();
+    if let Request::Generate(g) = &mut anth_min {
+        g.sampling.max_output_tokens = Some(1024);
+    }
+    let err = crate::dispatch::check(
+        DialectId::AnthropicMessages,
+        &anth_min,
+        &EgressCtx::new(&anth_min),
+    )
+    .unwrap_err();
+    assert_eq!(err.param.as_deref(), Some("reasoning.effort"));
+    assert_eq!(
+        encode_to(DialectId::Gemini, &req_minimal, None)["generationConfig"]["thinkingConfig"],
+        json!({"thinkingLevel": "MINIMAL", "includeThoughts": true})
+    );
+}
+
+#[test]
+fn openrouter_reasoning_conflicts_and_malformed_fields_are_rejected() {
+    let check_err = |body: serde_json::Value, param: &str| {
+        let err = OpenAiChat::decode_request(
+            RequestKind::Generate,
+            body.to_string().as_bytes(),
+            &HeaderList::new(),
+        )
+        .unwrap_err();
+        assert_eq!(
+            err.kind,
+            kaeso_kpp::ErrorKind::InvalidRequest,
+            "{body}: {err:?}"
+        );
+        assert_eq!(err.param.as_deref(), Some(param), "{body}: {err:?}");
+    };
+    let msg = json!([{"role": "user", "content": "hi"}]);
+    check_err(
+        json!({"model": "m", "messages": msg, "reasoning_effort": "low", "reasoning": {"effort": "high"}}),
+        "reasoning.effort",
+    );
+    check_err(
+        json!({"model": "m", "messages": msg, "reasoning": {"effort": "high", "max_tokens": 2048}}),
+        "reasoning",
+    );
+    check_err(
+        json!({"model": "m", "messages": msg, "reasoning_effort": "high", "reasoning": {"max_tokens": 2048}}),
+        "reasoning.max_tokens",
+    );
+    check_err(
+        json!({"model": "m", "messages": msg, "reasoning": {"enabled": false, "effort": "low"}}),
+        "reasoning.enabled",
+    );
+    check_err(
+        json!({"model": "m", "messages": msg, "reasoning": {"enabled": false, "max_tokens": 2048}}),
+        "reasoning.enabled",
+    );
+    check_err(
+        json!({"model": "m", "messages": msg, "reasoning_effort": "high", "reasoning": {"enabled": false}}),
+        "reasoning.enabled",
+    );
+    check_err(
+        json!({"model": "m", "messages": msg, "reasoning": {"enabled": true, "effort": "none"}}),
+        "reasoning.enabled",
+    );
+    check_err(
+        json!({"model": "m", "messages": msg, "reasoning": {"max_tokens": 0}}),
+        "reasoning.max_tokens",
+    );
+    check_err(
+        json!({"model": "m", "messages": msg, "reasoning": "max"}),
+        "reasoning",
+    );
+    check_err(
+        json!({"model": "m", "messages": msg, "reasoning": {"effort": 42}}),
+        "reasoning.effort",
+    );
+    check_err(
+        json!({"model": "m", "messages": msg, "reasoning": {"max_tokens": -5}}),
+        "reasoning.max_tokens",
+    );
+    check_err(
+        json!({"model": "m", "messages": msg, "reasoning": {"enabled": "yes"}}),
+        "reasoning.enabled",
+    );
+    check_err(
+        json!({"model": "m", "messages": msg, "reasoning": {"exclude": 1}}),
+        "reasoning.exclude",
+    );
+
+    let same = OpenAiChat::decode_request(
+        RequestKind::Generate,
+        json!({"model": "m", "messages": msg, "reasoning_effort": "high", "reasoning": {"effort": "high"}})
+            .to_string()
+            .as_bytes(),
+        &HeaderList::new(),
+    )
+    .unwrap();
+    let Request::Generate(g) = same else { panic!() };
+    assert_eq!(g.reasoning.unwrap().effort, Some(ReasoningEffort::High));
+
+    let off_none = OpenAiChat::decode_request(
+        RequestKind::Generate,
+        json!({"model": "m", "messages": msg, "reasoning": {"enabled": false, "effort": "none"}})
+            .to_string()
+            .as_bytes(),
+        &HeaderList::new(),
+    )
+    .unwrap();
+    let Request::Generate(g) = off_none else {
+        panic!()
+    };
+    let r = g.reasoning.unwrap();
+    assert_eq!(r.mode, Some(kaeso_kpp::ReasoningMode::Disabled));
+    assert_eq!(r.effort, Some(ReasoningEffort::None));
+}
+
+#[test]
+fn chat_replies_and_streams_include_or_exclude_reasoning_according_to_openrouter_request() {
+    let req_with = |reasoning: serde_json::Value| {
+        let mut body = json!({
+            "model": "claude-sonnet-5-5",
+            "messages": [{"role": "user", "content": "hi"}],
+            "stream": true
+        });
+        body["reasoning"] = reasoning;
+        OpenAiChat::decode_request(
+            RequestKind::Generate,
+            body.to_string().as_bytes(),
+            &HeaderList::new(),
+        )
+        .unwrap()
+    };
+
+    let mut reasoning = ReasoningBlock::new(anthropic());
+    reasoning.text.push("Think first.".into());
+    let mut resp = Response::new("msg_01", "claude-sonnet-5-5", Vec::new());
+    resp.blocks = vec![
+        Block::Reasoning(reasoning),
+        Block::text("Answer."),
+        Block::tool_call("toolu_1", "get_weather", raw(r#"{"city":"Berlin"}"#)),
+    ];
+    resp.stop = StopReason::ToolUse;
+    let mut usage = Usage::new(10, 20);
+    usage.reasoning_tokens = Some(12);
+    resp.usage = usage;
+
+    let enc = |req: Request| -> serde_json::Value {
+        let ctx = EncodeCtx::for_request(req).with_created_at(1_700_000_000);
+        let bytes = OpenAiChat::encode_response(&Reply::Generate(resp.clone()), &ctx).unwrap();
+        serde_json::from_slice(&bytes).unwrap()
+    };
+    let with_reasoning = enc(req_with(json!({"effort": "max"})));
+    assert_eq!(
+        with_reasoning["choices"][0]["message"]["reasoning"],
+        "Think first."
+    );
+    assert_eq!(
+        with_reasoning["choices"][0]["message"]["content"],
+        "Answer."
+    );
+    assert_eq!(
+        with_reasoning["choices"][0]["message"]["tool_calls"][0]["function"]["name"],
+        "get_weather"
+    );
+
+    let excluded = enc(req_with(json!({"effort": "max", "exclude": true})));
+    assert!(
+        excluded["choices"][0]["message"].get("reasoning").is_none(),
+        "{excluded}"
+    );
+    assert_eq!(excluded["choices"][0]["message"]["content"], "Answer.");
+    assert_eq!(
+        excluded["usage"]["completion_tokens_details"]["reasoning_tokens"],
+        12
+    );
+
+    let events = vec![
+        kaeso_kpp::StreamEvent::ResponseStart(kaeso_kpp::ResponseStart::new(
+            "msg_01",
+            "claude-sonnet-5-5",
+        )),
+        kaeso_kpp::StreamEvent::BlockStart(kaeso_kpp::BlockStart::new(
+            0,
+            kaeso_kpp::BlockHeader::Reasoning(kaeso_kpp::ReasoningHeader::new(anthropic())),
+        )),
+        kaeso_kpp::StreamEvent::BlockDelta(kaeso_kpp::BlockDelta::new(
+            0,
+            kaeso_kpp::Delta::ReasoningText("Step 1.".into()),
+        )),
+        kaeso_kpp::StreamEvent::BlockDelta(kaeso_kpp::BlockDelta::new(
+            0,
+            kaeso_kpp::Delta::ReasoningSummary(kaeso_kpp::SummaryDelta::new(0, "Step 2.")),
+        )),
+        kaeso_kpp::StreamEvent::BlockDelta(kaeso_kpp::BlockDelta::new(
+            0,
+            kaeso_kpp::Delta::ReasoningSummary(kaeso_kpp::SummaryDelta::new(1, "Step 3.")),
+        )),
+        kaeso_kpp::StreamEvent::BlockStop(kaeso_kpp::BlockStop::new(0)),
+        kaeso_kpp::StreamEvent::BlockStart(kaeso_kpp::BlockStart::new(
+            1,
+            kaeso_kpp::BlockHeader::Text,
+        )),
+        kaeso_kpp::StreamEvent::BlockDelta(kaeso_kpp::BlockDelta::new(
+            1,
+            kaeso_kpp::Delta::Text("Done.".into()),
+        )),
+        kaeso_kpp::StreamEvent::BlockStop(kaeso_kpp::BlockStop::new(1)),
+        kaeso_kpp::StreamEvent::ResponseDelta(kaeso_kpp::ResponseDelta::new(
+            Some(StopReason::EndTurn),
+            None,
+        )),
+        kaeso_kpp::StreamEvent::ResponseStop(kaeso_kpp::ResponseStop::default()),
+    ];
+    let encode_sse = |req: Request| -> String {
+        let ctx = EncodeCtx::for_request(req).with_created_at(1_700_000_000);
+        let mut encoder = OpenAiChat::stream_encoder(&ctx);
+        let mut out = Vec::new();
+        for ev in &events {
+            out.extend(encoder.encode(ev).unwrap());
+        }
+        out.extend(encoder.finish().unwrap());
+        String::from_utf8(out).unwrap()
+    };
+    let streamed = encode_sse(req_with(json!({"effort": "max"})));
+    assert!(streamed.contains(r#""reasoning":"Step 1.""#), "{streamed}");
+    assert!(
+        streamed.contains(r#""reasoning":"\n\nStep 2.""#),
+        "{streamed}"
+    );
+    assert!(
+        streamed.contains(r#""reasoning":"\n\nStep 3.""#),
+        "{streamed}"
+    );
+    assert!(streamed.contains(r#""content":"Done.""#), "{streamed}");
+
+    let streamed_excl = encode_sse(req_with(json!({"effort": "max", "exclude": true})));
+    assert!(!streamed_excl.contains("Step 1"), "{streamed_excl}");
+    assert!(!streamed_excl.contains("Step 2"), "{streamed_excl}");
+    assert!(!streamed_excl.contains("Step 3"), "{streamed_excl}");
+    assert!(
+        streamed_excl.contains(r#""content":"Done.""#),
+        "{streamed_excl}"
+    );
+
+    let own_body = fixtures("openai_chat", "responses", "json")
+        .into_iter()
+        .find(|(n, _)| n == "providers/openrouter/recorded-free-reasoning")
+        .unwrap()
+        .1;
+    let own_ctx = EgressCtx::for_kind(RequestKind::Generate, StreamMode::Off).with_chat_profile(
+        super::ChatProfile::compatible("OpenRouter").reasoning_fields(&["reasoning"]),
+    );
+    let own_reply =
+        OpenAiChat::decode_response(200, &HeaderList::new(), &own_body, &own_ctx).unwrap();
+    let own_excl_bytes = OpenAiChat::encode_response(
+        &own_reply,
+        &EncodeCtx::for_request(req_with(json!({"exclude": true}))),
+    )
+    .unwrap();
+    let own_excl: serde_json::Value = serde_json::from_slice(&own_excl_bytes).unwrap();
+    assert!(
+        own_excl["choices"][0]["message"].get("reasoning").is_none(),
+        "{own_excl}"
+    );
+    assert!(
+        own_excl["choices"][0]["message"]
+            .get("reasoning_details")
+            .is_none(),
+        "{own_excl}"
+    );
+    assert_eq!(
+        own_excl["usage"]["completion_tokens_details"]["reasoning_tokens"],
+        418
+    );
+
+    let own_sse = fixtures("openai_chat", "streams", "sse")
+        .into_iter()
+        .find(|(n, _)| n == "providers/openrouter/recorded-free-reasoning-stream")
+        .unwrap()
+        .1;
+    let own_stream_ctx = EgressCtx::for_kind(RequestKind::Generate, StreamMode::on(true))
+        .with_chat_profile(
+            super::ChatProfile::compatible("OpenRouter").reasoning_fields(&["reasoning"]),
+        );
+    let mut dec = OpenAiChat::stream_decoder(&own_stream_ctx);
+    let mut own_events = dec.feed(&own_sse);
+    own_events.extend(dec.finish());
+    let mut own_enc =
+        OpenAiChat::stream_encoder(&EncodeCtx::for_request(req_with(json!({"exclude": true}))));
+    let mut own_out = Vec::new();
+    for ev in &own_events {
+        own_out.extend(own_enc.encode(ev).unwrap());
+    }
+    own_out.extend(own_enc.finish().unwrap());
+    let own_out = String::from_utf8(own_out).unwrap();
+    assert!(!own_out.contains(r#""reasoning""#), "{own_out}");
+    assert!(!own_out.contains(r#""reasoning_details""#), "{own_out}");
+    assert!(own_out.contains("No"), "{own_out}");
+
+    // Review fix #3: `StreamEvent::Extra` chunks carrying only `reasoning_details` / `encrypted_content`
+    // are also hidden under `exclude: true`.
+    let extra_only_sse = concat!(
+        "data: {\"id\":\"chatcmpl_1\",\"object\":\"chat.completion.chunk\",\"created\":1700000000,\"model\":\"m\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"\"},\"finish_reason\":null}]}\n\n",
+        "data: {\"id\":\"chatcmpl_1\",\"object\":\"chat.completion.chunk\",\"created\":1700000000,\"model\":\"m\",\"choices\":[{\"index\":0,\"delta\":{\"reasoning_details\":[{\"type\":\"reasoning.encrypted\",\"data\":\"secret\"}],\"encrypted_content\":\"enc_secret\"},\"finish_reason\":null}]}\n\n",
+        "data: {\"id\":\"chatcmpl_1\",\"object\":\"chat.completion.chunk\",\"created\":1700000000,\"model\":\"m\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"Hi\"},\"finish_reason\":\"stop\"}]}\n\n",
+        "data: [DONE]\n\n"
+    );
+    let mut dec = OpenAiChat::stream_decoder(&own_stream_ctx);
+    let mut extra_events = dec.feed(extra_only_sse.as_bytes());
+    extra_events.extend(dec.finish());
+    let mut extra_enc =
+        OpenAiChat::stream_encoder(&EncodeCtx::for_request(req_with(json!({"exclude": true}))));
+    let mut extra_out = Vec::new();
+    for ev in &extra_events {
+        extra_out.extend(extra_enc.encode(ev).unwrap());
+    }
+    extra_out.extend(extra_enc.finish().unwrap());
+    let extra_out = String::from_utf8(extra_out).unwrap();
+    assert!(!extra_out.contains("reasoning_details"), "{extra_out}");
+    assert!(!extra_out.contains("encrypted_content"), "{extra_out}");
+    assert!(!extra_out.contains("secret"), "{extra_out}");
+    assert!(extra_out.contains(r#""content":"Hi""#), "{extra_out}");
+}

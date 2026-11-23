@@ -18,14 +18,16 @@ use super::profile::{
 };
 use super::request::{
     CONFLICT_KEYS, FORM_CONTENT, FORM_MAX_TOKENS, FORM_MESSAGE, FORM_MODALITIES_EMPTY, FORM_N,
+    FORM_REASONING_EFFORT_SOURCE, FORM_REASONING_ENABLED, FORM_REASONING_EXCLUDE_FALSE,
     FORM_REPLAYED, FORM_RESPONSE_FORMAT_TEXT, FORM_ROLE, FORM_SCHEMA_ABSENT, FORM_STOP,
     FORM_STREAM_FALSE, FORM_STREAM_OPTIONS, FORM_STREAM_OPTIONS_OFF, FORM_USER, FUNCTION_ROLE,
-    KEY_MAX_TOKENS_CONFLICT, MESSAGE_PREFIX, REPLAYED_REASONING,
+    KEY_MAX_TOKENS_CONFLICT, MESSAGE_PREFIX, REPLAYED_REASONING, is_reasoning_object,
 };
 use super::response::{FORM_THINKING, encode_thinking_part};
 use super::wire::{
     AssistantMessage, AudioParam, ChatRequest, FunctionObject, FunctionToolWire,
-    InstructionMessage, JsonSchemaWire, ResponseFormat, StreamOptions, ToolMessage, UserMessage,
+    InstructionMessage, JsonSchemaWire, ReasoningParam, ResponseFormat, StreamOptions, ToolMessage,
+    UserMessage,
 };
 use crate::codec::EgressCtx;
 use crate::cross::{self, reasoning_replayable};
@@ -95,11 +97,7 @@ pub(crate) fn encode_generate(
     }
     encode_stream(req, own, &mut w)?;
     encode_output(req, own, &mut w)?;
-    w.reasoning_effort = req
-        .reasoning
-        .as_ref()
-        .and_then(crate::cross::reasoning_map::openai_effort)
-        .map(|e| e.as_wire().to_owned());
+    encode_reasoning(req, &profile, &mut w);
     w.response_format = encode_response_format(req)?;
     for tool in &req.tools {
         match tool {
@@ -196,6 +194,57 @@ pub(crate) fn encode_generate(
         default_option(default, &mut out)?;
     }
     Ok(out)
+}
+
+fn encode_reasoning(req: &GenerateRequest, profile: &ChatProfile, w: &mut ChatRequest) {
+    let Some(cfg) = &req.reasoning else {
+        return;
+    };
+    if profile.request.reasoning_object && is_reasoning_object(cfg) {
+        let effort_source = cfg.extras.form_str(DIALECT, FORM_REASONING_EFFORT_SOURCE);
+        let effort_wire = cfg.effort.as_ref().map(|e| e.as_wire().to_owned());
+        let obj_effort = if effort_source == Some("top_level") {
+            None
+        } else {
+            effort_wire.clone()
+        };
+        if matches!(effort_source, Some("top_level" | "both")) {
+            w.reasoning_effort = effort_wire;
+        }
+        let reasoning_active = matches!(
+            cfg.mode,
+            Some(ReasoningMode::Adaptive | ReasoningMode::Enabled)
+        ) || cfg.effort.is_some()
+            || cfg.budget_tokens.is_some();
+        let enabled = match cfg.extras.form_value(DIALECT, FORM_REASONING_ENABLED) {
+            Some(Value::Bool(false)) => {
+                (cfg.mode == Some(ReasoningMode::Disabled)).then_some(false)
+            }
+            Some(Value::Bool(true)) => reasoning_active.then_some(true),
+            _ => match cfg.mode {
+                Some(ReasoningMode::Disabled) => Some(false),
+                Some(ReasoningMode::Adaptive) if obj_effort.is_none() => Some(true),
+                _ => None,
+            },
+        };
+        let exclude = if cfg.exclude {
+            Some(true)
+        } else if cfg.extras.form_flag(DIALECT, FORM_REASONING_EXCLUDE_FALSE) {
+            Some(false)
+        } else {
+            None
+        };
+        let param = ReasoningParam {
+            effort: obj_effort,
+            max_tokens: cfg.budget_tokens,
+            enabled,
+            exclude,
+        };
+        w.reasoning = Some(ext_with(param, &cfg.extras));
+        return;
+    }
+    w.reasoning_effort =
+        crate::cross::reasoning_map::openai_effort(cfg).map(|e| e.as_wire().to_owned());
 }
 
 fn default_option(default: &OptionDefault, out: &mut Ext<ChatRequest>) -> Result<(), KppError> {

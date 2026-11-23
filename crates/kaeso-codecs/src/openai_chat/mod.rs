@@ -52,7 +52,13 @@ pub use profile::{
 };
 
 pub(crate) use convert::{PartContext, part_form};
-pub(crate) use request::message_form;
+pub(crate) use request::{decode_openrouter_reasoning_fields, is_reasoning_object, message_form};
+
+/// Whether this Chat Completions request configured reasoning through OpenRouter's `reasoning`
+/// object rather than OpenAI's `reasoning_effort` field.
+pub fn uses_reasoning_object(r: &GenerateRequest) -> bool {
+    r.reasoning.as_ref().is_some_and(is_reasoning_object)
+}
 
 pub(crate) const DIALECT: DialectId = DialectId::OpenAiChat;
 

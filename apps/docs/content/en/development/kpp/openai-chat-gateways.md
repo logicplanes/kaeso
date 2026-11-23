@@ -15,7 +15,8 @@ Sources: OpenRouter's [API reference](https://openrouter.ai/docs/api_reference/o
 
 | OpenRouter field | KPP | Notes |
 |---|---|---|
-| `provider`, `models`, `transforms`, `usage`, `reasoning` (request) | extras | Refused when the request goes to another dialect, like other Chat-only fields. |
+| `provider`, `models`, `transforms`, `usage` | extras | Refused when the request goes to another dialect, like other Chat-only fields. |
+| `reasoning` (request: `effort`, `max_tokens`, `enabled`, `exclude`) | `reasoning` typed | Kept as `reasoning` for OpenRouter through `with_reasoning_object()`, and translated for other providers and formats ([OpenAI Chat](openai-chat.md#request-createchatcompletionrequest), [reasoning](reasoning.md)). |
 | `message.reasoning`, `delta.reasoning` | `Block::Reasoning` | Through the profile's `reasoning_fields`. Chat apps get them back unchanged; Anthropic Messages apps get a `thinking` block and Responses apps a reasoning item ([reasoning](reasoning.md)). |
 | `message.reasoning_details`, `delta.reasoning_details` | extras | The same reasoning in OpenRouter's structured form; Chat apps get it back unchanged, other dialects get the text from `reasoning`. |
 | `provider`, `native_finish_reason` on a reply | extras | Left out towards other dialects. |
@@ -32,7 +33,8 @@ Sources: Vercel's [Chat Completions](https://vercel.com/docs/ai-gateway/sdks-and
 
 | Vercel field | KPP | Notes |
 |---|---|---|
-| `providerOptions` (`gateway` routing such as `order`, `only`, `sort`, `models`, `byok`, `tags`, `user`), `models`, `provider`, `reasoning` (request) | extras | Refused when the request goes to another dialect, like other Chat-only fields (`requests/gateway-options`). |
+| `providerOptions` (`gateway` routing such as `order`, `only`, `sort`, `models`, `byok`, `tags`, `user`), `models`, `provider` | extras | Refused when the request goes to another dialect, like other Chat-only fields (`requests/gateway-options`). |
+| `reasoning` (request) | `reasoning` typed | Kept as `reasoning` for Vercel through `with_reasoning_object()`, as for OpenRouter. |
 | `message.reasoning`, `delta.reasoning` | `Block::Reasoning` | Through the profile's `reasoning_fields`, as for OpenRouter. |
 | `message.reasoning_details`, `delta.reasoning_details` | extras | The same reasoning in OpenRouter's structured form, with `format: "unknown"` for models that aren't OpenAI's or Anthropic's. |
 | `provider_metadata` on the message and on the last chunk's delta (`gateway.routing`, `cost`, `marketCost`, `gatewayCost`, `generationId`), `generationId` at the top level | extras | Left out towards other dialects. The recordings' `clientSessionId`, a fingerprint of the client, is replaced with zeros. |

@@ -35,6 +35,9 @@ pub struct RequestProfile {
     /// `{"type": "enabled"}` or `{"type": "disabled"}`, as Volcengine Ark does, instead of
     /// `reasoning_effort` alone.
     pub thinking_type: bool,
+    /// Whether the provider accepts OpenRouter's unified `reasoning` object (`effort`,
+    /// `max_tokens`, `enabled`, `exclude`) on Chat Completions requests.
+    pub reasoning_object: bool,
     pub leading_system_only: bool,
     pub replay_reasoning_as_read: bool,
     pub tool_schema_root: ToolSchemaRoot,
@@ -144,6 +147,7 @@ impl RequestProfile {
         partial_prefill: false,
         thinking_switch: false,
         thinking_type: false,
+        reasoning_object: false,
         leading_system_only: false,
         replay_reasoning_as_read: false,
         tool_schema_root: ToolSchemaRoot::AsSent,
@@ -275,6 +279,13 @@ impl ChatProfile {
     #[must_use]
     pub const fn thinking_type(mut self) -> Self {
         self.request.thinking_type = true;
+        self
+    }
+
+    /// The provider takes OpenRouter's `reasoning` object ([`RequestProfile::reasoning_object`]).
+    #[must_use]
+    pub const fn with_reasoning_object(mut self) -> Self {
+        self.request.reasoning_object = true;
         self
     }
 
@@ -606,6 +617,7 @@ pub(crate) fn sends_known(w: &ChatRequest, key: &str) -> bool {
         "presence_penalty" => w.presence_penalty.is_some(),
         "n" => w.n.is_some(),
         "reasoning_effort" => w.reasoning_effort.is_some(),
+        "reasoning" => w.reasoning.is_some(),
         "response_format" => w.response_format.is_some(),
         "tools" => !w.tools.is_empty(),
         "tool_choice" => w.tool_choice.is_some(),

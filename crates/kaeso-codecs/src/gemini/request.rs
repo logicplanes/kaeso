@@ -1083,7 +1083,10 @@ fn thinking_level(effort: &ReasoningEffort) -> Option<&'static str> {
 }
 
 fn wants_thoughts(r: &GenerateRequest, c: &ReasoningConfig) -> bool {
-    if c.summary.is_some() {
+    if c.exclude {
+        return false;
+    }
+    if c.summary.is_some() || crate::cross::wants_chat_reasoning(c) {
         return true;
     }
     let anthropic = c.extras.is_from(kaeso_kpp::DialectId::AnthropicMessages);

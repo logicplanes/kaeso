@@ -80,17 +80,17 @@ Claude Code 会在每个请求中发送 `output_config.effort` 和自适应思�
 
 OpenAI 只有在请求设置了 `reasoning.summary` 时才返回可读推理，而 Claude Opus 4.7 及更新版本返回的思考块文本为空，除非请求设置了 `thinking.display: "summarized"`。因此，除 Token 计数请求外：
 
-- 来自其他方言、带有推理摘要（`auto`、`concise`、`detailed`）并开启了思考的请求，发往 Anthropic 时带上 `display: "summarized"`；
-- 开启了思考（`enabled`、`adaptive`，或 `none` 以外的推理强度）且 `display` 不是 `omitted` 的 Anthropic Messages 请求，发往 OpenAI Responses 时带上 `summary: "auto"`。
+- 来自其他方言、带有推理摘要（`auto`、`concise`、`detailed`），或带有 OpenRouter `reasoning` 对象且未设 `exclude: true` 的 Chat Completions 请求，在开启了思考时，发往 Anthropic 时带上 `display: "summarized"`；
+- 开启了思考（`enabled`、`adaptive`，或 `none` 以外的推理强度）且 `display` 不是 `omitted` 的 Anthropic Messages 请求，或带有 OpenRouter `reasoning` 对象且未设 `exclude: true` 的 Chat Completions 请求，发往 OpenAI Responses 时带上 `summary: "auto"`。
 
 网关还会告诉编码器目标模型是否推理（`EgressCtx::reasoning`，来自模型目录的 `reasoning`）。为 `Some(true)` 时：
 
 - 没有推理强度、模式或预算的摘要（OpenAI 的 `reasoning: {summary: "auto"}`）会以模型的默认深度开启 Anthropic 思考。也就是不带推理强度的自适应思考，或者 `medium` 对应的预算，即 OpenAI 的默认推理强度；
-- 没有推理强度的 Anthropic `adaptive` 思考对 OpenAI Responses 而言算作推理：它会请求 `include: ["reasoning.encrypted_content"]`，并像上面那样请求摘要。
+- 没有推理强度的 Anthropic `adaptive` 思考或 OpenRouter `reasoning: {enabled: true}` 对 OpenAI Responses 而言算作推理：它会请求 `include: ["reasoning.encrypted_content"]`，并在未设 `exclude: true` 或 `display: "omitted"` 时请求摘要。
 
-Gemini 只在 `includeThoughts: true` 时返回思考内容。来自其他方言的请求在带有推理摘要，或带有 `display` 不为 `omitted` 的 Anthropic 思考时会得到它（[Gemini API](gemini.md#思考)）。
+Gemini 只在 `includeThoughts: true` 时返回思考内容。来自其他方言的请求在带有推理摘要、带有 `display` 不为 `omitted` 的 Anthropic 思考，或在 Chat Completions 中带有 OpenRouter `reasoning` 对象且未设 `exclude: true` 时会得到它（[Gemini API](gemini.md#思考)）。
 
-没有推理设置的请求、推理强度 `none`，以及不推理或未知的模型，都不会被开启推理。OpenAI Chat 应用的格式不显示推理，因此不会请求摘要。
+没有推理设置的请求、推理强度 `none`，以及不推理或未知的模型，都不会被开启推理。标准 OpenAI Chat 应用（`reasoning_effort` 或不带 `reasoning`）不请求摘要，回复中也不显示推理。发送 OpenRouter `reasoning` 对象且未设 `exclude: true` 的 Chat 应用会在 `message.reasoning` 和 `delta.reasoning` 中收到可读推理。设置 `exclude: true` 时不请求摘要，并在 Chat 和 Responses 回复中隐藏推理，同时保留用量中的 `reasoning_tokens`。
 
 提供 Chat Completions 的服务商会在自己的字段中返回可读推理，例如 DeepSeek 的 `reasoning_content` 或 Groq 的 `reasoning`，无需请求摘要。它们的 Chat 配置会指明该字段（`reasoning_fields`，[服务商配置](openai-chat-providers.md#服务商配置)），因此推理会成为 KPP 推理块：Anthropic Messages 应用以 `thinking` 块得到它，Responses 应用以带摘要的推理项得到它，原始块都保存在[推理数据块](#推理数据块)中。
 

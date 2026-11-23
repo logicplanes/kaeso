@@ -147,7 +147,7 @@ Die Wochenübersicht und der monatliche Kostenbericht gehen nach ihrem eigenen Z
 
 Die [Webhooks](webhooks.md) einer Organisation bekommen ihre Benachrichtigungen ebenfalls, was immer hier jemand wählt.
 
-**Test-E-Mail senden** schickt eine an Ihre Adresse, höchstens einmal pro Minute. Schreibt die Installation E-Mails nur in ihr Protokoll, sagt die Seite das und bietet keine Auswahl.
+Schreibt die Installation E-Mails nur in ihr Protokoll, sagt die Seite das und bietet keine Auswahl. Ob E-Mails ankommen, prüft ein Instanz-Admin mit einer Test-E-Mail unter **Instanz** › **System** ([Test-E-Mail senden](../self-hosting/email.md#test-e-mail-senden)).
 
 Um alle E-Mails zu einer Organisation außer Sicherheits-E-Mails zu stoppen, schalten Sie unter **Mitgliedschaften** für sie **Mir E-Mails zu dieser Organisation senden** aus.
 

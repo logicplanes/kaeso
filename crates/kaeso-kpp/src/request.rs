@@ -417,6 +417,9 @@ pub struct ReasoningConfig {
     pub summary: Option<ReasoningSummary>,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub include_encrypted: bool,
+    /// Hide reasoning from the reply returned to the app while still letting the model reason.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub exclude: bool,
     #[serde(default, skip_serializing_if = "Extras::is_empty")]
     pub extras: Extras,
 }

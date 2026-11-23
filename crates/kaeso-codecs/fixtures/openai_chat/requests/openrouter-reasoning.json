@@ -1,0 +1,36 @@
+{
+  "model": "claude-sonnet-5-5",
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a helpful assistant. Use the tools when needed."
+    },
+    {
+      "role": "user",
+      "content": "Check the weather in Berlin and explain whether I need an umbrella."
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_weather",
+        "description": "Get the current weather for a city.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "city": {
+              "type": "string",
+              "description": "City name"
+            }
+          },
+          "required": ["city"]
+        }
+      }
+    }
+  ],
+  "stream": true,
+  "reasoning": {
+    "effort": "max"
+  }
+}
