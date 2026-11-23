@@ -612,6 +612,7 @@ describe("an MCP server's sheet", () => {
     withRights(ALL_ORG_RIGHTS.filter((r) => r !== "mcp_servers.manage"));
     serve([mcpServer()]);
     on("GET", SERVER_TOOLS, apiError(403, "permission_denied", "You can't see these tools."));
+    on("GET", SERVER_CHANGES, apiError(403, "permission_denied", "You can't see these changes."));
     const { user } = await renderApp(`${PATH}?server=mcp_x`);
     const s = await sheet("X");
     await hoverReason(user, await within(s).findByRole("button", { name: "Server actions" }), /Manage MCP servers/);
