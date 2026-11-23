@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE sources SET first_event_at = CASE WHEN $3::text IS NULL THEN coalesce(first_event_at, $2) ELSE first_event_at END, last_event_at = CASE WHEN $3::text IS NULL THEN greatest(last_event_at, $2) ELSE last_event_at END, last_error_at = CASE WHEN $3::text IS NULL THEN last_error_at ELSE $2 END, last_error = coalesce($3, last_error) WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Timestamptz",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "1b94e7ce43dbdafcbb7b87fa8d8511bd7eacbbd94c56caca22b1ab0b980bee74"
+}

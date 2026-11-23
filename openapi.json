@@ -17342,7 +17342,7 @@
           {
             "name": "source",
             "in": "query",
-            "description": "Only requests from the model API (`api`) or the console's\nPlayground (`playground`).",
+            "description": "Only requests from the model API (`api`), the console's\nPlayground (`playground`) or reported by a source (`observed`).",
             "required": false,
             "schema": {
               "type": "string"
@@ -17657,7 +17657,7 @@
           {
             "name": "source",
             "in": "query",
-            "description": "Only requests from the model API (`api`) or the console's\nPlayground (`playground`).",
+            "description": "Only requests from the model API (`api`), the console's\nPlayground (`playground`) or reported by a source (`observed`).",
             "required": false,
             "schema": {
               "type": "string"
@@ -17979,7 +17979,7 @@
           {
             "name": "source",
             "in": "query",
-            "description": "Only requests from the model API (`api`) or the console's\nPlayground (`playground`).",
+            "description": "Only requests from the model API (`api`), the console's\nPlayground (`playground`) or reported by a source (`observed`).",
             "required": false,
             "schema": {
               "type": "string"
@@ -23450,6 +23450,541 @@
           }
         ],
         "x-kaeso-access": "right:limits.manage"
+      }
+    },
+    "/platform/v1/orgs/{org}/projects/{project}/sources": {
+      "get": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "The project's sources, newest first.",
+        "description": "**Right:** `sources.view` on the project in the path.",
+        "operationId": "getOrgsOrgProjectsProjectSources",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many items to return, 1 to 100. Default 20.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "maximum": 100,
+              "minimum": 1
+            },
+            "example": 20
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "description": "The `next_cursor` of the previous page.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "include_archived",
+            "in": "query",
+            "description": "Include archived sources (default false).",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/List_ExternalSourceView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:sources.view"
+      },
+      "post": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "Adds a source and returns its key, shown this once.",
+        "description": "**Right:** `sources.manage` on the project in the path.",
+        "operationId": "postOrgsOrgProjectsProjectSources",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SourceCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceCreated"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:sources.manage"
+      }
+    },
+    "/platform/v1/orgs/{org}/projects/{project}/sources/{source}": {
+      "get": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "One source.",
+        "description": "**Right:** `sources.view` on the project in the path.",
+        "operationId": "getOrgsOrgProjectsProjectSourcesSource",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          },
+          {
+            "name": "source",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/SourceId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalSourceView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:sources.view"
+      },
+      "patch": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "Renames a source, changes whom its requests count for and whether it keeps content, or disables it.",
+        "description": "**Right:** `sources.manage` on the project in the path.",
+        "operationId": "patchOrgsOrgProjectsProjectSourcesSource",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          },
+          {
+            "name": "source",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/SourceId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SourceUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalSourceView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:sources.manage"
+      }
+    },
+    "/platform/v1/orgs/{org}/projects/{project}/sources/{source}/archive": {
+      "post": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "Archives a source: its key stops working and it can't be changed again. What it reported stays in the logs and the usage. Permanent.",
+        "description": "**Right:** `sources.manage` on the project in the path.",
+        "operationId": "postOrgsOrgProjectsProjectSourcesSourceArchive",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          },
+          {
+            "name": "source",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/SourceId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalSourceView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:sources.manage"
+      }
+    },
+    "/platform/v1/orgs/{org}/projects/{project}/sources/{source}/rotate": {
+      "post": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "Replaces a source's key; the old key stops working at once. The new key is shown this once.",
+        "description": "**Right:** `sources.manage` on the project in the path.",
+        "operationId": "postOrgsOrgProjectsProjectSourcesSourceRotate",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          },
+          {
+            "name": "source",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/SourceId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceCreated"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:sources.manage"
       }
     },
     "/platform/v1/orgs/{org}/projects/{project}/stored-responses": {
@@ -29403,7 +29938,8 @@
           "reported",
           "measured",
           "estimated",
-          "none"
+          "none",
+          "source"
         ]
       },
       "CreatedKey_KeyView": {
@@ -31158,6 +31694,156 @@
             "format": "date",
             "description": "A date; the key stops at its start (UTC).",
             "example": "2026-12-31"
+          }
+        }
+      },
+      "ExternalSourceView": {
+        "type": "object",
+        "description": "A source: a client that reports the requests and tool calls it makes without the gateway. Kaeso logs and counts them as observed; it never sits in their path and can't refuse them.",
+        "required": [
+          "id",
+          "project_id",
+          "kind",
+          "name",
+          "key",
+          "match_members",
+          "content",
+          "status",
+          "activity",
+          "ingest_url",
+          "created_at"
+        ],
+        "properties": {
+          "activity": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SourceDay"
+            },
+            "description": "The last 14 days, oldest first; days without events are left out."
+          },
+          "archived_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When archived."
+          },
+          "content": {
+            "type": "boolean",
+            "description": "Whether prompts, replies and tool arguments the source sends are kept, as far as the organization and the project keep content."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Created."
+          },
+          "created_by": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UserId",
+                "description": "Who added it."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "disabled_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When disabled."
+          },
+          "first_event_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "Its first event."
+          },
+          "id": {
+            "$ref": "#/components/schemas/SourceId",
+            "description": "Id."
+          },
+          "ingest_url": {
+            "type": "string",
+            "description": "Where it sends its events: the OpenTelemetry endpoint is this URL with `/otlp` added, the JSON endpoints this URL with `/v1/…`.",
+            "example": "https://kaeso.example.com/ingest"
+          },
+          "key": {
+            "type": "string",
+            "description": "The key, with only its start and last four characters.",
+            "example": "sk-kso-src-AbC123…wXyZ"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/SourceKindView",
+            "description": "The client it reports from."
+          },
+          "last_error": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Why, as a code: `no_model`, `no_tool` or `no_id` for a record without what its format needs, `too_many_tokens`, `cost_too_high` or `bad_status` for numbers no request has, `too_old` (more than 7 days) or `in_future` for its date, `nobody` when the source counts for no one, `unreadable` for a body Kaeso can't read, `inactive` for a disabled source."
+          },
+          "last_error_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When Kaeso last refused something it sent."
+          },
+          "last_event_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "Its latest event."
+          },
+          "match_members": {
+            "type": "boolean",
+            "description": "Whether an event's email address counts the request for the organization member with that address."
+          },
+          "name": {
+            "type": "string",
+            "description": "Name.",
+            "example": "Claude Code, Ada's laptop"
+          },
+          "project_id": {
+            "$ref": "#/components/schemas/ProjectId",
+            "description": "The project its requests count in."
+          },
+          "service_account_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ServiceAccountId",
+                "description": "The service account its requests count for instead of a member."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/SourceStatus",
+            "description": "Whether it reports."
+          },
+          "user_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UserId",
+                "description": "The member its requests count for when an event names nobody Kaeso knows."
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         }
       },
@@ -35407,6 +36093,181 @@
           }
         }
       },
+      "List_ExternalSourceView": {
+        "type": "object",
+        "description": "A page of results.",
+        "required": [
+          "data",
+          "has_more"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "A source: a client that reports the requests and tool calls it makes without the gateway. Kaeso logs and counts them as observed; it never sits in their path and can't refuse them.",
+              "required": [
+                "id",
+                "project_id",
+                "kind",
+                "name",
+                "key",
+                "match_members",
+                "content",
+                "status",
+                "activity",
+                "ingest_url",
+                "created_at"
+              ],
+              "properties": {
+                "activity": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SourceDay"
+                  },
+                  "description": "The last 14 days, oldest first; days without events are left out."
+                },
+                "archived_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time",
+                  "description": "When archived."
+                },
+                "content": {
+                  "type": "boolean",
+                  "description": "Whether prompts, replies and tool arguments the source sends are kept, as far as the organization and the project keep content."
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "Created."
+                },
+                "created_by": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/UserId",
+                      "description": "Who added it."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "disabled_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time",
+                  "description": "When disabled."
+                },
+                "first_event_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time",
+                  "description": "Its first event."
+                },
+                "id": {
+                  "$ref": "#/components/schemas/SourceId",
+                  "description": "Id."
+                },
+                "ingest_url": {
+                  "type": "string",
+                  "description": "Where it sends its events: the OpenTelemetry endpoint is this URL with `/otlp` added, the JSON endpoints this URL with `/v1/…`.",
+                  "example": "https://kaeso.example.com/ingest"
+                },
+                "key": {
+                  "type": "string",
+                  "description": "The key, with only its start and last four characters.",
+                  "example": "sk-kso-src-AbC123…wXyZ"
+                },
+                "kind": {
+                  "$ref": "#/components/schemas/SourceKindView",
+                  "description": "The client it reports from."
+                },
+                "last_error": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Why, as a code: `no_model`, `no_tool` or `no_id` for a record without what its format needs, `too_many_tokens`, `cost_too_high` or `bad_status` for numbers no request has, `too_old` (more than 7 days) or `in_future` for its date, `nobody` when the source counts for no one, `unreadable` for a body Kaeso can't read, `inactive` for a disabled source."
+                },
+                "last_error_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time",
+                  "description": "When Kaeso last refused something it sent."
+                },
+                "last_event_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time",
+                  "description": "Its latest event."
+                },
+                "match_members": {
+                  "type": "boolean",
+                  "description": "Whether an event's email address counts the request for the organization member with that address."
+                },
+                "name": {
+                  "type": "string",
+                  "description": "Name.",
+                  "example": "Claude Code, Ada's laptop"
+                },
+                "project_id": {
+                  "$ref": "#/components/schemas/ProjectId",
+                  "description": "The project its requests count in."
+                },
+                "service_account_id": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ServiceAccountId",
+                      "description": "The service account its requests count for instead of a member."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "status": {
+                  "$ref": "#/components/schemas/SourceStatus",
+                  "description": "Whether it reports."
+                },
+                "user_id": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/UserId",
+                      "description": "The member its requests count for when an event names nobody Kaeso knows."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The items."
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "Whether more items follow."
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Pass as `after` to get the next page; `null` on the last page."
+          }
+        }
+      },
       "List_GuardrailView": {
         "type": "object",
         "description": "A page of results.",
@@ -36420,7 +37281,7 @@
                 },
                 "source": {
                   "type": "string",
-                  "description": "Where the request came from: `api` (the model API, with a key) or\n`playground` (the console's Playground, as the member).",
+                  "description": "Where the request came from: `api` (the model API, with a key),\n`playground` (the console's Playground, as the member) or `observed` (a source\nreported it; Kaeso didn't make it).",
                   "example": "api"
                 },
                 "started_at": {
@@ -38765,7 +39626,7 @@
                 },
                 "source": {
                   "type": "string",
-                  "description": "`portal` or `playground`."
+                  "description": "`portal`, `playground`, or `observed` for a call a source reported."
                 },
                 "started_at": {
                   "type": "string",
@@ -39640,7 +40501,7 @@
           },
           "source": {
             "type": "string",
-            "description": "Where the request came from: `api` (the model API, with a key) or\n`playground` (the console's Playground, as the member).",
+            "description": "Where the request came from: `api` (the model API, with a key),\n`playground` (the console's Playground, as the member) or `observed` (a source\nreported it; Kaeso didn't make it).",
             "example": "api"
           },
           "started_at": {
@@ -47596,6 +48457,208 @@
         },
         "additionalProperties": false
       },
+      "SourceCreate": {
+        "type": "object",
+        "description": "A new source.",
+        "required": [
+          "kind",
+          "name"
+        ],
+        "properties": {
+          "content": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Whether to keep prompts, replies and tool arguments the source sends; default `false`."
+          },
+          "kind": {
+            "$ref": "#/components/schemas/SourceKindView",
+            "description": "The client it reports from."
+          },
+          "match_members": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Whether an event's email address counts the request for the organization member with that address; default `true`."
+          },
+          "name": {
+            "type": "string",
+            "description": "A name to recognise it by, 1 to 100 characters.",
+            "example": "Claude Code, Ada's laptop"
+          },
+          "service_account_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ServiceAccountId",
+                "description": "A service account of the project to count them for instead."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "user_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UserId",
+                "description": "The member its requests count for when an event names nobody Kaeso knows; the caller when neither this nor `service_account_id` is given."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "SourceCreated": {
+        "type": "object",
+        "description": "A source with its key, shown this once.",
+        "required": [
+          "source",
+          "key"
+        ],
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "The key the client sends its events with. Kaeso keeps only its hash.",
+            "example": "sk-kso-src-AbC123dEf456gHi789jKl012mNo345pQr678sTu901vWxY"
+          },
+          "source": {
+            "$ref": "#/components/schemas/ExternalSourceView",
+            "description": "The source."
+          }
+        }
+      },
+      "SourceDay": {
+        "type": "object",
+        "description": "What a source reported on one day, UTC.",
+        "required": [
+          "day",
+          "requests",
+          "tool_calls",
+          "duplicates",
+          "refused"
+        ],
+        "properties": {
+          "day": {
+            "type": "string",
+            "format": "date",
+            "description": "The day.",
+            "example": "2026-11-22"
+          },
+          "duplicates": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Records it sent again, which Kaeso had already logged and left out."
+          },
+          "refused": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Records or batches Kaeso refused, such as malformed ones."
+          },
+          "requests": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Requests it reported that Kaeso logged."
+          },
+          "tool_calls": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Tool calls it reported that Kaeso logged."
+          }
+        }
+      },
+      "SourceId": {
+        "type": "string",
+        "examples": [
+          "src_01k7a3f8m2xq4v9c5r6t8w0yz1"
+        ],
+        "pattern": "^src_[0-9a-hjkmnp-tv-z]{26}$"
+      },
+      "SourceKindView": {
+        "type": "string",
+        "description": "The client a source reports from, which decides how Kaeso reads what it sends.",
+        "enum": [
+          "claude_code",
+          "codex",
+          "gemini_cli",
+          "antigravity",
+          "opentelemetry",
+          "http",
+          "litellm",
+          "openrouter"
+        ]
+      },
+      "SourceStatus": {
+        "type": "string",
+        "description": "Whether a source reports: `waiting` for its first event, `connected` when it reported within the last day, `idle` when it reported before that, `disabled` or `archived`.",
+        "enum": [
+          "waiting",
+          "connected",
+          "idle",
+          "disabled",
+          "archived"
+        ]
+      },
+      "SourceUpdate": {
+        "type": "object",
+        "description": "Changes to a source. A member and a service account replace each other.",
+        "properties": {
+          "content": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Whether to keep the content the source sends."
+          },
+          "disabled": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "`true` refuses everything it sends until set back to `false`."
+          },
+          "match_members": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Whether an event's email address counts the request for that member."
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "A new name."
+          },
+          "service_account_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ServiceAccountId",
+                "description": "The service account its requests count for."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "user_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UserId",
+                "description": "The member its requests count for."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
       "SourceView": {
         "type": "object",
         "description": "One reason a right is held.",
@@ -48590,7 +49653,7 @@
           },
           "source": {
             "type": "string",
-            "description": "`portal` or `playground`."
+            "description": "`portal`, `playground`, or `observed` for a call a source reported."
           },
           "started_at": {
             "type": "string",

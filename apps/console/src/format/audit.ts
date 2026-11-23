@@ -29,6 +29,7 @@ const KIND_LABELS: Record<string, () => string> = {
   stored_responses: () => t("format.audit.kind.storedResponses", "Stored responses"),
   service_account: () => t("format.audit.kind.serviceAccount", "Service accounts"),
   shared_link: () => t("format.audit.kind.sharedLink", "Shared links"),
+  source: () => t("format.audit.kind.source", "Sources"),
   tool: () => t("format.audit.kind.tool", "Tools"),
   tool_access: () => t("format.audit.kind.toolAccess", "Tool access"),
   user: () => t("format.audit.kind.user", "Users"),
@@ -158,6 +159,10 @@ const ACTION_LABELS: Record<string, () => string> = {
   "shared_link.create": () => t("format.audit.action.sharedLinkCreate", "Link shared"),
   "shared_link.open": () => t("format.audit.action.sharedLinkOpen", "Shared link opened"),
   "shared_link.revoke": () => t("format.audit.action.sharedLinkRevoke", "Shared link revoked"),
+  "source.archive": () => t("format.audit.action.sourceArchive", "Source archived"),
+  "source.create": () => t("format.audit.action.sourceCreate", "Source added"),
+  "source.rotate": () => t("format.audit.action.sourceRotate", "Source key replaced"),
+  "source.update": () => t("format.audit.action.sourceUpdate", "Source changed"),
   "service_account.create": () => t("format.audit.action.serviceAccountCreate", "Service account created"),
   "service_account.update": () => t("format.audit.action.serviceAccountUpdate", "Service account changed"),
   "service_account.archive": () => t("format.audit.action.serviceAccountArchive", "Service account archived"),
@@ -244,6 +249,7 @@ const TARGET_KINDS: Record<string, () => string> = {
   update: () => t("format.targetKind.update", "Update"),
   webhook: () => t("format.targetKind.webhook", "Webhook"),
   shared_link: () => t("format.targetKind.sharedLink", "Shared link"),
+  source: () => t("format.targetKind.source", "Source"),
 };
 export const targetKindLabel = (kind: string) => TARGET_KINDS[kind]?.() ?? kind;
 

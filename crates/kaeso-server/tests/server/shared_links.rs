@@ -69,6 +69,7 @@ async fn spend(env: &Env, day: &str, model: &str, requests: i64, cost: &str) {
             ingress_dialect: "openai_chat".into(),
             egress_dialect: "openai_chat".into(),
             credential_id: None,
+            source_id: None,
             requests,
             errors: 0,
             input_tokens: 100,

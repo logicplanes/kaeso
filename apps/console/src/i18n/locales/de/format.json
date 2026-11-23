@@ -294,6 +294,12 @@
   "format.audit.action.sharedLinkCreate": "Link geteilt",
   "format.audit.action.sharedLinkOpen": "Geteilter Link geöffnet",
   "format.audit.action.sharedLinkRevoke": "Geteilter Link widerrufen",
+  "format.audit.action.sourceArchive": "Quelle archiviert",
+  "format.audit.action.sourceCreate": "Quelle hinzugefügt",
+  "format.audit.action.sourceRotate": "Schlüssel der Quelle ersetzt",
+  "format.audit.action.sourceUpdate": "Quelle geändert",
   "format.audit.kind.sharedLink": "Geteilte Links",
-  "format.targetKind.sharedLink": "Geteilter Link"
+  "format.audit.kind.source": "Quellen",
+  "format.targetKind.sharedLink": "Geteilter Link",
+  "format.targetKind.source": "Quelle"
 }

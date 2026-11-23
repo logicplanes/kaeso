@@ -54,8 +54,8 @@ order: 4
 | 项目角色 | 权限 |
 | --- | --- |
 | 管理员 | 所有项目权限 |
-| 开发者 | 查看者的权限，以及 `api.request`、`playground.use`、`keys.own.create`、`keys.own.manage`、`logs.content.view`、`tools.manage` |
-| 查看者 | `project.view`、`project.members.view`、`service_accounts.view`、`keys.all.view`、`models.view`、`tools.view`、`tools.use`、`limits.view`、`logs.metadata.view`、`usage.view`、`costs.view` |
+| 开发者 | 查看者的权限，以及 `api.request`、`playground.use`、`keys.own.create`、`keys.own.manage`、`logs.content.view`、`tools.manage`、`sources.manage` |
+| 查看者 | `project.view`、`project.members.view`、`service_accounts.view`、`keys.all.view`、`models.view`、`tools.view`、`tools.use`、`limits.view`、`logs.metadata.view`、`sources.view`、`usage.view`、`costs.view` |
 
 有两项组织权限还会延伸到每个项目中。`projects.view.all` 授予 `project.view`，`projects.archive.any` 授予 `project.view` 和 `project.archive`。
 
@@ -253,6 +253,8 @@ order: 4
 | `logs.content.view` | 查看提示词和输出 | 查看日志中的请求和响应正文。 | 敏感；需要 `logs.metadata.view` |
 | `logs.export` | 导出日志 | 导出项目的请求日志。 | 敏感；需要 `logs.metadata.view` |
 | `logs.content.manage` | 切换内容日志 | 为此项目开启或关闭内容日志和媒体保留。 | 敏感 |
+| `sources.view` | 查看来源 | 查看项目的来源、每个来源的设置以及它最近上报的内容（从不显示密钥）。 |  |
+| `sources.manage` | 管理来源 | 添加、更改、停用和归档项目的来源，并更换它们的密钥。 | 需要 `sources.view` |
 
 ### 用量与费用
 

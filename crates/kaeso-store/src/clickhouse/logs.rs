@@ -78,6 +78,9 @@ pub struct LogRow {
     /// The provider key that paid; the nil id when no provider was sent the request.
     #[serde(with = "clickhouse::serde::uuid")]
     pub credential_id: Uuid,
+    /// The source that reported a request Kaeso observed; the nil id for the gateway's own.
+    #[serde(with = "clickhouse::serde::uuid")]
+    pub source_id: Uuid,
 }
 
 #[derive(Clone, Debug, PartialEq, Row, Serialize, Deserialize)]

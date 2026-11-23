@@ -52,7 +52,7 @@ describe("the seed's usage history", () => {
   it("adds to the rows the gateway already wrote", () => {
     const sql = usageSql(usageRows([{ ...base, started_at: "2026-10-01 09:00:00.000", resolved_model: "it's" }]));
     expect(sql).toContain(
-      "ON CONFLICT (project_id, day, api_key_id, user_id, service_account_id, provider, model_id, ingress_dialect, egress_dialect, credential_id)",
+      "ON CONFLICT (project_id, day, api_key_id, user_id, service_account_id, provider, model_id, ingress_dialect, egress_dialect, credential_id, source_id)",
     );
     expect(sql).toContain("requests = u.requests + excluded.requests");
     expect(sql).toContain("it''s");

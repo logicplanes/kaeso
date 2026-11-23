@@ -218,6 +218,10 @@ pub fn kinds(action: crate::platform::audit::Action) -> &'static [Kind] {
         | A::ServiceAccountArchive
         | A::ServiceAccountCreate
         | A::ServiceAccountUpdate
+        | A::SourceArchive
+        | A::SourceCreate
+        | A::SourceRotate
+        | A::SourceUpdate
         | A::ToolApprove
         | A::ToolReject
         | A::ToolAccessUpdate

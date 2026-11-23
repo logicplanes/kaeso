@@ -40,6 +40,11 @@ pub struct ToolCallRow {
     pub has_content: bool,
     #[serde(with = "clickhouse::serde::time::datetime")]
     pub expires_at: OffsetDateTime,
+    /// The source that reported a call Kaeso observed; the nil id for the portal's own.
+    #[serde(with = "clickhouse::serde::uuid")]
+    pub source_id: Uuid,
+    /// The MCP server an observed call named; the portal's own calls name theirs by `server_id`.
+    pub server_name: String,
 }
 
 #[derive(Clone, Debug, PartialEq, Row, Serialize, Deserialize)]

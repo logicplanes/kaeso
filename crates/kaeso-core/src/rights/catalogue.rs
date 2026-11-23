@@ -253,6 +253,8 @@ rights!(
         LogsContentView = "logs.content.view", Logs, "View prompts and outputs", true, false, false, [LogsMetadataView], "See request and response bodies in the logs.";
         LogsExport = "logs.export", Logs, "Export logs", true, false, false, [LogsMetadataView], "Export the project's request logs.";
         LogsContentManage = "logs.content.manage", Logs, "Switch content logging", true, false, false, [], "Switch content logging and kept media on or off for this project.";
+        SourcesView = "sources.view", Logs, "View sources", false, false, false, [], "See the project's sources, how each is set up and what it reported last (never keys).";
+        SourcesManage = "sources.manage", Logs, "Manage sources", false, false, false, [SourcesView], "Add, change, disable and archive the project's sources and replace their keys.";
         UsageView = "usage.view", UsageCosts, "View usage", false, false, false, [], "See the project's usage.";
         CostsView = "costs.view", UsageCosts, "View costs", false, false, false, [UsageView], "See the project's costs.";
         ProjectAuditLogView = "project.audit_log.view", Audit, "View project audit log", false, false, false, [], "Read the audit log of changes in this project.";

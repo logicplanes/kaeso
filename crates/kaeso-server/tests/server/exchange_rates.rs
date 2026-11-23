@@ -323,6 +323,7 @@ async fn spend_on(env: &Env, d: &str, cost: rust_decimal::Decimal) {
             ingress_dialect: "openai_chat".into(),
             egress_dialect: "openai_chat".into(),
             credential_id: None,
+            source_id: None,
             requests: 1,
             errors: 0,
             input_tokens: 1,

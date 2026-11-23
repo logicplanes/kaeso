@@ -1203,6 +1203,8 @@ mod tests {
             sees_cost: false,
             sees_limits: false,
             source: crate::model_api::hooks::Source::Api,
+            source_id: None,
+            observed_cost: None,
             ingress: DialectId::OpenAiChat,
             kind: RequestKind::Generate,
             egress: Some(DialectId::OpenAiChat),

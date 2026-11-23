@@ -924,6 +924,28 @@
             "cloud_only": false,
             "owner_only": false,
             "needs": ["project.view"]
+          },
+          {
+            "id": "sources.view",
+            "scope": "project",
+            "name": "View sources",
+            "description": "See the project's sources, how each is set up and what it reported last (never keys).",
+            "sensitive": false,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "owner_only": false,
+            "needs": ["project.view"]
+          },
+          {
+            "id": "sources.manage",
+            "scope": "project",
+            "name": "Manage sources",
+            "description": "Add, change, disable and archive the project's sources and replace their keys.",
+            "sensitive": false,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "owner_only": false,
+            "needs": ["project.view", "sources.view"]
           }
         ]
       },

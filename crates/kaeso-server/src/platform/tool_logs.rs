@@ -120,7 +120,7 @@ pub struct ToolCallView {
     #[doc = "The MCP version the client spoke."]
     #[schema(example = "2026-07-28")]
     pub protocol_version: String,
-    #[doc = "`portal` or `playground`."]
+    #[doc = "`portal`, `playground`, or `observed` for a call a source reported."]
     pub source: String,
     #[doc = "`ok`, `error` or `refused`."]
     pub status: String,

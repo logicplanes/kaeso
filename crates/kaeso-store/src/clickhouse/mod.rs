@@ -126,6 +126,13 @@ const MIGRATIONS: &[Migration] = &[
         name: "model_lines",
         sql: include_str!("../../migrations/clickhouse/0019_model_lines.sql"),
     },
+    // Requests and tool calls a source reported instead of the gateway making them name it; the
+    // nil id for everything the gateway made itself.
+    Migration {
+        version: 20,
+        name: "sources",
+        sql: include_str!("../../migrations/clickhouse/0020_sources.sql"),
+    },
 ];
 
 #[derive(Clone)]
@@ -278,7 +285,7 @@ mod tests {
     #[test]
     fn migration_files_split_into_statements() {
         let all: Vec<String> = MIGRATIONS.iter().flat_map(|m| statements(m.sql)).collect();
-        assert_eq!(all.len(), 36);
+        assert_eq!(all.len(), 39);
         assert!(all.iter().all(|s| s.starts_with("CREATE ")
             || s.starts_with("ALTER TABLE ")
             || s.starts_with("DROP ")));

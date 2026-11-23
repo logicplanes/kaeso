@@ -25,4 +25,5 @@ pub mod providers;
 pub mod rights;
 pub mod secret;
 pub mod servers;
+pub mod sources;
 pub mod text;

@@ -294,6 +294,12 @@
   "format.audit.action.sharedLinkCreate": "已分享链接",
   "format.audit.action.sharedLinkOpen": "共享链接已打开",
   "format.audit.action.sharedLinkRevoke": "共享链接已撤销",
+  "format.audit.action.sourceArchive": "已归档来源",
+  "format.audit.action.sourceCreate": "已添加来源",
+  "format.audit.action.sourceRotate": "已更换来源密钥",
+  "format.audit.action.sourceUpdate": "已更改来源",
   "format.audit.kind.sharedLink": "共享链接",
-  "format.targetKind.sharedLink": "共享链接"
+  "format.audit.kind.source": "来源",
+  "format.targetKind.sharedLink": "共享链接",
+  "format.targetKind.source": "来源"
 }

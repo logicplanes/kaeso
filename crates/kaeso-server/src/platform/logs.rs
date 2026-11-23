@@ -662,8 +662,8 @@ pub struct LogFilter {
     pub error_kind: Option<String>,
     #[doc = "Only streamed (`true`) or complete (`false`) requests."]
     pub stream: Option<bool>,
-    #[doc = "Only requests from the model API (`api`) or the console's\n\
-        Playground (`playground`)."]
+    #[doc = "Only requests from the model API (`api`), the console's\n\
+        Playground (`playground`) or reported by a source (`observed`)."]
     pub source: Option<String>,
     #[doc = "Only requests the app sent in this format."]
     #[param(value_type = Option<super::RequestFormat>)]
@@ -722,6 +722,9 @@ pub enum CostBasis {
         response cache answered it, or it started a job that is billed when it ends."]
     #[serde(rename = "none")]
     NotBilled,
+    #[doc = "What the source that reported an observed request said it cost, because Kaeso\n\
+        has no price for its model."]
+    Source,
 }
 
 impl CostBasis {
@@ -731,6 +734,7 @@ impl CostBasis {
             "measured" => CostBasis::Measured,
             "estimated" => CostBasis::Estimated,
             "none" => CostBasis::NotBilled,
+            "source" => CostBasis::Source,
             _ => CostBasis::Reported,
         }
     }
@@ -741,6 +745,7 @@ impl CostBasis {
             CostBasis::Measured => "measured",
             CostBasis::Estimated => "estimated",
             CostBasis::NotBilled => "none",
+            CostBasis::Source => "source",
         }
     }
 }
@@ -783,7 +788,7 @@ impl LogFilter {
         {
             return Err(ApiError::invalid(
                 "source",
-                "`source` must be `api` or `playground`.",
+                "`source` must be `api`, `playground` or `observed`.",
             ));
         }
         Ok(Filter {
@@ -903,7 +908,7 @@ fn cost_filter(c: &str, money: &Money) -> ApiResult<String> {
         })
 }
 
-const SOURCES: [&str; 2] = ["api", "playground"];
+const SOURCES: [&str; 3] = ["api", "playground", "observed"];
 
 fn dialect_filter(field: &str, d: &str) -> ApiResult<String> {
     DialectId::ALL
@@ -964,8 +969,9 @@ pub struct LogView {
     pub overhead_us: Option<u32>,
     #[doc = "The key; `null` for requests from the Playground, which have none."]
     pub key_id: Option<ApiKeyId>,
-    #[doc = "Where the request came from: `api` (the model API, with a key) or\n\
-        `playground` (the console's Playground, as the member)."]
+    #[doc = "Where the request came from: `api` (the model API, with a key),\n\
+        `playground` (the console's Playground, as the member) or `observed` (a source\n\
+        reported it; Kaeso didn't make it)."]
     #[schema(example = "api")]
     pub source: String,
     #[doc = "`user` or `service_account`."]

@@ -72,6 +72,8 @@
         "logs.content.view",
         "logs.export",
         "logs.content.manage",
+        "sources.view",
+        "sources.manage",
         "usage.view",
         "costs.view",
         "project.audit_log.view"
@@ -149,6 +151,8 @@
         "logs.content.view",
         "logs.export",
         "logs.content.manage",
+        "sources.view",
+        "sources.manage",
         "usage.view",
         "costs.view",
         "project.audit_log.view"
@@ -227,6 +231,7 @@
         "models.view",
         "limits.view",
         "logs.metadata.view",
+        "sources.view",
         "usage.view",
         "costs.view",
         "project.audit_log.view"

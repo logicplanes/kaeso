@@ -153,6 +153,8 @@ fn log(
         response_bytes: response.map_or(0, |r| r.len() as u64),
         has_content: false,
         expires_at: l.at,
+        source_id: Uuid::nil(),
+        server_name: String::new(),
     };
     let content = l.arguments.clone().map(|arguments| {
         (

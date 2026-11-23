@@ -86,6 +86,8 @@ expression: rights_reference()
 | `logs.content.view` ⚠ | Logs & data | View prompts and outputs | See request and response bodies in the logs. | `logs.metadata.view` |  |  |
 | `logs.export` ⚠ | Logs & data | Export logs | Export the project's request logs. | `logs.metadata.view` |  |  |
 | `logs.content.manage` ⚠ | Logs & data | Switch content logging | Switch content logging and kept media on or off for this project. |  |  |  |
+| `sources.view` | Logs & data | View sources | See the project's sources, how each is set up and what it reported last (never keys). |  |  |  |
+| `sources.manage` | Logs & data | Manage sources | Add, change, disable and archive the project's sources and replace their keys. | `sources.view` |  |  |
 | `usage.view` | Usage & costs | View usage | See the project's usage. |  |  |  |
 | `costs.view` | Usage & costs | View costs | See the project's costs. | `usage.view` |  |  |
 | `project.audit_log.view` | Audit | View project audit log | Read the audit log of changes in this project. |  |  |  |
@@ -192,6 +194,8 @@ expression: rights_reference()
 | `logs.content.view` | ✓ | ✓ |  |  |  |  |
 | `logs.export` | ✓ | ✓ |  |  |  |  |
 | `logs.content.manage` | ✓ | ✓ |  |  |  |  |
+| `sources.view` | ✓ | ✓ |  |  | ✓ |  |
+| `sources.manage` | ✓ | ✓ |  |  |  |  |
 | `usage.view` | ✓ | ✓ |  |  | ✓ |  |
 | `costs.view` | ✓ | ✓ |  |  | ✓ |  |
 | `project.audit_log.view` | ✓ | ✓ |  |  | ✓ |  |
@@ -231,6 +235,8 @@ expression: rights_reference()
 | `logs.content.view` | ✓ | ✓ |  |
 | `logs.export` | ✓ |  |  |
 | `logs.content.manage` | ✓ |  |  |
+| `sources.view` | ✓ | ✓ | ✓ |
+| `sources.manage` | ✓ | ✓ |  |
 | `usage.view` | ✓ | ✓ | ✓ |
 | `costs.view` | ✓ | ✓ | ✓ |
 | `project.audit_log.view` | ✓ |  |  |
@@ -353,6 +359,8 @@ expression: rights_reference()
 | `logs.content.view` |  |  | ✓ | ✓ |
 | `logs.export` |  |  | ✓ | ✓ |
 | `logs.content.manage` |  |  | ✓ | ✓ |
+| `sources.view` |  | ✓ | ✓ | ✓ |
+| `sources.manage` |  | ✓ | ✓ | ✓ |
 | `usage.view` | ✓ | ✓ | ✓ | ✓ |
 | `costs.view` | ✓ | ✓ | ✓ | ✓ |
 | `project.audit_log.view` | ✓ |  | ✓ | ✓ |

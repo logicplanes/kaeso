@@ -121,6 +121,7 @@ async fn used(env: &Env, model: &str, on: Date, requests: i64) {
             ingress_dialect: "openai_chat".into(),
             egress_dialect: "openai_chat".into(),
             credential_id: None,
+            source_id: None,
             requests,
             errors: 0,
             input_tokens: 10,

@@ -297,6 +297,7 @@ pub(crate) fn blank_outcome(request_id: RequestId) -> Outcome {
         sees_cost: false,
         sees_limits: false,
         source: Source::Api,
+        source_id: None,
         ingress: DialectId::OpenAiChat,
         kind: RequestKind::Generate,
         egress: None,
@@ -308,6 +309,7 @@ pub(crate) fn blank_outcome(request_id: RequestId) -> Outcome {
         model_id: None,
         response_model: None,
         prices: None,
+        observed_cost: None,
         stream: false,
         status: 0,
         error_kind: None,
@@ -1045,7 +1047,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     let encoding = match source {
         Source::Api => decompress::encoding(&headers)
             .map_err(|r| Failure::new(unread_encoding(r), Stage::Request))?,
-        Source::Playground => Encoding::Identity,
+        Source::Playground | Source::Observed => Encoding::Identity,
     };
     let decision_upload = kind == RequestKind::Decide
         && headers

@@ -33,6 +33,7 @@ pub mod mcp_connections;
 pub mod mcp_servers;
 pub mod mcp_tools;
 pub mod notifications;
+pub mod observed;
 pub mod orgs;
 pub mod otel;
 pub mod provider_accounts;

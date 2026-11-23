@@ -673,6 +673,8 @@ pub fn cost_basis(o: &Outcome) -> &'static str {
         "measured"
     } else if o.usage_estimated {
         "estimated"
+    } else if o.prices.is_none() && o.observed_cost.is_some() {
+        "source"
     } else {
         ""
     }
@@ -979,6 +981,7 @@ async fn record_with(state: &AppState, o: &Outcome, body: Option<Bytes>) {
         media_detail: o.media.as_ref().map(media_detail).unwrap_or_default(),
         cost_known: crate::services::usage::cost_known(o),
         cost_basis: cost_basis(o).to_owned(),
+        source_id: o.source_id.unwrap_or_default(),
     };
     let content_expires = days(o.started_at, cfg.content_days.min(cfg.metadata_days));
     let (content, parts) = if content {

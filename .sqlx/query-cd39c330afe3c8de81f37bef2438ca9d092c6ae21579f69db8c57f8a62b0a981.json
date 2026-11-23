@@ -1,0 +1,19 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE sources SET secret_hash = $3, secret_prefix = $4, secret_last4 = $5, updated_at = $6 WHERE project_id = $1 AND id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Bytea",
+        "Text",
+        "Text",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "cd39c330afe3c8de81f37bef2438ca9d092c6ae21579f69db8c57f8a62b0a981"
+}

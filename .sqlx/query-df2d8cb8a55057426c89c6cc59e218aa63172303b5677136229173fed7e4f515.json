@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE sources SET name = $3, user_id = $4, service_account_id = $5, match_members = $6, content = $7, disabled_at = $8, archived_at = $9, updated_at = $10 WHERE project_id = $1 AND id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Uuid",
+        "Uuid",
+        "Bool",
+        "Bool",
+        "Timestamptz",
+        "Timestamptz",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "df2d8cb8a55057426c89c6cc59e218aa63172303b5677136229173fed7e4f515"
+}
