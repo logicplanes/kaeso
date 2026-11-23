@@ -76,9 +76,7 @@ const OTHER_NAMES: Record<string, string> = {
   jan: "Jan",
 };
 const MARKED = Object.keys(PROVIDER_MARKS).map((id) => ({ id, name: providerNames[id] ?? OTHER_NAMES[id] ?? id }));
-const MAKERS = Object.values(MODEL_MAKERS)
-  .filter((maker) => !PROVIDER_MARKS[maker.mark])
-  .map((maker) => ({ id: maker.mark, name: maker.name }));
+const MAKERS = Object.values(MODEL_MAKERS).flatMap((maker) => (maker.mark && !PROVIDER_MARKS[maker.mark] ? [{ id: maker.mark, name: maker.name }] : []));
 
 function MarkMatrix({ title, marks }: { title: string; marks: { id: string; name: string }[] }) {
   return (

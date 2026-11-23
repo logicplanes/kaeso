@@ -30,10 +30,12 @@ describe("identity parts", () => {
     const other = screen.getByRole("img", { name: "Zenith Labs" });
     expect(other).toHaveTextContent(/^$/);
     expect(other.querySelector("svg")).toHaveClass("size-24");
+    // Their owners' terms don't allow their logos here (NOTICE.md), so they show the provider icon like a custom provider.
     for (const name of ["Amazon Bedrock", "fal", "Baidu Qianfan"]) {
       const badge = screen.getByRole("img", { name });
       expect(badge).toHaveTextContent(/^$/);
-      expect(badge.querySelector("svg path")).not.toBeNull();
+      expect(badge).toHaveClass("text-fg-secondary");
+      expect(badge.querySelector("svg")).not.toBeNull();
     }
   });
 
@@ -58,9 +60,15 @@ describe("identity parts", () => {
     expect(llama.querySelector("path")).toHaveAttribute("d", VENDOR_MARKS.meta!.d);
   });
 
+  it("shows the provider's tile for a model whose maker's logo Kaeso doesn't show", () => {
+    render(<ProviderBadge provider="amazon-bedrock" name="Amazon Bedrock" model="us.amazon.nova-pro-v1:0" />);
+    const tile = screen.getByRole("img", { name: "Amazon Bedrock" });
+    expect(tile).toHaveClass("text-fg-secondary");
+  });
+
   it("reads the maker's mark in German and Chinese too", async () => {
     for (const [locale, name] of [
-      ["de", "OpenAI-Modell bei Amazon Bedrock"],
+      ["de", "Modell von OpenAI bei Amazon Bedrock"],
       ["zh-CN", "Amazon Bedrock 上的 OpenAI 模型"],
     ] as const) {
       const { unmount } = render(
@@ -275,9 +283,6 @@ const MARKED_PROVIDERS = {
   localai: "LocalAI",
   "mlx-lm": "MLX LM",
   jan: "Jan",
-  "amazon-bedrock": "Amazon Bedrock",
-  fal: "fal",
-  qianfan: "Baidu Qianfan",
   koboldcpp: "KoboldCpp",
   tabbyapi: "TabbyAPI",
 };

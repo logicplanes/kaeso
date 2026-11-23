@@ -37,6 +37,18 @@ const UNMARKED_NAMESPACES: Record<string, string> = {
   tbc: "a code name for an unannounced model",
 };
 
+// Providers and makers whose owners' terms don't allow their logos here (NOTICE.md): their tiles show the provider icon, and
+// a row about one of their models the provider's mark.
+const UNMARKED_PROVIDERS: Record<string, string> = {
+  "amazon-bedrock": "AWS's trademark guidelines allow its marks in plain text only",
+  fal: "fal's terms forbid using its logos without its written permission",
+  qianfan: "Baidu's terms forbid copying its logos without its permission",
+};
+const UNMARKED_MAKERS: Record<string, string> = {
+  Amazon: UNMARKED_PROVIDERS["amazon-bedrock"]!,
+  Baidu: UNMARKED_PROVIDERS.qianfan!,
+};
+
 // Namespaces that are part of how a host writes ids, not a maker.
 const HOST_SEGMENTS = new Set(["cf", "accounts", "models", "routers", "fal-ai"]);
 
@@ -109,6 +121,12 @@ const namespacesOf = (id: string) => {
   return segments.filter((segment) => !HOST_SEGMENTS.has(segment) && !/^v\d/.test(segment));
 };
 
+// The id as far as one of its namespaces, with a placeholder name: `fal-ai/flux/dev` up to `flux` is `fal-ai/flux/x`.
+const upTo = (id: string, space: string) => {
+  const lower = id.toLowerCase();
+  return `${lower.slice(0, lower.indexOf(space) + space.length)}/x`;
+};
+
 describe("model makers", () => {
   it.each([
     ["global.openai.gpt-6.2-astra", "OpenAI"],
@@ -141,16 +159,34 @@ describe("model makers", () => {
     ["o4-mini", "OpenAI"],
     ["MiniMax-M3", "MiniMax"],
     ["Meta-Llama-3.3-70B-Instruct", "Meta"],
+    ["us.stability.sd3-5-large-v1:0", "Stability AI"],
+    ["cartesia/sonic-3", "Cartesia"],
   ])("reads %s as a model by %s", (id, maker) => {
     expect(modelMaker(id)?.name).toBe(maker);
   });
 
-  it.each(["aura-2", "nova-3", "universal-3-6-pro", "venice-uncensored-1-2", "constructor/x", "toString", ""])("names no maker for %j", (id) => {
+  it.each([
+    "aura-2",
+    "nova-3",
+    "universal-3-6-pro",
+    "venice-uncensored-1-2",
+    "constructor/x",
+    "toString",
+    "",
+    // Someone else's model, whatever its name says.
+    "EleutherAI/gpt-j-6b",
+    "AI-Sweden-Models/gpt-sw3-20b",
+    "thedrummer/glm-4.5-air-steam",
+  ])("names no maker for %j", (id) => {
     expect(modelMaker(id)).toBeUndefined();
   });
 
-  it("draws every maker with a provider or vendor mark, and keeps no vendor mark nobody uses", () => {
-    for (const maker of Object.values(MODEL_MAKERS)) expect(PROVIDER_MARKS[maker.mark] ?? VENDOR_MARKS[maker.mark], maker.name).toBeDefined();
+  it("draws every maker with a provider or vendor mark unless its owner's terms forbid it, and keeps no vendor mark nobody uses", () => {
+    const unmarked = Object.values(MODEL_MAKERS)
+      .filter((maker) => !maker.mark)
+      .map((maker) => maker.name);
+    expect(unmarked.sort()).toEqual(Object.keys(UNMARKED_MAKERS).sort());
+    for (const maker of Object.values(MODEL_MAKERS)) if (maker.mark) expect(PROVIDER_MARKS[maker.mark] ?? VENDOR_MARKS[maker.mark], maker.name).toBeDefined();
     const used = new Set(Object.values(MODEL_MAKERS).map((maker) => maker.mark));
     expect(Object.keys(VENDOR_MARKS).filter((mark) => !used.has(mark))).toEqual([]);
     expect(Object.keys(VENDOR_MARKS).filter((mark) => PROVIDER_MARKS[mark])).toEqual([]);
@@ -159,14 +195,15 @@ describe("model makers", () => {
   it("has a mark for every provider in the shipped catalogue and every inference server a custom provider can run", () => {
     expect(providers.length).toBeGreaterThan(40);
     expect(servers.length).toBeGreaterThan(10);
-    expect([...providers, ...servers].filter((id) => !PROVIDER_MARKS[id])).toEqual([]);
+    expect([...providers, ...servers].filter((id) => !PROVIDER_MARKS[id]).sort()).toEqual(Object.keys(UNMARKED_PROVIDERS).sort());
+    expect(Object.keys(UNMARKED_PROVIDERS).filter((id) => PROVIDER_MARKS[id])).toEqual([]);
   });
 
   it("knows the maker behind every namespace in the shipped catalogue's model ids, or why it has no mark", () => {
     const unknown = new Set<string>();
     for (const m of models)
       for (const space of namespacesOf(m.id))
-        if (!modelMaker(`${space}/x`) && !(space in UNMARKED_NAMESPACES) && !providers.includes(space)) unknown.add(space);
+        if (!modelMaker(upTo(m.id, space)) && !(space in UNMARKED_NAMESPACES) && !providers.includes(space)) unknown.add(space);
     expect([...unknown].sort()).toEqual([]);
     const seen = new Set(models.flatMap((m) => namespacesOf(m.id)));
     expect(Object.keys(UNMARKED_NAMESPACES).filter((space) => !seen.has(space))).toEqual([]);

@@ -1,8 +1,11 @@
 /** A company that makes models, and the mark that stands for it. */
 export interface ModelMaker {
   name: string;
-  /** Its mark: a provider's mark when the maker is a built-in provider, else one of the vendor marks. */
-  mark: string;
+  /**
+   * Its mark: a provider's mark when the maker is a built-in provider, else one of the vendor marks. None when the owner's
+   * terms don't allow its logo here (NOTICE.md); a row about its model then shows the provider's mark.
+   */
+  mark?: string | undefined;
 }
 
 interface MakerRule extends ModelMaker {
@@ -46,13 +49,18 @@ const MAKERS = {
   cloudflare: { name: "Cloudflare", mark: "cloudflare-ai-gateway", namespaces: ["cloudflare"] },
   openrouter: { name: "OpenRouter", mark: "openrouter", namespaces: ["openrouter"] },
   typesafe: { name: "TypeSafe", mark: "typesafe", namespaces: ["typesafe", "typesafe-ai"], names: /^jev-/ },
+  cartesia: { name: "Cartesia", mark: "cartesia", namespaces: ["cartesia"] },
+  deepgram: { name: "Deepgram", mark: "deepgram", namespaces: ["deepgram"] },
+  assemblyai: { name: "AssemblyAI", mark: "assemblyai", namespaces: ["assemblyai"] },
   elevenlabs: { name: "ElevenLabs", mark: "elevenlabs", namespaces: ["elevenlabs"], names: /^eleven_/ },
-  amazon: { name: "Amazon", mark: "amazon", namespaces: ["amazon"] },
+  // AWS's trademark guidelines allow its marks in plain text only.
+  amazon: { name: "Amazon", namespaces: ["amazon"] },
   meta: { name: "Meta", mark: "meta", namespaces: ["meta", "meta-llama", "meta-models", "facebook"], names: /^(llama|muse-)/ },
   microsoft: { name: "Microsoft", mark: "microsoft", namespaces: ["microsoft", "intfloat"], names: /^(phi-\d|mai-|(multilingual-)?e5-)/ },
   ibm: { name: "IBM", mark: "ibm", namespaces: ["ibm-granite", "ibm"], names: /^granite/ },
   writer: { name: "Writer", mark: "writer", namespaces: ["writer"], names: /^palmyra/ },
-  baidu: { name: "Baidu", mark: "baidu", namespaces: ["baidu", "paddlepaddle"], names: /^ernie/ },
+  // Baidu's terms forbid copying its logos without its permission.
+  baidu: { name: "Baidu", namespaces: ["baidu", "paddlepaddle"], names: /^ernie/ },
   baai: { name: "BAAI", mark: "baai", namespaces: ["baai"], names: /^(text-embedding-)?bge-/ },
   bfl: { name: "Black Forest Labs", mark: "bfl", namespaces: ["black-forest-labs", "bfl"], names: /^flux/ },
   bytedance: {
@@ -86,7 +94,7 @@ const MAKERS = {
   aionlabs: { name: "AionLabs", mark: "aionlabs", namespaces: ["aion-labs"] },
   nomic: { name: "Nomic AI", mark: "nomic", namespaces: ["nomic-ai"], names: /^nomic-/ },
   mixedbread: { name: "Mixedbread", mark: "mixedbread", namespaces: ["mixedbread", "mixedbread-ai"], names: /^mxbai-/ },
-  stability: { name: "Stability AI", mark: "stability", namespaces: ["stabilityai", "stability-ai"] },
+  stability: { name: "Stability AI", mark: "stability", namespaces: ["stabilityai", "stability-ai", "stability"] },
   ideogram: { name: "Ideogram", mark: "ideogram", namespaces: ["ideogram"] },
   pixverse: { name: "PixVerse", mark: "pixverse", namespaces: ["pixverse"] },
   vidu: { name: "Vidu", mark: "vidu", namespaces: ["vidu"] },
@@ -149,6 +157,8 @@ const REGION = /^(?:global|apac|us-gov|[a-z]{2})\.(?=[a-z0-9-]+\.)/;
 const ACCOUNT = /^accounts\/[^/]+\/(models|routers)\//;
 // Venice writes embedding models as `text-embedding-<model>`.
 const EMBEDDING = /^text-embedding-/;
+// Folders hosts write before every model: fal's `fal-ai/`, Workers AI's `@cf/`.
+const HOST_FOLDERS: ReadonlySet<string> = new Set(["fal-ai", "cf"]);
 
 /** Who made a model, read from its id as a host writes it; `undefined` when the id doesn't say. */
 export function modelMaker(model: string): ModelMaker | undefined {
@@ -164,7 +174,10 @@ export function modelMaker(model: string): ModelMaker | undefined {
   }
   const prefix = prefixes.find((space) => name.startsWith(`${space}-`));
   if (prefix) return byNamespace.get(prefix);
-  // fal writes the model's own name as a folder: `fal-ai/flux/dev`.
+  // A namespace no maker owns, such as `EleutherAI/gpt-j-6b`, is someone else's model whatever its name says. Only ids
+  // without one, or with a host's own folder before the name (fal writes `fal-ai/flux/dev`), are read by their name.
+  const outer = nearest.at(-1);
+  if (outer !== undefined && !HOST_FOLDERS.has(outer)) return undefined;
   for (const part of [name, name.replace(EMBEDDING, ""), ...nearest]) {
     const rule = rules.find((r) => r.names?.test(part));
     if (rule) return rule;

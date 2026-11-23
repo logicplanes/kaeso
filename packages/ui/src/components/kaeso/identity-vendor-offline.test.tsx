@@ -10,10 +10,10 @@ vi.mock("./vendor-marks.js", () => {
 
 describe("a model's maker mark that can't load", () => {
   it("shows the provider's own mark and name instead of an empty tile", async () => {
-    render(<ProviderBadge provider="amazon-bedrock" name="Amazon Bedrock" model="us.meta.llama4-maverick-17b-instruct-v1:0" />);
-    expect(screen.getByRole("img", { name: "Meta model on Amazon Bedrock" })).toHaveTextContent(/^$/);
+    render(<ProviderBadge provider="openrouter" name="OpenRouter" model="meta-llama/llama-4-maverick" />);
+    expect(screen.getByRole("img", { name: "Meta model on OpenRouter" })).toHaveTextContent(/^$/);
     await act(() => lazyModulesSettled());
-    const tile = screen.getByRole("img", { name: "Amazon Bedrock" });
-    expect(tile.querySelector("path")).toHaveAttribute("d", PROVIDER_MARKS["amazon-bedrock"]!.d);
+    const tile = screen.getByRole("img", { name: "OpenRouter" });
+    expect(tile.querySelector("path")).toHaveAttribute("d", PROVIDER_MARKS.openrouter!.d);
   });
 });

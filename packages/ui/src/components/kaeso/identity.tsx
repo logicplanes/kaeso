@@ -68,7 +68,7 @@ let vendorMarkIds: ReadonlySet<string> | undefined;
 const isVendorMark = (key: string) =>
   (vendorMarkIds ??= new Set(
     Object.values(MODEL_MAKERS)
-      .map((maker) => maker.mark)
+      .flatMap((maker) => (maker.mark ? [maker.mark] : []))
       .filter((mark) => !PROVIDER_MARKS[mark]),
   )).has(key);
 
@@ -93,7 +93,7 @@ export function useProviderTile({
   const [failed, setFailed] = useState(false);
   const own = chosen ?? markOf(provider) ?? provider;
   const found = model ? modelMaker(model) : undefined;
-  const maker = found && found.mark !== own ? found : undefined;
+  const maker = found?.mark && found.mark !== own ? { name: found.name, mark: found.mark } : undefined;
   const wanted = isVendorMark(maker?.mark ?? own) && !failed;
   const vendors = useLazyModule(vendorMarks, wanted, () => setFailed(true));
   const markFor = (key: string) => PROVIDER_MARKS[key] ?? vendors?.VENDOR_MARKS[key];

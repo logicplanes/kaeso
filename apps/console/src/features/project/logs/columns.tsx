@@ -199,9 +199,7 @@ export function logColumns({
         <ModelCell
           row={r}
           message={logMessage(errors, r.error_message, r.provider, providerName)}
-          provider={
-            withProvider && r.provider ? <ProviderMark provider={r.provider} name={providerName(r.provider)} model={r.model || r.requested_model} /> : null
-          }
+          provider={withProvider && r.provider ? <ProviderMark provider={r.provider} name={providerName(r.provider)} model={r.model || undefined} /> : null}
         />
       ),
     ),
@@ -287,7 +285,8 @@ export function logColumns({
 
 const errorTone = (row: LogView) => (row.error_kind === "client_disconnected" ? "neutral" : row.status >= 500 ? "danger" : "warning");
 
-function ProviderMark({ provider, name, model }: { provider: string; name: string; model: string }) {
+// The resolved model only: a requested name can be a client's alias or a route that went to another maker.
+function ProviderMark({ provider, name, model }: { provider: string; name: string; model: string | undefined }) {
   const { label } = useProviderTile({ provider, name, model });
   return (
     <Tooltip content={label}>
