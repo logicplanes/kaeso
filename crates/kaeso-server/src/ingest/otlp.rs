@@ -110,6 +110,9 @@ pub struct LogRecord {
     pub body: Option<Value>,
     pub attributes: Attrs,
     pub event_name: String,
+    /// The span the record was logged in, so a record and its span name the same call.
+    pub trace_id: Vec<u8>,
+    pub span_id: Vec<u8>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -139,6 +142,8 @@ pub enum DecodeError {
     Protobuf(String),
     #[error("the body is not OTLP JSON: {0}")]
     Json(String),
+    #[error("the export holds more records than a batch may")]
+    TooMany,
 }
 
 mod pb {
@@ -234,6 +239,10 @@ mod pb {
         pub(super) attributes: Vec<KeyValue>,
         #[prost(string, tag = "12")]
         pub(super) event_name: String,
+        #[prost(bytes, tag = "9")]
+        pub(super) trace_id: Vec<u8>,
+        #[prost(bytes, tag = "10")]
+        pub(super) span_id: Vec<u8>,
     }
 
     #[derive(Clone, PartialEq, prost::Message)]
@@ -296,6 +305,18 @@ mod pb {
         pub(super) resource: Option<Resource>,
     }
 
+    /// `google.rpc.Status`, the body of an OTLP/HTTP error answered in protobuf.
+
+    #[derive(Clone, PartialEq, prost::Message)]
+
+    pub(super) struct RpcStatus {
+        #[prost(int32, tag = "1")]
+        pub(super) code: i32,
+
+        #[prost(string, tag = "2")]
+        pub(super) message: String,
+    }
+
     /// `partial_success` of every Export*ServiceResponse: field 1, with the rejected count in
     /// field 1 and the message in field 2.
     #[derive(Clone, PartialEq, prost::Message)]
@@ -341,7 +362,10 @@ fn pb_resource(r: Option<pb::Resource>) -> Attrs {
     r.map(|r| pb_attrs(r.attributes)).unwrap_or_default()
 }
 
-pub fn logs_from_protobuf(body: &[u8]) -> Result<Vec<Group<LogRecord>>, DecodeError> {
+pub fn logs_from_protobuf(body: &[u8], max: usize) -> Result<Vec<Group<LogRecord>>, DecodeError> {
+    if count_protobuf(body, &[1, 2, 2])? > max {
+        return Err(DecodeError::TooMany);
+    }
     let req = <pb::ExportLogsServiceRequest as prost::Message>::decode(body)
         .map_err(|e| DecodeError::Protobuf(e.to_string()))?;
     let mut out = Vec::new();
@@ -360,6 +384,8 @@ pub fn logs_from_protobuf(body: &[u8]) -> Result<Vec<Group<LogRecord>>, DecodeEr
                         body: r.body.map(|b| from_pb(Some(b))),
                         attributes: pb_attrs(r.attributes),
                         event_name: r.event_name,
+                        trace_id: r.trace_id,
+                        span_id: r.span_id,
                     })
                     .collect(),
             });
@@ -368,7 +394,10 @@ pub fn logs_from_protobuf(body: &[u8]) -> Result<Vec<Group<LogRecord>>, DecodeEr
     Ok(out)
 }
 
-pub fn spans_from_protobuf(body: &[u8]) -> Result<Vec<Group<Span>>, DecodeError> {
+pub fn spans_from_protobuf(body: &[u8], max: usize) -> Result<Vec<Group<Span>>, DecodeError> {
+    if count_protobuf(body, &[1, 2, 2])? > max {
+        return Err(DecodeError::TooMany);
+    }
     let req = <pb::ExportTraceServiceRequest as prost::Message>::decode(body)
         .map_err(|e| DecodeError::Protobuf(e.to_string()))?;
     let mut out = Vec::new();
@@ -403,6 +432,83 @@ pub fn metrics_from_protobuf(body: &[u8]) -> Result<usize, DecodeError> {
     let req = <pb::ExportMetricsServiceRequest as prost::Message>::decode(body)
         .map_err(|e| DecodeError::Protobuf(e.to_string()))?;
     Ok(req.resource_metrics.len())
+}
+
+/// An OTLP/HTTP error body for a protobuf request: `google.rpc.Status` with its gRPC code.
+pub fn status_protobuf(code: i32, message: &str) -> Vec<u8> {
+    prost::Message::encode_to_vec(&pb::RpcStatus {
+        code,
+        message: message.to_owned(),
+    })
+}
+
+/// How many records a protobuf export holds, counted on the wire before anything is decoded, so
+/// a body of millions of tiny records is refused before it costs memory. `path` names the field
+/// at each level, such as `[1, 2, 2]` for `resource_logs.scope_logs.log_records`.
+pub fn count_protobuf(body: &[u8], path: &[u32]) -> Result<usize, DecodeError> {
+    let bad = || DecodeError::Protobuf("the message ends inside a field".into());
+    let Some((&want, deeper)) = path.split_first() else {
+        return Ok(1);
+    };
+    let mut at = 0usize;
+    let mut count = 0usize;
+    while at < body.len() {
+        let (key, used) = varint(body.get(at..).ok_or_else(bad)?).ok_or_else(bad)?;
+        at += used;
+        let (field, wire) = (key >> 3, key & 7);
+        match wire {
+            0 => {
+                let (_, used) = varint(body.get(at..).ok_or_else(bad)?).ok_or_else(bad)?;
+                at += used;
+            }
+            1 => at += 8,
+            5 => at += 4,
+            2 => {
+                let (len, used) = varint(body.get(at..).ok_or_else(bad)?).ok_or_else(bad)?;
+                at += used;
+                let end = usize::try_from(len)
+                    .ok()
+                    .and_then(|len| at.checked_add(len))
+                    .ok_or_else(bad)?;
+                let inner = body.get(at..end).ok_or_else(bad)?;
+                if u64::from(want) == field {
+                    count = count.saturating_add(count_protobuf(inner, deeper)?);
+                }
+                at = end;
+            }
+            _ => {
+                return Err(DecodeError::Protobuf(
+                    "a field of an unknown wire type".into(),
+                ));
+            }
+        }
+    }
+    if at > body.len() {
+        return Err(bad());
+    }
+    Ok(count)
+}
+
+fn varint(b: &[u8]) -> Option<(u64, usize)> {
+    let mut v = 0u64;
+    for (i, byte) in b.iter().take(10).enumerate() {
+        v |= u64::from(byte & 0x7f) << (7 * i);
+        if byte & 0x80 == 0 {
+            return Some((v, i + 1));
+        }
+    }
+    None
+}
+
+/// How many records a JSON export holds, read from the parsed body before its records are.
+pub fn count_json(root: &Json, outer: &str, inner: &str, items: &str) -> usize {
+    root.get(outer)
+        .and_then(Json::as_array)
+        .into_iter()
+        .flatten()
+        .flat_map(|r| r.get(inner).and_then(Json::as_array).into_iter().flatten())
+        .map(|s| s.get(items).and_then(Json::as_array).map_or(0, Vec::len))
+        .sum()
 }
 
 /// The body of an export's answer: empty when everything was taken, else `partial_success`
@@ -544,8 +650,11 @@ fn parse(body: &[u8]) -> Result<Json, DecodeError> {
     serde_json::from_slice(body).map_err(|e| DecodeError::Json(e.to_string()))
 }
 
-pub fn logs_from_json(body: &[u8]) -> Result<Vec<Group<LogRecord>>, DecodeError> {
+pub fn logs_from_json(body: &[u8], max: usize) -> Result<Vec<Group<LogRecord>>, DecodeError> {
     let root = parse(body)?;
+    if count_json(&root, "resourceLogs", "scopeLogs", "logRecords") > max {
+        return Err(DecodeError::TooMany);
+    }
     groups(&root, "resourceLogs", "scopeLogs", "logRecords", |r| {
         LogRecord {
             time_unix_nano: r.get("timeUnixNano").map_or(0, json_u64),
@@ -557,12 +666,17 @@ pub fn logs_from_json(body: &[u8]) -> Result<Vec<Group<LogRecord>>, DecodeError>
                 .and_then(Json::as_str)
                 .unwrap_or_default()
                 .to_owned(),
+            trace_id: hex(r.get("traceId")),
+            span_id: hex(r.get("spanId")),
         }
     })
 }
 
-pub fn spans_from_json(body: &[u8]) -> Result<Vec<Group<Span>>, DecodeError> {
+pub fn spans_from_json(body: &[u8], max: usize) -> Result<Vec<Group<Span>>, DecodeError> {
     let root = parse(body)?;
+    if count_json(&root, "resourceSpans", "scopeSpans", "spans") > max {
+        return Err(DecodeError::TooMany);
+    }
     groups(&root, "resourceSpans", "scopeSpans", "spans", |s| Span {
         trace_id: hex(s.get("traceId")),
         span_id: hex(s.get("spanId")),

@@ -100,7 +100,7 @@ fn fresh(env: &Env, name: &str) -> Vec<u8> {
     let raw = fixture(name);
     let now = kaeso_core::clock::Clock::now(&*env.app.state.clock).unix_timestamp_nanos() as u64;
     if name.ends_with(".pb") {
-        let groups = kaeso_server::ingest::otlp::logs_from_protobuf(&raw).unwrap();
+        let groups = kaeso_server::ingest::otlp::logs_from_protobuf(&raw, usize::MAX).unwrap();
         let times: Vec<u64> = groups
             .iter()
             .flat_map(|g| g.items.iter())
@@ -237,7 +237,7 @@ async fn claude_codes_otlp_export_lands_in_the_log_as_observed_requests_and_tool
     assert!(rows.iter().all(|r| r["model"] == "claude-haiku-5-5"));
     let first = rows
         .iter()
-        .find(|r| r["upstream_request_id"] == "req_011ChJnkD3cpnkSCVQKhwNpL")
+        .find(|r| r["upstream_request_id"] == "req_01EXAMPLE0C4AA1B023B5AA98FFB4")
         .unwrap();
     assert_eq!(first["usage"]["cache_read_tokens"], 11_873);
     assert_eq!(first["client"], "claude-code");
@@ -455,6 +455,50 @@ async fn ingest_refuses_missing_wrong_and_disabled_keys_and_unreadable_bodies() 
         StatusCode::UNAUTHORIZED,
         "a source key calls no model"
     );
+    for (method, path) in [(Method::GET, "/platform/v1/me"), (Method::POST, "/mcp")] {
+        let (status, _, _) = env
+            .app
+            .raw_bytes(
+                Request::builder()
+                    .method(method)
+                    .uri(path)
+                    .header("authorization", format!("Bearer {key}"))
+                    .header("content-type", "application/json")
+                    .body(Body::from("{}"))
+                    .unwrap(),
+            )
+            .await;
+        assert_eq!(
+            status,
+            StatusCode::UNAUTHORIZED,
+            "a source key is no key for {path}"
+        );
+    }
+    let (status, _, _) = post(
+        &env,
+        "/ingest/otlp/v1/logs",
+        Some(&key),
+        "text/plain",
+        false,
+        body(),
+    )
+    .await;
+    assert_eq!(status, StatusCode::UNSUPPORTED_MEDIA_TYPE);
+    let (status, headers, refusal) = post(
+        &env,
+        "/ingest/otlp/v1/logs",
+        Some("sk-kso-src-000000000000000000000000000000000000000000000000"),
+        "application/x-protobuf",
+        false,
+        Vec::new(),
+    )
+    .await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+    assert_eq!(
+        headers["content-type"], "application/x-protobuf",
+        "a protobuf export hears back in protobuf"
+    );
+    assert!(!refusal.is_empty());
 
     env.app
         .call(

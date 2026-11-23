@@ -257,7 +257,7 @@ Während der Updater die Version umstellt oder wann immer Gateway oder Konsole n
 | Anfrage | Antwort |
 | --- | --- |
 | Eine Konsolenseite | 503 mit einer Seite in der Sprache des Browsers, die sagt, was gerade passiert, alle 5 Sekunden prüft und zurückkehrt, sobald Kaeso wieder da ist |
-| `/platform/v1/*`, `/mcp`, `/mcp/*`, `/oauth/*` und `/.well-known/oauth-*` | 503 mit dem Fehler der Platform API, Typ `unavailable` |
+| `/platform/v1/*`, `/mcp`, `/mcp/*`, `/oauth/*`, `/ingest/*` und `/.well-known/oauth-*` | 503 mit dem Fehler der Platform API, Typ `unavailable` |
 | `/v1/messages` und andere `/v1/*` mit einem `anthropic-version`-Header, außer `/v1/chat/completions`, `/v1/responses`, `/v1/responses/*`, `/v1/embeddings`, `/v1/decisions` und `/v1/systemone` | 529 mit Anthropics `overloaded_error` |
 | `/v1beta` und `/v1beta/*`, die Methoden von Gemini unter `/v1/models/*`, und `/v1/models`, `/v1/models/*` und `/v1/decisions` mit einem Header `x-goog-api-key` oder einem Query-Parameter `key` und ohne Header `Authorization` | 503 mit Geminis Fehler `UNAVAILABLE` |
 | `/v1/systemone` | 529 mit `detail` von System One |

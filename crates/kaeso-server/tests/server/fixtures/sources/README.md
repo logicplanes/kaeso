@@ -1,6 +1,6 @@
 # Source exports
 
-Real OpenTelemetry exports of coding agents, as they reached a collector, for the readers in `crates/kaeso-server/src/ingest`. Each was recorded with the client's own exporter. Names, email addresses, account, organization, session and installation ids, host names, process arguments, plans and connector names were replaced or left out; timestamps, token counts, costs, request ids and the structure are as the client sent them.
+Real OpenTelemetry exports of coding agents, as they reached a collector, for the readers in `crates/kaeso-server/src/ingest`. Each was recorded with the client's own exporter. Names, email addresses, account, organization, session and installation ids, provider request and tool call ids, host names and the host's system, process arguments, plans, plugins and connector names were replaced or left out; timestamps, token counts, costs and the structure are as the client sent them.
 
 | File | Client | How it was made |
 | --- | --- | --- |

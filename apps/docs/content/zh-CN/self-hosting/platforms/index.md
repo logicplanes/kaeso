@@ -41,7 +41,7 @@ AWS 和 Google Cloud 上的托管堆栈不是一键部署：您需要选择区�
 
 ## 每条路径都保持的内容
 
-- **同一来源。** 控制台和 API 在同一个域名上应答。`/v1/*`、`/v1beta/*`、`/v2/*`、`/platform/*`、`/mcp`、`/mcp/*`、`/oauth/*` 和 `/.well-known/oauth-*` 到达网关，其他所有路径到达控制台。在 Render、Railway、Fly.io、Coolify、Dokploy 和 CapRover 上由控制台镜像的第二个命令 `kaeso-edge` 负责，在 DigitalOcean 上由应用的 ingress 规则负责，在 AWS 和 Google Cloud 的托管堆栈上由负载均衡器的路径规则负责，在 Kubernetes 上由 chart 的 Ingress 或 HTTPRoute 负责，在快速服务器上由 Caddy 负责。
+- **同一来源。** 控制台和 API 在同一个域名上应答。`/v1/*`、`/v1beta/*`、`/v2/*`、`/platform/*`、`/mcp`、`/mcp/*`、`/oauth/*`、`/ingest/*` 和 `/.well-known/oauth-*` 到达网关，其他所有路径到达控制台。在 Render、Railway、Fly.io、Coolify、Dokploy 和 CapRover 上由控制台镜像的第二个命令 `kaeso-edge` 负责，在 DigitalOcean 上由应用的 ingress 规则负责，在 AWS 和 Google Cloud 的托管堆栈上由负载均衡器的路径规则负责，在 Kubernetes 上由 chart 的 Ingress 或 HTTPRoute 负责，在快速服务器上由 Caddy 负责。
 - **流不被缓冲。** 边缘服务立即转发每个数据块，负载均衡器的空闲超时长于网关的保活间隔（[长时间的流](../domains-and-tls.md#长时间的流)）。
 - **只相信平台代理给出的客户端地址。** 边缘服务只从平台代理设置的请求头中获取客户端地址，并只向网关传递一个地址；网关只信任边缘服务（[`KAESO_TRUSTED_PROXIES`](../configuration.md#设置)）。
 - **健康检查**用 `/healthz` 检查进程，用 `/readyz` 检查 PostgreSQL、Valkey 和 ClickHouse（[健康状态和指标](../monitoring.md)）。指标端口永不公开。

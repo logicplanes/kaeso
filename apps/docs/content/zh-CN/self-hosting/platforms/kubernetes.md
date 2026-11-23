@@ -122,7 +122,7 @@ kubectl --namespace kaeso create secret generic kaeso-master-keys \
 
 ## 路由和长时间的流
 
-Ingress 把 `/v1`、`/v1beta`、`/v2`、`/platform`、`/mcp`、`/oauth`、`/.well-known/oauth-authorization-server` 和 `/.well-known/oauth-protected-resource` 发往网关，其他所有路径发往控制台，与 Compose 安装包中的 Caddy 相同。TLS 来自 `ingress.tls.secretName`，或来自 `ingress.tls.certManager.issuer` 中的 cert-manager issuer。
+Ingress 把 `/v1`、`/v1beta`、`/v2`、`/platform`、`/mcp`、`/oauth`、`/ingest`、`/.well-known/oauth-authorization-server` 和 `/.well-known/oauth-protected-resource` 发往网关，其他所有路径发往控制台，与 Compose 安装包中的 Caddy 相同。TLS 来自 `ingress.tls.secretName`，或来自 `ingress.tls.certManager.issuer` 中的 cert-manager issuer。
 
 流可能会静默数分钟，图片和音频上传最多 64 MiB。当 `ingress.className` 包含 `nginx` 时，chart 会根据 `ingress.streamTimeoutSeconds` 设置 ingress-nginx 的超时，把请求体上限提高到 64 MiB 并关闭缓冲。其他控制器需在各自的注解中设置相同内容，写在 `ingress.annotations` 下（[长时间的流](../domains-and-tls.md#长时间的流)）。
 

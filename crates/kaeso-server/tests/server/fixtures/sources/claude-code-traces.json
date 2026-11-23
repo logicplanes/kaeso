@@ -302,19 +302,13 @@
         {
          "key": "request_id",
          "value": {
-          "stringValue": "req_011ChJnkD3cpnkSCVQKhwNpL"
+          "stringValue": "req_01EXAMPLE0C4AA1B023B5AA98FFB4"
          }
         },
         {
          "key": "gen_ai.response.id",
          "value": {
-          "stringValue": "req_011ChJnkD3cpnkSCVQKhwNpL"
-         }
-        },
-        {
-         "key": "client_request_id",
-         "value": {
-          "stringValue": "8dc962da-8bc5-44fd-a38b-c29dcf09a2e3"
+          "stringValue": "req_01EXAMPLE0C4AA1B023B5AA98FFB4"
          }
         },
         {
@@ -477,13 +471,13 @@
         {
          "key": "tool_use_id",
          "value": {
-          "stringValue": "toolu_01YYqwC2Cq6Y8bRCHVTTC89s"
+          "stringValue": "toolu_01EXAMPLE1E524EBF80929847F77A"
          }
         },
         {
          "key": "gen_ai.tool.call.id",
          "value": {
-          "stringValue": "toolu_01YYqwC2Cq6Y8bRCHVTTC89s"
+          "stringValue": "toolu_01EXAMPLE1E524EBF80929847F77A"
          }
         },
         {
@@ -616,13 +610,13 @@
         {
          "key": "tool_use_id",
          "value": {
-          "stringValue": "toolu_01YYqwC2Cq6Y8bRCHVTTC89s"
+          "stringValue": "toolu_01EXAMPLE1E524EBF80929847F77A"
          }
         },
         {
          "key": "gen_ai.tool.call.id",
          "value": {
-          "stringValue": "toolu_01YYqwC2Cq6Y8bRCHVTTC89s"
+          "stringValue": "toolu_01EXAMPLE1E524EBF80929847F77A"
          }
         },
         {
@@ -797,19 +791,13 @@
         {
          "key": "request_id",
          "value": {
-          "stringValue": "req_011ChJnkGBNtX57i3DmzCB4K"
+          "stringValue": "req_01EXAMPLE65F3DB4F9C9ABC7F0EE2"
          }
         },
         {
          "key": "gen_ai.response.id",
          "value": {
-          "stringValue": "req_011ChJnkGBNtX57i3DmzCB4K"
-         }
-        },
-        {
-         "key": "client_request_id",
-         "value": {
-          "stringValue": "93c2a5f1-1e7a-4e14-97d2-b3442733bf61"
+          "stringValue": "req_01EXAMPLE65F3DB4F9C9ABC7F0EE2"
          }
         },
         {

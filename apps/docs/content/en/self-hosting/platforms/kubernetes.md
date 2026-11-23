@@ -122,7 +122,7 @@ The gateway reads the keys as the file `KAESO_MASTER_KEYS_FILE` names, never fro
 
 ## Routing and long streams
 
-The Ingress sends `/v1`, `/v1beta`, `/v2`, `/platform`, `/mcp`, `/oauth`, `/.well-known/oauth-authorization-server` and `/.well-known/oauth-protected-resource` to the gateway and every other path to the console, as Caddy does in the Compose package. TLS comes from `ingress.tls.secretName`, or from the cert-manager issuer in `ingress.tls.certManager.issuer`.
+The Ingress sends `/v1`, `/v1beta`, `/v2`, `/platform`, `/mcp`, `/oauth`, `/ingest`, `/.well-known/oauth-authorization-server` and `/.well-known/oauth-protected-resource` to the gateway and every other path to the console, as Caddy does in the Compose package. TLS comes from `ingress.tls.secretName`, or from the cert-manager issuer in `ingress.tls.certManager.issuer`.
 
 Streams can stay silent for minutes, and image and audio uploads run to 64 MiB. With an `ingress.className` that contains `nginx`, the chart sets ingress-nginx's timeouts from `ingress.streamTimeoutSeconds`, raises its body limit to 64 MiB and turns its buffering off. Other controllers take the same in their own annotations, under `ingress.annotations` ([long streams](../domains-and-tls.md#long-streams)).
 

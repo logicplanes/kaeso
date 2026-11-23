@@ -24,6 +24,8 @@ fn text(v: Option<&str>) -> Option<String> {
         .map(str::to_owned)
 }
 
+// A client that reports cost as a double (Claude Code's `cost_usd`) gets it read back from its
+// shortest decimal form, which is what the client printed; Kaeso never computes with the float.
 fn decimal(v: Option<&Value>) -> Option<Decimal> {
     v.and_then(Value::as_decimal_text)
         .and_then(|t| t.parse::<Decimal>().ok())
@@ -267,7 +269,7 @@ fn claude_code(groups: &[Group<LogRecord>], batch: &mut Batch) {
                             .then(|| a.str("error_type").map(str::to_owned))
                             .flatten(),
                         error_message: (!ok).then(|| text(a.str("error"))).flatten(),
-                        client: Some("Claude Code".into()),
+                        client: Some("claude-code".into()),
                         email: a.str("user.email").map(str::to_owned),
                         arguments: text(a.str("tool_input")),
                         result: None,
@@ -294,14 +296,77 @@ fn codex(groups: &[Group<LogRecord>], batch: &mut Batch) {
             match name.as_str() {
                 "codex.api_request" => {
                     let headers = ms(a.u64("duration_ms"));
-                    if let Some(at) = ended(r) {
+                    let status = status_of(a.get("http.response.status_code"));
+                    let error = text(a.str("error.message"));
+                    if status.is_some_and(|s| s >= 400) || error.is_some() {
+                        let Some(model) = a.str("model").or(a.str("slug")) else {
+                            refuse(batch, Refusal::NoModel);
+                            continue;
+                        };
+                        let end = ended(r);
+                        batch.requests.push(ObservedRequest {
+                            external_id: hashed(&[
+                                &name,
+                                &conversation,
+                                a.str("event.timestamp").unwrap_or_default(),
+                                &r.observed_time_unix_nano.to_string(),
+                                &a.u64("attempt").unwrap_or(0).to_string(),
+                            ]),
+                            started_at: started(end, headers),
+                            duration: headers,
+                            provider: Some("openai".into()),
+                            model: model.to_owned(),
+                            status: status.filter(|s| *s >= 400).unwrap_or(502),
+                            error_message: error.or(Some("The request failed.".into())),
+                            client: Some(client("codex_cli_rs", version)),
+                            email: a.str("user.email").map(str::to_owned),
+                            dialect: Some(DialectId::OpenAiResponses),
+                            ..ObservedRequest::default()
+                        });
+                    } else if let Some(at) = ended(r) {
                         began.insert(conversation, (at - headers, headers));
                     }
                 }
                 "codex.sse_event"
+                    if a.str("event.kind") == Some("response.failed")
+                        && a.get("input_token_count").is_none() =>
+                {
+                    let Some(model) = a.str("model").or(a.str("slug")) else {
+                        refuse(batch, Refusal::NoModel);
+                        continue;
+                    };
+                    let end = ended(r);
+                    let start = began.remove(&conversation);
+                    batch.requests.push(ObservedRequest {
+                        external_id: hashed(&[
+                            &name,
+                            &conversation,
+                            a.str("event.timestamp").unwrap_or_default(),
+                            &r.observed_time_unix_nano.to_string(),
+                        ]),
+                        started_at: start.map(|(s, _)| s).or(end),
+                        duration: match (start, end) {
+                            (Some((s, _)), Some(e)) if e >= s => {
+                                (e - s).try_into().unwrap_or_default()
+                            }
+                            _ => Duration::ZERO,
+                        },
+                        ttfb: start.map(|(_, h)| h),
+                        provider: Some("openai".into()),
+                        model: model.to_owned(),
+                        status: 502,
+                        error_message: text(a.str("error.message"))
+                            .or(Some("The response failed.".into())),
+                        stream: true,
+                        client: Some(client("codex_cli_rs", version)),
+                        email: a.str("user.email").map(str::to_owned),
+                        dialect: Some(DialectId::OpenAiResponses),
+                        ..ObservedRequest::default()
+                    });
+                }
+                "codex.sse_event"
                     if a.str("event.kind") == Some("response.completed")
-                        && (a.get("input_token_count").is_some()
-                            || a.str("error.message").is_some()) =>
+                        && a.get("input_token_count").is_some() =>
                 {
                     let Some(model) = a.str("model").or(a.str("slug")) else {
                         refuse(batch, Refusal::NoModel);
@@ -375,7 +440,7 @@ fn codex(groups: &[Group<LogRecord>], batch: &mut Batch) {
                         ok,
                         error_type: None,
                         error_message: None,
-                        client: Some("Codex".into()),
+                        client: Some("codex".into()),
                         email: a.str("user.email").map(str::to_owned),
                         arguments: text(a.str("arguments")),
                         result: text(a.str("output")),
@@ -389,6 +454,7 @@ fn codex(groups: &[Group<LogRecord>], batch: &mut Batch) {
 
 // Gemini CLI --------------------------------------------------------------------------------
 
+// Gemini CLI's `service.version` is Node's, not its own, so its requests name no version.
 fn gemini_cli(groups: &[Group<LogRecord>], batch: &mut Batch) {
     let mut prompts: HashMap<String, String> = HashMap::new();
     for g in groups {
@@ -402,7 +468,6 @@ fn gemini_cli(groups: &[Group<LogRecord>], batch: &mut Batch) {
         }
     }
     for g in groups {
-        let version = g.resource.str("service.version");
         for r in &g.items {
             let a = &r.attributes;
             let name = event_name(&g.scope, r);
@@ -414,8 +479,13 @@ fn gemini_cli(groups: &[Group<LogRecord>], batch: &mut Batch) {
                         continue;
                     };
                     let duration = ms(a.u64("duration_ms").or(a.u64("duration")));
+                    // The prompt of a tool's answer (`tool_token_count`) is billed input that
+                    // `input_token_count` leaves out.
                     let tokens = Counted {
-                        input: a.u64("input_token_count").unwrap_or(0),
+                        input: a
+                            .u64("input_token_count")
+                            .unwrap_or(0)
+                            .saturating_add(a.u64("tool_token_count").unwrap_or(0)),
                         output: a.u64("output_token_count").unwrap_or(0),
                         cache_read: a.u64("cached_content_token_count").unwrap_or(0),
                         cache_write: 0,
@@ -449,7 +519,7 @@ fn gemini_cli(groups: &[Group<LogRecord>], batch: &mut Batch) {
                         tokens,
                         reported_cost: None,
                         stream: true,
-                        client: Some(client("GeminiCLI", version)),
+                        client: Some("GeminiCLI".into()),
                         email: a.str("user.email").map(str::to_owned),
                         tags: Vec::new(),
                         provider_request_id: None,
@@ -481,7 +551,7 @@ fn gemini_cli(groups: &[Group<LogRecord>], batch: &mut Batch) {
                             .then(|| a.str("error_type").map(str::to_owned))
                             .flatten(),
                         error_message: (!ok).then(|| text(a.str("error"))).flatten(),
-                        client: Some("Gemini CLI".into()),
+                        client: Some("gemini-cli".into()),
                         email: a.str("user.email").map(str::to_owned),
                         arguments: text(a.str("function_args")),
                         result: None,
@@ -567,18 +637,29 @@ fn semconv_text(v: Option<&str>, role: &str) -> Option<String> {
 /// Services whose spans and GenAI records repeat what their own log events already report.
 const LEFT_OUT: &[&str] = &["claude-code", "gemini-cli"];
 
-fn left_out(service: &str) -> bool {
-    LEFT_OUT.contains(&service) || service.starts_with("codex")
+/// Instrumentation scopes of those clients, for when a person renamed the service.
+const SCOPES_LEFT_OUT: &[&str] = &["gemini-cli", "com.anthropic.claude_code"];
+
+fn left_out(service: &str, scope: &str) -> bool {
+    LEFT_OUT.contains(&service)
+        || service.starts_with("codex")
+        || scope.starts_with("codex")
+        || SCOPES_LEFT_OUT.iter().any(|s| scope.starts_with(s))
 }
+
+/// The operations that are one call to a model; an agent's own spans (`invoke_agent`, …) sum the
+/// usage of the calls inside them and would count it twice.
+const INFERENCE: &[&str] = &["chat", "text_completion", "generate_content", "embeddings"];
 
 fn spans_of(groups: &[Group<Span>], batch: &mut Batch) {
     for g in groups {
         let service = g.resource.str("service.name").unwrap_or_default();
-        if left_out(service) {
+        if left_out(service, &g.scope) {
             continue;
         }
         for s in &g.items {
-            span(service, &g.resource, s, batch);
+            let id = format!("{}{}", hex(&s.trace_id), hex(&s.span_id));
+            span(service, &g.resource, s, &id, batch);
         }
     }
 }
@@ -587,7 +668,8 @@ fn hex(b: &[u8]) -> String {
     b.iter().map(|b| format!("{b:02x}")).collect()
 }
 
-fn span(service: &str, resource: &Attrs, s: &Span, batch: &mut Batch) {
+/// A span or GenAI record; `fallback_id` names it when it carries no id of its own.
+fn span(service: &str, resource: &Attrs, s: &Span, fallback_id: &str, batch: &mut Batch) {
     let a = &s.attributes;
     let start = at_nanos(s.start_time_unix_nano);
     let end = at_nanos(s.end_time_unix_nano);
@@ -615,10 +697,10 @@ fn span(service: &str, resource: &Attrs, s: &Span, batch: &mut Batch) {
             return;
         }
         batch.tool_calls.push(ObservedToolCall {
-            external_id: a.str("gen_ai.tool.call.id").map_or_else(
-                || format!("{}{}", hex(&s.trace_id), hex(&s.span_id)),
-                str::to_owned,
-            ),
+            external_id: a
+                .str("gen_ai.tool.call.id")
+                .unwrap_or(fallback_id)
+                .to_owned(),
             started_at: start,
             duration,
             tool: tool.to_owned(),
@@ -632,6 +714,14 @@ fn span(service: &str, resource: &Attrs, s: &Span, batch: &mut Batch) {
             arguments: text(a.str("gen_ai.tool.call.arguments")),
             result: text(a.str("gen_ai.tool.call.result")),
         });
+        return;
+    }
+    let inference = if operation.is_empty() {
+        a.str("gen_ai.response.id").is_some()
+    } else {
+        INFERENCE.contains(&operation)
+    };
+    if !inference {
         return;
     }
     let Some(tokens) = semconv_tokens(a) else {
@@ -651,10 +741,10 @@ fn span(service: &str, resource: &Attrs, s: &Span, batch: &mut Batch) {
     let status =
         status_of(a.get("http.response.status_code")).unwrap_or(if failed { 502 } else { 200 });
     batch.requests.push(ObservedRequest {
-        external_id: a.str("gen_ai.response.id").map_or_else(
-            || format!("{}{}", hex(&s.trace_id), hex(&s.span_id)),
-            str::to_owned,
-        ),
+        external_id: a
+            .str("gen_ai.response.id")
+            .unwrap_or(fallback_id)
+            .to_owned(),
         started_at: start,
         duration,
         ttfb: a
@@ -695,7 +785,7 @@ fn span(service: &str, resource: &Attrs, s: &Span, batch: &mut Batch) {
 fn semconv_logs(groups: &[Group<LogRecord>], batch: &mut Batch) {
     for g in groups {
         let service = g.resource.str("service.name").unwrap_or_default();
-        if left_out(service) {
+        if left_out(service, &g.scope) {
             continue;
         }
         for r in &g.items {
@@ -713,9 +803,22 @@ fn semconv_logs(groups: &[Group<LogRecord>], batch: &mut Batch) {
             let nanos = |t: Option<OffsetDateTime>| {
                 t.map_or(0, |t| u64::try_from(t.unix_timestamp_nanos()).unwrap_or(0))
             };
+            // A record logged inside a span names it, so the record and an exported span of
+            // the same call share an id and count once.
+            let fallback = if r.trace_id.is_empty() && r.span_id.is_empty() {
+                hashed(&[
+                    &name,
+                    &r.time_unix_nano.to_string(),
+                    &r.observed_time_unix_nano.to_string(),
+                    r.attributes.str("gen_ai.request.model").unwrap_or_default(),
+                    r.attributes.str("gen_ai.tool.name").unwrap_or_default(),
+                ])
+            } else {
+                format!("{}{}", hex(&r.trace_id), hex(&r.span_id))
+            };
             let s = Span {
-                trace_id: Vec::new(),
-                span_id: Vec::new(),
+                trace_id: r.trace_id.clone(),
+                span_id: r.span_id.clone(),
                 name: name.clone(),
                 start_time_unix_nano: nanos(end),
                 end_time_unix_nano: nanos(end),
@@ -723,13 +826,7 @@ fn semconv_logs(groups: &[Group<LogRecord>], batch: &mut Batch) {
                 status_code: 0,
                 status_message: String::new(),
             };
-            let before = batch.requests.len() + batch.tool_calls.len();
-            span(service, &g.resource, &s, batch);
-            if let Some(req) = batch.requests.get_mut(before)
-                && req.external_id.is_empty()
-            {
-                req.external_id = hashed(&[&name, &r.time_unix_nano.to_string(), &req.model]);
-            }
+            span(service, &g.resource, &s, &fallback, batch);
         }
     }
 }
@@ -779,7 +876,9 @@ fn json_str<'a>(v: &'a Json, path: &[&str]) -> Option<&'a str> {
     at.as_str().filter(|s| !s.is_empty())
 }
 
-/// Text of the last user message of an OpenAI-style message list.
+/// Text of the last user message of an OpenAI-style message list. Content a source reports is
+/// shown as text for people to read, never decoded as a request Kaeso would send, so it isn't
+/// read through KPP.
 fn last_user_text(messages: Option<&Json>) -> Option<String> {
     let list = messages?.as_array()?;
     list.iter()
@@ -875,11 +974,22 @@ pub fn litellm(items: &[Json]) -> Batch {
             reasoning,
         }
         .normalized(InputCounts::WithCache, OutputCounts::WithReasoning);
-        let (provider, model) = match model.split_once('/') {
-            Some((p, m)) if !p.is_empty() && !m.is_empty() => {
-                (Some(semconv_provider(p)), m.to_owned())
+        // LiteLLM names the provider it called; a `provider/model` name says it only when the
+        // prefix is a provider, not an organisation as in `meta-llama/Llama-3.3-70B`.
+        let named = json_str(p, &["custom_llm_provider"])
+            .or(json_str(p, &["hidden_params", "custom_llm_provider"]))
+            .map(semconv_provider);
+        let (provider, model) = match (named, model.split_once('/')) {
+            (Some(named), Some((prefix, m))) if semconv_provider(prefix) == named => {
+                (Some(named), m.to_owned())
             }
-            _ => (None, model.to_owned()),
+            (Some(named), _) => (Some(named), model.to_owned()),
+            (None, Some((prefix, m)))
+                if kaeso_core::provider::provider(&semconv_provider(prefix)).is_some() =>
+            {
+                (Some(semconv_provider(prefix)), m.to_owned())
+            }
+            (None, _) => (None, model.to_owned()),
         };
         let first = seconds(p.get("completionStartTime"));
         batch.requests.push(ObservedRequest {
@@ -908,10 +1018,10 @@ pub fn litellm(items: &[Json]) -> Batch {
             tokens,
             reported_cost: p
                 .get("response_cost")
-                .and_then(|c| {
-                    c.as_f64()
-                        .map(|f| f.to_string())
-                        .or(c.as_str().map(str::to_owned))
+                .and_then(|c| match c {
+                    Json::Number(n) => Some(n.to_string()),
+                    Json::String(s) => Some(s.clone()),
+                    _ => None,
                 })
                 .and_then(|t| t.parse::<Decimal>().ok())
                 .filter(|d| !d.is_sign_negative()),
@@ -932,16 +1042,16 @@ pub fn litellm(items: &[Json]) -> Batch {
             provider_request_id: Some(id.to_owned()),
             dialect: Some(DialectId::OpenAiChat),
             prompt: last_user_text(p.get("messages")),
-            reply: p.get("response").and_then(|r| {
-                json_str(r, &["choices"]).map(str::to_owned).or_else(|| {
+            reply: p
+                .get("response")
+                .and_then(|r| {
                     r.get("choices")?
                         .get(0)?
                         .get("message")?
                         .get("content")?
                         .as_str()
-                        .map(str::to_owned)
                 })
-            }),
+                .map(str::to_owned),
         });
     }
     batch
@@ -953,7 +1063,15 @@ pub fn litellm(items: &[Json]) -> Batch {
 /// call added, each a line of `transcript_full.jsonl`.
 pub fn antigravity(hook: &Json, steps: &[Json]) -> Batch {
     let mut batch = Batch::default();
-    let conversation = json_str(hook, &["conversationId"]).unwrap_or_default();
+    let Some(conversation) = json_str(hook, &["conversationId"]) else {
+        let planned = steps
+            .iter()
+            .filter(|s| json_str(s, &["type"]) == Some("PLANNER_RESPONSE"))
+            .count();
+        batch.refused = u32::try_from(planned).unwrap_or(u32::MAX);
+        batch.refusal = (planned > 0).then_some(Refusal::NoId);
+        return batch;
+    };
     let fallback_model = json_str(hook, &["modelName"]);
     for s in steps {
         if json_str(s, &["type"]) != Some("PLANNER_RESPONSE") {

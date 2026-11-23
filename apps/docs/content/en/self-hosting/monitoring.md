@@ -15,7 +15,7 @@ The gateway reports its health on two endpoints, serves Prometheus metrics on a 
 
 `/readyz` answers 503 with `not_ready` when PostgreSQL or Valkey can't be reached. When ClickHouse is down, not yet migrated or refused the last write of request logs, it answers 200 with `degraded`, because request logs never hold requests up. The logs wait in memory until the migrations have run. With [request logs off](installation.md#choose-how-to-keep-request-logs), ClickHouse is `off` and the install `ready`.
 
-Both endpoints are on the gateway's port 8080. Caddy routes only `/v1/`, `/v1beta/`, `/v2/`, `/platform/`, `/mcp`, `/mcp/`, `/oauth/` and `/.well-known/oauth-` there, so on your domain these paths reach the console. The gateway's container health check calls `/healthz`, and `docker compose ps` shows the result. To read `/readyz` on the server:
+Both endpoints are on the gateway's port 8080. Caddy routes only `/v1/`, `/v1beta/`, `/v2/`, `/platform/`, `/mcp`, `/mcp/`, `/oauth/`, `/ingest/` and `/.well-known/oauth-` there, so on your domain these paths reach the console. The gateway's container health check calls `/healthz`, and `docker compose ps` shows the result. To read `/readyz` on the server:
 
 ```bash
 docker compose exec gateway kaeso healthcheck --ready

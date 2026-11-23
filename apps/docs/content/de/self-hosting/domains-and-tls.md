@@ -51,7 +51,7 @@ Leiten Sie dann diese Pfade weiter:
 
 | Pfad | An |
 | --- | --- |
-| `/v1/`, `/v1beta/`, `/v2/`, `/platform/`, `/mcp`, `/mcp/`, `/oauth/` und `/.well-known/oauth-` | Das Gateway, Port 8080 |
+| `/v1/`, `/v1beta/`, `/v2/`, `/platform/`, `/mcp`, `/mcp/`, `/oauth/`, `/ingest/` und `/.well-known/oauth-` | Das Gateway, Port 8080 |
 | Alles andere | Die Konsole, Port 3000 |
 
 Agenten melden sich über `/oauth/` und `/.well-known/oauth-` an und rufen dann `/mcp` auf ([MCP-Server](../api/mcp.md)); MCP-Clients rufen das Portal eines Projekts unter `/mcp/<Projekt-ID>` auf. Ein Proxy, der diese Pfade an die Konsole leitet, hindert jeden Agenten am Verbinden.

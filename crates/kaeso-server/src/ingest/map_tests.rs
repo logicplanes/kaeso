@@ -14,7 +14,7 @@ fn fixture(name: &str) -> Vec<u8> {
 }
 
 fn json_logs(name: &str) -> Batch {
-    logs(&otlp::logs_from_json(&fixture(name)).unwrap())
+    logs(&otlp::logs_from_json(&fixture(name), usize::MAX).unwrap())
 }
 
 #[test]
@@ -23,10 +23,10 @@ fn claude_codes_api_requests_become_requests_with_its_own_token_counts() {
     assert_eq!(b.requests.len(), 1, "{b:#?}");
     assert_eq!(b.refused, 0);
     let r = &b.requests[0];
-    assert_eq!(r.external_id, "req_011ChJnkD3cpnkSCVQKhwNpL");
+    assert_eq!(r.external_id, "req_01EXAMPLE0C4AA1B023B5AA98FFB4");
     assert_eq!(
         r.provider_request_id.as_deref(),
-        Some("req_011ChJnkD3cpnkSCVQKhwNpL")
+        Some("req_01EXAMPLE0C4AA1B023B5AA98FFB4")
     );
     assert_eq!(r.model, "claude-haiku-5-5");
     assert_eq!(r.provider.as_deref(), Some("anthropic"));
@@ -58,13 +58,16 @@ fn claude_codes_api_requests_become_requests_with_its_own_token_counts() {
 
 #[test]
 fn the_same_export_as_protobuf_reads_the_same() {
-    let pb = otlp::logs_from_protobuf(&fixture("claude-code-logs-2.pb")).unwrap();
+    let pb = otlp::logs_from_protobuf(&fixture("claude-code-logs-2.pb"), usize::MAX).unwrap();
     let b = logs(&pb);
     assert_eq!(b.requests.len(), 1, "{b:#?}");
     assert_eq!(b.requests[0].model, "claude-haiku-5-5");
     assert!(b.requests[0].tokens.output > 0);
     for name in ["claude-code-logs-1.pb", "claude-code-logs-3.pb"] {
-        assert!(otlp::logs_from_protobuf(&fixture(name)).is_ok(), "{name}");
+        assert!(
+            otlp::logs_from_protobuf(&fixture(name), usize::MAX).is_ok(),
+            "{name}"
+        );
     }
 }
 
@@ -77,7 +80,7 @@ fn claude_codes_mcp_calls_keep_their_names_only_when_it_sends_them() {
     assert_eq!(c.tool, "get_me");
     assert!(c.ok);
     assert_eq!(c.duration, Duration::from_millis(19));
-    assert_eq!(c.external_id, "toolu_012bg31Wd1sD71n4iY7TQzFM");
+    assert_eq!(c.external_id, "toolu_01EXAMPLEA79D9296683DBC17EF0E");
     let unnamed = json_logs("claude-code-mcp-unnamed.json");
     assert_eq!(unnamed.tool_calls.len(), 1, "{unnamed:#?}");
     assert_eq!(unnamed.tool_calls[0].server, None);
@@ -87,7 +90,8 @@ fn claude_codes_mcp_calls_keep_their_names_only_when_it_sends_them() {
 
 #[test]
 fn claude_code_spans_and_metrics_count_nothing_its_events_already_count() {
-    let spans = spans(&otlp::spans_from_json(&fixture("claude-code-traces.json")).unwrap());
+    let spans =
+        spans(&otlp::spans_from_json(&fixture("claude-code-traces.json"), usize::MAX).unwrap());
     assert!(
         spans.requests.is_empty() && spans.tool_calls.is_empty(),
         "{spans:#?}"
@@ -140,7 +144,7 @@ fn export(service: &str, records: Vec<serde_json::Value>) -> Batch {
         "resource": { "attributes": [{ "key": "service.name", "value": { "stringValue": service } }] },
         "scopeLogs": [{ "scope": { "name": service }, "logRecords": records }]
     }]});
-    logs(&otlp::logs_from_json(body.to_string().as_bytes()).unwrap())
+    logs(&otlp::logs_from_json(body.to_string().as_bytes(), usize::MAX).unwrap())
 }
 
 #[test]
@@ -156,20 +160,34 @@ fn codex_mcp_calls_and_failed_responses_are_kept() {
                 json!({ "event.name": "codex.tool_result", "tool_name": "shell", "call_id": "call_2", "success": "true" }),
             ),
             record(
-                json!({ "event.name": "codex.sse_event", "event.kind": "response.completed",
-                "error.message": "stream disconnected", "model": "gpt-5.4-mini", "conversation.id": "c1" }),
+                json!({ "event.name": "codex.api_request", "duration_ms": "40", "attempt": "1",
+                "http.response.status_code": "429", "error.message": "rate limited", "model": "gpt-5.4-mini",
+                "conversation.id": "c1", "event.timestamp": "2026-11-23T00:37:05.023Z" }),
+            ),
+            record(
+                json!({ "event.name": "codex.api_request", "duration_ms": "30",
+                "http.response.status_code": "200", "model": "gpt-5.4-mini",
+                "conversation.id": "c1", "event.timestamp": "2026-11-23T00:37:06.023Z" }),
+            ),
+            record(
+                json!({ "event.name": "codex.sse_event", "event.kind": "response.failed",
+                "error.message": "stream disconnected", "model": "gpt-5.4-mini", "conversation.id": "c1",
+                "event.timestamp": "2026-11-23T00:37:07.023Z" }),
             ),
         ],
     );
     assert_eq!(b.tool_calls.len(), 1, "only MCP tools are tool calls");
     assert_eq!(b.tool_calls[0].server.as_deref(), Some("linear"));
     assert!(!b.tool_calls[0].ok);
-    assert_eq!(b.requests.len(), 1);
-    assert_eq!(b.requests[0].status, 502);
+    assert_eq!(b.requests.len(), 2, "{b:#?}");
+    assert_eq!(b.requests[0].status, 429);
+    assert_eq!(b.requests[0].error_message.as_deref(), Some("rate limited"));
+    assert_eq!(b.requests[1].status, 502);
     assert_eq!(
-        b.requests[0].error_message.as_deref(),
+        b.requests[1].error_message.as_deref(),
         Some("stream disconnected")
     );
+    assert_ne!(b.requests[0].external_id, b.requests[1].external_id);
 }
 
 #[test]
@@ -253,7 +271,7 @@ fn genai_spans_become_requests_and_mcp_tool_spans_tool_calls() {
             span(json!({ "gen_ai.operation.name": "chat", "gen_ai.usage.input_tokens": 5 }), "chat")
         ]}]
     }]});
-    let b = spans(&otlp::spans_from_json(body.to_string().as_bytes()).unwrap());
+    let b = spans(&otlp::spans_from_json(body.to_string().as_bytes(), usize::MAX).unwrap());
     assert_eq!(b.requests.len(), 1, "{b:#?}");
     let r = &b.requests[0];
     assert_eq!(r.external_id, "gen-123");
@@ -341,4 +359,96 @@ fn records_of_unknown_events_are_left_alone() {
         )],
     );
     assert_eq!(b, Batch::default());
+}
+
+#[test]
+fn genai_records_keep_their_own_ids_and_agent_spans_count_nothing() {
+    let b = export(
+        "my-agent",
+        vec![
+            record(
+                json!({ "event.name": "gen_ai.tool.call", "gen_ai.operation.name": "execute_tool",
+                "gen_ai.tool.name": "search", "mcp.method.name": "tools/call", "server.address": "docs.example.com" }),
+            ),
+            record(
+                json!({ "event.name": "gen_ai.client.inference.operation.details", "gen_ai.operation.name": "chat",
+                "gen_ai.request.model": "gpt-5.4-mini", "gen_ai.usage.input_tokens": 10, "gen_ai.usage.output_tokens": 2 }),
+            ),
+            record(
+                json!({ "event.name": "gen_ai.client.inference.operation.details", "gen_ai.operation.name": "chat",
+                "gen_ai.request.model": "claude-haiku-4-5", "gen_ai.usage.input_tokens": 30, "gen_ai.usage.output_tokens": 4 }),
+            ),
+            record(
+                json!({ "event.name": "gen_ai.agent.run", "gen_ai.operation.name": "invoke_agent",
+                "gen_ai.request.model": "gpt-5.4-mini", "gen_ai.usage.input_tokens": 40, "gen_ai.usage.output_tokens": 6 }),
+            ),
+        ],
+    );
+    assert_eq!(
+        b.requests.len(),
+        2,
+        "the agent's own record sums its calls: {b:#?}"
+    );
+    assert_eq!(b.tool_calls.len(), 1);
+    let ids: std::collections::HashSet<&str> = b
+        .requests
+        .iter()
+        .map(|r| r.external_id.as_str())
+        .chain(b.tool_calls.iter().map(|c| c.external_id.as_str()))
+        .collect();
+    assert_eq!(ids.len(), 3, "every record has an id of its own: {ids:?}");
+    assert!(!ids.contains(""));
+}
+
+#[test]
+fn a_genai_record_and_its_span_name_the_same_call() {
+    let body = json!({ "resourceLogs": [{
+        "resource": { "attributes": [{ "key": "service.name", "value": { "stringValue": "my-agent" } }] },
+        "scopeLogs": [{ "logRecords": [{
+            "timeUnixNano": "1795388060384000000",
+            "traceId": "5b8efff798038103d269b633813fc60c", "spanId": "eee19b7ec3c1b174",
+            "attributes": [
+                { "key": "gen_ai.operation.name", "value": { "stringValue": "chat" } },
+                { "key": "gen_ai.request.model", "value": { "stringValue": "gpt-5.4-mini" } },
+                { "key": "gen_ai.usage.input_tokens", "value": { "intValue": "10" } }
+            ]
+        }]}]
+    }]});
+    let b = logs(&otlp::logs_from_json(body.to_string().as_bytes(), usize::MAX).unwrap());
+    assert_eq!(
+        b.requests[0].external_id,
+        "5b8efff798038103d269b633813fc60ceee19b7ec3c1b174"
+    );
+}
+
+#[test]
+fn antigravity_without_a_conversation_is_refused_and_litellm_names_its_provider() {
+    let b = antigravity(
+        &json!({ "modelName": "gemini-pro-agent" }),
+        &[json!({ "step_index": 2, "type": "PLANNER_RESPONSE", "model": "m", "input_tokens": 1 })],
+    );
+    assert_eq!(
+        (b.requests.len(), b.refused, b.refusal),
+        (0, 1, Some(Refusal::NoId))
+    );
+    let l = litellm(&[
+        json!({ "id": "a", "model": "meta-llama/Llama-3.3-70B-Instruct-Turbo", "custom_llm_provider": "togetherai",
+            "status": "success", "prompt_tokens": 5, "completion_tokens": 1 }),
+        json!({ "id": "b", "model": "meta-llama/Llama-3.3-70B-Instruct-Turbo", "status": "success" }),
+        json!({ "id": "c", "model": "gpt-5.4-mini", "hidden_params": { "custom_llm_provider": "openai" }, "status": "success" }),
+    ]);
+    assert_eq!(l.requests[0].provider.as_deref(), Some("togetherai"));
+    assert_eq!(
+        l.requests[0].model,
+        "meta-llama/Llama-3.3-70B-Instruct-Turbo"
+    );
+    assert_eq!(
+        l.requests[1].provider, None,
+        "an organisation is no provider"
+    );
+    assert_eq!(
+        l.requests[1].model,
+        "meta-llama/Llama-3.3-70B-Instruct-Turbo"
+    );
+    assert_eq!(l.requests[2].provider.as_deref(), Some("openai"));
 }

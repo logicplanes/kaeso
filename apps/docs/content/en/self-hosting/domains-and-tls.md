@@ -51,7 +51,7 @@ Then route these paths:
 
 | Path | To |
 | --- | --- |
-| `/v1/`, `/v1beta/`, `/v2/`, `/platform/`, `/mcp`, `/mcp/`, `/oauth/` and `/.well-known/oauth-` | The gateway, port 8080 |
+| `/v1/`, `/v1beta/`, `/v2/`, `/platform/`, `/mcp`, `/mcp/`, `/oauth/`, `/ingest/` and `/.well-known/oauth-` | The gateway, port 8080 |
 | Everything else | The console, port 3000 |
 
 Agents sign in through `/oauth/` and `/.well-known/oauth-` and then call `/mcp` ([MCP server](../api/mcp.md)); MCP clients call a project's portal at `/mcp/<project id>`. A proxy that sends these paths to the console stops every agent from connecting.

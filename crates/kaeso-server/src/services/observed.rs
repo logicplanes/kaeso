@@ -395,6 +395,9 @@ fn kind_of(source: &Source) -> Option<SourceKind> {
 
 /// Why Kaeso can't keep a request, checked before anything is counted.
 fn invalid_request(r: &ObservedRequest, now: OffsetDateTime) -> Option<Refusal> {
+    if r.external_id.trim().is_empty() {
+        return Some(Refusal::NoId);
+    }
     let t = r.tokens;
     if [t.input, t.output, t.cache_read, t.cache_write, t.reasoning]
         .iter()
@@ -415,6 +418,9 @@ fn invalid_request(r: &ObservedRequest, now: OffsetDateTime) -> Option<Refusal> 
 }
 
 fn invalid_call(c: &ObservedToolCall, now: OffsetDateTime) -> Option<Refusal> {
+    if c.external_id.trim().is_empty() {
+        return Some(Refusal::NoId);
+    }
     if c.tool.trim().is_empty() {
         return Some(Refusal::NoTool);
     }

@@ -143,7 +143,7 @@
         {
          "key": "tool_use_id",
          "value": {
-          "stringValue": "toolu_01L6pXmpAo8m2xbEQCBYCDRK"
+          "stringValue": "toolu_01EXAMPLE8F04E42D6181B2325BBA"
          }
         },
         {
@@ -161,7 +161,7 @@
         {
          "key": "request_id",
          "value": {
-          "stringValue": "req_011ChJvkGLVESf8DLfwsbRBU"
+          "stringValue": "req_01EXAMPLE16A9C1C70A34C2E512D4"
          }
         }
        ],
@@ -255,7 +255,7 @@
         {
          "key": "tool_use_id",
          "value": {
-          "stringValue": "toolu_01L6pXmpAo8m2xbEQCBYCDRK"
+          "stringValue": "toolu_01EXAMPLE8F04E42D6181B2325BBA"
          }
         },
         {
@@ -291,7 +291,7 @@
         {
          "key": "request_id",
          "value": {
-          "stringValue": "req_011ChJvkGLVESf8DLfwsbRBU"
+          "stringValue": "req_01EXAMPLE16A9C1C70A34C2E512D4"
          }
         }
        ],
@@ -445,13 +445,7 @@
         {
          "key": "request_id",
          "value": {
-          "stringValue": "req_011ChJvkGLVESf8DLfwsbRBU"
-         }
-        },
-        {
-         "key": "client_request_id",
-         "value": {
-          "stringValue": "0179eef5-7e9e-4146-819a-97a1f61b69dd"
+          "stringValue": "req_01EXAMPLE16A9C1C70A34C2E512D4"
          }
         },
         {
@@ -575,7 +569,7 @@
         {
          "key": "tool_use_id",
          "value": {
-          "stringValue": "toolu_012bg31Wd1sD71n4iY7TQzFM"
+          "stringValue": "toolu_01EXAMPLEA79D9296683DBC17EF0E"
          }
         },
         {
@@ -599,7 +593,7 @@
         {
          "key": "request_id",
          "value": {
-          "stringValue": "req_011ChJvkLW1isFjYN7bazfLt"
+          "stringValue": "req_01EXAMPLE9D854E077FC4EB938576"
          }
         }
        ],
@@ -753,13 +747,7 @@
         {
          "key": "request_id",
          "value": {
-          "stringValue": "req_011ChJvkLW1isFjYN7bazfLt"
-         }
-        },
-        {
-         "key": "client_request_id",
-         "value": {
-          "stringValue": "78092e7e-32d4-4718-b2ba-3e6813a4d911"
+          "stringValue": "req_01EXAMPLE9D854E077FC4EB938576"
          }
         },
         {
@@ -871,7 +859,7 @@
         {
          "key": "tool_use_id",
          "value": {
-          "stringValue": "toolu_012bg31Wd1sD71n4iY7TQzFM"
+          "stringValue": "toolu_01EXAMPLEA79D9296683DBC17EF0E"
          }
         },
         {
@@ -919,7 +907,7 @@
         {
          "key": "request_id",
          "value": {
-          "stringValue": "req_011ChJvkLW1isFjYN7bazfLt"
+          "stringValue": "req_01EXAMPLE9D854E077FC4EB938576"
          }
         }
        ],
