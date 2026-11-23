@@ -65,6 +65,12 @@ pub(super) struct ReasoningParam {
     pub effort: Option<String>,
     #[serde(default)]
     pub summary: Option<String>,
+    #[serde(default)]
+    pub max_tokens: Option<u32>,
+    #[serde(default)]
+    pub enabled: Option<bool>,
+    #[serde(default)]
+    pub exclude: Option<bool>,
 }
 
 #[derive(Debug, Deserialize)]

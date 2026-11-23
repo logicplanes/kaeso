@@ -8,7 +8,7 @@ use crate::openai_responses::DIALECT;
 use crate::openai_responses::namespaces::Namespaces;
 use crate::openai_responses::node::Node;
 use crate::openai_responses::overrides::apply;
-use crate::openai_responses::response::echo_fields;
+use crate::openai_responses::response::{echo_fields, excludes_reasoning};
 use crate::sse::{SseEvent, SseItem, write_item};
 
 pub(crate) struct Encoder {
@@ -26,7 +26,8 @@ impl Encoder {
                 echo_fields(ctx),
                 ctx.created_at.unwrap_or(0),
                 Namespaces::of(ctx.request.as_deref()),
-            ),
+            )
+            .with_exclude_reasoning(excludes_reasoning(ctx.request.as_deref())),
             created_at: ctx.created_at.unwrap_or(0),
             model: ctx
                 .request

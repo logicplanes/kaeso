@@ -595,3 +595,182 @@ fn generate_from_body(body: &[u8]) -> GenerateRequest {
         other => panic!("{other:?}"),
     }
 }
+
+#[test]
+fn openrouter_reasoning_fields_work_on_responses_requests_and_exclude_hides_reasoning() {
+    let budget = decode_req(
+        RequestKind::Generate,
+        br#"{"model":"claude-sonnet-5-5","input":"hi","reasoning":{"max_tokens":4096}}"#,
+    );
+    let Request::Generate(g) = &budget else {
+        panic!()
+    };
+    let r = g.reasoning.as_ref().unwrap();
+    assert_eq!(r.mode, Some(kaeso_kpp::ReasoningMode::Enabled));
+    assert_eq!(r.budget_tokens, Some(4096));
+    assert!(r.extras.fields.is_empty(), "{:?}", r.extras);
+    let (same, _) = encode_req(&budget);
+    let same_v: Value = serde_json::from_slice(&same.body).unwrap();
+    assert_eq!(same_v["reasoning"], json!({"effort": "medium"}));
+    let mut anth_req = budget.clone();
+    if let Request::Generate(g) = &mut anth_req {
+        g.sampling.max_output_tokens = Some(16_384);
+    }
+    let anth = crate::dispatch::encode_request(
+        DialectId::AnthropicMessages,
+        &anth_req,
+        &mut EgressCtx::new(&anth_req),
+    )
+    .unwrap();
+    let anth_v: Value = serde_json::from_slice(&anth.body).unwrap();
+    assert_eq!(
+        anth_v["thinking"],
+        json!({"type": "enabled", "budget_tokens": 4096})
+    );
+
+    let on = decode_req(
+        RequestKind::Generate,
+        br#"{"model":"claude-sonnet-5-5","input":"hi","reasoning":{"enabled":true}}"#,
+    );
+    let mut on_anth = on.clone();
+    if let Request::Generate(g) = &mut on_anth {
+        g.sampling.max_output_tokens = Some(4096);
+    }
+    let anth = crate::dispatch::encode_request(
+        DialectId::AnthropicMessages,
+        &on_anth,
+        &mut EgressCtx::new(&on_anth),
+    )
+    .unwrap();
+    assert_eq!(
+        serde_json::from_slice::<Value>(&anth.body).unwrap()["thinking"],
+        json!({"type": "adaptive"})
+    );
+    let (on_same, _) = encode_req(&on);
+    assert!(
+        serde_json::from_slice::<Value>(&on_same.body)
+            .unwrap()
+            .get("reasoning")
+            .is_none()
+    );
+
+    let off = decode_req(
+        RequestKind::Generate,
+        br#"{"model":"gpt-5.5","input":"hi","reasoning":{"enabled":false}}"#,
+    );
+    let (off_same, _) = encode_req(&off);
+    assert_eq!(
+        serde_json::from_slice::<Value>(&off_same.body).unwrap()["reasoning"],
+        json!({"effort": "none"})
+    );
+
+    let unknown = decode_req(
+        RequestKind::Generate,
+        br#"{"model":"claude-sonnet-5-5","input":"hi","reasoning":{"enabled":true,"custom_flag":1}}"#,
+    );
+    let mut unknown_anth = unknown.clone();
+    if let Request::Generate(g) = &mut unknown_anth {
+        g.sampling.max_output_tokens = Some(4096);
+    }
+    let err = crate::dispatch::check(
+        DialectId::AnthropicMessages,
+        &unknown_anth,
+        &EgressCtx::new(&unknown_anth),
+    )
+    .unwrap_err();
+    assert_eq!(err.unsupported_feature(), Some("reasoning.custom_flag"));
+
+    for (body, param) in [
+        (
+            r#"{"model":"m","input":"x","reasoning":{"effort":"high","max_tokens":2048}}"#,
+            "reasoning",
+        ),
+        (
+            r#"{"model":"m","input":"x","reasoning":{"enabled":false,"effort":"low"}}"#,
+            "reasoning.enabled",
+        ),
+        (
+            r#"{"model":"m","input":"x","reasoning":{"max_tokens":"big"}}"#,
+            "reasoning.max_tokens",
+        ),
+    ] {
+        let err = OpenAiResponses::decode_request(
+            RequestKind::Generate,
+            body.as_bytes(),
+            &HeaderList::new(),
+        )
+        .unwrap_err();
+        assert_eq!(err.kind, kaeso_kpp::ErrorKind::InvalidRequest);
+        assert_eq!(err.param.as_deref(), Some(param), "{body}: {err:?}");
+    }
+
+    let excl = decode_req(
+        RequestKind::Generate,
+        br#"{"model":"claude-sonnet-5-5","input":"hi","reasoning":{"effort":"high","exclude":true}}"#,
+    );
+    let mut thought = kaeso_kpp::ReasoningBlock::new(Origin::new(DialectId::AnthropicMessages));
+    thought.text.push("Hidden thinking.".into());
+    let mut resp = kaeso_kpp::Response::new(
+        "msg_1",
+        "claude-sonnet-5-5",
+        vec![Block::Reasoning(thought), Block::text("Visible.")],
+    );
+    resp.stop = kaeso_kpp::StopReason::EndTurn;
+    let out = OpenAiResponses::encode_response(
+        &kaeso_kpp::Reply::Generate(resp),
+        &crate::codec::EncodeCtx::for_request(excl.clone()).with_created_at(1_700_000_000),
+    )
+    .unwrap();
+    let out_v: Value = serde_json::from_slice(&out).unwrap();
+    assert!(
+        out_v["output"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|item| item["type"] != "reasoning"),
+        "{out_v}"
+    );
+
+    let mut enc = OpenAiResponses::stream_encoder(
+        &crate::codec::EncodeCtx::for_request(excl).with_created_at(1_700_000_000),
+    );
+    let stream_events = vec![
+        kaeso_kpp::StreamEvent::ResponseStart(kaeso_kpp::ResponseStart::new(
+            "msg_1",
+            "claude-sonnet-5-5",
+        )),
+        kaeso_kpp::StreamEvent::BlockStart(kaeso_kpp::BlockStart::new(
+            0,
+            kaeso_kpp::BlockHeader::Reasoning(kaeso_kpp::ReasoningHeader::new(Origin::new(
+                DialectId::AnthropicMessages,
+            ))),
+        )),
+        kaeso_kpp::StreamEvent::BlockDelta(kaeso_kpp::BlockDelta::new(
+            0,
+            kaeso_kpp::Delta::ReasoningText("Secret.".into()),
+        )),
+        kaeso_kpp::StreamEvent::BlockStop(kaeso_kpp::BlockStop::new(0)),
+        kaeso_kpp::StreamEvent::BlockStart(kaeso_kpp::BlockStart::new(
+            1,
+            kaeso_kpp::BlockHeader::Text,
+        )),
+        kaeso_kpp::StreamEvent::BlockDelta(kaeso_kpp::BlockDelta::new(
+            1,
+            kaeso_kpp::Delta::Text("Hello.".into()),
+        )),
+        kaeso_kpp::StreamEvent::BlockStop(kaeso_kpp::BlockStop::new(1)),
+        kaeso_kpp::StreamEvent::ResponseDelta(kaeso_kpp::ResponseDelta::new(
+            Some(kaeso_kpp::StopReason::EndTurn),
+            None,
+        )),
+        kaeso_kpp::StreamEvent::ResponseStop(kaeso_kpp::ResponseStop::default()),
+    ];
+    let mut bytes = Vec::new();
+    for ev in &stream_events {
+        bytes.extend(enc.encode(ev).unwrap());
+    }
+    bytes.extend(enc.finish().unwrap());
+    let text = String::from_utf8(bytes).unwrap();
+    assert!(!text.contains("Secret."), "{text}");
+    assert!(text.contains("Hello."), "{text}");
+}

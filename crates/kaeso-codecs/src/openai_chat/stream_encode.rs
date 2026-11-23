@@ -13,7 +13,8 @@ use serde_json::{Map, Value};
 use super::DIALECT;
 use super::convert::to_raw;
 use super::error::error_body;
-use super::response::{encode_finish, encode_usage};
+use super::request::REPLAYED_REASONING;
+use super::response::{ReasoningOutput, chat_reasoning_output, encode_finish, encode_usage};
 use super::stream::{
     CHUNK_OBJECT, ENVELOPE_FIELDS, ENVELOPE_KEYS, FORM_CHUNK, FORM_CONTENT_SLOTS, FORM_EMPTY_TEXT,
     FORM_ENV, FORM_ENV_ABSENT, FORM_IN_CHUNK, FORM_NO_DONE, FORM_PART, FORM_REASONING_FIELD,
@@ -52,6 +53,7 @@ struct Chunk {
 
 pub(crate) struct ChatStreamEncoder {
     include_usage: bool,
+    reasoning_output: ReasoningOutput,
     created_at: u64,
     started: bool,
     envelope: Obj,
@@ -78,6 +80,7 @@ impl ChatStreamEncoder {
                     ..
                 }
             ),
+            reasoning_output: chat_reasoning_output(ctx),
             created_at: ctx.created_at.unwrap_or(0),
             started: false,
             envelope: Obj::new(),
@@ -206,12 +209,30 @@ impl ChatStreamEncoder {
                     }
                     chunk.has_choice = true;
                 }
-                Delta::ReasoningText(text) if own && delta.extras.is_from(DIALECT) => {
-                    chunk
-                        .reasoning
-                        .get_or_insert_with(String::new)
-                        .push_str(text);
-                    chunk.has_choice = true;
+                Delta::ReasoningText(text) => {
+                    let keep = match self.reasoning_output {
+                        ReasoningOutput::Exclude => false,
+                        ReasoningOutput::Include => !own || delta.extras.is_from(DIALECT),
+                        ReasoningOutput::Default => own && delta.extras.is_from(DIALECT),
+                    };
+                    if keep {
+                        chunk
+                            .reasoning
+                            .get_or_insert_with(String::new)
+                            .push_str(text);
+                        chunk.has_choice = true;
+                    }
+                }
+                Delta::ReasoningSummary(summary)
+                    if !own && self.reasoning_output == ReasoningOutput::Include =>
+                {
+                    if !summary.text.is_empty() {
+                        chunk
+                            .reasoning
+                            .get_or_insert_with(String::new)
+                            .push_str(&summary.text);
+                        chunk.has_choice = true;
+                    }
                 }
                 Delta::ToolArguments(arguments) => {
                     if !arguments.trim().is_empty() {
@@ -380,12 +401,39 @@ impl ChatStreamEncoder {
         Ok(out)
     }
 
-    fn write(&mut self, chunk: Chunk) -> Result<Vec<u8>, KppError> {
+    fn write(&mut self, mut chunk: Chunk) -> Result<Vec<u8>, KppError> {
         let mut out = Vec::new();
         if self.done {
             return Ok(out);
         }
         let own = chunk.own;
+        if self.reasoning_output == ReasoningOutput::Exclude {
+            chunk.reasoning = None;
+            let mut stripped = false;
+            for key in REPLAYED_REASONING {
+                stripped |= chunk.delta_fields.shift_remove(*key).is_some();
+            }
+            if let Some(Value::Object(dv)) = chunk.form.get_mut("dv") {
+                for key in REPLAYED_REASONING {
+                    stripped |= dv.remove(*key).is_some();
+                }
+            }
+            if own
+                && (stripped || chunk.form.contains_key(FORM_REASONING_FIELD))
+                && chunk.content.is_none()
+                && chunk.refusal.is_none()
+                && chunk.tool_calls.is_empty()
+                && chunk.audio.is_none()
+                && chunk.finish.is_none()
+                && chunk.usage.is_none()
+                && chunk.delta_fields.is_empty()
+                && chunk.form.get("role").is_none()
+                && chunk.form.get(FORM_EMPTY_TEXT) != Some(&Value::Bool(true))
+                && chunk.form.get(FORM_CONTENT_SLOTS).is_none()
+            {
+                return Ok(out);
+            }
+        }
         let form = &chunk.form;
         if own
             && !self.include_usage
@@ -543,10 +591,15 @@ fn choice<'a>(chunk: &'a Chunk, role_pending: bool) -> Result<J<'a>, KppError> {
     if let Some(refusal) = &chunk.refusal {
         delta.insert(Cow::Borrowed("refusal"), J::Str(refusal));
     }
-    if let (true, Some(Value::String(field)), Some(reasoning)) =
-        (own, chunk.form.get(FORM_REASONING_FIELD), &chunk.reasoning)
-    {
-        delta.insert(Cow::Borrowed(field.as_str()), J::Str(reasoning));
+    if let Some(reasoning) = &chunk.reasoning {
+        let field = if own {
+            chunk.form.get(FORM_REASONING_FIELD).and_then(Value::as_str)
+        } else {
+            Some("reasoning")
+        };
+        if let Some(field) = field {
+            delta.insert(Cow::Borrowed(field), J::Str(reasoning));
+        }
     }
     if !chunk.tool_calls.is_empty() {
         let entries = chunk

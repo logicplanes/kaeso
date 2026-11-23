@@ -384,7 +384,7 @@ pub(super) fn decode_object(raw: &RawValue, origin: &Origin) -> Result<Response,
             None,
         )
     } else {
-        canonical(&resp, None, &Namespaces::default())
+        canonical(&resp, None, &Namespaces::default(), false)
     };
     Overrides::diff_entries(&canon, raw, fields, &["output"]).record(&mut resp.extras, "");
     Ok(resp)
@@ -429,7 +429,18 @@ fn is_message_part(b: &Block) -> bool {
     matches!(b, Block::Text(_) | Block::Refusal(_))
 }
 
-pub(super) fn output_items(resp: &Response, namespaces: &Namespaces) -> Vec<Node> {
+pub(super) fn excludes_reasoning(req: Option<&kaeso_kpp::Request>) -> bool {
+    matches!(
+        req,
+        Some(kaeso_kpp::Request::Generate(g)) if g.reasoning.as_ref().is_some_and(|r| r.exclude)
+    )
+}
+
+pub(super) fn output_items(
+    resp: &Response,
+    namespaces: &Namespaces,
+    exclude_reasoning: bool,
+) -> Vec<Node> {
     let target = Origin::new(DIALECT);
     let unchanged = resp
         .extras
@@ -525,6 +536,7 @@ pub(super) fn output_items(resp: &Response, namespaces: &Namespaces) -> Vec<Node
                 apply(&c.extras, DIALECT, "", &[], &mut node);
                 items.push(node);
             }
+            Block::Reasoning(_) if exclude_reasoning => {}
             Block::Reasoning(r) => {
                 let id = generated_id("rs", &resp.id, index32);
                 match reasoning_reply_policy(r.origin.as_ref(), DIALECT) {
@@ -569,6 +581,7 @@ fn canonical(
     resp: &Response,
     echo: Option<(&[(String, Node)], u64)>,
     namespaces: &Namespaces,
+    exclude_reasoning: bool,
 ) -> Node {
     let (status, incomplete) = status_for(&resp.stop);
     response_object(
@@ -576,7 +589,7 @@ fn canonical(
         &resp.model,
         status,
         incomplete,
-        Node::Arr(output_items(resp, namespaces)),
+        Node::Arr(output_items(resp, namespaces, exclude_reasoning)),
         usage_node(&resp.usage),
         echo,
     )
@@ -589,7 +602,13 @@ pub(super) fn encode(reply: &Reply, ctx: &EncodeCtx) -> Result<Vec<u8>, KppError
             let echo = (!native).then(|| echo_fields(ctx));
             let created = ctx.created_at.unwrap_or(0);
             let namespaces = Namespaces::of(ctx.request.as_deref());
-            let mut node = canonical(resp, echo.as_deref().map(|e| (e, created)), &namespaces);
+            let exclude_reasoning = excludes_reasoning(ctx.request.as_deref());
+            let mut node = canonical(
+                resp,
+                echo.as_deref().map(|e| (e, created)),
+                &namespaces,
+                exclude_reasoning,
+            );
             apply(&resp.extras, DIALECT, "", &[], &mut node);
             to_body(&node)
         }

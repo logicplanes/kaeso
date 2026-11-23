@@ -70,6 +70,8 @@ pub(crate) struct ChatRequest<M = Vec<RawJson>> {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) reasoning_effort: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) reasoning: Option<Ext<ReasoningParam>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) response_format: Option<RawJson>,
     #[serde(
         default,
@@ -101,6 +103,18 @@ pub(crate) struct AudioParam {
     pub(crate) voice: Option<RawJson>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) format: Option<String>,
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub(crate) struct ReasoningParam {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) effort: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) max_tokens: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) enabled: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) exclude: Option<bool>,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]

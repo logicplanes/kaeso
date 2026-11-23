@@ -127,7 +127,8 @@ Kaeso 这样转换推理设置：
 - **思考和采样。** 当 Kaeso 为来自其他格式的请求开启 Claude 的思考时，会省略 `temperature`、`top_p` 和 `top_k`，因为 Anthropic 会拒绝将它们与思考一起使用。Anthropic 应用自身的设置会按收到的原样发送，但发往 Claude Opus 4.7 及更新的模型时除外：这些模型不接受其中任何一项，Kaeso 会为所有应用省略它们，并在 `kaeso-left-out` 中注明。
 - **强制工具调用。** Anthropic 会拒绝预算思考与强制工具调用（`required` 或指定的工具）同时使用。这时 Kaeso 会不带思考发送请求。自适应思考则保留强制工具。
 - **来自其他地方的工具轮次。** 开启预算思考时，上一个助手轮次的工具调用中可能没有 Claude 可以重放的思考内容，例如这些调用由另一个服务商发出。这时 Kaeso 会不带思考发送请求。自适应思考保持开启。
-- **何时开启推理。** 目录会说明模型是否支持推理（KPMR 的 `capabilities.reasoning`）。对这样的模型，不带推理强度的 `reasoning: {summary: "auto"}` 会以默认深度开启 Claude 的思考：自适应思考，或 8,192 个 Token 的预算。Anthropic 应用不带推理强度开启思考时，会在下一轮收到 OpenAI 的加密推理。Kaeso 从不为不支持推理或未知是否支持推理的模型开启推理。发给这类模型的推理强度或自适应思考会被省略，`enabled` 思考或预算则会被拒绝。
+- **何时开启推理。** 目录会说明模型是否支持推理（KPMR 的 `capabilities.reasoning`）。对这样的模型，不带推理强度的 `reasoning: {summary: "auto"}` 或 OpenRouter 的 `reasoning: {enabled: true}` 会以默认深度开启 Claude 的思考：自适应思考，或 8,192 个 Token 的预算。Anthropic 应用不带推理强度开启思考时，会在下一轮收到 OpenAI 的加密推理。Kaeso 从不为不支持推理或未知是否支持推理的模型开启推理。发给这类模型的推理强度或自适应思考会被省略，`enabled` 思考或预算则会被拒绝。
+- **OpenRouter 的 `reasoning` 对象。** Chat Completions 和 Responses 应用都可以向任意模型发送 OpenRouter 的 `reasoning` 对象（`effort`、`max_tokens`、`enabled`、`exclude`）。`effort`、`max_tokens` 和 `enabled` 会像上面的原生设置一样跨格式转换；相互冲突的组合（例如同时设置 `effort` 与 `max_tokens`，或 `enabled: false` 与预算）返回 400。`exclude: true` 会在回复中隐藏推理内容，同时在用量中保留 `reasoning_tokens`。
 
 ## 轮次之间的推理
 
@@ -155,4 +156,4 @@ Gemini 应用收不到其他服务商的推理，因为思考 part 无法承载�
 
 - 设置了 `reasoning.summary` 的 Responses 应用会以推理摘要的形式收到 Claude 的思考，并以 `response.reasoning_summary_text.delta` 事件流式传输。网关会向 Claude 请求摘要形式的思考，否则 Claude Opus 4.7 及更高版本会隐藏它。
 - 开启了思考的 Anthropic 应用会以思考文本的形式收到 OpenAI 模型的推理摘要。除非应用把 `thinking.display` 设为 `omitted`，网关都会向 OpenAI 请求这些摘要。OpenAI 可能拒绝向未经其验证的组织提供摘要，Kaeso 会把它的错误原样传回。
-- Chat Completions 应用看不到推理内容，Gemini 应用看不到其他服务商的推理内容。
+- 发送 OpenRouter `reasoning` 对象且未设 `exclude: true` 的 Chat Completions 应用会在 `message.reasoning` 和流式 `delta.reasoning` 中收到可读推理，并向 Claude 请求摘要思考、向 OpenAI Responses 请求 `summary: "auto"`、向 Gemini 请求思考内容。设置 `exclude: true` 时，回复中不包含推理。其他 Chat Completions 应用看不到推理内容，Gemini 应用看不到其他服务商的推理内容。

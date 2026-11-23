@@ -475,6 +475,7 @@ fn a_refused_field_kaeso_models_is_found_as_well_as_one_it_passes_through() {
         "model": "m", "messages": [{}], "temperature": 1, "top_p": 1,
         "max_completion_tokens": 1, "max_tokens": 1, "stop": "x", "seed": 1,
         "frequency_penalty": 0, "presence_penalty": 0, "n": 1, "reasoning_effort": "low",
+        "reasoning": {"effort": "low"},
         "response_format": {}, "tools": [{}], "tool_choice": "auto",
         "parallel_tool_calls": true, "user": "u", "safety_identifier": "s",
         "stream": true, "stream_options": {}, "modalities": ["text"],
@@ -1602,4 +1603,91 @@ fn an_option_default_is_written_unless_the_app_set_the_key_or_sent_something_els
     )
     .unwrap();
     assert!(sent.get("venice_parameters").is_none(), "{sent}");
+}
+
+#[test]
+fn reasoning_object_fixtures_round_trip_under_a_profile_that_takes_them_and_translate_for_openai() {
+    let openrouter = ChatProfile::compatible("OpenRouter").with_reasoning_object();
+    let names = [
+        "openrouter-reasoning",
+        "providers/ollama-cloud/reasoning-object",
+        "providers/openrouter/free-reasoning",
+        "providers/openrouter/free-reasoning-stream",
+        "providers/openrouter/free-stream",
+        "providers/vercel/reasoning",
+        "providers/vercel/reasoning-stream",
+    ];
+    for name in names {
+        let (_, body) = fixtures("openai_chat", "requests", "json")
+            .into_iter()
+            .find(|(n, _)| n == name)
+            .unwrap_or_else(|| panic!("missing fixture {name}"));
+        let req = decode(&body).unwrap();
+        let original: Value = serde_json::from_slice(&body).unwrap();
+        let round = encode_with(&req, openrouter).unwrap();
+        assert_eq!(round, original, "{name}");
+
+        let openai = encode_with(&req, ChatProfile::OPENAI).unwrap();
+        assert!(openai.get("reasoning").is_none(), "{name}: {openai}");
+        if let Some(effort) = original["reasoning"]["effort"].as_str() {
+            assert_eq!(openai["reasoning_effort"], effort, "{name}");
+        } else {
+            assert!(openai.get("reasoning_effort").is_none(), "{name}: {openai}");
+        }
+    }
+
+    for body in [
+        json!({"model": "m", "messages": [{"role": "user", "content": "hi"}], "reasoning": {}}),
+        json!({"model": "m", "messages": [{"role": "user", "content": "hi"}], "reasoning": null}),
+        json!({"model": "m", "messages": [{"role": "user", "content": "hi"}], "reasoning": {"enabled": true}}),
+        json!({"model": "m", "messages": [{"role": "user", "content": "hi"}], "reasoning": {"enabled": false}}),
+        json!({"model": "m", "messages": [{"role": "user", "content": "hi"}], "reasoning": {"max_tokens": 2048}}),
+        json!({"model": "m", "messages": [{"role": "user", "content": "hi"}], "reasoning": {"max_tokens": 2048, "enabled": true, "exclude": false}}),
+        json!({"model": "m", "messages": [{"role": "user", "content": "hi"}], "reasoning": {"effort": "high", "enabled": true, "exclude": true}}),
+        json!({"model": "m", "messages": [{"role": "user", "content": "hi"}], "reasoning_effort": "high", "reasoning": {"exclude": true}}),
+        json!({"model": "m", "messages": [{"role": "user", "content": "hi"}], "reasoning_effort": "high", "reasoning": {"effort": "high"}}),
+        json!({"model": "m", "messages": [{"role": "user", "content": "hi"}], "reasoning": {"effort": "low", "future_flag": true}}),
+    ] {
+        let req = chat(body.clone());
+        assert_eq!(encode_with(&req, openrouter).unwrap(), body);
+    }
+
+    let unknown_sub = chat(json!({
+        "model": "m",
+        "messages": [{"role": "user", "content": "hi"}],
+        "reasoning": {"effort": "low", "future_flag": true}
+    }));
+    let err = encode_with(&unknown_sub, ChatProfile::OPENAI).unwrap_err();
+    assert_eq!(
+        refusal(&err).0,
+        Some("reasoning.future_flag"),
+        "unknown reasoning subfield is refused on providers without reasoning object"
+    );
+
+    let qwen = ChatProfile::compatible("QwenCloud").thinking_switch();
+    let qwen_budget = encode_with(
+        &chat(json!({
+            "model": "qwen",
+            "messages": [{"role": "user", "content": "hi"}],
+            "reasoning": {"max_tokens": 2048}
+        })),
+        qwen,
+    )
+    .unwrap();
+    assert_eq!(qwen_budget["enable_thinking"], true);
+    assert_eq!(qwen_budget["thinking_budget"], 2048);
+    assert!(qwen_budget.get("reasoning_effort").is_none());
+
+    let ark = ChatProfile::compatible("Volcengine Ark").thinking_type();
+    let ark_off = encode_with(
+        &chat(json!({
+            "model": "seed",
+            "messages": [{"role": "user", "content": "hi"}],
+            "reasoning": {"enabled": false}
+        })),
+        ark,
+    )
+    .unwrap();
+    assert_eq!(ark_off["thinking"], json!({"type": "disabled"}));
+    assert!(ark_off.get("reasoning_effort").is_none());
 }

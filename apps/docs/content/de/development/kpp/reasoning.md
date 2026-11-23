@@ -80,17 +80,17 @@ Der Header `kaeso-adapted` der Antwort nennt die Änderung mit dem Feld der App,
 
 OpenAI liefert lesbares Reasoning nur, wenn die Anfrage `reasoning.summary` setzt, und Claude Opus 4.7 und neuer liefern Thinking-Blöcke mit leerem Text, außer die Anfrage setzt `thinking.display: "summarized"`. Daher gilt, außer bei der Token-Zählung:
 
-- eine Anfrage aus einem anderen Dialekt mit Reasoning-Zusammenfassung (`auto`, `concise`, `detailed`) und eingeschaltetem Thinking geht mit `display: "summarized"` an Anthropic;
-- eine Anfrage im Format Anthropic Messages mit eingeschaltetem Thinking (`enabled`, `adaptive` oder ein Aufwand außer `none`) und einem `display` außer `omitted` geht mit `summary: "auto"` an OpenAI Responses.
+- eine Anfrage aus einem anderen Dialekt mit Reasoning-Zusammenfassung (`auto`, `concise`, `detailed`), oder eine Chat-Completions-Anfrage mit OpenRouters `reasoning`-Objekt ohne `exclude: true`, und eingeschaltetem Thinking geht mit `display: "summarized"` an Anthropic;
+- eine Anfrage im Format Anthropic Messages mit eingeschaltetem Thinking (`enabled`, `adaptive` oder ein Aufwand außer `none`) und einem `display` außer `omitted`, oder eine Chat-Completions-Anfrage mit OpenRouters `reasoning`-Objekt ohne `exclude: true`, geht mit `summary: "auto"` an OpenAI Responses.
 
 Das Gateway teilt den Encodern außerdem mit, ob das Zielmodell Reasoning beherrscht (`EgressCtx::reasoning`, aus dem Feld `reasoning` des Katalogs). Bei `Some(true)`:
 
 - schaltet eine Zusammenfassung ohne Aufwand, Modus oder Budget (OpenAI `reasoning: {summary: "auto"}`) das Thinking von Anthropic in der Standardtiefe des Modells ein. Das ist adaptives Thinking ohne Aufwand oder das Budget für `medium`, den Standardaufwand von OpenAI;
 - zählt Anthropic-Thinking `adaptive` ohne Aufwand für OpenAI Responses als Reasoning: Es fordert `include: ["reasoning.encrypted_content"]` an und, wie oben, eine Zusammenfassung.
 
-Gemini liefert Thoughts nur mit `includeThoughts: true`. Eine Anfrage aus einem anderen Dialekt bekommt es mit einer Reasoning-Zusammenfassung oder mit Anthropic-Thinking, dessen `display` nicht `omitted` ist ([Gemini API](gemini.md#thinking)).
+Gemini liefert Thoughts nur mit `includeThoughts: true`. Eine Anfrage aus einem anderen Dialekt bekommt es mit einer Reasoning-Zusammenfassung, mit Anthropic-Thinking, dessen `display` nicht `omitted` ist, oder mit OpenRouters `reasoning`-Objekt auf Chat Completions ohne `exclude: true` ([Gemini API](gemini.md#thinking)).
 
-Anfragen ohne Reasoning-Einstellungen, der Aufwand `none` und Modelle, die kein Reasoning beherrschen oder unbekannt sind, bekommen nie Reasoning eingeschaltet. Apps von OpenAI Chat, deren Format kein Reasoning zeigt, fordern keine Zusammenfassungen an.
+Anfragen ohne Reasoning-Einstellungen, der Aufwand `none` und Modelle, die kein Reasoning beherrschen oder unbekannt sind, bekommen nie Reasoning eingeschaltet. Normale OpenAI-Chat-Apps (`reasoning_effort` oder kein `reasoning`) fordern keine Zusammenfassungen an und sehen kein Reasoning in Antworten; Chat-Apps mit OpenRouters `reasoning`-Objekt ohne `exclude: true` erhalten lesbares Reasoning in `message.reasoning` und gestreamtem `delta.reasoning`, während `exclude: true` keine Zusammenfassungen anfordert und Reasoning in Chat- und Responses-Antworten und -Streams verbirgt, bei erhaltenen `reasoning_tokens` in der Nutzung.
 
 Anbieter, die Chat Completions bereitstellen, liefern lesbares Reasoning in einem eigenen Feld, etwa DeepSeeks `reasoning_content` oder Groqs `reasoning`, ohne dass eine Zusammenfassung angefordert wird. Ihr Chat-Profil nennt das Feld (`reasoning_fields`, [Anbieterprofile](openai-chat-providers.md#anbieterprofile)), sodass das Reasoning zu einem KPP-Reasoning-Block wird: Apps von Anthropic Messages erhalten es als `thinking`-Block und Apps von Responses als Reasoning-Item mit Zusammenfassung, jeweils mit dem ursprünglichen Block in einem [Reasoning-Blob](#reasoning-blobs).
 

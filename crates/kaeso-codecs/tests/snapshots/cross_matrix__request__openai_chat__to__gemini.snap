@@ -538,6 +538,56 @@ expression: outcomes
   "n-2": {
     "rejected_by_source": "n"
   },
+  "openrouter-reasoning": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Check the weather in Berlin and explain whether I need an umbrella."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "thinkingConfig": {
+          "includeThoughts": true,
+          "thinkingLevel": "HIGH"
+        }
+      },
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "You are a helpful assistant. Use the tools when needed."
+          }
+        ]
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "Get the current weather for a city.",
+              "name": "get_weather",
+              "parametersJsonSchema": {
+                "properties": {
+                  "city": {
+                    "description": "City name",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "city"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/claude-sonnet-5-5:streamGenerateContent?alt=sse"
+  },
   "plain-developer-string": {
     "body": {
       "contents": [
@@ -4719,9 +4769,26 @@ expression: outcomes
     "path": "/v1beta/models/gpt-oss%3A20b:generateContent"
   },
   "providers/ollama-cloud/reasoning-object": {
-    "message": "`reasoning` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
-    "param": null,
-    "unsupported": "reasoning"
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Name one prime number above 100."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 400,
+        "thinkingConfig": {
+          "includeThoughts": true,
+          "thinkingLevel": "LOW"
+        }
+      }
+    },
+    "path": "/v1beta/models/gpt-oss%3A20b:generateContent"
   },
   "providers/ollama-cloud/reasoning-sent-back": {
     "body": {
@@ -4980,19 +5047,66 @@ expression: outcomes
     "path": "/v1beta/models/google%2Fgemma-4-31b-it%3Afree:generateContent"
   },
   "providers/openrouter/free-reasoning": {
-    "message": "`reasoning` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
-    "param": null,
-    "unsupported": "reasoning"
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Is 91 a prime number? Answer yes or no with one short reason."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 512,
+        "thinkingConfig": {
+          "includeThoughts": true,
+          "thinkingLevel": "LOW"
+        }
+      }
+    },
+    "path": "/v1beta/models/nvidia%2Fnemotron-3.5-lightning%3Afree:generateContent"
   },
   "providers/openrouter/free-reasoning-stream": {
-    "message": "`reasoning` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
-    "param": null,
-    "unsupported": "reasoning"
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Is 91 a prime number? Answer yes or no with one short reason."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 512,
+        "thinkingConfig": {
+          "includeThoughts": true,
+          "thinkingLevel": "LOW"
+        }
+      }
+    },
+    "path": "/v1beta/models/nvidia%2Fnemotron-3.5-lightning%3Afree:streamGenerateContent?alt=sse"
   },
   "providers/openrouter/free-stream": {
-    "message": "`reasoning` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
-    "param": null,
-    "unsupported": "reasoning"
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Count from one to five in words, separated by commas."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 2048
+      }
+    },
+    "path": "/v1beta/models/google%2Fgemma-4-31b-it%3Afree:streamGenerateContent?alt=sse"
   },
   "providers/openrouter/free-stream-rate-limited": {
     "body": {
@@ -6859,14 +6973,48 @@ expression: outcomes
     "path": "/v1beta/models/nvidia%2Fnemotron-3.5-lightning-free:generateContent"
   },
   "providers/vercel/reasoning": {
-    "message": "`reasoning` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
-    "param": null,
-    "unsupported": "reasoning"
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Is 91 a prime number? Answer yes or no with one short reason."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1024,
+        "thinkingConfig": {
+          "includeThoughts": true,
+          "thinkingLevel": "LOW"
+        }
+      }
+    },
+    "path": "/v1beta/models/nvidia%2Fnemotron-3.5-lightning-free:generateContent"
   },
   "providers/vercel/reasoning-stream": {
-    "message": "`reasoning` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
-    "param": null,
-    "unsupported": "reasoning"
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Is 91 a prime number? Answer yes or no with one short reason."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1024,
+        "thinkingConfig": {
+          "includeThoughts": true,
+          "thinkingLevel": "LOW"
+        }
+      }
+    },
+    "path": "/v1beta/models/nvidia%2Fnemotron-3.5-lightning-free:streamGenerateContent?alt=sse"
   },
   "providers/vercel/restricted-model": {
     "body": {

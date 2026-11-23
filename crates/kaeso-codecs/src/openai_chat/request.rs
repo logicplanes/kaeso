@@ -1,8 +1,8 @@
 use kaeso_kpp::{
     AudioFormat, AudioOutput, Block, Extras, FunctionTool, GenerateRequest, JsonSchemaSpec,
     KppError, Message, Modality, Origin, OutputSpec, RawItem, RawJson, ReasoningBlock,
-    ReasoningConfig, ReasoningEffort, Request, RequestKind, Role, StreamMode, ToolChoice, ToolDef,
-    ToolResultBlock,
+    ReasoningConfig, ReasoningEffort, ReasoningMode, Request, RequestKind, Role, StreamMode,
+    ToolChoice, ToolDef, ToolResultBlock,
 };
 use serde_json::Value;
 use serde_json::value::RawValue;
@@ -14,7 +14,7 @@ use super::convert::{
 };
 use super::wire::{
     AssistantMessage, AudioParam, ChatRequest, FunctionToolWire, InstructionMessage,
-    NamedToolChoice, ResponseFormat, ToolMessage, UserMessage, role_tag,
+    NamedToolChoice, ReasoningParam, ResponseFormat, ToolMessage, UserMessage, role_tag,
 };
 use crate::codec::{HeaderList, is_forwarded_header};
 use crate::limits::{Form, Scope};
@@ -35,8 +35,16 @@ pub(crate) const FORM_ROLE: &str = "role";
 pub(crate) const FORM_CONTENT: &str = "content";
 pub(crate) const FUNCTION_ROLE: &str = "function";
 pub(crate) const FORM_REPLAYED: &str = "replayed";
+pub(crate) const FORM_REASONING_OBJECT: &str = "reasoning_object";
+pub(crate) const FORM_REASONING_EFFORT_SOURCE: &str = "effort_source";
+pub(crate) const FORM_REASONING_ENABLED: &str = "enabled";
+pub(crate) const FORM_REASONING_EXCLUDE_FALSE: &str = "exclude_false";
 pub(crate) const REPLAYED_REASONING: &[&str] =
     &["reasoning_content", "reasoning", "reasoning_details"];
+
+pub(crate) fn is_reasoning_object(cfg: &ReasoningConfig) -> bool {
+    cfg.extras.form_flag(DIALECT, FORM_REASONING_OBJECT)
+}
 
 pub(crate) const KEY_MAX_TOKENS_CONFLICT: &str = "max_tokens (differs from max_completion_tokens)";
 pub(crate) const KEY_USER_CONFLICT: &str = "user (sent alongside safety_identifier)";
@@ -103,6 +111,7 @@ fn describe(body: &[u8], err: &serde_json::Error) -> KppError {
         ("seed", signed, "an integer"),
         ("stop", stop, "a string or an array of strings"),
         ("reasoning_effort", string, "a string"),
+        ("reasoning", object, "an object"),
         ("user", string, "a string"),
         ("safety_identifier", string, "a string"),
         ("parallel_tool_calls", boolean, "true or false"),
@@ -131,6 +140,22 @@ fn describe(body: &[u8], err: &serde_json::Error) -> KppError {
                 return invalid(format!("`{name}` is required")).with_param(*name);
             }
             _ => {}
+        }
+    }
+    if let Some(Value::Object(reasoning)) = map.get("reasoning") {
+        let subfields: &[(&str, Check, &str)] = &[
+            ("effort", string, "a string"),
+            ("max_tokens", int, "an integer from 0 to 4294967295"),
+            ("enabled", boolean, "true or false"),
+            ("exclude", boolean, "true or false"),
+        ];
+        for (name, check, expected) in subfields {
+            if let Some(v) = reasoning.get(*name)
+                && !check(v)
+            {
+                let param = format!("reasoning.{name}");
+                return invalid(format!("`{param}` must be {expected}")).with_param(param);
+            }
         }
     }
     invalid(crate::wire::without_position(err))
@@ -246,12 +271,7 @@ fn decode_generate(
         req.audio_output = Some(decode_audio_param(audio, origin)?);
     }
 
-    if let Some(effort) = w.reasoning_effort {
-        let mut reasoning = ReasoningConfig::default();
-        reasoning.effort = Some(ReasoningEffort::from_wire(&effort));
-        reasoning.extras = Extras::new(origin.clone());
-        req.reasoning = Some(reasoning);
-    }
+    req.reasoning = decode_reasoning(w.reasoning_effort, w.reasoning, origin)?;
     if let Some(format) = w.response_format {
         decode_response_format(&mut req, &format, origin)?;
     }
@@ -266,6 +286,141 @@ fn decode_generate(
 
     decode_messages(&mut req, &w.messages, origin)?;
     Ok(req)
+}
+
+pub(crate) struct DecodedOpenRouterReasoning {
+    pub(crate) effort: Option<ReasoningEffort>,
+    pub(crate) mode: Option<ReasoningMode>,
+    pub(crate) budget_tokens: Option<u32>,
+    pub(crate) exclude: bool,
+    pub(crate) effort_source: Option<&'static str>,
+}
+
+pub(crate) fn decode_openrouter_reasoning_fields(
+    top_effort: Option<String>,
+    obj_effort: Option<String>,
+    max_tokens: Option<u32>,
+    enabled: Option<bool>,
+    exclude: Option<bool>,
+) -> Result<DecodedOpenRouterReasoning, KppError> {
+    if max_tokens == Some(0) {
+        return Err(KppError::invalid_request(
+            "`reasoning.max_tokens` must be at least 1; use `reasoning.enabled: false` or `reasoning.effort: \"none\"` to turn reasoning off.",
+        )
+        .with_param("reasoning.max_tokens"));
+    }
+    let (effort, effort_source) = match (top_effort, obj_effort) {
+        (Some(top), Some(obj)) if top != obj => {
+            return Err(KppError::invalid_request(
+                "`reasoning_effort` and `reasoning.effort` have different values; send only one.",
+            )
+            .with_param("reasoning.effort"));
+        }
+        (Some(top), Some(_)) => (Some(top), Some("both")),
+        (Some(top), None) => (Some(top), Some("top_level")),
+        (None, Some(obj)) => (Some(obj), None),
+        (None, None) => (None, None),
+    };
+    if effort.is_some() && max_tokens.is_some() {
+        let (msg, param) = if effort_source == Some("top_level") {
+            (
+                "`reasoning_effort` cannot be combined with `reasoning.max_tokens`; send only one.",
+                "reasoning.max_tokens",
+            )
+        } else {
+            (
+                "`reasoning` cannot set both `effort` and `max_tokens`; send only one.",
+                "reasoning",
+            )
+        };
+        return Err(KppError::invalid_request(msg).with_param(param));
+    }
+    let mode = match enabled {
+        Some(false) => {
+            if max_tokens.is_some() || effort.as_deref().is_some_and(|e| e != "none") {
+                return Err(KppError::invalid_request(
+                    "`reasoning.enabled: false` cannot be combined with `effort` or `max_tokens`.",
+                )
+                .with_param("reasoning.enabled"));
+            }
+            Some(ReasoningMode::Disabled)
+        }
+        Some(true) => {
+            if effort.as_deref() == Some("none") {
+                return Err(KppError::invalid_request(
+                    "`reasoning.enabled: true` conflicts with `effort: \"none\"`.",
+                )
+                .with_param("reasoning.enabled"));
+            }
+            if max_tokens.is_some() {
+                Some(ReasoningMode::Enabled)
+            } else if effort.is_none() {
+                Some(ReasoningMode::Adaptive)
+            } else {
+                None
+            }
+        }
+        None => max_tokens.map(|_| ReasoningMode::Enabled),
+    };
+    Ok(DecodedOpenRouterReasoning {
+        effort: effort.as_deref().map(ReasoningEffort::from_wire),
+        mode,
+        budget_tokens: max_tokens,
+        exclude: exclude == Some(true),
+        effort_source,
+    })
+}
+
+fn decode_reasoning(
+    reasoning_effort: Option<String>,
+    reasoning: Option<Ext<ReasoningParam>>,
+    origin: &Origin,
+) -> Result<Option<ReasoningConfig>, KppError> {
+    let Some(ext) = reasoning else {
+        return Ok(reasoning_effort.map(|effort| {
+            let mut cfg = ReasoningConfig::default();
+            cfg.effort = Some(ReasoningEffort::from_wire(&effort));
+            cfg.extras = Extras::new(origin.clone());
+            cfg
+        }));
+    };
+    let Ext {
+        known,
+        extra,
+        verbatim,
+    } = ext;
+    let decoded = decode_openrouter_reasoning_fields(
+        reasoning_effort,
+        known.effort,
+        known.max_tokens,
+        known.enabled,
+        known.exclude,
+    )?;
+    let mut cfg = ReasoningConfig::default();
+    cfg.effort = decoded.effort;
+    cfg.mode = decoded.mode;
+    cfg.budget_tokens = decoded.budget_tokens;
+    cfg.exclude = decoded.exclude;
+    cfg.extras = extras_of(origin, extra, verbatim);
+    cfg.extras
+        .form
+        .insert(FORM_REASONING_OBJECT.to_owned(), Value::Bool(true));
+    if let Some(src) = decoded.effort_source {
+        cfg.extras
+            .form
+            .insert(FORM_REASONING_EFFORT_SOURCE.to_owned(), form_str(src));
+    }
+    if let Some(enabled) = known.enabled {
+        cfg.extras
+            .form
+            .insert(FORM_REASONING_ENABLED.to_owned(), Value::Bool(enabled));
+    }
+    if known.exclude == Some(false) {
+        cfg.extras
+            .form
+            .insert(FORM_REASONING_EXCLUDE_FALSE.to_owned(), Value::Bool(true));
+    }
+    Ok(Some(cfg))
 }
 
 // `voice` is a built-in voice's name or a custom voice `{"id": …}` (`VoiceIdsOrCustomVoice`);

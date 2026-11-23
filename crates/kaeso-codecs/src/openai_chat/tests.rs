@@ -21,9 +21,16 @@ pub(super) const REJECTED_REQUESTS: &[(&str, &str)] = &[
 
 // Requests only their provider's profile sends, which `tests_profile` round-trips under it.
 const PROFILE_ONLY_REQUESTS: &[&str] = &[
+    "openrouter-reasoning",
     "providers/fireworks-ai/video-url",
     "providers/nebius/video-url",
+    "providers/ollama-cloud/reasoning-object",
+    "providers/openrouter/free-reasoning",
+    "providers/openrouter/free-reasoning-stream",
+    "providers/openrouter/free-stream",
     "providers/stepfun-ai/video-url-doc",
+    "providers/vercel/reasoning",
+    "providers/vercel/reasoning-stream",
 ];
 
 const REJECTED_RESPONSES: &[(&str, &str)] = &[("n-2", "n")];

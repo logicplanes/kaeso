@@ -124,6 +124,20 @@ fn check_generate(r: &GenerateRequest, profile: &ChatProfile) -> Result<(), KppE
             ));
         }
         let own = reasoning.extras.is_from(DIALECT);
+        if own
+            && !profile.request.reasoning_object
+            && let Some(key) = reasoning.extras.fields.keys().next()
+        {
+            let param = format!("reasoning.{key}");
+            return Err(KppError::unsupported(
+                &param,
+                format!(
+                    "`{param}` is not supported by {}; remove it from the request.",
+                    profile.provider
+                ),
+            )
+            .with_param(param));
+        }
         if own && reasoning.summary.is_some() {
             return Err(unsupported(
                 "reasoning.summary",

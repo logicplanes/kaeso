@@ -841,7 +841,11 @@ fn thinking_plan(
     let default_depth =
         !own && unset && c.effort.is_none() && c.summary.is_some() && ctx.reasoning == Some(true);
     let display = |thinking: &mut Ext<ThinkingConfigW>| -> Result<(), KppError> {
-        if !own && !is_count && c.summary.is_some() {
+        if !own
+            && !is_count
+            && !c.exclude
+            && (c.summary.is_some() || cross::wants_chat_reasoning(c))
+        {
             let value = RawJson::from_serialize("summarized").map_err(internal)?;
             thinking.extra.insert("display".to_owned(), value);
         }

@@ -37,6 +37,7 @@ nav: OpenAI Chat
 | `frequency_penalty`、`presence_penalty` | `sampling.*`（类型化） | 整数写法与 `temperature` 相同（形式标记 `integers`）。 |
 | `n` | 为 `1` 时记为形式标记 `n` | `n > 1`：`Unsupported`（`n`，见[采样参数](cross-format.md#采样参数)）；`0`：`InvalidRequest`。 |
 | `reasoning_effort` | `reasoning.effort`（类型化） | 来自其他方言时（[推理强度与预算](reasoning.md#推理强度与预算)）：显式的推理强度保持不变；Anthropic `thinking.disabled` 变为 `none`；预算变为 `low`（低于 4,096）、`medium`（4,096 到 16,383）或 `high`（16,384 及以上）。取值为 `none` 到 `max`；未知值保留为 `ReasoningEffort::Other`，对 Chat 应用原样透传，而对来自其他方言的请求，`check()` 会拒绝规范枚举之外的值（`reasoning.effort`）。 |
+| `reasoning` `{effort, max_tokens, enabled, exclude}`（OpenRouter） | `reasoning`（类型化：`effort`、`budget_tokens`、`mode`、`exclude`） | OpenRouter 的统一推理对象。`max_tokens`（正整数）设置 `mode = Enabled` 和 `budget_tokens`；`enabled: true` 设置 `Adaptive` 而不强制指定强度；`enabled: false` 设置 `Disabled`；`exclude: true` 在回复和流中隐藏推理，同时保留 `reasoning_tokens`。冲突组合（`reasoning_effort` 与 `reasoning.effort` 不同、`effort` 与 `max_tokens` 共存、`enabled: false` 与强度或预算共存、`enabled: true` 与 `effort: "none"` 共存、`max_tokens: 0`）为 `InvalidRequest`。未知键为 extras `reasoning.<key>`，对没有 `with_reasoning_object()` 的服务商和跨方言时都会被拒绝。带 `with_reasoning_object()` 的服务商（OpenRouter、Vercel、Ollama Cloud）收回 `reasoning` 对象；OpenAI 和其他 Chat 服务商改为收到 `reasoning_effort`（或各自的思考开关）。 |
 | `response_format` `{type: text}` | `output = Text`（类型化） | 形式标记 `response_format_text`；未知键为 extras `response_format.<key>`。 |
 | `response_format` `{type: json_object}` | `output = JsonObject`（类型化） | 未知键为 extras `response_format.<key>`。 |
 | `response_format` `{type: json_schema, json_schema: {name, description, schema, strict}}` | `output = JsonSchema`（类型化） | 未知键为 extras（嵌套的为 `json_schema.<key>`）。缺少 `schema`：`{}` + 形式标记 `schema_absent`；缺少 `json_schema` 对象：`InvalidRequest`。来自其他方言、没有名称的 schema 以 `name: "response"` 发送（[结构化输出](cross-format.md#结构化输出)）。 |
@@ -165,7 +166,7 @@ OpenAI Responses 的 `custom_tool_call` 和 `local_shell_call` 项及其输出�
 | `message.tool_calls` | `Block::ToolCall` 或 `Block::Unknown` | 与请求中相同。 |
 | `message.audio` | 文本之后的 `Block::Audio`：base64 `data`，媒体类型取自请求的 `audio.format`（`wav` `audio/wav`、`mp3` `audio/mpeg`、`flac`、`opus`、`aac`、`pcm16` `audio/l16; rate=24000; channels=1`），`transcript`（类型化），`id`、`expires_at` 和其他键作为块的 extras | 来自其他方言：第一个音频块，Gemini 的 16 位 PCM 片段会拼接起来；`id` 为 `audio_<回复 ID>`，`expires_at` 为回复的 `created`，因为没有为后续轮次保存任何内容；没有转写稿时 `transcript` 为 `""`。 |
 | `message.function_call`、未知键 | extras `choice.message.<key>` | |
-| 推理、其他方言的未知块 | 无 | 在 Chat 回复中省略（[回复](cross-format.md#回复)）。网关会为下一轮保存可回放的推理，以它之前对应的工具调用为键（[由网关保存的推理](reasoning.md#由网关保存的推理)，`kaeso_codecs::continuity`）。 |
+| 推理、其他方言的未知块 | 无（OpenRouter 请求时为 `message.reasoning`） | 在 Chat 回复中省略（[回复](cross-format.md#回复)），除非请求发送了 OpenRouter 的 `reasoning` 对象且未设 `exclude: true`，此时可读推理写入 `message.reasoning`。设置 `exclude: true` 时，所有方言回复中的推理字段都会省略，但 `usage.completion_tokens_details.reasoning_tokens` 保持不变。网关会为下一轮保存可回放的推理，以它之前对应的工具调用为键（[由网关保存的推理](reasoning.md#由网关保存的推理)，`kaeso_codecs::continuity`）。 |
 
 来自其他方言的回复按 OpenAI 的方式写出空值：`content: null`、`refusal: null`、`annotations: []` 和 `logprobs: null`。
 
@@ -230,7 +231,7 @@ OpenAI 在工具调用的第一个 chunk 中发送其 `id`、`type` 和 `functio
 
 Anthropic 和 Responses 在块开始时就要给出两者，因此解码器按上文暂缓输出开始事件和该调用，直到知道这些值。事件的顺序从不改变。保持在本格式内的流会原样回放每个 chunk。对应的 fixture 是 `fixtures/openai_chat/streams/late-envelope-and-tool-header.sse`。
 
-来自其他方言的事件各自成为一个 chunk，排在开头的角色 chunk 之后，带有 `logprobs: null` 和 `finish_reason`。工具索引按工具调用开始的顺序分配。推理、引用、不透明数据、未知块和其他方言的 extras 会被省略（[回复](cross-format.md#回复)）。
+来自其他方言的事件各自成为一个 chunk，排在开头的角色 chunk 之后，带有 `logprobs: null` 和 `finish_reason`。工具索引按工具调用开始的顺序分配。引用、不透明数据、未知块和其他方言的 extras 会被省略（[回复](cross-format.md#回复)）；推理也会被省略，除非请求发送了 OpenRouter 的 `reasoning` 对象且未设 `exclude: true`，此时推理文本和摘要以 `delta.reasoning` 流式输出。设置 `exclude: true` 时，所有方言的推理增量都会隐藏，同时用量保留 `reasoning_tokens`。
 
 在这些被省略的内容到达期间，编码器会按节奏写入 SSE 注释（`: keepalive`），SSE 规范和 SDK 的解析器都会忽略它们。其他方言的每个额外事件（例如 Anthropic `ping`）对应一条，每 1,024 字节隐藏文本对应一条（[保活消息](cross-format.md#保活消息)）。`StreamEncoder::keepalive` 为网关提供同样的帧，用于上游静默的情况。
 
