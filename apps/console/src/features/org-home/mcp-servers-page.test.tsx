@@ -349,10 +349,17 @@ describe("an MCP server's sheet", () => {
     await user.click(within(confirm).getByRole("button", { name: "Cancel" }));
     expect(requests("PATCH", SERVER)).toHaveLength(0);
     await user.click(within(s).getByRole("switch", { name: /Auto-approve tool changes/ }));
+    on("PATCH", SERVER, apiError(412, "conflict", "Changed meanwhile."));
+    await user.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Turn on and approve" }));
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
+    on("PATCH", SERVER, ({ body }: { body: { auto_approve_tool_changes: boolean } }) =>
+      mcpServer({ auto_approve_tool_changes: body.auto_approve_tool_changes, tools: { total: 3, changed: 0 } }),
+    );
+    await user.click(within(s).getByRole("switch", { name: /Auto-approve tool changes/ }));
     await user.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Turn on and approve" }));
     expect(await notifications().findByText("X auto-approves tool changes")).toBeInTheDocument();
-    expect(requests("PATCH", SERVER)[0]?.body).toEqual({ auto_approve_tool_changes: true });
-    expect(requests("PATCH", SERVER)[0]?.headers.get("if-match")).toBe('"3"');
+    expect(requests("PATCH", SERVER).at(-1)?.body).toEqual({ auto_approve_tool_changes: true });
+    expect(requests("PATCH", SERVER).at(-1)?.headers.get("if-match")).toBe('"3"');
   });
 
   it("turns auto-approve off without asking", async () => {
@@ -390,7 +397,9 @@ describe("an MCP server's sheet", () => {
         mcpToolChange({ name: "create_post", outcome: "waiting", decided_by: null, decided_at: null }),
         mcpToolChange(),
         mcpToolChange({ id: "tchg_2", outcome: "approved", decided_by: { kind: "user", id: USER } }),
+        mcpToolChange({ id: "tchg_2b", outcome: "approved", decided_by: null }),
         mcpToolChange({ id: "tchg_3", outcome: "kept_off", decided_by: { kind: "user", id: USER } }),
+        mcpToolChange({ id: "tchg_3b", outcome: "kept_off", decided_by: null }),
         mcpToolChange({ id: "tchg_4", outcome: "superseded" }),
         mcpToolChange({ id: "tchg_5", outcome: "restored" }),
       ],
@@ -403,7 +412,9 @@ describe("an MCP server's sheet", () => {
       expect.stringContaining("Waiting for review"),
       expect.stringContaining("Auto-approved"),
       expect.stringContaining("Approved by Ada Okafor (you)"),
+      expect.stringContaining("Approved"),
       expect.stringContaining("Kept off by Ada Okafor (you)"),
+      expect.stringContaining("Kept off"),
       expect.stringContaining("Changed again"),
       expect.stringContaining("Changed back"),
     ]);
