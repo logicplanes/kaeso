@@ -7,7 +7,7 @@ use std::time::Duration;
 use axum::http::StatusCode;
 use common::v1::Env;
 use kaeso_core::sources::Counted;
-use kaeso_server::services::observed::{self, Batch, ObservedRequest, ObservedToolCall};
+use kaeso_server::services::observed::{self, Batch, ObservedRequest, ObservedToolCall, Refusal};
 use kaeso_store::pg::sources as store;
 use rust_decimal::Decimal;
 use serde_json::{Value, json};
@@ -1045,4 +1045,57 @@ async fn cache_writes_kept_for_an_hour_cost_what_an_hour_costs() {
         .collect();
     costs.sort();
     assert!(costs[1] > costs[0], "an hour's writes cost more: {costs:?}");
+}
+
+#[tokio::test]
+async fn a_source_whose_service_account_is_archived_counts_for_nobody() {
+    let env = env().await;
+    let account = env
+        .app
+        .post(
+            &format!("{}/service-accounts", base(&env)),
+            json!({ "name": "ci", "role": "developer", "rights_added": [], "rights_removed": [] }),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(account.status, StatusCode::CREATED, "{:?}", account.body);
+    let account_id = account.body["id"].as_str().unwrap().to_owned();
+    let made = add(
+        &env,
+        json!({ "kind": "http", "name": "CI", "service_account_id": account_id, "match_members": false }),
+    )
+    .await;
+    let source = source_row(&env, made["source"]["id"].as_str().unwrap()).await;
+    let first = observed::record(
+        &env.app.state,
+        &source,
+        Batch {
+            requests: vec![haiku("before", None)],
+            ..Batch::default()
+        },
+    )
+    .await
+    .unwrap();
+    assert_eq!((first.requests, first.refused), (1, 0));
+    let archived = env
+        .app
+        .post(
+            &format!("{}/service-accounts/{account_id}/archive", base(&env)),
+            json!({}),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(archived.status, StatusCode::OK, "{:?}", archived.body);
+    let after = observed::record(
+        &env.app.state,
+        &source,
+        Batch {
+            requests: vec![haiku("after", None)],
+            ..Batch::default()
+        },
+    )
+    .await
+    .unwrap();
+    assert_eq!((after.requests, after.refused), (0, 1));
+    assert_eq!(after.refusal, Some(Refusal::Nobody));
 }
