@@ -41,6 +41,7 @@ export function mcpServer(overrides: Partial<McpServerView> = {}): McpServerView
     auth_method: "oauth",
     credential_mode: "shared",
     auto_approve_tool_changes: false,
+    change_policy: "hold",
     connection: mcpConnection(),
     created_at: NOW,
     created_by: { kind: "user", id: USER },

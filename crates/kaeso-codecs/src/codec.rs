@@ -305,6 +305,10 @@ pub struct EgressCtx {
     /// Whether the speech reply is JSON with the audio inside, read whole, as ElevenLabs'
     /// `with-timestamps` replies are. The encoder sets it.
     pub speech_reply_json: bool,
+    /// Whether a stream decoder must keep dialect-native wire overrides (`Extras::form`) for a
+    /// matching downstream encoder. When translating to another dialect, skipping wire-level
+    /// diffing produces the same KPP events at much lower CPU cost.
+    pub preserve_wire: bool,
 }
 
 impl EgressCtx {
@@ -352,6 +356,7 @@ impl EgressCtx {
             audio_format: None,
             transcript_format: None,
             speech_reply_json: false,
+            preserve_wire: true,
         }
     }
 

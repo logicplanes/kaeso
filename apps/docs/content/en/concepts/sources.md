@@ -46,7 +46,7 @@ Kaeso counts requests only from log events and spans. Metrics keep a source's st
 
 A request counts for a member, or for a service account, like any request through the gateway. When the event names an email address and the source matches members by email, the request counts for the organization member with that address. Otherwise it counts for the source's member or service account, chosen when the source is added.
 
-Either way, the member must be able to see the project, and a service account must still be active in it. A record that would count for nobody who can is refused, so a request never counts for someone outside the project.
+Either way, the member must be able to see the project, and a service account must still be active in it. A record that would count for nobody who can is refused, so a request never counts for someone outside the project. Once a source's own member can no longer see the project, or its service account is archived, Kaeso refuses all of its records, whatever addresses they name.
 
 ## Tokens and cost
 
@@ -62,7 +62,7 @@ Kaeso refuses a record that:
 
 - names no model or no tool, or has no id;
 - is more than seven days old, or more than five minutes in the future;
-- has a token count over 100 million, or costs more than $10,000;
+- has a token count over 10 million, or costs more than $100;
 - has a status that isn't an HTTP status;
 - would count for nobody who can see the project.
 
@@ -73,7 +73,7 @@ A refused record changes nothing, and the source's sheet shows the reason for th
 Observed requests count toward the project's limits and budgets, and toward each member's and service account's, so budget alerts include them. A limit's view shows how much of its use sources reported.
 
 > [!IMPORTANT]
-> Kaeso can't stop an observed request, because it isn't in its path. A hard budget that observed requests use up still refuses the requests that do go through Kaeso.
+> Kaeso can't stop an observed request, because it isn't in its path. A hard budget that observed requests use up still refuses the requests that do go through Kaeso. So a source key can use up the project's budgets as an API key can: keep it as secret as one, and disable the source or give it a new key if it leaks.
 
 ## Prompts and replies
 
@@ -83,7 +83,7 @@ A source keeps the prompts, replies and tool arguments its client sends only whe
 
 Each source has a key, `sk-kso-src-…`, which Kaeso shows once and keeps only as a hash. It works only on `/ingest`: it calls no model and reaches neither the Platform API nor the MCP portal. A client sends it as `Authorization: Bearer sk-kso-src-…`, or in the `X-Kaeso-Source-Key` header.
 
-A batch holds at most 5,000 records and 8 MiB, 16 MiB once unzipped, and a source may send 600 batches a minute. A disabled or archived source, or one in an archived project, has its batches refused. Seeing sources takes the right `sources.view`, which every project role has; adding and changing them takes `sources.manage`, which admins and developers have.
+A batch holds at most 1,000 records and 8 MiB, 16 MiB once unzipped or 8 MiB for JSON. A source may send 600 batches a minute, three at a time, and 6,000 records (requests and tool calls) a minute and 200,000 a day; past that Kaeso answers 429 with `Retry-After` and keeps nothing of the batch. A batch with more fields or values than Kaeso can read at once is refused with 413. A disabled or archived source, or one in an archived project, has its batches refused. Seeing sources takes the right `sources.view`, which every project role has; adding and changing them takes `sources.manage`, which admins and developers have.
 
 ## Next steps
 

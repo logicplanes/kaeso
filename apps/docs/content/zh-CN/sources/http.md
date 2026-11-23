@@ -23,7 +23,7 @@ Kaeso 会回答它保留了哪些内容：
 
 ## 发送批次
 
-批次是一个包含 `requests` 和 `tool_calls` 的 JSON 对象，两者都可以省略。每批最多发送 5,000 条记录、8 MiB，也可以使用 `Content-Encoding: gzip` 压缩。Kaeso 无法保留的记录会被单独拒绝：`refused` 统计被拒绝的数量，`refusal` 给出最后一次拒绝的原因，例如 `no_model`。Kaeso 无法读取的请求体会得到 `400`，其中的任何内容都不会保留。
+批次是一个包含 `requests` 和 `tool_calls` 的 JSON 对象，两者都可以省略。每批最多发送 1,000 条记录、8 MiB，也可以使用 `Content-Encoding: gzip` 压缩。Kaeso 无法保留的记录会被单独拒绝：`refused` 统计被拒绝的数量，`refusal` 给出最后一次拒绝的原因，例如 `no_model`。Kaeso 无法读取的请求体会得到 `400`，其中的任何内容都不会保留。
 
 每条记录都需要一个在来源内唯一的 `id`。以相同的 `id` 再次发送记录时，Kaeso 只保留一次，因此您可以重试失败的批次。
 

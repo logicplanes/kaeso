@@ -46,7 +46,7 @@ Kaeso zählt Anfragen nur aus Log-Ereignissen und Spans. Metriken halten den Sta
 
 Eine Anfrage zählt für ein Mitglied oder für ein Dienstkonto, wie jede Anfrage über das Gateway. Nennt das Ereignis eine E-Mail-Adresse und ordnet die Quelle Mitglieder per E-Mail zu, zählt die Anfrage für das Mitglied der Organisation mit dieser Adresse. Sonst zählt sie für das Mitglied oder Dienstkonto der Quelle, das beim Hinzufügen gewählt wurde.
 
-In beiden Fällen muss das Mitglied das Projekt sehen können, und ein Dienstkonto muss darin noch aktiv sein. Ein Datensatz, der für niemanden zählen würde, der das kann, wird abgelehnt, sodass eine Anfrage nie für jemanden außerhalb des Projekts zählt.
+In beiden Fällen muss das Mitglied das Projekt sehen können, und ein Dienstkonto muss darin noch aktiv sein. Ein Datensatz, der für niemanden zählen würde, der das kann, wird abgelehnt, sodass eine Anfrage nie für jemanden außerhalb des Projekts zählt. Sobald das eigene Mitglied einer Quelle das Projekt nicht mehr sehen kann oder ihr Dienstkonto archiviert ist, lehnt Kaeso alle ihre Datensätze ab, gleich welche Adressen sie nennen.
 
 ## Tokens und Kosten
 
@@ -62,7 +62,7 @@ Kaeso lehnt einen Datensatz ab, der:
 
 - kein Modell oder kein Tool nennt oder keine ID hat;
 - älter als sieben Tage ist oder mehr als fünf Minuten in der Zukunft liegt;
-- eine Token-Zahl über 100 Millionen hat oder mehr als 10.000 $ kostet;
+- eine Token-Zahl über 10 Millionen hat oder mehr als 100 $ kostet;
 - einen Status hat, der kein HTTP-Status ist;
 - für niemanden zählen würde, der das Projekt sehen kann.
 
@@ -73,7 +73,7 @@ Ein abgelehnter Datensatz ändert nichts, und die Detailansicht der Quelle zeigt
 Beobachtete Anfragen zählen auf die Limits und Budgets des Projekts und auf die jedes Mitglieds und Dienstkontos, sodass Budgetwarnungen sie einschließen. Die Ansicht eines Limits zeigt, wie viel seiner Nutzung Quellen gemeldet haben.
 
 > [!IMPORTANT]
-> Kaeso kann eine beobachtete Anfrage nicht stoppen, weil es nicht in ihrem Weg liegt. Ein hartes Budget, das beobachtete Anfragen aufbrauchen, verweigert trotzdem die Anfragen, die über Kaeso laufen.
+> Kaeso kann eine beobachtete Anfrage nicht stoppen, weil es nicht in ihrem Weg liegt. Ein hartes Budget, das beobachtete Anfragen aufbrauchen, verweigert trotzdem die Anfragen, die über Kaeso laufen. Ein Quellschlüssel kann die Budgets des Projekts also aufbrauchen wie ein API-Schlüssel: Halten Sie ihn ebenso geheim, und deaktivieren Sie die Quelle oder geben Sie ihr einen neuen Schlüssel, falls er bekannt wird.
 
 ## Prompts und Antworten
 
@@ -83,7 +83,7 @@ Eine Quelle behält die Prompts, Antworten und Tool-Argumente, die ihr Client se
 
 Jede Quelle hat einen Schlüssel, `sk-kso-src-…`, den Kaeso einmal zeigt und nur als Hash behält. Er funktioniert nur an `/ingest`: Er ruft kein Modell auf und erreicht weder die Platform-API noch das MCP-Portal. Ein Client sendet ihn als `Authorization: Bearer sk-kso-src-…` oder im Header `X-Kaeso-Source-Key`.
 
-Ein Stapel enthält höchstens 5.000 Datensätze und 8 MiB, entpackt 16 MiB, und eine Quelle darf 600 Stapel pro Minute senden. Die Stapel einer deaktivierten oder archivierten Quelle oder einer Quelle in einem archivierten Projekt werden abgelehnt. Quellen zu sehen braucht das Recht `sources.view`, das jede Projektrolle hat; sie hinzuzufügen und zu ändern braucht `sources.manage`, das Admins und Entwickler haben.
+Ein Stapel enthält höchstens 1.000 Datensätze und 8 MiB, entpackt 16 MiB oder 8 MiB bei JSON. Eine Quelle darf 600 Stapel pro Minute senden, drei gleichzeitig, und 6.000 Datensätze (Anfragen und Tool-Aufrufe) pro Minute und 200.000 pro Tag; darüber hinaus antwortet Kaeso mit 429 und `Retry-After` und behält nichts vom Stapel. Ein Stapel mit mehr Feldern oder Werten, als Kaeso auf einmal lesen kann, wird mit 413 abgelehnt. Die Stapel einer deaktivierten oder archivierten Quelle oder einer Quelle in einem archivierten Projekt werden abgelehnt. Quellen zu sehen braucht das Recht `sources.view`, das jede Projektrolle hat; sie hinzuzufügen und zu ändern braucht `sources.manage`, das Admins und Entwickler haben.
 
 ## Nächste Schritte
 

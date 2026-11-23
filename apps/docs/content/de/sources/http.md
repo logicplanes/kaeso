@@ -23,7 +23,7 @@ Kaeso antwortet mit dem, was es behalten hat:
 
 ## Stapel senden
 
-Ein Stapel ist ein JSON-Objekt mit `requests` und `tool_calls`; beide dürfen fehlen. Senden Sie höchstens 5.000 Datensätze und 8 MiB pro Stapel, auf Wunsch mit gzip und `Content-Encoding: gzip`. Einen Datensatz, den Kaeso nicht behalten kann, lehnt es allein ab: `refused` zählt sie, und `refusal` nennt den Grund des letzten, etwa `no_model`. Einen Body, den Kaeso nicht lesen kann, beantwortet es mit `400` und behält nichts davon.
+Ein Stapel ist ein JSON-Objekt mit `requests` und `tool_calls`; beide dürfen fehlen. Senden Sie höchstens 1.000 Datensätze und 8 MiB pro Stapel, auf Wunsch mit gzip und `Content-Encoding: gzip`. Einen Datensatz, den Kaeso nicht behalten kann, lehnt es allein ab: `refused` zählt sie, und `refusal` nennt den Grund des letzten, etwa `no_model`. Einen Body, den Kaeso nicht lesen kann, beantwortet es mit `400` und behält nichts davon.
 
 Jeder Datensatz braucht eine `id`, die innerhalb der Quelle eindeutig ist. Senden Sie einen Datensatz erneut mit derselben `id`, behält Kaeso ihn einmal, sodass Sie einen fehlgeschlagenen Stapel wiederholen können.
 

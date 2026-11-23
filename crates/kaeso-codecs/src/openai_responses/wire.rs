@@ -164,7 +164,7 @@ pub(super) struct TextOnly {
 }
 
 #[derive(Debug, Deserialize)]
-pub(super) struct ResponseObject<'a> {
+pub(crate) struct ResponseObject<'a> {
     pub id: String,
     #[serde(default)]
     pub model: String,
@@ -181,7 +181,7 @@ pub(super) struct ResponseObject<'a> {
 }
 
 #[derive(Debug, Deserialize)]
-pub(super) struct ResponseError {
+pub(crate) struct ResponseError {
     #[serde(default)]
     pub code: Option<String>,
     #[serde(default)]
@@ -189,7 +189,7 @@ pub(super) struct ResponseError {
 }
 
 #[derive(Debug, Deserialize)]
-pub(super) struct IncompleteDetails {
+pub(crate) struct IncompleteDetails {
     #[serde(default)]
     pub reason: Option<String>,
 }

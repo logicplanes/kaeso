@@ -103,7 +103,7 @@ async fn a_source_is_added_with_its_key_shown_once_and_listed_without_it() {
     assert_eq!(source["kind"], "claude_code");
     assert_eq!(source["status"], "waiting");
     assert_eq!(source["user_id"], env.owner.user_id);
-    assert_eq!(source["match_members"], true);
+    assert_eq!(source["match_members"], false);
     assert_eq!(source["content"], false);
     assert!(source["ingest_url"].as_str().unwrap().ends_with("/ingest"));
     let shown = source["key"].as_str().unwrap();
@@ -230,7 +230,7 @@ async fn observed_requests_are_logged_priced_and_counted_once_for_the_member_the
     let env = env().await;
     let made = add(
         &env,
-        json!({ "kind": "claude_code", "name": "Claude Code" }),
+        json!({ "kind": "claude_code", "name": "Claude Code", "match_members": true }),
     )
     .await;
     let id = made["source"]["id"].as_str().unwrap();
@@ -441,7 +441,11 @@ async fn a_source_counts_only_for_people_who_can_see_its_project() {
     assert_eq!(r.status, StatusCode::BAD_REQUEST, "{:?}", r.body);
     assert_eq!(r.body["error"]["param"], "user_id");
 
-    let made = add(&env, json!({ "kind": "codex", "name": "Codex" })).await;
+    let made = add(
+        &env,
+        json!({ "kind": "codex", "name": "Codex", "match_members": true }),
+    )
+    .await;
     let id = made["source"]["id"].as_str().unwrap();
     let source = source_row(&env, id).await;
     observed::record(
@@ -479,6 +483,91 @@ async fn a_source_counts_only_for_people_who_can_see_its_project() {
         StatusCode::NOT_FOUND,
         "a source is only found in its project"
     );
+}
+
+#[tokio::test]
+async fn a_source_whose_member_left_keeps_nothing_whatever_addresses_it_names() {
+    let env = env().await;
+    let (_, ann) = common::join_first_project(
+        &env.app,
+        &env.owner,
+        json!({ "email": "ann@example.com", "role": "developer" }),
+        "Ann",
+    )
+    .await;
+    let made = add(
+        &env,
+        json!({ "kind": "http", "name": "Ann's scripts", "user_id": ann, "match_members": true }),
+    )
+    .await;
+    let source = source_row(&env, made["source"]["id"].as_str().unwrap()).await;
+    let before = observed::record(
+        &env.app.state,
+        &source,
+        Batch {
+            requests: vec![haiku("before", Some("owner@example.com"))],
+            ..Batch::default()
+        },
+    )
+    .await
+    .unwrap();
+    assert_eq!(before.requests, 1);
+    flush(&env).await;
+    let charged = || async {
+        sqlx::query_scalar::<_, Option<uuid::Uuid>>(
+            "SELECT DISTINCT user_id FROM usage_daily WHERE project_id = $1",
+        )
+        .bind(common::uuid(&env.project))
+        .fetch_all(&env.app.state.pg)
+        .await
+        .unwrap()
+    };
+    assert_eq!(
+        charged().await,
+        vec![Some(common::uuid(&env.owner.user_id))],
+        "with matching on, the address names another member, who is charged"
+    );
+    env.app
+        .call(
+            axum::http::Method::DELETE,
+            &format!("/orgs/{}/members/{ann}", env.owner.org_id),
+            None,
+            Some(&env.owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::NO_CONTENT);
+
+    let done = observed::record(
+        &env.app.state,
+        &source,
+        Batch {
+            requests: vec![
+                haiku("after-1", Some("owner@example.com")),
+                haiku("after-2", None),
+            ],
+            ..Batch::default()
+        },
+    )
+    .await
+    .unwrap();
+    assert_eq!(
+        (
+            done.requests,
+            done.refused,
+            done.refusal.map(observed::Refusal::as_str)
+        ),
+        (0, 2, Some("inactive")),
+        "a colleague's address doesn't make the records count"
+    );
+    flush(&env).await;
+    let requests: i64 = sqlx::query_scalar(
+        "SELECT coalesce(sum(requests), 0)::bigint FROM usage_daily WHERE project_id = $1",
+    )
+    .bind(common::uuid(&env.project))
+    .fetch_one(&env.app.state.pg)
+    .await
+    .unwrap();
+    assert_eq!(requests, 1, "nobody is charged for what came after");
 }
 
 #[tokio::test]
@@ -1048,7 +1137,7 @@ async fn cache_writes_kept_for_an_hour_cost_what_an_hour_costs() {
 }
 
 #[tokio::test]
-async fn a_source_whose_service_account_is_archived_counts_for_nobody() {
+async fn a_source_whose_service_account_is_archived_keeps_nothing() {
     let env = env().await;
     let account = env
         .app
@@ -1097,5 +1186,5 @@ async fn a_source_whose_service_account_is_archived_counts_for_nobody() {
     .await
     .unwrap();
     assert_eq!((after.requests, after.refused), (0, 1));
-    assert_eq!(after.refusal, Some(Refusal::Nobody));
+    assert_eq!(after.refusal, Some(Refusal::Inactive));
 }

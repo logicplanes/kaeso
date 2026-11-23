@@ -11,7 +11,7 @@ Eine Quelle lässt einen Client, der seine Anbieter direkt aufruft, etwa Claude 
 1. Öffnen Sie **Quellen** im Projekt und wählen Sie **Quelle hinzufügen**.
 2. Wählen Sie, was an Kaeso meldet, etwa **Claude Code**, und wählen Sie **Weiter**.
 3. Benennen Sie die Quelle, etwa `Claude Code, Adas Laptop`, und wählen Sie, für wen ihre Anfragen zählen: für Sie oder für eines der Dienstkonten des Projekts.
-4. Lassen Sie **Mitglieder per E-Mail zuordnen** an, damit ein Ereignis mit der E-Mail-Adresse eines Mitglieds für dieses Mitglied zählt. Schalten Sie **Prompts und Antworten behalten** ein, um die Inhalte zu behalten, die der Client sendet.
+4. Schalten Sie **Mitglieder per E-Mail zuordnen** ein, damit ein Ereignis mit der E-Mail-Adresse eines Mitglieds für dieses Mitglied zählt; es ist aus, bis Sie es einschalten, da sonst jeder mit dem Schlüssel jedes Mitglied nennen könnte. Schalten Sie **Prompts und Antworten behalten** ein, um die Inhalte zu behalten, die der Client sendet.
 5. Wählen Sie **Quelle hinzufügen**.
 
 Kaeso zeigt den Schlüssel der Quelle einmal, mit den genauen Zeilen, die ihren Client verbinden: Umgebungsvariablen, eine Einstellungsdatei, einen Hook oder die Konfiguration eines Gateways. Kopieren Sie den Schlüssel sofort, denn Kaeso behält nur einen Hash davon. Tragen Sie die Zeilen ein und nutzen Sie den Client einmal. Der Dialog wartet auf das erste Ereignis und zeigt dann **Verbunden** und was ankam, oder warum Kaeso es abgelehnt hat.
