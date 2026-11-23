@@ -78,8 +78,23 @@ pub struct AuditEventView {
     pub request_id: Option<RequestId>,
 }
 
+fn mask_webhook_snapshot(mut v: Option<serde_json::Value>) -> Option<serde_json::Value> {
+    if let Some(serde_json::Value::String(raw)) = v
+        .as_mut()
+        .and_then(serde_json::Value::as_object_mut)
+        .and_then(|o| o.get_mut("url"))
+    {
+        *raw = super::orgs::webhooks::masked_url(raw);
+    }
+    v
+}
+
 impl AuditEventView {
-    pub fn from_row(e: Event) -> AuditEventView {
+    pub fn from_row(mut e: Event) -> AuditEventView {
+        if e.target_kind.as_deref() == Some("webhook") || e.action.starts_with("webhook.") {
+            e.before = mask_webhook_snapshot(e.before);
+            e.after = mask_webhook_snapshot(e.after);
+        }
         let actor_id = e.actor_id.map(|id| match e.actor_kind.as_str() {
             "user" | "agent" => UserId::from_uuid(id).to_string(),
             "api_key" => kaeso_core::id::ApiKeyId::from_uuid(id).to_string(),

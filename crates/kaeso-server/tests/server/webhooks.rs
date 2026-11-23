@@ -685,3 +685,152 @@ async fn managing_webhooks_takes_its_right_and_every_change_is_audited() {
         "the audit log never holds a secret"
     );
 }
+
+#[tokio::test]
+async fn viewers_and_audit_entries_see_only_the_origin_of_a_webhook_url() {
+    let env = env().await;
+    let receiver = MockReceiver::start().await;
+    let origin = url::Url::parse(&receiver.url)
+        .unwrap()
+        .origin()
+        .ascii_serialization();
+    let masked = format!("{origin}/…");
+    let first_url = format!("{origin}/services/T0ABCDEF/B0ABCDEF/Zx9ChannelToken42?key=Qy8Query99");
+    let second_url = format!("{origin}/services/T0ABCDEF/B0ABCDEF/NewChannelToken77");
+
+    let created = add(
+        &env,
+        json!({
+            "name": "Chat",
+            "url": first_url,
+            "format": "slack",
+            "kinds": ["budget_alerts"],
+        }),
+    )
+    .await;
+    let id = created["id"].as_str().unwrap();
+    assert_eq!(created["url"], first_url);
+
+    let owner_list = env.app.get(&hooks(&env), &env.owner.cookie).await;
+    assert_eq!(owner_list.body["data"][0]["url"], first_url);
+    let owner_get = env
+        .app
+        .get(&format!("{}/{id}", hooks(&env)), &env.owner.cookie)
+        .await;
+    assert_eq!(owner_get.body["url"], first_url);
+
+    let root = add(
+        &env,
+        json!({
+            "name": "Root",
+            "url": format!("{origin}/"),
+            "kinds": ["budget_alerts"],
+        }),
+    )
+    .await;
+    let root_id = root["id"].as_str().unwrap();
+
+    let (auditor, _) = common::join(
+        &env.app,
+        &env.owner,
+        json!({ "email": "auditor@example.com", "role": "auditor" }),
+        "Auditor",
+    )
+    .await;
+
+    let list = env.app.get(&hooks(&env), &auditor).await;
+    assert_eq!(list.status, StatusCode::OK, "{:?}", list.body);
+    assert_eq!(list.body["data"][0]["url"], masked);
+    assert_eq!(list.body["data"][1]["url"], origin);
+    let list_text = list.body.to_string();
+    assert!(!list_text.contains("Zx9ChannelToken42"), "{list_text}");
+    assert!(!list_text.contains("Qy8Query99"), "{list_text}");
+
+    let one = env
+        .app
+        .get(&format!("{}/{id}", hooks(&env)), &auditor)
+        .await;
+    assert_eq!(one.status, StatusCode::OK, "{:?}", one.body);
+    assert_eq!(one.body["url"], masked);
+
+    let root_one = env
+        .app
+        .get(&format!("{}/{root_id}", hooks(&env)), &auditor)
+        .await;
+    assert_eq!(root_one.status, StatusCode::OK, "{:?}", root_one.body);
+    assert_eq!(root_one.body["url"], origin);
+
+    let updated = change(&env, id, json!({ "url": second_url }))
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(updated.body["url"], second_url);
+
+    env.app
+        .call(
+            Method::DELETE,
+            &format!("{}/{id}", hooks(&env)),
+            None,
+            Some(&env.owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::NO_CONTENT);
+
+    let audit = env
+        .app
+        .get(&format!("/orgs/{}/audit-log", env.owner.org_id), &auditor)
+        .await
+        .expect_status(StatusCode::OK);
+    let audit_text = audit.body.to_string();
+    for token in ["Zx9ChannelToken42", "Qy8Query99", "NewChannelToken77"] {
+        assert!(!audit_text.contains(token), "{token} in {audit_text}");
+    }
+    let entries: Vec<&Value> = audit.body["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|e| e["target_id"] == id)
+        .collect();
+    assert_eq!(entries.len(), 3, "{entries:?}");
+    assert_eq!(entries[0]["before"]["url"], masked);
+    assert_eq!(entries[1]["before"]["url"], masked);
+    assert_eq!(entries[1]["after"]["url"], masked);
+    assert_eq!(entries[2]["after"]["url"], masked);
+
+    let legacy_event = kaeso_core::id::AuditEventId::new();
+    kaeso_store::pg::audit::insert(
+        &env.app.state.pg,
+        &kaeso_store::pg::audit::NewEvent {
+            id: legacy_event.uuid(),
+            org_id: Some(common::uuid(&env.owner.org_id)),
+            project_id: None,
+            actor_kind: "user",
+            actor_id: Some(common::uuid(&env.owner.user_id)),
+            agent_id: None,
+            action: "webhook.create",
+            target_kind: Some("webhook"),
+            target_id: Some("wh_legacy"),
+            before: None,
+            after: Some(json!({
+                "name": "Legacy",
+                "url": "https://hooks.example.com/services/T1/B2/LegacyToken88",
+            })),
+            ip: None,
+            user_agent: None,
+            request_id: None,
+            at: env.app.clock.now(),
+        },
+    )
+    .await
+    .unwrap();
+
+    let single = env
+        .app
+        .get(
+            &format!("/orgs/{}/audit-log/{legacy_event}", env.owner.org_id),
+            &auditor,
+        )
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(single.body["after"]["url"], "https://hooks.example.com/…");
+    assert!(!single.body.to_string().contains("LegacyToken88"));
+}

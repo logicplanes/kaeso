@@ -6,7 +6,7 @@ order: 9
 
 Webhook 会在组织的运营通知（例如预算提醒或被拒绝的服务商密钥）发生时，把它们发送到您指定的地址。值班工具可以据此创建事件，聊天频道可以显示它，脚本可以据此执行操作。无论各人如何设置自己的邮件，Webhook 都会收到通知；在不发送邮件的实例上也是如此。
 
-**Webhook** 是**组织设置**中的一个页面。查看此页面需要 `webhooks.view`，更改需要 `webhooks.manage`（见[权限](../concepts/rights.md)）。一个组织最多有 10 个 Webhook。
+**Webhook** 是**组织设置**中的一个页面。查看此页面需要 `webhooks.view`（每个 URL 的路径和查询参数会做掩码处理），查看完整 URL 或更改 Webhook 需要 `webhooks.manage`（见[权限](../concepts/rights.md)）。一个组织最多有 10 个 Webhook。
 
 ## 添加 Webhook
 

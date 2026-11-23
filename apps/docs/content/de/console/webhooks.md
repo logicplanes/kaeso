@@ -6,7 +6,7 @@ order: 9
 
 Ein Webhook sendet die betrieblichen Benachrichtigungen der Organisation, etwa eine Budgetwarnung oder einen abgelehnten Anbieter-Schlüssel, an eine Adresse Ihrer Wahl, sobald sie entstehen. Bereitschaftstools können daraus einen Vorfall eröffnen, ein Chat-Kanal kann ihn zeigen, und ein Skript kann darauf reagieren. Webhooks bekommen ihre Benachrichtigungen unabhängig davon, was jemand für seine E-Mails wählte, und auch auf einer Installation, die keine E-Mails sendet.
 
-**Webhooks** ist eine Seite der **Organisationseinstellungen**. Sie brauchen `webhooks.view`, um sie zu sehen, und `webhooks.manage`, um sie zu ändern ([Rechte](../concepts/rights.md)). Eine Organisation hat höchstens 10 Webhooks.
+**Webhooks** ist eine Seite der **Organisationseinstellungen**. Sie brauchen `webhooks.view`, um sie zu sehen (Pfad und Query jeder URL sind dabei maskiert), und `webhooks.manage`, um vollständige URLs zu sehen oder Webhooks zu ändern ([Rechte](../concepts/rights.md)). Eine Organisation hat höchstens 10 Webhooks.
 
 ## Webhook hinzufügen
 

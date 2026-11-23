@@ -40455,7 +40455,7 @@
                 },
                 "url": {
                   "type": "string",
-                  "description": "Where events are sent.",
+                  "description": "Where events are sent; its path and query are masked without `webhooks.manage`.",
                   "example": "https://hooks.example.com/kaeso"
                 }
               }
@@ -51657,7 +51657,7 @@
           },
           "url": {
             "type": "string",
-            "description": "Where events are sent.",
+            "description": "Where events are sent; its path and query are masked without `webhooks.manage`.",
             "example": "https://hooks.example.com/kaeso"
           }
         }

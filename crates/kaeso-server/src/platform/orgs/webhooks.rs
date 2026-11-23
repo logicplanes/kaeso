@@ -5,6 +5,7 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use kaeso_core::id::{OrgId, ProjectId, WebhookId, WebhookMessageId};
 use kaeso_core::notifications::Kind;
+use kaeso_core::rights::OrgRight;
 use kaeso_store::pg::webhooks as store;
 use secrecy::ExposeSecret;
 use serde::{Deserialize, Deserializer, Serialize};
@@ -53,7 +54,7 @@ pub struct WebhookView {
     #[doc = "A name to recognise it by."]
     #[schema(example = "On-call")]
     pub name: String,
-    #[doc = "Where events are sent."]
+    #[doc = "Where events are sent; its path and query are masked without `webhooks.manage`."]
     #[schema(example = "https://hooks.example.com/kaeso")]
     pub url: String,
     #[doc = "What it is sent: `json` or `slack`."]
@@ -92,11 +93,30 @@ fn format_of(row: &store::WebhookRow) -> WebhookFormat {
     }
 }
 
-fn view(row: &store::WebhookRow) -> WebhookView {
+pub(crate) fn masked_url(raw: &str) -> String {
+    let Ok(url) = url::Url::parse(raw) else {
+        return "[redacted]".to_owned();
+    };
+    let origin = url.origin().ascii_serialization();
+    if origin == "null" {
+        return "[redacted]".to_owned();
+    }
+    if url.path().trim_matches('/').is_empty() && url.query().is_none() {
+        origin
+    } else {
+        format!("{origin}/…")
+    }
+}
+
+fn view(row: &store::WebhookRow, show_url: bool) -> WebhookView {
     WebhookView {
         id: WebhookId::from_uuid(row.id),
         name: row.name.clone(),
-        url: row.url.clone(),
+        url: if show_url {
+            row.url.clone()
+        } else {
+            masked_url(&row.url)
+        },
         format: format_of(row),
         kinds: row.kinds.clone(),
         project: row.project_id.map(ProjectId::from_uuid),
@@ -109,6 +129,10 @@ fn view(row: &store::WebhookRow) -> WebhookView {
         created_at: row.created_at,
         updated_at: row.updated_at,
     }
+}
+
+fn audit_view(row: &store::WebhookRow) -> WebhookView {
+    view(row, false)
 }
 
 #[derive(Serialize, ToSchema)]
@@ -325,8 +349,12 @@ pub async fn list(
     ctx: Ctx,
     Path(_org): Path<String>,
 ) -> ApiResult<Json<List<WebhookView>>> {
-    let rows = store::list(&state.pg, ctx.org()?.org.id).await?;
-    Ok(Json(List::complete(rows.iter().map(view).collect())))
+    let scope = ctx.org()?;
+    let show_url = scope.rights.contains(OrgRight::WebhooksManage);
+    let rows = store::list(&state.pg, scope.org.id).await?;
+    Ok(Json(List::complete(
+        rows.iter().map(|r| view(r, show_url)).collect(),
+    )))
 }
 
 #[utoipa::path(
@@ -342,7 +370,8 @@ pub async fn get(
     ctx: Ctx,
     Path((_org, id)): Path<(String, String)>,
 ) -> ApiResult<Json<WebhookView>> {
-    Ok(Json(view(&row(&state, &ctx, &id).await?)))
+    let show_url = ctx.org()?.rights.contains(OrgRight::WebhooksManage);
+    Ok(Json(view(&row(&state, &ctx, &id).await?, show_url)))
 }
 
 #[utoipa::path(
@@ -408,10 +437,10 @@ pub async fn create(
     let row = store::get(&mut *tx, org, id)
         .await?
         .ok_or_else(|| ApiError::internal("new webhook vanished"))?;
-    let shown = view(&row);
+    let shown = view(&row, true);
     ctx.audit(Some(scope.id()), Action::WebhookCreate)
         .target("webhook", WebhookId::from_uuid(id))
-        .after(&shown)
+        .after(audit_view(&row))
         .write(&mut tx)
         .await?;
     tx.commit().await?;
@@ -475,11 +504,11 @@ pub async fn update(
     let after = store::get(&mut *tx, org, before.id)
         .await?
         .ok_or_else(|| ApiError::not_found("webhook"))?;
-    let shown = view(&after);
+    let shown = view(&after, true);
     ctx.audit(Some(scope.id()), Action::WebhookUpdate)
         .target("webhook", WebhookId::from_uuid(before.id))
-        .before(view(&before))
-        .after(&shown)
+        .before(audit_view(&before))
+        .after(audit_view(&after))
         .write(&mut tx)
         .await?;
     tx.commit().await?;
@@ -507,7 +536,7 @@ pub async fn delete(
     }
     ctx.audit(Some(scope.id()), Action::WebhookDelete)
         .target("webhook", WebhookId::from_uuid(before.id))
-        .before(view(&before))
+        .before(audit_view(&before))
         .write(&mut tx)
         .await?;
     tx.commit().await?;
@@ -607,4 +636,40 @@ pub async fn deliveries(
     let row = row(&state, &ctx, &id).await?;
     let rows = store::deliveries(&state.pg, row.id, SHOWN_DELIVERIES).await?;
     Ok(Json(List::complete(rows.iter().map(delivery).collect())))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::masked_url;
+
+    #[test]
+    fn masked_urls_keep_only_the_origin() {
+        assert_eq!(
+            masked_url("https://hooks.example.com/services/T1/B2/token"),
+            "https://hooks.example.com/…"
+        );
+        assert_eq!(
+            masked_url("https://hooks.example.com/?key=abc"),
+            "https://hooks.example.com/…"
+        );
+        assert_eq!(
+            masked_url("https://hooks.example.com?"),
+            "https://hooks.example.com/…"
+        );
+        assert_eq!(
+            masked_url("http://192.0.2.10:8443/"),
+            "http://192.0.2.10:8443"
+        );
+        assert_eq!(
+            masked_url("https://[2001:db8::1]:8443/hook"),
+            "https://[2001:db8::1]:8443/…"
+        );
+        assert_eq!(
+            masked_url("https://hooks.example.com/…"),
+            "https://hooks.example.com/…"
+        );
+        assert_eq!(masked_url("not a url"), "[redacted]");
+        assert_eq!(masked_url("[redacted]"), "[redacted]");
+        assert_eq!(masked_url("data:text/plain,hello"), "[redacted]");
+    }
 }

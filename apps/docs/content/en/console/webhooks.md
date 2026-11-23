@@ -6,7 +6,7 @@ order: 9
 
 A webhook sends the organization's operational notices, such as a budget alert or a refused provider key, to an address of yours as they happen. On-call tools can open an incident from it, a chat channel can show it, and a script can act on it. Webhooks get their notices whatever anyone chose for their emails, and also on an install that sends no email.
 
-**Webhooks** is a page of **Organization settings**. You need `webhooks.view` to see it and `webhooks.manage` to change it ([rights](../concepts/rights.md)). An organization has at most 10 webhooks.
+**Webhooks** is a page of **Organization settings**. You need `webhooks.view` to see it (with each URL's path and query masked) and `webhooks.manage` to see full URLs or change webhooks ([rights](../concepts/rights.md)). An organization has at most 10 webhooks.
 
 ## Add a webhook
 
