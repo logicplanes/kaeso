@@ -20,9 +20,9 @@ The first is the endpoint, the full path of the traces signal; the second is the
 
 ## What Kaeso reads
 
-Each trace's GenAI span becomes a request: the model, the provider OpenRouter routed to, the tokens, the cost OpenRouter charged and how long it took. OpenRouter names models as `provider/model`, such as `anthropic/claude-sonnet-4.5`. Kaeso prices them from the project's catalogue or KPMR when it knows the model, and otherwise keeps OpenRouter's cost.
+Each trace's GenAI span becomes a request of the provider OpenRouter, with the model, the tokens, the cost OpenRouter charged (`gen_ai.usage.total_cost`) and how long it took. OpenRouter names models as `provider/model`, such as `anthropic/claude-sonnet-4.5`. Kaeso prices them from the project's catalogue or KPMR when it knows the model, and otherwise keeps OpenRouter's cost.
 
-OpenRouter's traces name no member, so every request counts for the source's member or service account. Give each team its own OpenRouter key and source when their requests should count apart.
+OpenRouter's traces carry the `user` you send with a request as `user.id`. When it's an email address and the source matches members by email, the request counts for that member; otherwise it counts for the source's member or service account. Give each team its own OpenRouter key and source when their requests should count apart.
 
 ## Keep the prompts
 

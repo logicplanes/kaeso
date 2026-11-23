@@ -15,7 +15,7 @@ export OTEL_EXPORTER_OTLP_HEADERS="Authorization=Bearer%20sk-kso-src-…"
 export OTEL_SEMCONV_STABILITY_OPT_IN=gen_ai_latest_experimental
 ```
 
-请求头中的空格写作 `%20`，这是 OpenTelemetry SDK 读取它的方式。运行您的应用，它的下一次模型调用就会出现在项目的请求日志中。
+请求头中的空格写作 `%20`，这是 OpenTelemetry SDK 读取它的方式；对于原样发送 `%20` 的导出器（例如 OpenCode 的导出器），Kaeso 也能识别。运行您的应用，它的下一次模型调用就会出现在项目的请求日志中。
 
 ## 通过 Collector 发送
 
@@ -45,7 +45,7 @@ service:
 
 ## Kaeso 读取的内容
 
-当 Span 或日志事件的 `gen_ai.operation.name` 为 `chat`、`text_completion`、`generate_content` 或 `embeddings` 时，它就是一个请求。Kaeso 读取其模型、服务商、Token、费用、状态和时间：
+当 Span 或日志事件的 `gen_ai.operation.name` 为 `chat`、`text_completion`、`generate_content` 或 `embeddings` 时，或者没有操作名但指明了模型和 Token 时，它就是一个请求。Kaeso 读取其模型、服务商、Token、费用、状态和时间：
 
 | 属性 | 在 Kaeso 中 |
 | --- | --- |
@@ -55,14 +55,14 @@ service:
 | `gen_ai.usage.cache_read.input_tokens`、`gen_ai.usage.cache_write.input_tokens`、`gen_ai.usage.reasoning.output_tokens` | 缓存读取和写入，以及推理 |
 | `gen_ai.response.id` | 请求的 ID，因此重复发送的调用只计一次 |
 | Span 的状态 `ERROR`、`http.response.status_code` | 是否失败；`error.type` 说明原因 |
-| `gen_ai.usage.cost` 或 `gen_ai.cost` | Kaeso 没有该模型价格时使用的费用 |
-| `user.email`，或带有邮箱地址的 `enduser.id` | 请求计入的成员 |
+| `gen_ai.usage.cost`、`gen_ai.usage.total_cost` 或 `gen_ai.cost` | Kaeso 没有该模型价格时使用的费用 |
+| `user.email`，或带有邮箱地址的 `enduser.id` 或 `user.id` | 请求计入的成员 |
 
-`gen_ai.operation.name` 为 `execute_tool`，或 `mcp.method.name` 为 `tools/call` 的 Span 是一次 MCP 工具调用，以 `gen_ai.tool.name` 以及 `mcp.server.name` 或 `server.address` 命名。汇总其他调用的 Span（例如 `invoke_agent`）不计数，因此代理的调用只计一次。同一次调用既有 Span 又有日志事件时，两者指向同一个 Span，只计一次。
+`gen_ai.operation.name` 为 `execute_tool`，或 `mcp.method.name` 为 `tools/call` 的 Span 是一次 MCP 工具调用，以 `gen_ai.tool.name` 以及 `mcp.server.name` 或 `server.address` 命名。汇总其他调用的 Span（例如 `invoke_agent`）不计数，因此代理的调用只计一次。同一次调用既有 Span，又有在该 Span 中写入的日志事件时，只计一次，即使只有其中之一带有 `gen_ai.response.id`。
 
 ## 保留提示词
 
-GenAI 约定把提示词和回复放在 `gen_ai.input.messages` 和 `gen_ai.output.messages` 中，大多数 SDK 只有在您开启后才会发送它们。只有当来源开启了**保留提示词和回复**且项目保留内容时，Kaeso 才会保留它们。
+GenAI 约定把提示词和回复放在 `gen_ai.input.messages`、`gen_ai.output.messages` 和 `gen_ai.system_instructions` 中，大多数 SDK 只有在您开启后才会发送它们。Kaeso 会保留每条消息及其工具调用、工具结果和推理内容。只有当来源开启了**保留提示词和回复**且项目保留内容时，Kaeso 才会保留它们。
 
 ## 下一步
 

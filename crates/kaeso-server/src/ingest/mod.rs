@@ -3,6 +3,7 @@
 //! (`/ingest/v1/events`, `/ingest/v1/litellm`, `/ingest/v1/antigravity`). Each request carries a
 //! source key; nothing here ever reaches a provider.
 
+pub mod content;
 pub mod events;
 pub mod map;
 pub mod otlp;
@@ -238,9 +239,16 @@ fn presented(headers: &HeaderMap) -> Option<&str> {
             headers
                 .get(header::AUTHORIZATION)
                 .and_then(|v| v.to_str().ok())
-                .and_then(crate::auth::keys::bearer)
+                .and_then(|v| crate::auth::keys::bearer(v).or_else(|| encoded_bearer(v)))
         })
         .map(str::trim)
+}
+
+// `OTEL_EXPORTER_OTLP_HEADERS` takes URL-encoded values, so guides write the space as `%20`;
+// some exporters send the value without decoding it.
+fn encoded_bearer(v: &str) -> Option<&str> {
+    let (scheme, key) = v.split_at_checked("Bearer%20".len())?;
+    scheme.eq_ignore_ascii_case("Bearer%20").then_some(key)
 }
 
 fn throttled(t: crate::auth::key_failures::Throttled) -> Refused {
@@ -637,14 +645,9 @@ async fn otlp_export(
                 &refusal_text(&done),
             ))
         }
-        // Metrics only say a client is alive: every request they count, its events report.
-        Decoded::Metrics => {
-            let now = state.clock.now();
-            if let Err(e) = kaeso_store::pg::sources::touch(&state.pg, source.id, now, None).await {
-                tracing::warn!(error = %e, "cannot note a source's metrics");
-            }
-            Ok(otlp_answer(signal.name(), encoding, 0, ""))
-        }
+        // Metrics count nothing that the client's events don't, so they are taken and left: a
+        // source is connected once its requests or tool calls arrive, not its metrics alone.
+        Decoded::Metrics => Ok(otlp_answer(signal.name(), encoding, 0, "")),
     }
 }
 
@@ -793,6 +796,15 @@ mod tests {
             HeaderValue::from_static("Bearer sk-kso-src-x"),
         );
         assert_eq!(presented(&h), Some("sk-kso-src-x"));
+        h.insert(
+            header::AUTHORIZATION,
+            HeaderValue::from_static("Bearer%20sk-kso-src-z"),
+        );
+        assert_eq!(
+            presented(&h),
+            Some("sk-kso-src-z"),
+            "as an exporter that doesn't decode `%20` sends it"
+        );
         h.insert(
             "x-kaeso-source-key",
             HeaderValue::from_static("sk-kso-src-y"),

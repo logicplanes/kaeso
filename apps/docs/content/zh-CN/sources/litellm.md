@@ -31,7 +31,7 @@ LiteLLM 已知时，每条日志都会带有 LiteLLM 密钥用户的邮箱地址
 
 ## 保留提示词
 
-LiteLLM 的日志总是包含消息和回复。只有当来源开启了**保留提示词和回复**且项目保留内容时，Kaeso 才会保留它们。
+LiteLLM 的日志总是包含消息和回复。只有当来源开启了**保留提示词和回复**且项目保留内容时，Kaeso 才会保留它们，连同系统提示词、工具调用、工具结果和推理内容。
 
 ## Kaeso 读取的内容
 
@@ -42,7 +42,7 @@ LiteLLM 的日志总是包含消息和回复。只有当来源开启了**保留�
 | `prompt_tokens`、`completion_tokens` 和服务商的用量 | Token，包括缓存读取、缓存写入和推理 |
 | `status`、`error_str` | 是否失败以及原因 |
 | `startTime`、`endTime`、`completionStartTime` | 运行时间和首 Token 时间 |
-| `response_cost` | Kaeso 没有该模型价格时使用的费用 |
+| `response_cost` | Kaeso 没有该模型价格时使用的费用；LiteLLM 在 `response_cost_failure_debug_info` 中说明原因的 0 视为未知费用 |
 
 LiteLLM 的 MCP 工具调用会成为项目中的工具调用。LiteLLM 也可以改为发送 OpenTelemetry：类型为 [OpenTelemetry](opentelemetry.md) 的来源会读取它的 GenAI Span。
 

@@ -178,6 +178,7 @@ fn request(r: RequestIn) -> Result<ObservedRequest, Refusal> {
         dialect: None,
         prompt: r.prompt,
         reply: r.reply,
+        ..ObservedRequest::default()
     })
 }
 
@@ -198,6 +199,7 @@ fn tool_call(c: ToolCallIn) -> Result<ObservedToolCall, Refusal> {
         email: c.user_email,
         arguments: text_of(c.arguments),
         result: text_of(c.result),
+        aliases: Vec::new(),
     })
 }
 

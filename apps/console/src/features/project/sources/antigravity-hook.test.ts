@@ -93,6 +93,42 @@ describe.skipIf(!hasJq)("the Antigravity hook", () => {
     expect(bodies.map((b) => b.steps.length)).toEqual([1_000, 200]);
   });
 
+  it("sends a model call's tool calls and the steps that ran them, their arguments and results only with content", () => {
+    for (const content of [false, true]) {
+      const dir = mkdtempSync(join(tmpdir(), "kaeso-antigravity-"));
+      const logs = join(dir, "brain", "conv-1", ".system_generated", "logs");
+      mkdirSync(logs, { recursive: true });
+      const lines = [
+        { type: "USER_INPUT", step_index: 0, content: "<USER_REQUEST>close it</USER_REQUEST>" },
+        {
+          type: "PLANNER_RESPONSE",
+          step_index: 1,
+          model: "gemini-3.8-flash-low",
+          input_tokens: 10,
+          output_tokens: 2,
+          thinking: "use linear",
+          tool_calls: [{ name: "mcp_linear_close_issue", args: { id: "ENG-1" } }],
+        },
+        { type: "MCP_TOOL", step_index: 2, status: "DONE", created_at: "2026-10-15T11:00:02Z", content: "closed" },
+        { type: "CHECKPOINT", step_index: 3 },
+      ];
+      writeFileSync(join(logs, "transcript_full.jsonl"), `${lines.map((l) => JSON.stringify(l)).join("\n")}\n`);
+      writeFileSync(join(logs, "transcript.jsonl"), "");
+      const { bodies } = runHook(dir, { conversationId: "conv-1", transcriptPath: join(logs, "transcript.jsonl") }, content);
+      const steps = bodies[0]?.steps ?? [];
+      expect(steps.map((s) => s.step_index)).toEqual([1, 2]);
+      expect(steps[0]?.tool_calls).toEqual(content ? [{ name: "mcp_linear_close_issue", args: { id: "ENG-1" } }] : [{ name: "mcp_linear_close_issue" }]);
+      expect(steps[0]?.thinking).toBe(content ? "use linear" : undefined);
+      expect(steps[1]).toEqual({
+        step_index: 2,
+        type: "MCP_TOOL",
+        status: "DONE",
+        created_at: "2026-10-15T11:00:02Z",
+        ...(content ? { content: "closed" } : {}),
+      });
+    }
+  });
+
   it("does nothing without a conversation or a transcript", () => {
     const dir = mkdtempSync(join(tmpdir(), "kaeso-hook-"));
     const { answers, bodies } = runHook(dir, { transcriptPath: join(dir, "missing", "transcript.jsonl") }, false);

@@ -20,9 +20,9 @@ Der erste ist der Endpunkt, der volle Pfad des Trace-Signals; der zweite sind di
 
 ## Was Kaeso liest
 
-Der GenAI-Span jedes Traces wird eine Anfrage: das Modell, der Anbieter, an den OpenRouter weitergeleitet hat, die Tokens, die Kosten, die OpenRouter berechnet hat, und die Dauer. OpenRouter benennt Modelle als `provider/model`, etwa `anthropic/claude-sonnet-4.5`. Kaeso bepreist sie aus dem Katalog des Projekts oder aus KPMR, wenn es das Modell kennt, und behält sonst die Kosten von OpenRouter.
+Der GenAI-Span jedes Traces wird eine Anfrage des Anbieters OpenRouter, mit dem Modell, den Tokens, den Kosten, die OpenRouter berechnet hat (`gen_ai.usage.total_cost`), und der Dauer. OpenRouter benennt Modelle als `provider/model`, etwa `anthropic/claude-sonnet-4.5`. Kaeso bepreist sie aus dem Katalog des Projekts oder aus KPMR, wenn es das Modell kennt, und behält sonst die Kosten von OpenRouter.
 
-Die Traces von OpenRouter nennen kein Mitglied, deshalb zählt jede Anfrage für das Mitglied oder Dienstkonto der Quelle. Geben Sie jedem Team einen eigenen OpenRouter-Schlüssel und eine eigene Quelle, wenn seine Anfragen getrennt zählen sollen.
+Die Traces von OpenRouter tragen den `user`, den Sie mit einer Anfrage senden, als `user.id`. Ist er eine E-Mail-Adresse und ordnet die Quelle Mitglieder per E-Mail zu, zählt die Anfrage für dieses Mitglied; sonst zählt sie für das Mitglied oder Dienstkonto der Quelle. Geben Sie jedem Team einen eigenen OpenRouter-Schlüssel und eine eigene Quelle, wenn seine Anfragen getrennt zählen sollen.
 
 ## Prompts behalten
 

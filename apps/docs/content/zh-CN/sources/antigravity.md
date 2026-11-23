@@ -22,7 +22,7 @@ exec > /dev/null 2>&1
   [ -n "$conversation" ] && [ -f "$full" ] || exit 0
   mkdir -p "$STATE" && mark="$STATE/$conversation"
   sent=$(cat "$mark" 2> /dev/null || echo -1)
-  body=$({ printf '%s\n' "$hook"; cat "$full"; } | jq -cs --argjson sent "$sent" '.[0] as $hook | {hook: ($hook | del(.lastUserInput)), steps: ([.[1:][] | select(.type == "PLANNER_RESPONSE" and .step_index > $sent) | {type, step_index, created_at, model, input_tokens, cache_read_tokens, cache_write_tokens, cache_creation_input_tokens, output_tokens}] | .[:1000])}')
+  body=$({ printf '%s\n' "$hook"; cat "$full"; } | jq -cs --argjson sent "$sent" '.[0] as $hook | [.[1:][] | select(.step_index > $sent)] as $new | [$new[] | select(.type == "PLANNER_RESPONSE") | .step_index + range(1; 1 + (.tool_calls // [] | length))] as $results | {hook: ($hook | del(.lastUserInput)), steps: ([$new[] | if .type == "PLANNER_RESPONSE" then {type, step_index, created_at, model, input_tokens, cache_read_tokens, cache_write_tokens, cache_creation_input_tokens, output_tokens, tool_calls: (.tool_calls // [] | map({name}))} elif (.step_index as $i | any($results[]; . == $i)) then {step_index, type, status, created_at} else empty end] | .[:1000])}')
   last=$(printf '%s' "$body" | jq '[.steps[].step_index] | max // empty')
   [ -n "$last" ] || exit 0
   printf '%s' "$body" | curl -fsS -m 30 "$KAESO_INGEST" -H "Authorization: Bearer $KAESO_SOURCE_KEY" \
@@ -50,7 +50,7 @@ exec > /dev/null 2>&1
 
 ## 钩子如何工作
 
-每次模型调用后，Antigravity 都会运行该脚本并等待其回答。脚本会立即回答，并在后台发送，因此不会有模型调用等待 Kaeso。它读取 Antigravity 指明的转录旁边的会话文件 `transcript_full.jsonl`，发送自上次发送以来新增的模型调用，每次最多 1,000 个。它按会话在 `$TMPDIR/kaeso-antigravity` 下记住最后发送的调用。
+每次模型调用后，Antigravity 都会运行该脚本并等待其回答。脚本会立即回答，并在后台发送，因此不会有模型调用等待 Kaeso。它读取 Antigravity 指明的转录旁边的会话文件 `transcript_full.jsonl`，发送自上次发送以来新增的模型调用，每次最多 1,000 个步骤。每次调用都会附带它调用的工具名称，以及运行这些工具的步骤。它按会话在 `$TMPDIR/kaeso-antigravity` 下记住最后发送的调用。
 
 工作区 `.agents/hooks.json` 中的钩子只上报该工作区的会话；`~/.gemini/config` 中的钩子上报所有会话。
 
@@ -60,7 +60,9 @@ exec > /dev/null 2>&1
 
 ## Kaeso 读取的内容
 
-转录中的每个 `PLANNER_RESPONSE` 步骤都会成为一个请求，包含模型、输入 Token、缓存 Token、输出 Token 和时间。Antigravity 使用内部 ID 命名模型（例如 `gemini-4-neon-high`），任何目录都不为其定价，因此这些请求没有费用。它们的 Token 仍会统计，也计入 Token 限额。
+转录中的每个 `PLANNER_RESPONSE` 步骤都会成为一个请求，包含模型、输入 Token、缓存 Token、输出 Token 和时间。Antigravity 命名模型时会在末尾加上推理强度级别，例如 `gemini-3.8-flash-low`。目录或 KPMR 中有去掉该级别后的模型时，Kaeso 按该模型计价，并根据模型确定服务商。只有 Antigravity 认识的模型（例如 `gemini-4-neon-high`）没有费用，但其 Token 仍会统计。
+
+对 MCP 工具的调用会成为工具调用，带有服务器和工具，以及运行它的步骤是否成功。在 Kaeso 读取工具调用之前复制的脚本不会发送工具调用；请从来源详情中重新复制脚本。
 
 ## 下一步
 

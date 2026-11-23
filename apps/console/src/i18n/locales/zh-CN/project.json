@@ -262,6 +262,7 @@
   "project.sources.refusal.tooManyTokens": "某个事件的 Token 数超过 1000 万。",
   "project.sources.refusal.tooOld": "某个事件已超过 7 天。",
   "project.sources.refusal.unreadable": "某个批次不是此类来源会发送的格式。",
+  "project.sources.refusal.unrecognized": "某个批次中没有 Kaeso 能读取的记录；请检查客户端及其遥测设置。",
   "project.sources.refusedCount": "{count, plural, other {# 条被拒绝}}",
   "project.sources.refusedTitle": "Kaeso 拒绝了它发送的内容",
   "project.sources.renameFirst": "请先输入新名称。",

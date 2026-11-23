@@ -31,8 +31,10 @@ Codex 的事件默认不含您的提示词。要保留它们，请为来源开�
 | 已完成响应的 `codex.sse_event` | 一个请求：模型、Token、缓存和推理 Token、响应开始前的时间 |
 | 失败的 `codex.api_request` 或失败的响应 | 带有状态和消息的失败请求 |
 | MCP 工具的 `codex.tool_result` | 带有服务器、工具、耗时和结果的工具调用 |
+| `codex.conversation_starts` | 会话调用的服务商，取自 Codex 对它的命名 |
+| `codex.user_prompt` | 提示词，随会话的下一个请求一起保存 |
 
-Codex 的输入数包含缓存的输入，输出数包含推理；Kaeso 把它们分开计数。Codex 自带工具（例如它的 shell）的调用不予保留。Codex 的响应不带 OpenAI 的请求 ID，因此 Kaeso 按会话和事件时间区分它们。
+Codex 的输入数包含缓存的输入，输出数包含推理；Kaeso 把它们分开计数。Codex 自带工具（例如它的 shell）的调用不予保留。Codex 的响应不带 OpenAI 的请求 ID，因此 Kaeso 按会话和事件时间区分它们。请求的开始、提示词和服务商可能比它的用量早一次导出到达；Kaeso 会为该请求保留它们。
 
 ## 下一步
 

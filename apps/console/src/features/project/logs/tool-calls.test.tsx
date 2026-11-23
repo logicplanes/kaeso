@@ -283,6 +283,16 @@ describe("Tool calls in the request logs", () => {
     expect(await screen.findByText("Content not logged")).toBeInTheDocument();
   });
 
+  it("says a reported call's source kept no content, without blaming logging", async () => {
+    signedIn();
+    projectData({ members: [projectMember()], sources: [externalSource()] });
+    const observed = toolCall({ has_content: false, source: "observed", source_id: "src_claude", key_id: null });
+    calls([observed], [{ ...observed, content: null } as ToolCallEntryView]);
+    await renderApp(projectPath("logs?kind=tools&call=call_0001"));
+    expect(await screen.findByText("Content not kept")).toBeInTheDocument();
+    expect(screen.queryByText(/Logging was off/)).not.toBeInTheDocument();
+  });
+
   it("shows why a call was refused, with what the server took, and closes", async () => {
     signedIn();
     projectData({ members: [projectMember()] });

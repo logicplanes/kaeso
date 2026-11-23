@@ -22,7 +22,7 @@ exec > /dev/null 2>&1
   [ -n "$conversation" ] && [ -f "$full" ] || exit 0
   mkdir -p "$STATE" && mark="$STATE/$conversation"
   sent=$(cat "$mark" 2> /dev/null || echo -1)
-  body=$({ printf '%s\n' "$hook"; cat "$full"; } | jq -cs --argjson sent "$sent" '.[0] as $hook | {hook: ($hook | del(.lastUserInput)), steps: ([.[1:][] | select(.type == "PLANNER_RESPONSE" and .step_index > $sent) | {type, step_index, created_at, model, input_tokens, cache_read_tokens, cache_write_tokens, cache_creation_input_tokens, output_tokens}] | .[:1000])}')
+  body=$({ printf '%s\n' "$hook"; cat "$full"; } | jq -cs --argjson sent "$sent" '.[0] as $hook | [.[1:][] | select(.step_index > $sent)] as $new | [$new[] | select(.type == "PLANNER_RESPONSE") | .step_index + range(1; 1 + (.tool_calls // [] | length))] as $results | {hook: ($hook | del(.lastUserInput)), steps: ([$new[] | if .type == "PLANNER_RESPONSE" then {type, step_index, created_at, model, input_tokens, cache_read_tokens, cache_write_tokens, cache_creation_input_tokens, output_tokens, tool_calls: (.tool_calls // [] | map({name}))} elif (.step_index as $i | any($results[]; . == $i)) then {step_index, type, status, created_at} else empty end] | .[:1000])}')
   last=$(printf '%s' "$body" | jq '[.steps[].step_index] | max // empty')
   [ -n "$last" ] || exit 0
   printf '%s' "$body" | curl -fsS -m 30 "$KAESO_INGEST" -H "Authorization: Bearer $KAESO_SOURCE_KEY" \
@@ -50,7 +50,7 @@ Start a conversation in Antigravity. The source shows **Connected** after the fi
 
 ## How the hook works
 
-After each model invocation, Antigravity runs the script and waits for its answer. The script answers at once and sends in the background, so no model call waits for Kaeso. It reads the conversation's `transcript_full.jsonl`, next to the transcript Antigravity names, and sends the model calls added since it last sent, at most 1,000 at a time. It remembers the last one per conversation under `$TMPDIR/kaeso-antigravity`.
+After each model invocation, Antigravity runs the script and waits for its answer. The script answers at once and sends in the background, so no model call waits for Kaeso. It reads the conversation's `transcript_full.jsonl`, next to the transcript Antigravity names, and sends the model calls added since it last sent, at most 1,000 steps at a time. With each call go the names of the tools it called and the steps that ran them. It remembers the last one per conversation under `$TMPDIR/kaeso-antigravity`.
 
 A hook in a workspace's `.agents/hooks.json` reports only that workspace's conversations; the one in `~/.gemini/config` reports all of them.
 
@@ -60,7 +60,9 @@ The script leaves your last prompt and each step's text out. To keep them, turn 
 
 ## What Kaeso reads
 
-Each `PLANNER_RESPONSE` step of the transcript becomes a request with its model, input, cached and output tokens, and its time. Antigravity names its models by internal ids, such as `gemini-4-neon-high`, which no catalogue prices, so these requests have no cost. They still count their tokens and toward token limits.
+Each `PLANNER_RESPONSE` step of the transcript becomes a request with its model, input, cached and output tokens, and its time. Antigravity names its models with the effort level at the end, such as `gemini-3.8-flash-low`; Kaeso prices them as the model without it, when the catalogue or KPMR has it, and finds the provider from the model. A model only Antigravity knows, such as `gemini-4-neon-high`, has no cost, but still counts its tokens.
+
+A call to an MCP tool becomes a tool call, with its server and tool, and whether the step that ran it succeeded. A script copied before Kaeso read tool calls sends none; copy it again from the source's sheet.
 
 ## Next steps
 

@@ -262,6 +262,7 @@
   "project.sources.refusal.tooManyTokens": "Ein Ereignis zählte mehr als 10 Millionen Tokens.",
   "project.sources.refusal.tooOld": "Ein Ereignis war älter als 7 Tage.",
   "project.sources.refusal.unreadable": "Ein Stapel entsprach nicht dem, was diese Art von Quelle sendet.",
+  "project.sources.refusal.unrecognized": "Ein Stapel enthielt keine Einträge, die Kaeso liest; prüfen Sie den Client und seine Telemetrie-Einstellungen.",
   "project.sources.refusedCount": "{count, plural, one {# abgelehnt} other {# abgelehnt}}",
   "project.sources.refusedTitle": "Kaeso hat abgelehnt, was sie gesendet hat",
   "project.sources.renameFirst": "Geben Sie zuerst einen neuen Namen ein.",

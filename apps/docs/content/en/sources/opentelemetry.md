@@ -15,7 +15,7 @@ export OTEL_EXPORTER_OTLP_HEADERS="Authorization=Bearer%20sk-kso-src-…"
 export OTEL_SEMCONV_STABILITY_OPT_IN=gen_ai_latest_experimental
 ```
 
-The space in the header is written `%20`, as the OpenTelemetry SDKs read it. Run your app, and its next model call appears in the project's request logs.
+The space in the header is written `%20`, as the OpenTelemetry SDKs read it; Kaeso also takes it from exporters that send the `%20` as it is, such as OpenCode's. Run your app, and its next model call appears in the project's request logs.
 
 ## Send it through a collector
 
@@ -45,7 +45,7 @@ In a collector that already has pipelines, add `otlphttp/kaeso` to their exporte
 
 ## What Kaeso reads
 
-A span or a log event is a request when its `gen_ai.operation.name` is `chat`, `text_completion`, `generate_content` or `embeddings`. Kaeso reads its model, provider, tokens, cost, status and timing:
+A span or a log event is a request when its `gen_ai.operation.name` is `chat`, `text_completion`, `generate_content` or `embeddings`, or, without an operation, when it names a model and tokens. Kaeso reads its model, provider, tokens, cost, status and timing:
 
 | Attribute | In Kaeso |
 | --- | --- |
@@ -55,14 +55,14 @@ A span or a log event is a request when its `gen_ai.operation.name` is `chat`, `
 | `gen_ai.usage.cache_read.input_tokens`, `gen_ai.usage.cache_write.input_tokens`, `gen_ai.usage.reasoning.output_tokens` | Cache reads and writes, and reasoning |
 | `gen_ai.response.id` | The request's id, so a call sent twice counts once |
 | The span's status `ERROR`, `http.response.status_code` | Whether it failed; `error.type` names why |
-| `gen_ai.usage.cost`, or `gen_ai.cost` | The cost, used when Kaeso has no price for the model |
-| `user.email`, or `enduser.id` with an email address | The member it counts for |
+| `gen_ai.usage.cost`, `gen_ai.usage.total_cost` or `gen_ai.cost` | The cost, used when Kaeso has no price for the model |
+| `user.email`, or `enduser.id` or `user.id` with an email address | The member it counts for |
 
-A span with `gen_ai.operation.name` `execute_tool`, or with `mcp.method.name` `tools/call`, is an MCP tool call, named by `gen_ai.tool.name` and by `mcp.server.name` or `server.address`. A span that sums other calls, such as `invoke_agent`, isn't counted, so an agent's calls count once. When a call has both a span and a log event, both name the same span and count once.
+A span with `gen_ai.operation.name` `execute_tool`, or with `mcp.method.name` `tools/call`, is an MCP tool call, named by `gen_ai.tool.name` and by `mcp.server.name` or `server.address`. A span that sums other calls, such as `invoke_agent`, isn't counted, so an agent's calls count once. When a call has both a span and a log event written in it, it counts once, even when only one of them names `gen_ai.response.id`.
 
 ## Keep the prompts
 
-The GenAI conventions put prompts and replies into `gen_ai.input.messages` and `gen_ai.output.messages`, which most SDKs send only when you turn it on. Kaeso keeps them only when **Keep prompts and replies** is on for the source and the project keeps content.
+The GenAI conventions put prompts and replies into `gen_ai.input.messages`, `gen_ai.output.messages` and `gen_ai.system_instructions`, which most SDKs send only when you turn it on. Kaeso keeps every message with its tool calls, tool results and reasoning. Kaeso keeps them only when **Keep prompts and replies** is on for the source and the project keeps content.
 
 ## Next steps
 
