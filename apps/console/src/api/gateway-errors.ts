@@ -431,13 +431,6 @@ const messages = (): Rule[] => [
   rule("errors.notifications.unknownKind", (v) => t("errors.notifications.unknownKind", "`{kind}` is not an email kind.", v)),
   rule("errors.notifications.securityAlways", () => t("errors.notifications.securityAlways", "Security emails are always sent; they have no setting.")),
   rule("errors.notifications.scheduledOnOff", (v) => t("errors.notifications.scheduledOnOff", "`{kind}` goes out on a schedule; choose `now` or `off`.", v)),
-  rule("errors.notifications.noAddress", () => t("errors.notifications.noAddress", "Your account has no email address.")),
-  rule("errors.notifications.testTooSoon", (v) => t("errors.notifications.testTooSoon", "You sent a test email a moment ago; try again in {wait}.", v), {
-    wait: "wait",
-  }),
-  rule("errors.notifications.testNotSent", () =>
-    t("errors.notifications.testNotSent", "The email was not sent; ask an instance admin to check the mail settings."),
-  ),
   rule("errors.mcp.headerOrOauth", () => t("errors.mcp.headerOrOauth", "Send either `header` or `oauth`.")),
   rule("errors.mcp.sendOauth", () => t("errors.mcp.sendOauth", "This server signs in with OAuth; send `oauth`.")),
   rule("errors.mcp.sendHeader", () => t("errors.mcp.sendHeader", "This server takes a secret header; send `header`.")),

@@ -62,7 +62,7 @@ Password sign-in still works, and `kaeso setup-link` prints the setup link eithe
 | Budget alert | A budget reaches one of its alert thresholds |
 | Notifications | Something a person is responsible for happens, such as a member joining, a provider key that keeps being refused or a new version of Kaeso ([the emails and who gets them](../console/account.md#choose-your-emails)) |
 | Daily digest | At 8:31 in the install's time zone, when notifications wait for it |
-| Test | An instance admin sends a test email, or a person sends one to themselves under **Account** › **Notifications** |
+| Test | An instance admin sends a test email under **Instance** › **System** |
 
 Security and organization notices are always sent. For every other notification, each person chooses now, daily or off under **Account** › **Notifications**. Kaeso sends at most one email about the same thing a day and at most 20 at once an hour; the rest wait for the digest. Every notification names the right that made the person get it and links to their settings. All but security emails carry a one-click unsubscribe link, also in the `List-Unsubscribe` header (RFC 8058).
 

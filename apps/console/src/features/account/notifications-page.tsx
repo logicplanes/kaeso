@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Banner, Button, Section, Select, SettingsGroup, SettingsRow, Status, Switch } from "@logicplanes/kaeso-ui";
+import { Banner, Section, Select, SettingsGroup, SettingsRow, Status, Switch } from "@logicplanes/kaeso-ui";
 import { toast } from "~/shell/toast";
 import { api, data } from "~/api/client";
 import type { NotificationDelivery, NotificationSettings } from "~/api/generated/types";
@@ -26,10 +26,6 @@ export function NotificationsPage() {
       toast.success(t("account.notificationsSaved", "Notifications saved"));
     },
   });
-  const test = useApiMutation({
-    mutationFn: async () => data(await api.POST("/platform/v1/me/notifications/test")),
-    onSuccess: () => toast.success(t("account.testEmailSent", "Test email sent")),
-  });
   const settings = current.data;
   const sends = settings?.sends_email ?? false;
   const pending = save.isPending ? save.variables : undefined;
@@ -38,18 +34,6 @@ export function NotificationsPage() {
       title={t("account.notifications", "Notifications")}
       context={t("account.title", "Account")}
       description={t("account.notificationsPageHint", "The emails Kaeso sends you, and when they go out.")}
-      actions={
-        settings && (
-          <Button
-            size="sm"
-            disabled={!sends || test.isPending}
-            disabledReason={sends ? undefined : t("account.noEmailTitle", "This install doesn't send email")}
-            onClick={() => test.mutate()}
-          >
-            {t("account.sendTestEmail", "Send a test email")}
-          </Button>
-        )
-      }
     >
       {current.isError ? (
         <LoadFailed title={t("account.notificationsFailed", "Your notification settings couldn't load")} />
