@@ -37,7 +37,7 @@ ENTRYPOINT ["/usr/local/bin/kaeso-testkit", "mock-provider", "0.0.0.0:8080"]
 FROM gcr.io/distroless/cc-debian13:nonroot@sha256:cb87acc574abe719b6e5c547384defa2f7b1f24af9605d3f618cf852495d8be2 AS gateway
 ARG VERSION=dev
 LABEL org.opencontainers.image.title="Kaeso gateway" \
-      org.opencontainers.image.description="The Kaeso gateway: one OpenAI- and Anthropic-compatible API for your applications, with keys, routing, limits and usage under your control." \
+      org.opencontainers.image.description="The Kaeso gateway: one OpenAI-, Anthropic-, Gemini- and ElevenLabs-compatible API in front of every provider, with keys, alias routes, budgets, guardrails, request logs and an MCP portal under your control." \
       org.opencontainers.image.version="${VERSION}" \
       org.opencontainers.image.source="https://github.com/logicplanes/kaeso" \
       org.opencontainers.image.url="https://kaeso.app" \
