@@ -476,7 +476,7 @@ Resources:
       TaskRoleArn: !If [HasBedrock, !GetAtt GatewayTaskRole.Arn, !Ref "AWS::NoValue"]
       ContainerDefinitions:
         - Name: gateway
-          Image: ghcr.io/logicplanes/kaeso-gateway:0.7.0
+          Image: ghcr.io/logicplanes/kaeso-gateway:0.7.1-rc.1
           Essential: true
           PortMappings: [{ ContainerPort: 8080, Protocol: tcp }]
           ReadonlyRootFilesystem: true
@@ -532,7 +532,7 @@ Resources:
       ExecutionRoleArn: !GetAtt ExecutionRole.Arn
       ContainerDefinitions:
         - Name: console
-          Image: ghcr.io/logicplanes/kaeso-console:0.7.0
+          Image: ghcr.io/logicplanes/kaeso-console:0.7.1-rc.1
           Essential: true
           PortMappings: [{ ContainerPort: 3000, Protocol: tcp }]
           LogConfiguration:
