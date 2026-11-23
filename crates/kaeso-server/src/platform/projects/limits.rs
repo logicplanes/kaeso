@@ -65,6 +65,12 @@ pub struct LimitView {
     #[doc = "Used in the current period (same unit as `amount`), when known."]
     #[schema(value_type = Option<String>)]
     pub used: Option<String>,
+    #[doc = "The part of `used` that sources reported (same unit), as of the last daily\n\
+        usage Kaeso wrote. Kaeso counts these requests and alerts on them, but can't refuse\n\
+        them: a hard budget used up by them refuses only the gateway's own requests. `null`\n\
+        for rates."]
+    #[schema(value_type = Option<String>)]
+    pub observed: Option<String>,
     #[doc = "When the current period ends; `null` for `total`."]
     #[serde(with = "time::serde::rfc3339::option")]
     pub resets_at: Option<OffsetDateTime>,
@@ -126,6 +132,24 @@ pub(crate) async fn view(
             }
             _ => units.to_string(),
         });
+    let observed = if l.kind.is_rate() {
+        None
+    } else {
+        let part = kaeso_store::pg::limits::used_observed(
+            &state.pg,
+            project,
+            l.subject,
+            l.model,
+            l.period.start(now),
+        )
+        .await?;
+        Some(match l.kind {
+            Kind::SpendBudget => money
+                .now(part.cost)
+                .map_or_else(|| part.cost.normalize().to_string(), |v| money.text(v)),
+            _ => part.tokens.to_string(),
+        })
+    };
     Ok(LimitView {
         id: LimitId::from_uuid(l.id),
         level: l.subject.level().as_str(),
@@ -138,6 +162,7 @@ pub(crate) async fn view(
         hard: l.hard,
         alert_thresholds: l.thresholds.clone(),
         used,
+        observed,
         resets_at: if l.period == Period::Minute {
             None
         } else {

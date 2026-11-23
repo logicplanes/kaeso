@@ -398,7 +398,7 @@
   "errors.timelineMinuteRange": "按分钟统计时，`from` 与 `to` 最多相隔 2 天，请使用 `hour`。",
   "errors.timelineHourRange": "按小时统计时，`from` 与 `to` 最多相隔 62 天，请使用每日用量。",
   "errors.usageGroupValues": "请使用 `project`、`billed_to`，或项目用量支持的分组方式，例如 `day`。",
-  "errors.usageGroupValuesProject": "请使用 `day`、`week`、`month`、`model`、`provider`、`key`、`member`、`route` 或 `billed_to`。",
+  "errors.usageGroupValuesProject": "请使用用量 API 列出的分组，例如 `day`、`model`、`key` 或 `source`。",
   "errors.timelineGroupValues": "请按 `project` 或请求日志的字段分组，例如 `model` 或 `status`。",
   "errors.timelineGroupValuesProject": "请按请求日志的字段分组，例如 `model`、`status` 或 `response_cache`。",
   "errors.usageFilterKey": "`{name}` 必须是按 `{name}` 分组时返回的 `key`。",

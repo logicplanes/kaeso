@@ -8,7 +8,8 @@ use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use bytes::Bytes;
 use kaeso_core::cost::cost_from_raw;
 use kaeso_core::id::{
-    ApiKeyId, CatalogueModelId, GuardrailId, OrgId, ProjectId, RequestId, ServiceAccountId, UserId,
+    ApiKeyId, CatalogueModelId, GuardrailId, OrgId, ProjectId, RequestId, ServiceAccountId,
+    SourceId, UserId,
 };
 use kaeso_core::rights::ProjectRight;
 use kaeso_kpp::DialectId;
@@ -665,6 +666,8 @@ pub struct LogFilter {
     #[doc = "Only requests from the model API (`api`), the console's\n\
         Playground (`playground`) or reported by a source (`observed`)."]
     pub source: Option<String>,
+    #[doc = "Only requests this source reported."]
+    pub source_id: Option<SourceId>,
     #[doc = "Only requests the app sent in this format."]
     #[param(value_type = Option<super::RequestFormat>)]
     pub ingress_dialect: Option<String>,
@@ -843,6 +846,7 @@ impl LogFilter {
                 .transpose()?,
             client: self.client.as_deref().map(client_filter).transpose()?,
             guardrail_action: self.guardrail_action.map(|a| a.as_str().to_owned()),
+            source_id: self.source_id.map(|s| s.uuid()),
         })
     }
 }
@@ -974,6 +978,8 @@ pub struct LogView {
         reported it; Kaeso didn't make it)."]
     #[schema(example = "api")]
     pub source: String,
+    #[doc = "The source that reported an observed request; `null` for the gateway's own."]
+    pub source_id: Option<SourceId>,
     #[doc = "`user` or `service_account`."]
     pub principal_kind: String,
     #[doc = "The user or service account."]
@@ -1259,6 +1265,7 @@ fn view(r: &LogRow) -> LogView {
         overhead_us: r.overhead_us,
         key_id: (!r.key_id.is_nil()).then(|| ApiKeyId::from_uuid(r.key_id)),
         source: r.source.clone(),
+        source_id: (!r.source_id.is_nil()).then(|| SourceId::from_uuid(r.source_id)),
         principal_kind: r.principal_kind.clone(),
         principal_id,
         endpoint: r.endpoint.clone(),

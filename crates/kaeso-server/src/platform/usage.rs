@@ -1,7 +1,7 @@
 use axum::Json;
 use axum::extract::State;
 use kaeso_core::cost::cost_from_raw;
-use kaeso_core::id::{ApiKeyId, OrgId, ProjectId, ServiceAccountId, UserId};
+use kaeso_core::id::{ApiKeyId, OrgId, ProjectId, ServiceAccountId, SourceId, UserId};
 use kaeso_core::rights::{OrgRight, ProjectRight};
 use kaeso_kpp::DialectId;
 use kaeso_store::clickhouse::logs::{self as ch_logs, TimelineGroup};
@@ -31,7 +31,9 @@ pub struct UsageQuery {
     #[doc = "`day` (default), `week` (Monday to Sunday, named by its Monday),\n\
         `month` (named by its first day), `model`, `provider`, `key`, `member`,\n\
         `route`, `billed_to` (the provider key that paid, `none` for requests no\n\
-        provider was sent), or for orgs `project`. A week or month that starts\n\
+        provider was sent), `source` (the source that reported observed requests,\n\
+        `gateway` for the gateway's own), or for orgs `project`. By `key`, a source's\n\
+        requests group as `source:<id>`. A week or month that starts\n\
         before `from` or ends after `to` counts only the days in the period."]
     pub group_by: Option<String>,
 }
@@ -48,8 +50,8 @@ pub struct UsageFilter {
     #[param(value_type = Option<kaeso_core::provider::ProviderId>)]
     #[serde(default, deserialize_with = "crate::platform::params::text")]
     pub provider: Option<String>,
-    #[doc = "Only this key: a key id, or `playground` for the requests members made\n\
-        in the console's Playground."]
+    #[doc = "Only this key: a key id, `playground` for the requests members made\n\
+        in the console's Playground, or `source:<id>` for a source's requests."]
     pub key: Option<String>,
     #[doc = "Only this member: `user:<id>` or `service_account:<id>`, as grouping by\n\
         `member` names them."]
@@ -62,6 +64,9 @@ pub struct UsageFilter {
     #[doc = "Only the requests this provider key paid for, as grouping by `billed_to`\n\
         names it: a provider key id, or `none`."]
     pub billed_to: Option<String>,
+    #[doc = "Only the requests this source reported, as grouping by `source` names it: a\n\
+        source id, or `gateway` for the gateway's own requests."]
+    pub source: Option<String>,
 }
 
 #[derive(Debug, Default, Deserialize, IntoParams)]
@@ -90,10 +95,29 @@ impl UsageFilter {
                 id: m.to_owned(),
             },
         });
+        let mut source = match self.source.as_deref() {
+            None => None,
+            Some("gateway") => Some(Uuid::nil()),
+            Some(s) => Some(
+                s.parse::<SourceId>()
+                    .map_err(|_| not_a_key("source"))?
+                    .uuid(),
+            ),
+        };
         let key = match self.key.as_deref() {
             None => None,
             Some("playground") => Some(Uuid::nil()),
-            Some(k) => Some(k.parse::<ApiKeyId>().map_err(|_| not_a_key("key"))?.uuid()),
+            Some(k) => match k.strip_prefix("source:") {
+                Some(s) => {
+                    let id = s.parse::<SourceId>().map_err(|_| not_a_key("key"))?.uuid();
+                    if source.is_some_and(|other| other != id) {
+                        return Err(not_a_key("key"));
+                    }
+                    source = Some(id);
+                    None
+                }
+                None => Some(k.parse::<ApiKeyId>().map_err(|_| not_a_key("key"))?.uuid()),
+            },
         };
         let member = match self.member.as_deref().map(|m| m.split_once(':')) {
             None => None,
@@ -131,6 +155,7 @@ impl UsageFilter {
         };
         Ok(store::Filter {
             billed_to,
+            source,
             provider: self
                 .provider
                 .as_deref()
@@ -226,6 +251,7 @@ enum Ids {
     Key,
     Member,
     Credential,
+    Source,
 }
 
 fn ids_of(group: GroupBy) -> Ids {
@@ -240,6 +266,7 @@ fn ids_of(group: GroupBy) -> Ids {
         GroupBy::Key => Ids::Key,
         GroupBy::Member => Ids::Member,
         GroupBy::BilledTo => Ids::Credential,
+        GroupBy::Source => Ids::Source,
     }
 }
 
@@ -248,9 +275,15 @@ fn public_key(ids: Ids, key: String) -> String {
     match ids {
         Ids::Plain => key,
         Ids::Project => id(&key).map_or(key, |u| ProjectId::from_uuid(u).to_string()),
-        Ids::Key => match id(&key) {
-            Some(u) if u.is_nil() => "playground".to_owned(),
-            Some(u) => ApiKeyId::from_uuid(u).to_string(),
+        Ids::Key => match (id(&key), key.strip_prefix("source:").and_then(id)) {
+            (_, Some(s)) => format!("source:{}", SourceId::from_uuid(s)),
+            (Some(u), _) if u.is_nil() => "playground".to_owned(),
+            (Some(u), _) => ApiKeyId::from_uuid(u).to_string(),
+            (None, None) => key,
+        },
+        Ids::Source => match id(&key) {
+            Some(u) if u.is_nil() => "gateway".to_owned(),
+            Some(u) => SourceId::from_uuid(u).to_string(),
             None => key,
         },
         Ids::Credential => match id(&key) {
@@ -353,6 +386,7 @@ async fn usage(
         "member" => GroupBy::Member,
         "route" => GroupBy::Route,
         "billed_to" => GroupBy::BilledTo,
+        "source" => GroupBy::Source,
         "project" if scope.org_wide => GroupBy::Project,
         _ => {
             return Err(ApiError::invalid(
@@ -360,7 +394,7 @@ async fn usage(
                 if scope.org_wide {
                     "Use `project`, `billed_to` or what a project's usage groups by, such as `day`."
                 } else {
-                    "Use `day`, `week`, `month`, `model`, `provider`, `key`, `member`, `route` or `billed_to`."
+                    "Use a grouping the usage API lists, such as `day`, `model`, `key` or `source`."
                 },
             ));
         }
@@ -640,8 +674,9 @@ pub struct TimelineQuery {
         `error_kind` (the request log's, empty for requests that succeeded),\n\
         `client` (the client app the user agent names, empty without one), `alias`\n\
         (empty for requests that named a model), `endpoint`, `status` (the HTTP status),\n\
-        `response_cache` (`hit`, `miss` or `bypass`, empty where the cache was off), or\n\
-        for orgs `project`; default one bucket per step. The request log filters\n\
+        `response_cache` (`hit`, `miss` or `bypass`, empty where the cache was off),\n\
+        `source` (`gateway` for the gateway's own requests), or for orgs `project`;\n\
+        default one bucket per step. The request log filters\n\
         `status` and `response_cache` narrow a bucket down to its requests."]
     pub group_by: Option<String>,
     #[doc = "With `group_by`, only the groups with the most requests in the whole\n\
@@ -727,6 +762,7 @@ fn timeline_ids(group: Option<TimelineGroup>) -> Ids {
         Some(TimelineGroup::Project) => Ids::Project,
         Some(TimelineGroup::Key) => Ids::Key,
         Some(TimelineGroup::Member) => Ids::Member,
+        Some(TimelineGroup::Source) => Ids::Source,
         _ => Ids::Plain,
     }
 }
@@ -774,6 +810,7 @@ async fn timeline(
         Some("endpoint") => Some(TimelineGroup::Endpoint),
         Some("status") => Some(TimelineGroup::Status),
         Some("response_cache") => Some(TimelineGroup::ResponseCache),
+        Some("source") => Some(TimelineGroup::Source),
         Some("project") if scope.org_wide => Some(TimelineGroup::Project),
         Some(_) => {
             return Err(ApiError::invalid(

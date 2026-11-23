@@ -866,7 +866,7 @@
   "errors.usageByDayRange": "By day, `from` and `to` are at most 400 days apart; use `week` or `month`.",
   "errors.usageFilterKey": "`{name}` must be a `key` that grouping by `{name}` returns.",
   "errors.usageGroupValues": "Use `project`, `billed_to` or what a project's usage groups by, such as `day`.",
-  "errors.usageGroupValuesProject": "Use `day`, `week`, `month`, `model`, `provider`, `key`, `member`, `route` or `billed_to`.",
+  "errors.usageGroupValuesProject": "Use a grouping the usage API lists, such as `day`, `model`, `key` or `source`.",
   "errors.usageUnavailable": "Usage is unavailable right now; try again shortly.",
   "errors.valueListedTwice": "`{value}` is listed twice.",
   "errors.valueNotOneOf": "`{value}` is not one of {allowed}.",

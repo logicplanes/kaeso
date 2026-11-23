@@ -398,7 +398,7 @@
   "errors.timelineMinuteRange": "Pro Minute liegen `from` und `to` höchstens 2 Tage auseinander; `hour` verwenden.",
   "errors.timelineHourRange": "Pro Stunde liegen `from` und `to` höchstens 62 Tage auseinander; die tägliche Nutzung verwenden.",
   "errors.usageGroupValues": "`project`, `billed_to` oder eine Gruppierung der Projektnutzung wie `day` verwenden.",
-  "errors.usageGroupValuesProject": "`day`, `week`, `month`, `model`, `provider`, `key`, `member`, `route` oder `billed_to` verwenden.",
+  "errors.usageGroupValuesProject": "Nutzen Sie eine Gruppierung, die die Nutzungs-API nennt, etwa `day`, `model`, `key` oder `source`.",
   "errors.timelineGroupValues": "Gruppieren Sie nach `project` oder einem Feld des Anfrageprotokolls, etwa `model` oder `status`.",
   "errors.timelineGroupValuesProject": "Gruppieren Sie nach einem Feld des Anfrageprotokolls, etwa `model`, `status` oder `response_cache`.",
   "errors.usageFilterKey": "`{name}` muss ein `key` sein, wie ihn die Gruppierung nach `{name}` liefert.",

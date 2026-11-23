@@ -163,6 +163,8 @@ pub struct Filter {
     pub tool: Option<String>,
     pub status: Option<String>,
     pub error_type: Option<String>,
+    /// The source that reported the calls.
+    pub source_id: Option<Uuid>,
 }
 
 enum Bind {
@@ -209,6 +211,9 @@ pub async fn search(
     }
     if let Some(c) = f.caller {
         push(" AND caller_id = ?", Bind::Uuid(c));
+    }
+    if let Some(s) = f.source_id {
+        push(" AND source_id = ?", Bind::Uuid(s));
     }
     if let Some(s) = f.server {
         push(" AND server_id = ?", Bind::Uuid(s));

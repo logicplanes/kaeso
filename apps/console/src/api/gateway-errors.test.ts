@@ -245,8 +245,8 @@ describe("a refusal of a usage grouping or filter", () => {
       "`member` muss ein `key` sein, wie ihn die Gruppierung nach `member` liefert.",
     );
     await speak("zh-CN");
-    expect((await errorFromResponse(refusal("Use `day`, `week`, `month`, `model`, `provider`, `key`, `member`, `route` or `billed_to`."))).message).toBe(
-      "请使用 `day`、`week`、`month`、`model`、`provider`、`key`、`member`、`route` 或 `billed_to`。",
+    expect((await errorFromResponse(refusal("Use a grouping the usage API lists, such as `day`, `model`, `key` or `source`."))).message).toBe(
+      "请使用用量 API 列出的分组，例如 `day`、`model`、`key` 或 `source`。",
     );
     expect((await errorFromResponse(refusal("Group by `project` or a field of the request log, such as `model` or `status`."))).message).toBe(
       "请按 `project` 或请求日志的字段分组，例如 `model` 或 `status`。",

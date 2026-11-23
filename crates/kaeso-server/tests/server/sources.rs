@@ -76,7 +76,6 @@ fn haiku(id: &str, email: Option<&str>) -> ObservedRequest {
             cache_read: 10_000,
             cache_write: 0,
             reasoning: 0,
-            cache_write_1h: 0,
         },
         reported_cost: Some(Decimal::from_str("0.5").unwrap()),
         client: Some("claude-cli/2.1.322".into()),
@@ -622,6 +621,195 @@ fn the_api_document_describes_a_source_with_its_own_schema() {
         "another type took the name {name}: {schema}"
     );
     assert!(schema["properties"]["status"].is_object());
+}
+
+#[tokio::test]
+async fn usage_the_timeline_and_the_logs_tell_a_sources_requests_apart() {
+    let env = env().await;
+    common::v1::call(
+        &env,
+        "/v1/messages",
+        Some(&env.key),
+        true,
+        Some(common::v1::messages("claude-haiku-4-5", "Hi")),
+    )
+    .await;
+    let made = add(
+        &env,
+        json!({ "kind": "claude_code", "name": "Claude Code" }),
+    )
+    .await;
+    let id = made["source"]["id"].as_str().unwrap().to_owned();
+    let source = source_row(&env, &id).await;
+    observed::record(
+        &env.app.state,
+        &source,
+        Batch {
+            requests: vec![haiku("req_a", None), haiku("req_b", None)],
+            tool_calls: vec![ObservedToolCall {
+                external_id: "toolu_a".into(),
+                tool: "list_issues".into(),
+                server: Some("linear".into()),
+                ok: true,
+                ..ObservedToolCall::default()
+            }],
+            ..Batch::default()
+        },
+    )
+    .await
+    .unwrap();
+    flush(&env).await;
+
+    let get = |q: String| {
+        let env = &env;
+        async move {
+            let r = env
+                .app
+                .get(&format!("{}{q}", base(env)), &env.owner.cookie)
+                .await;
+            assert_eq!(r.status, StatusCode::OK, "{q}: {:?}", r.body);
+            r.body
+        }
+    };
+    let by_source = get("/usage?group_by=source".into()).await;
+    let rows: Vec<(String, i64)> = by_source["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|r| {
+            (
+                r["key"].as_str().unwrap().to_owned(),
+                r["requests"].as_i64().unwrap(),
+            )
+        })
+        .collect();
+    assert_eq!(rows, vec![("gateway".to_owned(), 1), (id.clone(), 2)]);
+
+    let by_key = get("/usage?group_by=key".into()).await;
+    let keys: Vec<&str> = by_key["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|r| r["key"].as_str().unwrap())
+        .collect();
+    assert!(keys.contains(&format!("source:{id}").as_str()), "{keys:?}");
+    assert!(
+        !keys.contains(&"playground"),
+        "a source's requests aren't the Playground's"
+    );
+
+    let only = get(format!("/usage?group_by=day&source={id}")).await;
+    assert_eq!(only["data"][0]["requests"], 2);
+    let gateway = get("/usage?group_by=day&source=gateway".into()).await;
+    assert_eq!(gateway["data"][0]["requests"], 1);
+    let as_key = get(format!("/usage?group_by=day&key=source:{id}")).await;
+    assert_eq!(as_key["data"][0]["requests"], 2);
+
+    // The test clock stands still, so the default range ends right where the requests are.
+    let now = env.app.state.clock.now();
+    let rfc = |t: time::OffsetDateTime| {
+        t.format(&time::format_description::well_known::Rfc3339)
+            .unwrap()
+    };
+    let range = format!(
+        "from={}&to={}",
+        rfc(now - time::Duration::hours(1)),
+        rfc(now + time::Duration::hours(1))
+    );
+    let timeline = get(format!("/usage/timeline?group_by=source&step=hour&{range}")).await;
+    let buckets: Vec<(String, i64)> = timeline["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|b| {
+            (
+                b["key"].as_str().unwrap().to_owned(),
+                b["requests"].as_i64().unwrap(),
+            )
+        })
+        .collect();
+    assert!(buckets.contains(&(id.clone(), 2)), "{buckets:?}");
+    assert!(buckets.contains(&("gateway".to_owned(), 1)), "{buckets:?}");
+
+    let logs = get(format!("/logs?source_id={id}")).await;
+    let rows = logs["data"].as_array().unwrap();
+    assert_eq!(rows.len(), 2);
+    assert!(rows.iter().all(|r| r["source_id"] == id.as_str()));
+    let all = get("/logs".into()).await;
+    let theirs = all["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|r| r["source"] == "api")
+        .unwrap();
+    assert!(theirs["source_id"].is_null());
+
+    let calls = get(format!("/logs/tool-calls?source_id={id}")).await;
+    let call = &calls["data"][0];
+    assert_eq!(call["server"], Value::Null);
+    assert_eq!(call["server_name"], "linear");
+    assert_eq!(call["source_id"], id.as_str());
+}
+
+#[tokio::test]
+async fn a_budget_says_how_much_of_its_use_sources_reported() {
+    let env = env().await;
+    let budget = env
+        .app
+        .post(
+            &format!("{}/limits", base(&env)),
+            json!({ "level": "project", "kind": "spend_budget", "period": "month", "amount": "100" }),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(budget.status, StatusCode::CREATED, "{:?}", budget.body);
+    let limit = budget.body["id"].as_str().unwrap().to_owned();
+    let rate = env
+        .app
+        .post(
+            &format!("{}/limits", base(&env)),
+            json!({ "level": "project", "kind": "request_rate", "period": "minute", "amount": "100" }),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(rate.status, StatusCode::CREATED, "{:?}", rate.body);
+    let made = add(&env, json!({ "kind": "http", "name": "Scripts" })).await;
+    let source = source_row(&env, made["source"]["id"].as_str().unwrap()).await;
+    let mut r = haiku("priced", None);
+    r.provider = None;
+    r.model = "in-house-7b".into();
+    r.reported_cost = Some(Decimal::from(4));
+    observed::record(
+        &env.app.state,
+        &source,
+        Batch {
+            requests: vec![r],
+            ..Batch::default()
+        },
+    )
+    .await
+    .unwrap();
+    flush(&env).await;
+    let view = env
+        .app
+        .get(&format!("{}/limits/{limit}", base(&env)), &env.owner.cookie)
+        .await
+        .body;
+    assert_eq!(view["used"], "4");
+    assert_eq!(view["observed"], "4");
+    let rate_view = env
+        .app
+        .get(
+            &format!(
+                "{}/limits/{}",
+                base(&env),
+                rate.body["id"].as_str().unwrap()
+            ),
+            &env.owner.cookie,
+        )
+        .await
+        .body;
+    assert!(rate_view["observed"].is_null());
 }
 
 #[tokio::test]

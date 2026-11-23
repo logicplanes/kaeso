@@ -18,6 +18,8 @@ pub enum GroupBy {
     Route,
     /// The provider key that paid, the nil id for requests no provider was sent.
     BilledTo,
+    /// The source that reported observed requests, the nil id for the gateway's own.
+    Source,
 }
 
 impl GroupBy {
@@ -29,7 +31,12 @@ impl GroupBy {
             GroupBy::Project => "project_id::text",
             GroupBy::Model => "provider || '/' || model_id",
             GroupBy::Provider => "provider",
-            GroupBy::Key => "coalesce(api_key_id, '00000000-0000-0000-0000-000000000000')::text",
+            // A source's requests have no key: they group as the source, never as the
+            // Playground's nil key.
+            GroupBy::Key => {
+                "CASE WHEN source_id IS NOT NULL THEN 'source:' || source_id::text \
+                 ELSE coalesce(api_key_id, '00000000-0000-0000-0000-000000000000')::text END"
+            }
             GroupBy::Member => {
                 "CASE WHEN user_id IS NOT NULL THEN 'user:' || user_id::text \
                  ELSE 'service_account:' || coalesce(service_account_id, '00000000-0000-0000-0000-000000000000')::text END"
@@ -38,6 +45,7 @@ impl GroupBy {
             GroupBy::BilledTo => {
                 "coalesce(credential_id, '00000000-0000-0000-0000-000000000000')::text"
             }
+            GroupBy::Source => "coalesce(source_id, '00000000-0000-0000-0000-000000000000')::text",
         }
     }
 }
@@ -71,6 +79,8 @@ pub struct Filter {
     pub route: Option<Route>,
     /// The provider key that paid; the nil id for requests no provider was sent.
     pub billed_to: Option<Uuid>,
+    /// The source that reported the requests; the nil id for the gateway's own.
+    pub source: Option<Uuid>,
 }
 
 impl Filter {
@@ -128,12 +138,13 @@ pub async fn usage(
          sum(audio_ms)::bigint AS audio_ms, sum(videos)::bigint AS videos, sum(video_ms)::bigint AS video_ms \
          FROM usage_daily WHERE org_id = $1 AND ($2::uuid IS NULL OR project_id = $2) AND day >= $3 AND day <= $4 \
          AND ($5::text IS NULL OR provider = $5) AND ($6::text IS NULL OR model_id = $6) \
-         AND ($7::uuid IS NULL OR coalesce(api_key_id, '00000000-0000-0000-0000-000000000000') = $7) \
+         AND ($7::uuid IS NULL OR (coalesce(api_key_id, '00000000-0000-0000-0000-000000000000') = $7 AND source_id IS NULL)) \
          AND ($8::uuid IS NULL OR user_id = $8) \
          AND ($9::uuid IS NULL OR (user_id IS NULL AND service_account_id = $9)) \
          AND ($10::text IS NULL OR (ingress_dialect = $10 AND egress_dialect = $11 AND provider = $12)) \
          AND ($13::text IS NULL OR provider = $13) \
          AND ($14::uuid IS NULL OR coalesce(credential_id, '00000000-0000-0000-0000-000000000000') = $14) \
+         AND ($15::uuid IS NULL OR coalesce(source_id, '00000000-0000-0000-0000-000000000000') = $15) \
          GROUP BY 1 ORDER BY ({key}) COLLATE \"C\"",
         key = group.key()
     );
@@ -154,6 +165,7 @@ pub async fn usage(
         .bind(route.map(|r| r.provider.as_str()))
         .bind(model.and_then(|m| m.provider.as_deref()))
         .bind(filter.billed_to)
+        .bind(filter.source)
         .fetch_all(db)
         .await?)
 }
@@ -172,11 +184,12 @@ pub async fn costs_by_day(
         "SELECT {key} AS key, day, sum(cost) AS cost \
          FROM usage_daily WHERE org_id = $1 AND ($2::uuid IS NULL OR project_id = $2) AND day >= $3 AND day <= $4 \
          AND ($5::text IS NULL OR provider = $5) AND ($6::text IS NULL OR model_id = $6) \
-         AND ($7::uuid IS NULL OR coalesce(api_key_id, '00000000-0000-0000-0000-000000000000') = $7) \
+         AND ($7::uuid IS NULL OR (coalesce(api_key_id, '00000000-0000-0000-0000-000000000000') = $7 AND source_id IS NULL)) \
          AND ($8::uuid IS NULL OR user_id = $8) \
          AND ($9::uuid IS NULL OR (user_id IS NULL AND service_account_id = $9)) \
          AND ($10::text IS NULL OR (ingress_dialect = $10 AND egress_dialect = $11 AND provider = $12)) \
          AND ($13::text IS NULL OR provider = $13) \
+         AND ($14::uuid IS NULL OR coalesce(source_id, '00000000-0000-0000-0000-000000000000') = $14) \
          GROUP BY 1, 2",
         key = group.key()
     );
@@ -197,6 +210,7 @@ pub async fn costs_by_day(
             .bind(route.map(|r| r.egress_dialect.as_str()))
             .bind(route.map(|r| r.provider.as_str()))
             .bind(model.and_then(|m| m.provider.as_deref()))
+            .bind(filter.source)
             .fetch_all(db)
             .await?,
     )
