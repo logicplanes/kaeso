@@ -18,6 +18,8 @@ describe("requesting a password reset", () => {
     expect(screen.getByRole("link", { name: "Back to sign in" })).toHaveClass("tap-target");
     const send = screen.getByRole("button", { name: "Email me a link" });
     expectDisabledBecause(send, "Enter your email address");
+    fireEvent.submit(screen.getByRole("textbox", { name: "Email" }).closest("form") as HTMLFormElement);
+    expect(requests("POST", "auth/password-reset")).toHaveLength(0);
     await user.type(screen.getByRole("textbox", { name: "Email" }), " ada@example.com ");
     await user.click(send);
     expect(await screen.findByText("Check your email")).toBeInTheDocument();

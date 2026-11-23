@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ORG, signedIn, signedOut } from "~/test/fixtures";
 import { emailSent, methods, signedInReply, ssoStart, totpRequired } from "~/test/fixtures/public";
@@ -39,6 +39,9 @@ describe("the email step", () => {
 
   it("asks the gateway which methods the address has", async () => {
     await atMethods("/sign-in");
+    expectDisabledBecause(screen.getByRole("button", { name: "Sign in" }), "Enter your password");
+    fireEvent.submit(screen.getByLabelText("Password").closest("form") as HTMLFormElement);
+    expect(requests("POST", "auth/password")).toHaveLength(0);
     expect(requests("POST", "auth/methods").map((r) => r.body)).toEqual([{ email: "ada@example.com" }]);
     expect(screen.getByLabelText("Password")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Email me a sign-in link" })).toBeInTheDocument();
@@ -319,6 +322,8 @@ describe("two-step verification", () => {
     expect(await (await notifications()).findByText("That code didn't work.")).toBeInTheDocument();
     await waitFor(() => expect(field).toHaveValue(""));
     expectDisabledBecause(screen.getByRole("button", { name: "Verify" }), "Enter the 6-digit code");
+    fireEvent.submit(field.closest("form") as HTMLFormElement);
+    expect(requests("POST", "auth/totp")).toHaveLength(1);
   });
 
   it("takes a recovery code instead, and can switch back", async () => {

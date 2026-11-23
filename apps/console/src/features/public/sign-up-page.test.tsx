@@ -26,7 +26,7 @@ describe("creating an account", () => {
     expect(screen.getByRole("link", { name: "Sign in" })).toHaveClass("tap-target");
     const go = screen.getByRole("button", { name: "Continue" });
     expectDisabledBecause(go, "Enter your email address");
-    await user.type(screen.getByRole("textbox", { name: "Email" }), "{Enter}");
+    fireEvent.submit(screen.getByRole("textbox", { name: "Email" }).closest("form") as HTMLFormElement);
     expect(requests("POST", "auth/signup")).toHaveLength(0);
     await user.type(screen.getByRole("textbox", { name: "Email" }), "  grace@example.com ");
     await user.click(go);
