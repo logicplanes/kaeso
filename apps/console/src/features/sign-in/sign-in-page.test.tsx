@@ -4,6 +4,7 @@ import { ORG, signedIn, signedOut } from "~/test/fixtures";
 import { emailSent, methods, signedInReply, ssoStart, totpRequired } from "~/test/fixtures/public";
 import { apiError, json, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
+import { expectDisabledBecause } from "~/test/disabled";
 
 const UNNAMED_PROVIDER = { org: ORG, org_name: "Northwind Labs", name: null, auto_redirect: false };
 
@@ -66,7 +67,7 @@ describe("the email step", () => {
     await screen.findByRole("textbox", { name: "Email" });
     await waitFor(() => expect(requests("GET", "auth/methods")).toHaveLength(1));
     expect(screen.queryByRole("link", { name: "Create an account" })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Continue" })).toBeDisabled();
+    expectDisabledBecause(screen.getByRole("button", { name: "Continue" }), "Enter your email address");
   });
 
   it("says when the gateway can't be reached", async () => {
@@ -315,7 +316,7 @@ describe("two-step verification", () => {
     await user.type(field, "000000");
     expect(await (await notifications()).findByText("That code didn't work.")).toBeInTheDocument();
     await waitFor(() => expect(field).toHaveValue(""));
-    expect(screen.getByRole("button", { name: "Verify" })).toBeDisabled();
+    expectDisabledBecause(screen.getByRole("button", { name: "Verify" }), "Enter the 6-digit code");
   });
 
   it("takes a recovery code instead, and can switch back", async () => {
@@ -328,7 +329,7 @@ describe("two-step verification", () => {
       return signedInReply();
     });
     const verify = screen.getByRole("button", { name: "Verify" });
-    expect(verify).toBeDisabled();
+    expectDisabledBecause(verify, "Enter a recovery code");
     await user.type(screen.getByRole("textbox", { name: "Recovery code" }), " abcd-efgh ");
     await user.click(verify);
     await waitFor(() => expect(requests("POST", "auth/totp").map((r) => r.body)).toEqual([{ challenge: "chl_42", recovery_code: "abcd-efgh" }]));

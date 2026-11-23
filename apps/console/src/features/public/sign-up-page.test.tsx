@@ -4,6 +4,7 @@ import { ORG, signedIn } from "~/test/fixtures";
 import { emailSent, methods, signedInReply } from "~/test/fixtures/public";
 import { apiError, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
+import { expectDisabledBecause } from "~/test/disabled";
 
 const notifications = async () => within(await screen.findByRole("region", { name: "Notifications" }));
 
@@ -24,7 +25,7 @@ describe("creating an account", () => {
     expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/sign-in");
     expect(screen.getByRole("link", { name: "Sign in" })).toHaveClass("tap-target");
     const go = screen.getByRole("button", { name: "Continue" });
-    expect(go).toBeDisabled();
+    expectDisabledBecause(go, "Enter your email address");
     await user.type(screen.getByRole("textbox", { name: "Email" }), "  grace@example.com ");
     await user.click(go);
     expect(await screen.findByText("Check your email")).toBeInTheDocument();
@@ -70,11 +71,11 @@ describe("finishing an account", () => {
     expect(window.location.hash).toBe("");
     expect(screen.getByLabelText(/^Password/)).toHaveAccessibleDescription("Leave empty to sign in with a link by email.");
     const create = screen.getByRole("button", { name: "Create account" });
-    expect(create).toBeDisabled();
+    expectDisabledBecause(create, "Enter your name");
     await user.type(screen.getByRole("textbox", { name: "Name" }), " Grace Hopper ");
     await user.type(screen.getByLabelText(/Password/), "short");
     expect(screen.getByText("7 more characters to go.")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Create account" })).toBeDisabled();
+    expectDisabledBecause(screen.getByRole("button", { name: "Create account" }), "Make the password 12 to 128 characters, or leave it empty");
     await user.type(screen.getByLabelText(/Password/), " and longer{Enter}");
     await waitFor(() => expect(window.location.pathname).toMatch(new RegExp(`^/orgs/${ORG}`)));
     expect(requests("POST", "auth/signup/verify").map((r) => r.body)).toEqual([{ token: "sgn_1", name: "Grace Hopper", password: "short and longer" }]);

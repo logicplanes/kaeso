@@ -21,6 +21,7 @@ import { usePageTitle } from "~/shell/title";
 import { handResetAddress } from "~/features/public/reset-address";
 import { safeNext } from "~/auth/next";
 import { t } from "~/i18n";
+import { disabledUntil } from "~/shell/disabled-until";
 import type { Busy } from "./sign-in-steps";
 
 type Steps = typeof import("./sign-in-steps");
@@ -221,7 +222,7 @@ export function SignInPage({
 
   return (
     <PublicPage title={t("signIn.title", "Sign in")}>
-      <form className="flex flex-col gap-16" onSubmit={(e) => (e.preventDefault(), void withEmail())}>
+      <form className="flex flex-col gap-16" onSubmit={(e) => (e.preventDefault(), address && void withEmail())}>
         <Input
           label={t("signIn.email", "Email")}
           size="xl"
@@ -231,7 +232,14 @@ export function SignInPage({
           autoComplete="username"
           autoFocus
         />
-        <Button type="submit" variant="primary" size="xl" fullWidth loading={busy === "continue"} disabled={!address}>
+        <Button
+          type="submit"
+          variant="primary"
+          size="xl"
+          fullWidth
+          loading={busy === "continue"}
+          {...disabledUntil(address ? undefined : t("signIn.emailNeeded", "Enter your email address"))}
+        >
           {t("common.continue", "Continue")}
         </Button>
       </form>

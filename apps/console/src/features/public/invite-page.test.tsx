@@ -5,6 +5,7 @@ import { accepted, invite, methods } from "~/test/fixtures/public";
 import { apiError, noContent, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
 import { queryClient } from "~/query";
+import { expectDisabledBecause } from "~/test/disabled";
 
 const notifications = async () => within(await screen.findByRole("region", { name: "Notifications" }));
 const PENDING = "kaeso:invite";
@@ -219,10 +220,12 @@ describe("accepting while signed out", () => {
     const { user } = await renderApp("/invite#token=inv_tok");
     expect(await screen.findByRole("textbox", { name: "Email" })).toHaveValue("grace@example.com");
     const create = screen.getByRole("button", { name: "Create account and join" });
-    expect(create).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Continue with a sign-in link instead" })).toBeDisabled();
+    expectDisabledBecause(create, "Enter your name");
+    expectDisabledBecause(screen.getByRole("button", { name: "Continue with a sign-in link instead" }), "Enter your name");
     await user.type(screen.getByRole("textbox", { name: "Name" }), " Grace Hopper {Enter}");
     expect(requests("POST", "auth/invites/accept")).toHaveLength(0);
+    expectDisabledBecause(create, "Enter a password of 12 to 128 characters");
+    expect(screen.getByRole("button", { name: "Continue with a sign-in link instead" })).not.toHaveAttribute("aria-disabled");
     await user.type(screen.getByLabelText("Password"), "correct horse battery");
     await user.click(screen.getByRole("button", { name: "Create account and join" }));
     await waitFor(() => expect(window.location.pathname).toMatch(new RegExp(`^/orgs/${ORG}`)));

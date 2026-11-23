@@ -10,6 +10,7 @@ import { signInMethodsQuery } from "~/auth/sign-in-api";
 import { usePageTitle } from "~/shell/title";
 import { fieldError } from "~/api/field-error";
 import { passwordHint, passwordOk, useSubmit } from "./form";
+import { disabledUntil } from "~/shell/disabled-until";
 import { t } from "~/i18n";
 import { tRich } from "~/i18n/rich";
 
@@ -61,7 +62,16 @@ function SetupForm({ token }: { token: string }) {
   const [password, setPassword] = useState("");
   const [orgName, setOrgName] = useState("");
   const { busy, error, submit } = useSubmit();
-  const ready = name.trim() && email.trim() && (!withPassword || passwordOk(password)) && orgName.trim();
+  const needs = !name.trim()
+    ? t("public.nameNeeded", "Enter your name")
+    : !email.trim()
+      ? t("public.emailNeeded", "Enter your email address")
+      : withPassword && !passwordOk(password)
+        ? t("public.passwordNeeded", "Enter a password of 12 to 128 characters")
+        : !orgName.trim()
+          ? t("public.orgNameNeeded", "Give the organization a name")
+          : undefined;
+  const ready = !needs;
   const tokenProblem = error?.param === "token";
 
   const setUp = () =>
@@ -127,7 +137,7 @@ function SetupForm({ token }: { token: string }) {
           maxLength={100}
           error={fieldError(error, "org_name")}
         />
-        <Button type="submit" variant="primary" size="xl" fullWidth loading={busy} disabled={!ready}>
+        <Button type="submit" variant="primary" size="xl" fullWidth loading={busy} {...disabledUntil(needs)}>
           {t("public.setUpKaeso", "Set up Kaeso")}
         </Button>
         <Text variant="small" tone="secondary" className="text-center">

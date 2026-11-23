@@ -9,6 +9,7 @@ import { forgetFragment, takeFragment } from "~/auth/fragment";
 import { usePageTitle } from "~/shell/title";
 import { fieldError } from "~/api/field-error";
 import { passwordHint, passwordOk, useSubmit } from "./form";
+import { disabledUntil } from "~/shell/disabled-until";
 import { takeResetAddress } from "./reset-address";
 import { t } from "~/i18n";
 
@@ -43,6 +44,7 @@ function RequestReset() {
         className="flex flex-col gap-16"
         onSubmit={(e) => {
           e.preventDefault();
+          if (!email.trim()) return;
           void submit(async () => {
             await api.POST("/platform/v1/auth/password-reset", { body: { email: email.trim() } });
             setSent(email.trim());
@@ -59,7 +61,14 @@ function RequestReset() {
           autoFocus
           error={fieldError(error, "email")}
         />
-        <Button type="submit" variant="primary" size="xl" fullWidth loading={busy} disabled={!email.trim()}>
+        <Button
+          type="submit"
+          variant="primary"
+          size="xl"
+          fullWidth
+          loading={busy}
+          {...disabledUntil(email.trim() ? undefined : t("public.emailNeeded", "Enter your email address"))}
+        >
           {t("public.emailMeLink", "Email me a link")}
         </Button>
         <Text variant="small" tone="secondary" className="text-center">
@@ -128,7 +137,14 @@ function NewPassword({ token }: { token: string }) {
           description={passwordHint(password)}
           error={fieldError(error, "password")}
         />
-        <Button type="submit" variant="primary" size="xl" fullWidth loading={busy} disabled={!passwordOk(password)}>
+        <Button
+          type="submit"
+          variant="primary"
+          size="xl"
+          fullWidth
+          loading={busy}
+          {...disabledUntil(passwordOk(password) ? undefined : t("public.passwordNeeded", "Enter a password of 12 to 128 characters"))}
+        >
           {t("public.setPassword", "Set password")}
         </Button>
       </form>
