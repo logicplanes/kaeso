@@ -18,6 +18,12 @@ describe("SourceBadge", () => {
     expect(document.querySelector("[data-source=codex]")).toHaveClass("size-16");
   });
 
+  it("hides a decorative tile from assistive technology", () => {
+    render(<SourceBadge kind="gemini_cli" decorative />);
+    expect(screen.queryByRole("img")).not.toBeInTheDocument();
+    expect(document.querySelector("[data-source=gemini_cli]")).toHaveAttribute("aria-hidden", "true");
+  });
+
   it("shows an icon for kinds without a published mark, and the source icon for unknown ones", () => {
     const { container } = render(
       <>

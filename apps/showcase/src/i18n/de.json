@@ -1275,5 +1275,6 @@
   "The source's kind, such as `claude_code`; a kind without a mark shows the source icon.": "Die Art der Quelle, etwa `claude_code`; eine Art ohne Zeichen zeigt das Quellen-Symbol.",
   "The name beside the tile, or the tile's accessible name; the kind's product name by default.": "Der Name neben der Kachel oder ihr barrierefreier Name; standardmäßig der Produktname der Art.",
   "The tile's size, as a provider's tile.": "Die Größe der Kachel, wie bei einem Anbieter.",
-  "Shows the name beside the tile.": "Zeigt den Namen neben der Kachel."
+  "Shows the name beside the tile.": "Zeigt den Namen neben der Kachel.",
+  "Hides the tile from assistive technology, where the text beside it already names the client.": "Verbirgt die Kachel vor Hilfstechnologien, wo der Text daneben den Client schon nennt."
 }

@@ -62,17 +62,22 @@ export interface SourceBadgeProps {
   size?: keyof typeof KAESO_SOURCE_BADGE_VARIANTS.size | undefined;
   /** Shows the name beside the tile. */
   withName?: boolean | undefined;
+  /** Hides the tile from assistive technology, where the text beside it already names the client. */
+  decorative?: boolean | undefined;
   className?: string | undefined;
 }
 
 /** A source's client as a tile the size of a provider's, with its mark in the text colour, and its name beside it. */
-export const SourceBadge = forwardRef<HTMLSpanElement, SourceBadgeProps>(function SourceBadge({ kind, name, size = "md", withName, className }, ref) {
+export const SourceBadge = forwardRef<HTMLSpanElement, SourceBadgeProps>(function SourceBadge(
+  { kind, name, size = "md", withName, decorative, className },
+  ref,
+) {
   const label = name?.trim() || SOURCE_NAMES[kind] || kind;
   const mark = SOURCE_MARKS[kind];
   const tile = (
     <span
-      aria-hidden={withName || undefined}
-      {...(!withName ? { role: "img", "aria-label": label } : {})}
+      aria-hidden={withName || decorative || undefined}
+      {...(!withName && !decorative ? { role: "img", "aria-label": label } : {})}
       data-source={kind}
       className={cn("inline-flex shrink-0 items-center justify-center bg-raised text-fg shadow-ring", KAESO_SOURCE_BADGE_VARIANTS.size[size].classes)}
     >

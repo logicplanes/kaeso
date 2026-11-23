@@ -36,7 +36,8 @@ describe("SourcesPage", () => {
     expect(rows[0]).toHaveTextContent("Claude Code · last event");
     expect(rows[0]).toHaveTextContent("Connected");
     expect(rows[0]).toHaveTextContent("2 refused");
-    expect(within(rows[0] as HTMLElement).getByRole("img", { name: "Claude Code" })).toBeInTheDocument();
+    expect(within(rows[0] as HTMLElement).queryByRole("img", { name: "Claude Code" })).not.toBeInTheDocument();
+    expect((rows[0] as HTMLElement).querySelector("[data-source=claude_code]")).toHaveAttribute("aria-hidden", "true");
     expect(rows[1]).toHaveTextContent("LiteLLM proxy");
     expect(rows[1]).toHaveTextContent("Waiting");
 
@@ -75,6 +76,14 @@ describe("SourcesPage", () => {
     const add = await screen.findByRole("button", { name: "Add source" });
     expect(add).toHaveAttribute("aria-disabled", "true");
     await hoverReason(user, add, /Manage sources/);
+  });
+
+  it("doesn't open the add dialog from the address without the right", async () => {
+    signedIn({ projectRights: without("sources.manage") });
+    projectData();
+    await renderApp(projectPath("sources?add=true"));
+    expect(await screen.findByText("No sources yet")).toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: /Add source/ })).not.toBeInTheDocument();
   });
 
   it("adds a source, shows its key with the client's setup once, and waits for its first event", async () => {

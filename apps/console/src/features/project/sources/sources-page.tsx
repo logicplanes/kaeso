@@ -54,8 +54,8 @@ export function SourcesPage({ org, project, search }: { org: string; project: st
   const rights = useProjectRights(org, project);
   const scope = search.scope ?? "active";
   const sources = useQuery(sourcesQuery(org, project));
-  const [adding, setAdding] = useState(!!search.add);
   const canAdd = rights.has("sources.manage");
+  const [adding, setAdding] = useState(!!search.add && canAdd);
   const reason = canAdd ? undefined : needs("sources.manage");
   usePageCreateAction({ label: t("project.sources.add", "Add source"), run: () => setAdding(true), disabledReason: reason });
 
@@ -83,7 +83,7 @@ export function SourcesPage({ org, project, search }: { org: string; project: st
       id: s.id,
       textValue: s.name,
       title: s.name,
-      leading: <SourceBadge kind={s.kind} size="md" />,
+      leading: <SourceBadge kind={s.kind} size="md" decorative />,
       subtitle: s.last_event_at
         ? t("project.sources.lastEvent", "{kind} · last event {when}", { kind: kindName(s.kind), when: formatRelative(s.last_event_at) })
         : kindName(s.kind),

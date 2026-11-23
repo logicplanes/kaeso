@@ -50,6 +50,7 @@ function codex({ ingestUrl, secret, content }: SetupTarget): CodeTab[] {
       label: CODEX_CONFIG,
       lang: "toml",
       code: [
+        "# Merge into the [otel] table if the file has one already.",
         "[otel]",
         `log_user_prompt = ${content}`,
         `exporter = { otlp-http = { endpoint = "${ingestUrl}/otlp/v1/logs", protocol = "binary", headers = { authorization = "Bearer ${secret}" } } }`,
@@ -99,21 +100,30 @@ function antigravity({ ingestUrl, secret, content }: SetupTarget): CodeTab[] {
     "output_tokens",
     ...(content ? ["content"] : []),
   ];
+  // Answers Antigravity at once and sends in the background, so no model call waits for Kaeso;
+  // sends only the steps added since the last time, at most 1,000 at a time.
   const script = [
     "#!/bin/sh",
     "# Reports Antigravity's model calls to a Kaeso source after each invocation. Needs curl and jq.",
     `KAESO_INGEST="${ingestUrl}/v1/antigravity"`,
     `KAESO_SOURCE_KEY="${secret}"`,
+    'STATE="${TMPDIR:-/tmp}/kaeso-antigravity"',
     "hook=$(cat)",
     "printf '{}'",
-    "log=$(printf '%s' \"$hook\" | jq -r '.transcriptPath // empty')",
-    '[ -n "$log" ] || exit 0',
-    'full="$(dirname "$log")/transcript_full.jsonl"',
-    '[ -f "$full" ] || exit 0',
-    `jq -cs --argjson hook "$hook" '{hook: $hook, steps: [.[] | select(.type == "PLANNER_RESPONSE") | {${fields.join(", ")}}]}' "$full" |`,
-    '  curl -fsS -m 10 "$KAESO_INGEST" -H "Authorization: Bearer $KAESO_SOURCE_KEY" \\',
-    '    -H "Content-Type: application/json" --data-binary @- > /dev/null 2>&1',
-    "exit 0",
+    "exec > /dev/null 2>&1",
+    "(",
+    "  log=$(printf '%s' \"$hook\" | jq -r '.transcriptPath // empty')",
+    "  conversation=$(printf '%s' \"$hook\" | jq -r '.conversationId // empty')",
+    '  full="$(dirname "$log")/transcript_full.jsonl"',
+    '  [ -n "$conversation" ] && [ -f "$full" ] || exit 0',
+    '  mkdir -p "$STATE" && mark="$STATE/$conversation"',
+    '  sent=$(cat "$mark" 2> /dev/null || echo -1)',
+    `  body=$({ printf '%s\\n' "$hook"; cat "$full"; } | jq -cs --argjson sent "$sent" '.[0] as $hook | {hook: ($hook${content ? "" : " | del(.lastUserInput)"}), steps: ([.[1:][] | select(.type == "PLANNER_RESPONSE" and .step_index > $sent) | {${fields.join(", ")}}] | .[:1000])}')`,
+    "  last=$(printf '%s' \"$body\" | jq '[.steps[].step_index] | max // empty')",
+    '  [ -n "$last" ] || exit 0',
+    '  printf \'%s\' "$body" | curl -fsS -m 30 "$KAESO_INGEST" -H "Authorization: Bearer $KAESO_SOURCE_KEY" \\',
+    '    -H "Content-Type: application/json" --data-binary @- && printf \'%s\' "$last" > "$mark"',
+    ") < /dev/null &",
   ].join("\n");
   return [
     { label: HOOK_SCRIPT, lang: "bash", code: script },
@@ -141,6 +151,11 @@ function opentelemetry({ ingestUrl, secret }: SetupTarget): CodeTab[] {
       label: t("project.sources.setup.collector", "Collector"),
       lang: "yaml",
       code: [
+        "# Add otlphttp/kaeso to the exporters of the pipelines you have already.",
+        "receivers:",
+        "  otlp:",
+        "    protocols:",
+        "      http:",
         "exporters:",
         "  otlphttp/kaeso:",
         `    endpoint: ${ingestUrl}/otlp`,
@@ -149,30 +164,33 @@ function opentelemetry({ ingestUrl, secret }: SetupTarget): CodeTab[] {
         "service:",
         "  pipelines:",
         "    traces:",
+        "      receivers: [otlp]",
         "      exporters: [otlphttp/kaeso]",
         "    logs:",
+        "      receivers: [otlp]",
         "      exporters: [otlphttp/kaeso]",
       ].join("\n"),
     },
   ];
 }
 
+/** The batch the HTTP source's example sends; the gateway's tests take the same body. */
+export const HTTP_EXAMPLE = {
+  requests: [
+    {
+      id: "req_0001",
+      duration_ms: 1200,
+      provider: "openai",
+      model: "gpt-5.4-mini",
+      status: 200,
+      usage: { input_tokens: 1200, output_tokens: 300 },
+      user_email: "ada@example.com",
+    },
+  ],
+  tool_calls: [{ id: "call_0001", duration_ms: 80, server: "linear", tool: "list_issues", user_email: "ada@example.com" }],
+};
+
 function http({ ingestUrl, secret }: SetupTarget): CodeTab[] {
-  const body = {
-    requests: [
-      {
-        id: "req_0001",
-        started_at: "2026-11-23T09:30:00Z",
-        duration_ms: 1200,
-        provider: "openai",
-        model: "gpt-5.4-mini",
-        status: 200,
-        input_tokens: 1200,
-        output_tokens: 300,
-        email: "ada@example.com",
-      },
-    ],
-  };
   return [
     {
       label: "curl",
@@ -181,7 +199,7 @@ function http({ ingestUrl, secret }: SetupTarget): CodeTab[] {
         `curl ${ingestUrl}/v1/events \\`,
         `  -H "Authorization: Bearer ${secret}" \\`,
         '  -H "Content-Type: application/json" \\',
-        `  -d '${JSON.stringify(body)}'`,
+        `  -d '${JSON.stringify(HTTP_EXAMPLE)}'`,
       ].join("\n"),
     },
   ];
@@ -193,6 +211,7 @@ function litellm({ ingestUrl, secret }: SetupTarget): CodeTab[] {
       label: LITELLM_CONFIG,
       lang: "yaml",
       code: [
+        "# Batches of 50 stay well under Kaeso's 8 MiB a batch: DEFAULT_BATCH_SIZE=50 on the proxy.",
         "litellm_settings:",
         '  callbacks: ["kaeso"]',
         "callback_settings:",

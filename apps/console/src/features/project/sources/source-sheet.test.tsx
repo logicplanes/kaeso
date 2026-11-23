@@ -178,7 +178,22 @@ describe("SourceSheet", () => {
     const sheet = await screen.findByRole("dialog", { name: "Claude Code, Ada's laptop" });
     await hoverReason(user, await within(sheet).findByRole("button", { name: "Rename" }), /Manage sources/);
     expect(within(sheet).getByRole("switch", { name: "Accept its events" })).toHaveAttribute("aria-disabled", "true");
-    expect(within(sheet).queryByRole("button", { name: "Give it a new key" })).not.toBeInTheDocument();
+    expect(within(sheet).getByRole("button", { name: "Give it a new key" })).toHaveAttribute("aria-disabled", "true");
+    expect(within(sheet).getByRole("button", { name: "Archive source" })).toHaveAttribute("aria-disabled", "true");
+  });
+
+  it("changes whom its requests count for", async () => {
+    signedIn();
+    source(externalSource({ user_id: "usr_grace" }));
+    on("PATCH", SOURCE, externalSource());
+    const { user } = await renderApp(projectPath("sources?source=src_claude"));
+    const sheet = await screen.findByRole("dialog", { name: "Claude Code, Ada's laptop" });
+    await user.click(await within(sheet).findByRole("combobox", { name: "Counts for" }));
+    await user.click(await screen.findByRole("option", { name: "ci-deploy (service account)" }));
+    await waitFor(() => expect(requests("PATCH", SOURCE).map((r) => r.body)).toEqual([{ service_account_id: "sa_deploy" }]));
+    await user.click(within(sheet).getByRole("combobox", { name: "Counts for" }));
+    await user.click(await screen.findByRole("option", { name: "You" }));
+    await waitFor(() => expect(requests("PATCH", SOURCE).map((r) => r.body)).toContainEqual({ user_id: "usr_ada" }));
   });
 
   it("says when the source doesn't exist, and closes", async () => {

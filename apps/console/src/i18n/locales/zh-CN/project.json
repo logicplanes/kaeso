@@ -207,6 +207,7 @@
   "project.sources.countsForHint": "事件中没有 Kaeso 认识的人时，请求记在谁名下。",
   "project.sources.countsForMe": "您",
   "project.sources.countsForNobody": "无人",
+  "project.sources.countsForRow": "没有匹配的成员时，请求记在谁名下。",
   "project.sources.createdOnBy": "{date}，由 {name} 创建",
   "project.sources.disabledBanner": "已停用：在您重新启用前，Kaeso 会拒绝它发送的内容。",
   "project.sources.disabledToast": "来源已停用",

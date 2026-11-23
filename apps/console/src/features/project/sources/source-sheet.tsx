@@ -13,6 +13,7 @@ import {
   KeyValue,
   SecretReveal,
   Section,
+  Select,
   SettingsGroup,
   SettingsRow,
   Sheet,
@@ -33,6 +34,8 @@ import { sourceQuery } from "~/api/queries/sources";
 import { useApiMutation } from "~/auth/mutation";
 import { useNeedsRight } from "~/auth/needs-right";
 import { useProjectRights } from "~/auth/rights";
+import { useSession } from "~/auth/session";
+import { compareNames } from "~/format/collate";
 import { t } from "~/i18n";
 import { common } from "~/i18n/common";
 import { SheetLinks } from "~/kaeso/sheet-links";
@@ -59,6 +62,7 @@ function SourceBody({ org, project, sourceId, onClose }: { org: string; project:
   const source = useQuery(sourceQuery(org, project, sourceId));
   const accounts = useQuery({ ...serviceAccountsQuery(org, project, true), enabled: rights.has("service_accounts.view") });
   const partyName = usePartyName(org, project);
+  const session = useSession();
   const [name, setName] = useState<string | null>(null);
   const [rotating, setRotating] = useState(false);
   const [archiving, setArchiving] = useState(false);
@@ -105,6 +109,16 @@ function SourceBody({ org, project, sourceId, onClose }: { org: string; project:
   const sum = totals(s);
   const days = eventsByDay(s, new Date().toISOString().slice(0, 10));
   const account = s.service_account_id ? accounts.data?.find((a) => a.id === s.service_account_id) : undefined;
+  const me = session.user.id;
+  const owners = [
+    ...(s.user_id && s.user_id !== me ? [{ value: s.user_id, label: partyName({ kind: "user", id: s.user_id }) }] : []),
+    { value: me, label: t("project.sources.countsForMe", "You") },
+    ...[...(accounts.data ?? [])]
+      .filter((a) => !a.archived_at || a.id === s.service_account_id)
+      .sort((a, b) => compareNames(a.name, b.name))
+      .map((a) => ({ value: a.id, label: t("project.sources.countsForAccount", "{name} (service account)", { name: a.name }) })),
+    ...(!s.user_id && !s.service_account_id ? [{ value: "", label: t("project.sources.countsForNobody", "Nobody") }] : []),
+  ];
   const countsFor = s.service_account_id
     ? t("project.sources.countsForAccount", "{name} (service account)", { name: account?.name ?? s.service_account_id })
     : s.user_id
@@ -248,6 +262,19 @@ function SourceBody({ org, project, sourceId, onClose }: { org: string; project:
         <Section title={t("project.sources.settings", "Settings")} spacing="none">
           <SettingsGroup>
             <SettingsRow
+              title={t("project.sources.countsFor", "Counts for")}
+              description={t("project.sources.countsForRow", "Whom requests count for when no member matches.")}
+              control={
+                <Select
+                  aria-label={t("project.sources.countsFor", "Counts for")}
+                  options={owners}
+                  value={s.service_account_id ?? s.user_id ?? ""}
+                  disabled={!!readOnly}
+                  onValueChange={(v: string) => update.mutate(v.startsWith("sa_") ? { service_account_id: v } : { user_id: v })}
+                />
+              }
+            />
+            <SettingsRow
               title={t("project.sources.matchMembers", "Match members by email")}
               description={t("project.sources.matchMembersRow", "An event with a member's email counts for them.")}
               control={
@@ -292,17 +319,23 @@ function SourceBody({ org, project, sourceId, onClose }: { org: string; project:
           </SettingsGroup>
         </Section>
       )}
-      {rights.has("sources.manage") && !archived && (
+      {!archived && (
         <Section title={t("project.sources.keyAndArchive", "Key and archive")} spacing="none">
           <div className="flex flex-col items-start gap-12">
             <Text tone="secondary">
               {t("project.sources.rotateHint", "A new key stops the old one at once; archiving is permanent and keeps its history.")}
             </Text>
             <div className="flex flex-wrap gap-8">
-              <Button size="sm" onClick={() => setRotating(true)}>
+              <Button size="sm" disabled={!!readOnly} {...(readOnly ? { disabledReason: readOnly } : {})} onClick={() => setRotating(true)}>
                 {t("project.sources.rotate", "Give it a new key")}
               </Button>
-              <Button variant="danger-secondary" size="sm" onClick={() => setArchiving(true)}>
+              <Button
+                variant="danger-secondary"
+                size="sm"
+                disabled={!!readOnly}
+                {...(readOnly ? { disabledReason: readOnly } : {})}
+                onClick={() => setArchiving(true)}
+              >
                 {t("project.sources.archive", "Archive source")}
               </Button>
             </div>

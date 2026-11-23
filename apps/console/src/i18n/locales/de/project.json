@@ -207,6 +207,7 @@
   "project.sources.countsForHint": "Für wen Anfragen zählen, wenn ein Ereignis niemanden nennt, den Kaeso kennt.",
   "project.sources.countsForMe": "Sie",
   "project.sources.countsForNobody": "Niemand",
+  "project.sources.countsForRow": "Für wen Anfragen zählen, wenn kein Mitglied passt.",
   "project.sources.createdOnBy": "{date} von {name}",
   "project.sources.disabledBanner": "Deaktiviert: Kaeso lehnt ab, was sie sendet, bis Sie sie wieder aktivieren.",
   "project.sources.disabledToast": "Quelle deaktiviert",

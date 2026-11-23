@@ -248,6 +248,7 @@
   "project.sources.countsForHint": "Whom requests count for when an event names nobody Kaeso knows.",
   "project.sources.countsForMe": "You",
   "project.sources.countsForNobody": "Nobody",
+  "project.sources.countsForRow": "Whom requests count for when no member matches.",
   "project.sources.createdOnBy": "{date} by {name}",
   "project.sources.disabledBanner": "Disabled: Kaeso refuses what it sends until you enable it again.",
   "project.sources.disabledToast": "Source disabled",

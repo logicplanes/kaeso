@@ -1,6 +1,8 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { SOURCE_KINDS } from "./labels";
-import { KEY_PLACEHOLDER, setupSnippets, type SetupTarget } from "./setup";
+import { HTTP_EXAMPLE, KEY_PLACEHOLDER, setupSnippets, type SetupTarget } from "./setup";
 
 const KEY = "sk-kso-src-AbCdEf";
 const at = (kind: SetupTarget["kind"], content = false): SetupTarget => ({ kind, ingestUrl: "https://kaeso.example.com/ingest", secret: KEY, content });
@@ -54,7 +56,9 @@ describe("setup snippets", () => {
     expect(script?.code).toContain('KAESO_INGEST="https://kaeso.example.com/ingest/v1/antigravity"');
     expect(script?.code).toContain("transcript_full.jsonl");
     expect(script?.code).not.toContain("content}");
+    expect(script?.code).toContain("del(.lastUserInput)");
     expect(all(at("antigravity", true))).toContain("output_tokens, content}");
+    expect(all(at("antigravity", true))).not.toContain("del(.lastUserInput)");
     expect(JSON.parse(hooks?.code ?? "{}")).toEqual({
       kaeso: { PostInvocation: [{ type: "command", command: "sh ~/.gemini/config/kaeso-source.sh", timeout: 15 }] },
     });
@@ -65,6 +69,16 @@ describe("setup snippets", () => {
     expect(all(at("openrouter"))).toContain("https://kaeso.example.com/ingest/otlp/v1/traces");
     expect(all(at("opentelemetry"))).toContain("Authorization=Bearer%20");
     expect(all(at("http"))).toContain("curl https://kaeso.example.com/ingest/v1/events");
+    expect(all(at("litellm"))).toContain("DEFAULT_BATCH_SIZE=50");
+    expect(all(at("opentelemetry"))).toContain("receivers: [otlp]");
+    expect(all(at("codex"))).toContain("# Merge into the [otel] table");
+  });
+
+  it("send the HTTP example the gateway's tests take", () => {
+    // Tests run from the console's folder.
+    const fixture = resolve(process.cwd(), "../../crates/kaeso-server/tests/server/fixtures/sources/http-example.json");
+    expect(HTTP_EXAMPLE).toEqual(JSON.parse(readFileSync(fixture, "utf8")));
+    expect(all(at("http"))).toContain(`-d '${JSON.stringify(HTTP_EXAMPLE)}'`);
   });
 
   it("carry the placeholder where the key is no longer shown", () => {

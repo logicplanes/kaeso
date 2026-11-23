@@ -13,3 +13,4 @@ Real OpenTelemetry exports of coding agents, as they reached a collector, for th
 | `claude-code-mcp-named.json` | Claude Code 2.1.322 | The same with `OTEL_LOG_TOOL_DETAILS=1`: `tool_parameters` names the server and the tool |
 | `codex-logs.json` | Codex CLI 0.171.0 | `codex exec` against a mock Responses provider, `[otel] exporter = { otlp-http = { protocol = "json" } }` |
 | `gemini-cli-logs.json` | Gemini CLI 0.70.0 | `gemini -p` against a mock Gemini API, `GEMINI_TELEMETRY_OTLP_PROTOCOL=http` |
+| `http-example.json` | The console | The body of the HTTP source's setup snippet; the console's tests check that the snippet sends exactly this |

@@ -181,6 +181,7 @@ export const docs = {
       name: "The name beside the tile, or the tile's accessible name; the kind's product name by default.",
       size: "The tile's size, as a provider's tile.",
       withName: "Shows the name beside the tile.",
+      decorative: "Hides the tile from assistive technology, where the text beside it already names the client.",
     },
   },
   StatusCode: {
