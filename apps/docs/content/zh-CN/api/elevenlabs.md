@@ -112,7 +112,7 @@ with open("speech.mp3", "wb") as f:
 - **限额。**会话在打开时计为一次请求，计入密钥的请求速率。会话运行期间，Kaeso 每 30 秒检查一次硬性支出预算，预算用尽时关闭会话。会话在空闲达到 `upstream.stream_idle_timeout`、运行满一小时或 Kaeso 重启时结束。一条消息最大 1 MiB。
 - **消息。**消息在应用和 ElevenLabs 之间原样传递；Kaeso 只读取它们来统计所携带的内容并取出密钥。ElevenLabs 自己的消息和关闭代码原样到达应用。
 - **错误。**Socket 打开之前被 Kaeso 拒绝的内容，会以 ElevenLabs 的错误格式通过 HTTP 返回。之后，Kaeso 发送该 Socket 自己的错误消息：语音转文本为 `{"message_type": "auth_error", "error": …}`，语音 Socket 为 `{"message", "error", "code", "param"}`；应用可以修正的问题以 1008 关闭，其他以 1011 关闭。
-- **日志与费用。**[请求日志](../console/request-logs.md)把一次会话显示为一个请求，例如 `text-to-speech/stream-input`，并记录它发送用于朗读的字符数或用于转写的音频时长，从不记录音频。语音按字符计费，`scribe_v2_realtime` 按 KPMR 每小时音频的价格计费，时长根据会话的 `audio_format`（`pcm_*` 或 `ulaw_8000`）计算。
+- **日志与费用。**[请求日志](../console/request-logs.md)把一次会话显示为一个请求，例如 `text-to-speech/stream-input`，并记录它发送用于朗读的字符数或用于转写的音频时长，从不记录音频。语音按字符计费，`scribe_v2_realtime` 按 KPMR 每小时音频的价格计费，时长根据会话的 `audio_format`（`pcm_*` 或 `ulaw_8000`，默认 `pcm_16000`）计算。
 
 ## 其他服务商
 

@@ -147,6 +147,14 @@ impl Opening {
                 )
             })?;
         api.path(voice.as_deref())?;
+        if api == RealtimeApi::SpeechToText {
+            rt::checked_stt_audio_format(
+                query
+                    .iter()
+                    .filter(|(k, _)| k == "audio_format")
+                    .map(|(_, v)| v.as_str()),
+            )?;
+        }
         let now = state.clock.now();
         Ok(Opening {
             state,
@@ -452,29 +460,42 @@ struct Session {
 struct Measured {
     characters: u64,
     audio_ms: u64,
+    audio_rem: u64,
 }
 
 impl Measured {
     fn add(&mut self, read: &rt::ClientMessage, audio_format: Option<&str>) {
         self.characters = self.characters.saturating_add(read.characters);
         let per_second = match (read.sample_rate, audio_format) {
-            (Some(rate), Some(f)) if f.starts_with("pcm") => Some(u64::from(rate) * 2),
+            (Some(rate), Some(f)) if rate > 0 && f.starts_with("pcm") => {
+                rt::bytes_per_second(f).map(|fmt| u64::from(rate).saturating_mul(2).min(fmt))
+            }
             (_, Some(f)) => rt::bytes_per_second(f),
             _ => None,
         };
-        if let Some(per_second) = per_second.filter(|p| *p > 0) {
-            self.audio_ms = self
-                .audio_ms
-                .saturating_add(read.audio_bytes.saturating_mul(1000) / per_second);
+        if let Some(per_second) = per_second.filter(|p| *p > 0)
+            && read.audio_bytes > 0
+        {
+            let scaled = read
+                .audio_bytes
+                .saturating_mul(1000)
+                .saturating_add(self.audio_rem);
+            self.audio_ms = self.audio_ms.saturating_add(scaled / per_second);
+            self.audio_rem = scaled % per_second;
         }
     }
 
     fn units(&self, format: Option<String>) -> MediaUnits {
+        let input_ms = if self.audio_ms == 0 && self.audio_rem > 0 {
+            1
+        } else {
+            self.audio_ms
+        };
         MediaUnits {
             characters: self.characters,
-            input_ms: self.audio_ms,
+            input_ms,
             format,
-            measured: self.audio_ms > 0,
+            measured: input_ms > 0,
             ..MediaUnits::default()
         }
     }
@@ -487,16 +508,22 @@ enum End {
 
 impl Session {
     fn audio_format(&self) -> Option<String> {
-        let key = if self.opening.api.speaks() {
-            "output_format"
+        if self.opening.api.speaks() {
+            self.opening
+                .query
+                .iter()
+                .find(|(k, _)| k == "output_format")
+                .map(|(_, v)| v.clone())
         } else {
-            "audio_format"
-        };
-        self.opening
-            .query
-            .iter()
-            .find(|(k, _)| k == key)
-            .map(|(_, v)| v.clone())
+            rt::checked_stt_audio_format(
+                self.opening
+                    .query
+                    .iter()
+                    .filter(|(k, _)| k == "audio_format")
+                    .map(|(_, v)| v.as_str()),
+            )
+            .ok()
+        }
     }
 
     async fn run(mut self, mut client: WebSocket, first: Option<rt::ClientMessage>) {

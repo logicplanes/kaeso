@@ -251,6 +251,63 @@ async fn realtime_speech_to_text_is_billed_by_the_audio_it_hears() {
 }
 
 #[tokio::test]
+async fn realtime_speech_to_text_defaults_audio_format_and_refuses_unknown_ones() {
+    let (env, base) = env().await;
+    let path = "/v1/speech-to-text/realtime";
+    for bad in [
+        format!("{path}?model_id=scribe_v2_realtime&audio_format=pcm_0"),
+        format!("{path}?model_id=scribe_v2_realtime&audio_format=pcm_999999999"),
+        format!("{path}?model_id=scribe_v2_realtime&audio_format=mp3_44100_128"),
+        format!("{path}?model_id=scribe_v2_realtime&audio_format=pcm_48000&audio_format=pcm_8000"),
+    ] {
+        let err = open(&base, &bad, Some(&env.key)).await.err().unwrap();
+        let (status, body) = refusal(err);
+        assert_eq!(status, 400, "{bad}: {body}");
+    }
+
+    let (mut ws, id) = open(
+        &base,
+        &format!("{path}?model_id=scribe_v2_realtime&commit_strategy=manual"),
+        Some(&env.key),
+    )
+    .await
+    .unwrap();
+    let first = ws.next().await.unwrap().unwrap();
+    assert!(first.to_text().unwrap().contains("session_started"));
+    let small = base64::engine::general_purpose::STANDARD.encode([0u8; 16]);
+    for _ in 0..100 {
+        send(
+            &mut ws,
+            json!({"message_type": "input_audio_chunk", "audio_base_64": small, "commit": false}),
+        )
+        .await;
+    }
+    let half_sec = base64::engine::general_purpose::STANDARD.encode(vec![0u8; 16_000]);
+    send(
+        &mut ws,
+        json!({"message_type": "input_audio_chunk", "audio_base_64": half_sec, "commit": false, "sample_rate": 4_000_000_000_u64}),
+    )
+    .await;
+    send(
+        &mut ws,
+        json!({"message_type": "input_audio_chunk", "audio_base_64": half_sec, "commit": true, "sample_rate": 0}),
+    )
+    .await;
+    while let Some(Ok(Message::Text(t))) = ws.next().await {
+        let v: Value = serde_json::from_str(t.as_str()).unwrap();
+        if v["message_type"] == "committed_transcript" {
+            break;
+        }
+    }
+    ws.close(None).await.unwrap();
+    let o = outcome(&env, &id).await;
+    let media = o.media.clone().unwrap();
+    assert_eq!(media.format.as_deref(), Some("pcm_16000"));
+    assert_eq!(media.input_ms, 1050);
+    assert!(kaeso_server::services::usage::costed(&o).1 > rust_decimal::Decimal::ZERO);
+}
+
+#[tokio::test]
 async fn dialogue_sockets_count_every_lines_characters() {
     let (env, base) = env().await;
     let path = "/v1/text-to-dialogue/stream-input";

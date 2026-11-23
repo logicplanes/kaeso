@@ -162,15 +162,45 @@ fn decoded_len(b64: &str) -> u64 {
     (b64.trim_end_matches('=').len() as u64) * 3 / 4
 }
 
+/// ElevenLabs' default `audio_format` on `/v1/speech-to-text/realtime` when the query omits it.
+pub const DEFAULT_STT_AUDIO_FORMAT: &str = "pcm_16000";
+
 /// How many bytes one second of audio in `audio_format` takes: 16-bit PCM or 8-bit µ-law, one
-/// channel, as realtime speech to text takes them.
+/// channel, for the seven `ASRInputFormat` values ElevenLabs' realtime speech to text takes.
 pub fn bytes_per_second(audio_format: &str) -> Option<u64> {
-    let (codec, rate) = audio_format.split_once('_')?;
-    let rate: u64 = rate.parse().ok()?;
-    match codec {
-        "pcm" => Some(rate * 2),
-        "ulaw" => Some(rate),
+    match audio_format {
+        "pcm_8000" => Some(16_000),
+        "pcm_16000" => Some(32_000),
+        "pcm_22050" => Some(44_100),
+        "pcm_24000" => Some(48_000),
+        "pcm_44100" => Some(88_200),
+        "pcm_48000" => Some(96_000),
+        "ulaw_8000" => Some(8_000),
         _ => None,
+    }
+}
+
+/// Validates the `audio_format` query values on `/v1/speech-to-text/realtime` and defaults an
+/// omitted one to [`DEFAULT_STT_AUDIO_FORMAT`].
+pub fn checked_stt_audio_format<'a>(
+    mut values: impl Iterator<Item = &'a str>,
+) -> Result<String, KppError> {
+    let Some(first) = values.next() else {
+        return Ok(DEFAULT_STT_AUDIO_FORMAT.to_owned());
+    };
+    if values.next().is_some() {
+        return Err(
+            KppError::invalid_request("Give `audio_format` at most once.")
+                .with_param("audio_format"),
+        );
+    }
+    if bytes_per_second(first).is_some() {
+        Ok(first.to_owned())
+    } else {
+        Err(KppError::invalid_request(format!(
+            "`audio_format` `{first}` is not a realtime PCM or µ-law format ElevenLabs takes, such as `pcm_16000` or `ulaw_8000`."
+        ))
+        .with_param("audio_format"))
     }
 }
 
@@ -294,10 +324,39 @@ mod tests {
 
     #[test]
     fn audio_lengths_come_from_the_format() {
-        assert_eq!(bytes_per_second("pcm_16000"), Some(32_000));
-        assert_eq!(bytes_per_second("ulaw_8000"), Some(8_000));
-        assert_eq!(bytes_per_second("mp3_44100_128"), None);
-        assert_eq!(bytes_per_second("pcm"), None);
+        for (fmt, bps) in [
+            ("pcm_8000", 16_000),
+            ("pcm_16000", 32_000),
+            ("pcm_22050", 44_100),
+            ("pcm_24000", 48_000),
+            ("pcm_44100", 88_200),
+            ("pcm_48000", 96_000),
+            ("ulaw_8000", 8_000),
+        ] {
+            assert_eq!(bytes_per_second(fmt), Some(bps));
+            assert_eq!(checked_stt_audio_format([fmt].into_iter()).unwrap(), fmt);
+        }
+        assert_eq!(
+            checked_stt_audio_format(std::iter::empty()).unwrap(),
+            DEFAULT_STT_AUDIO_FORMAT
+        );
+        for bad in [
+            "",
+            "mp3_44100_128",
+            "pcm",
+            "pcm_0",
+            "ulaw_0",
+            "pcm_32000",
+            "pcm_048000",
+            "pcm_+16000",
+            "ulaw_08000",
+        ] {
+            assert_eq!(bytes_per_second(bad), None, "{bad}");
+            let err = checked_stt_audio_format([bad].into_iter()).unwrap_err();
+            assert_eq!(err.param.as_deref(), Some("audio_format"));
+        }
+        let dup = checked_stt_audio_format(["pcm_16000", "pcm_8000"].into_iter()).unwrap_err();
+        assert_eq!(dup.param.as_deref(), Some("audio_format"));
     }
 
     #[test]

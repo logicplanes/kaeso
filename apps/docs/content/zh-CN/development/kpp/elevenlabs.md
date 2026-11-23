@@ -111,7 +111,7 @@ ElevenLabs 通过 `POST /v1/flows/video` 使用 Veo 3.1 和 Seedance 2 模型生
 | --- | --- |
 | `RealtimeApi::from_path`、`path` | 识别 `/v1/text-to-speech/{voice_id}/stream-input` 和 `/multi-stream-input`、`/v1/text-to-dialogue/stream-input` 和 `/multi-stream-input` 以及 `/v1/speech-to-text/realtime` 的 Socket，并写出它在 ElevenLabs 上的路径，声音作为一个经过检查的路径段 |
 | `read_client_message` | 从应用的消息中取出 `xi_api_key`、`authorization` 和 `single_use_token`，并统计消息携带的内容：`text` 或每个 `inputs[].text` 的字符数，或 `audio_base_64` 的字节数及其 `sample_rate` |
-| `bytes_per_second` | 一秒 `pcm_*`（16 位）或 `ulaw_8000` 音频占用的字节数 |
+| `bytes_per_second`、`checked_stt_audio_format` | 检查实时语音转文本的 `audio_format` 取值（`pcm_8000` 至 `pcm_48000` 与 `ulaw_8000`，默认 `pcm_16000`），并给出一秒音频占用的字节数 |
 | `error_message` | 该 Socket 自己的错误消息：语音转文本为 `{"message_type", "error"}`，其他为 `{"message", "error", "code", "param"}`，以及关闭代码：应用可以修正的问题为 1008，其他为 1011 |
 
 来源：ElevenLabs 的 [WebSocket 参考](https://elevenlabs.io/docs/websockets)和[文本转对话 WebSocket](https://elevenlabs.io/docs/api-reference/text-to-dialogue/ttd-websocket)（2026-11-09 阅读），以及官方 `elevenlabs` Python SDK 2.77.0（`realtime_tts.py`、`realtime/`）。
