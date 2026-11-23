@@ -3,7 +3,7 @@ use std::time::Duration;
 use kaeso_store::pg::mcp_servers;
 use uuid::Uuid;
 
-use super::JobError;
+use super::{JobError, Ran};
 use crate::services::mcp_tools;
 use crate::state::AppState;
 
@@ -25,7 +25,7 @@ fn time(d: Duration) -> time::Duration {
 
 // One server at a time: a sync calls the server, and an instance with many servers should not
 // open as many connections at once.
-pub async fn run(state: AppState) -> Result<String, JobError> {
+pub async fn run(state: AppState) -> Result<Ran, JobError> {
     let interval = state.config.mcp_servers.sync_interval;
     let now = state.clock.now();
     let earliest = now - time(interval) + time(interval / 10);
@@ -47,7 +47,10 @@ pub async fn run(state: AppState) -> Result<String, JobError> {
             }
         }
     }
-    Ok(format!("{synced} MCP servers synced, {failed} not reached"))
+    Ok(Ran::of(
+        format!("{synced} MCP servers synced, {failed} not reached"),
+        synced + failed > 0,
+    ))
 }
 
 #[cfg(test)]

@@ -1231,11 +1231,14 @@ async fn shorten_expiry(
     ch::shorten_expiry(clickhouse, job.org_id, days, content).await
 }
 
-pub async fn run_jobs(state: &AppState) -> Result<String, StoreError> {
+pub async fn run_jobs(state: &AppState) -> Result<crate::jobs::Ran, StoreError> {
     let Some(clickhouse) = state.clickhouse.as_ref() else {
-        return Ok("request logs are off; log jobs wait".to_owned());
+        return Ok(crate::jobs::Ran::idle(
+            "request logs are off; log jobs wait",
+        ));
     };
     let jobs = log_jobs::pending(&state.pg, 20).await?;
+    let pending = !jobs.is_empty();
     let mut done = 0;
     for job in jobs {
         let mut result = ch::delete_range(
@@ -1256,7 +1259,10 @@ pub async fn run_jobs(state: &AppState) -> Result<String, StoreError> {
             done += 1;
         }
     }
-    Ok(format!("{done} log jobs done"))
+    Ok(crate::jobs::Ran::of(
+        format!("{done} log jobs done"),
+        pending,
+    ))
 }
 
 #[cfg(test)]

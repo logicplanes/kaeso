@@ -4,6 +4,7 @@ use crate::common;
 
 use common::{App, Owner, uuid};
 use kaeso_mcp::canonical;
+use kaeso_server::jobs::Ran;
 use kaeso_server::services::mcp_tools;
 use kaeso_store::pg::mcp_servers::{self as servers, NewServer, ServerRow};
 use kaeso_store::pg::mcp_tools as tools;
@@ -308,7 +309,7 @@ async fn the_sync_job_asks_each_server_once_per_interval() {
         .await
         .unwrap()
         .unwrap();
-    assert_eq!(summary, "2 MCP servers synced, 0 not reached");
+    assert_eq!(summary, Ran::worked("2 MCP servers synced, 0 not reached"));
     assert_eq!(discovers(), 2);
     for row in [&a, &b] {
         assert_eq!(
@@ -329,6 +330,6 @@ async fn the_sync_job_asks_each_server_once_per_interval() {
         .await
         .unwrap()
         .unwrap();
-    assert_eq!(summary, "2 MCP servers synced, 0 not reached");
+    assert_eq!(summary, Ran::worked("2 MCP servers synced, 0 not reached"));
     assert_eq!(discovers(), 4);
 }

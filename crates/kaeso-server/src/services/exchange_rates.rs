@@ -105,7 +105,7 @@ pub async fn due(state: &AppState) -> Result<bool, StoreError> {
         .is_none_or(|at| state.clock.now() - at >= wait))
 }
 
-pub async fn sync(state: &AppState) -> Result<String, StoreError> {
+pub async fn sync(state: &AppState) -> Result<crate::jobs::Ran, StoreError> {
     let now = state.clock.now();
     let first = store::all(&state.pg).await?.is_empty();
     let file = if first { HISTORY } else { DAILY };
@@ -118,7 +118,7 @@ pub async fn sync(state: &AppState) -> Result<String, StoreError> {
         Err(error) => {
             tracing::warn!(%error, "cannot fetch the ECB reference rates; the gateway keeps the ones it has");
             store::checked(&state.pg, now, Some(&error)).await?;
-            return Ok(format!("failed: {error}"));
+            return Ok(crate::jobs::Ran::worked(format!("failed: {error}")));
         }
     };
     let mut added = 0;
@@ -131,9 +131,12 @@ pub async fn sync(state: &AppState) -> Result<String, StoreError> {
     }
     store::checked(&state.pg, now, None).await?;
     let book = load(state).await?;
-    Ok(format!(
-        "{added} new days, latest {}",
-        book.latest_day().map(|d| d.to_string()).unwrap_or_default()
+    Ok(crate::jobs::Ran::of(
+        format!(
+            "{added} new days, latest {}",
+            book.latest_day().map(|d| d.to_string()).unwrap_or_default()
+        ),
+        added > 0,
     ))
 }
 

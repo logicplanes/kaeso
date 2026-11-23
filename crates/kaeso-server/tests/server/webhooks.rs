@@ -48,6 +48,7 @@ async fn deliver(env: &Env) -> String {
     kaeso_server::services::webhooks::run(env.app.state.clone())
         .await
         .unwrap()
+        .summary
 }
 
 async fn ask(env: &Env) -> Answer {

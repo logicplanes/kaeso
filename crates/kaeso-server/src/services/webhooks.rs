@@ -801,10 +801,10 @@ async fn turn_off(state: &AppState, d: &store::Due, now: OffsetDateTime) -> Resu
 }
 
 /// The `webhooks` job: sends what is due, a few at a time.
-pub async fn run(state: AppState) -> Result<String, JobError> {
+pub async fn run(state: AppState) -> Result<crate::jobs::Ran, JobError> {
     let due = store::due(&state.pg, state.clock.now(), BATCH).await?;
     if due.is_empty() {
-        return Ok("no webhook deliveries due".to_owned());
+        return Ok(crate::jobs::Ran::idle("no webhook deliveries due"));
     }
     let outcomes: Vec<Result<&'static str, JobError>> = futures::stream::iter(due)
         .map(|d| deliver_one(&state, d))
@@ -819,7 +819,9 @@ pub async fn run(state: AppState) -> Result<String, JobError> {
             _ => failed += 1,
         }
     }
-    Ok(format!("{delivered} webhook deliveries sent, {failed} not"))
+    Ok(crate::jobs::Ran::worked(format!(
+        "{delivered} webhook deliveries sent, {failed} not"
+    )))
 }
 
 /// Sends one webhook's due test delivery at once, so the console can say how it went.

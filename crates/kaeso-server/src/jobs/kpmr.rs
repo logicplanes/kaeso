@@ -1,16 +1,16 @@
-use crate::jobs::JobError;
+use crate::jobs::{JobError, Ran};
 use crate::services::kpmr::{self, Synced};
 use crate::state::AppState;
 
-pub async fn run(state: AppState) -> Result<String, JobError> {
+pub async fn run(state: AppState) -> Result<Ran, JobError> {
     if !kpmr::due(&state).await? {
-        return Ok("not due".into());
+        return Ok(Ran::idle("not due"));
     }
     match kpmr::sync(&state).await? {
-        Synced::Unchanged => Ok("unchanged".into()),
-        Synced::Applied(a) => Ok(format!(
+        Synced::Unchanged => Ok(Ran::idle("unchanged")),
+        Synced::Applied(a) => Ok(Ran::worked(format!(
             "applied: {} price changes, {} delisted, {} listed again",
             a.price_changes, a.delisted, a.relisted
-        )),
+        ))),
     }
 }

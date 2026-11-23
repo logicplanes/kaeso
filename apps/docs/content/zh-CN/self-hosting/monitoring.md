@@ -137,6 +137,8 @@ docker compose logs -f gateway
 
 请求产生的每一行日志都带有它的 `request_id`，回复也会在 `kaeso-request-id` 响应头中返回该 ID。机密、服务商密钥和 Authorization 请求头从不写入日志。`KAESO_LOG_LEVEL` 设置日志级别或过滤器，例如 `info,kaeso_server=debug`；`KAESO_LOG_FORMAT=text` 为开发输出纯文本行。
 
+后台任务的某次运行若有改动，以 `info` 级别记录；运行失败以 `error` 级别记录。没有可做之事的运行以 `debug` 级别记录；设置 `info,kaeso_server::jobs=debug` 也会显示这些运行。
+
 ## 下一步
 
 - [故障排除](troubleshooting.md)：为健康检查、指标或日志显示的问题找到解决方法。

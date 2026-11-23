@@ -70,6 +70,7 @@ async fn run_notices(app: &App) -> String {
         .await
         .unwrap()
         .unwrap()
+        .summary
 }
 
 fn next_morning(app: &App) {

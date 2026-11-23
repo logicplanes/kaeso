@@ -2,13 +2,13 @@ use time::Duration;
 
 use crate::auth::agents::UNUSED_LIFETIME;
 use crate::auth::sessions::IDLE_LIFETIME;
-use crate::jobs::JobError;
+use crate::jobs::{JobError, Ran};
 use crate::state::AppState;
 
 const AGENT_ACTIVITY_KEPT: Duration = Duration::days(90);
 const UNUSED_CLIENTS_KEPT: Duration = Duration::days(1);
 
-pub async fn run(state: AppState) -> Result<String, JobError> {
+pub async fn run(state: AppState) -> Result<Ran, JobError> {
     let now = state.clock.now();
     let sessions =
         kaeso_store::pg::sessions::delete_stale(&state.pg, now, now - IDLE_LIFETIME).await?;
@@ -30,10 +30,23 @@ pub async fn run(state: AppState) -> Result<String, JobError> {
     .await?;
     let deliveries =
         kaeso_store::pg::webhooks::prune(&state.pg, now - crate::services::webhooks::KEEP).await?;
-    Ok(format!(
-        "deleted {sessions} sessions, {tokens} tokens, {invites} invites; revoked {agents} agents; \
-         deleted {} agent requests, {} agent tokens, {} agent clients, {} agent tool calls, \
-         {deliveries} webhook deliveries",
-        swept.requests, swept.tokens, swept.clients, swept.activity
+    let any = sessions
+        + tokens
+        + invites
+        + agents
+        + swept.requests
+        + swept.tokens
+        + swept.clients
+        + swept.activity
+        + deliveries
+        > 0;
+    Ok(Ran::of(
+        format!(
+            "deleted {sessions} sessions, {tokens} tokens, {invites} invites; revoked {agents} agents; \
+             deleted {} agent requests, {} agent tokens, {} agent clients, {} agent tool calls, \
+             {deliveries} webhook deliveries",
+            swept.requests, swept.tokens, swept.clients, swept.activity
+        ),
+        any,
     ))
 }

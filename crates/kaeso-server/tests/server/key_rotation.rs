@@ -5,6 +5,7 @@ use crate::common;
 use axum::http::{Method, StatusCode};
 use common::{App, PASSWORD};
 use kaeso_core::clock::Clock;
+use kaeso_server::jobs::Ran;
 use kaeso_testkit::services::TestServices;
 use serde_json::{Value, json};
 
@@ -121,7 +122,7 @@ async fn a_rotated_key_keeps_its_settings_and_the_old_key_works_until_the_grace_
             .await
             .unwrap()
             .unwrap(),
-        "sent 0 key expiry warnings",
+        Ran::idle("sent 0 key expiry warnings"),
         "a replaced key's end is no surprise"
     );
 

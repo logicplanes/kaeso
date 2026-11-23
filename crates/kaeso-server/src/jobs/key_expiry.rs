@@ -8,10 +8,10 @@ use kaeso_store::StoreError;
 use kaeso_store::pg::{keys, members, notifications, users};
 use uuid::Uuid;
 
-use crate::jobs::JobError;
+use crate::jobs::{JobError, Ran};
 use crate::state::AppState;
 
-pub async fn run(state: AppState) -> Result<String, JobError> {
+pub async fn run(state: AppState) -> Result<Ran, JobError> {
     let now = state.clock.now();
     let zone = crate::time_zone::or_utc(&kaeso_store::pg::instance::time_zone(&state.pg).await?);
     let zone_name = zone.iana_name().unwrap_or("UTC");
@@ -136,7 +136,10 @@ pub async fn run(state: AppState) -> Result<String, JobError> {
         }
     }
     sent += platform_keys(&state, now, &zone, zone_name).await?;
-    Ok(format!("sent {sent} key expiry warnings"))
+    Ok(Ran::of(
+        format!("sent {sent} key expiry warnings"),
+        sent > 0,
+    ))
 }
 
 // An org's platform keys: their warnings go to the members who may create and rotate platform

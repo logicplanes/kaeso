@@ -8,6 +8,7 @@ use axum::http::{Method, StatusCode};
 use common::uuid;
 use common::v1::{Env, call, chat};
 use kaeso_core::clock::Clock as _;
+use kaeso_server::jobs::Ran;
 use serde_json::{Value, json};
 
 // The ECB's two files as it writes them: single quotes in the daily one, double in the history.
@@ -60,7 +61,7 @@ impl Ecb {
     }
 }
 
-async fn run_job(env: &Env) -> String {
+async fn run_job(env: &Env) -> Ran {
     let job = kaeso_server::jobs::all()
         .into_iter()
         .find(|j| j.name == "exchange_rates")
@@ -109,7 +110,10 @@ async fn without_rates_only_dollars_and_the_first_fetch_takes_90_days() {
         "Kaeso has no exchange rate for EUR; use a currency from `exchange-rates`."
     );
 
-    assert_eq!(run_job(&env).await, "2 new days, latest 2026-11-13");
+    assert_eq!(
+        run_job(&env).await,
+        Ran::worked("2 new days, latest 2026-11-13")
+    );
     assert_eq!(ecb.asked(), ["eurofxref-hist-90d.xml"]);
     let got = rates(&env).await;
     assert_eq!(
@@ -118,10 +122,17 @@ async fn without_rates_only_dollars_and_the_first_fetch_takes_90_days() {
     );
     assert_eq!(per_usd(&got, "EUR").as_deref(), Some("0.917431192661"));
     assert_eq!(per_usd(&got, "USD").as_deref(), Some("1"));
-    assert_eq!(run_job(&env).await, "not due", "six hours after a fetch");
+    assert_eq!(
+        run_job(&env).await,
+        Ran::idle("not due"),
+        "six hours after a fetch"
+    );
 
     env.app.clock.advance(time::Duration::hours(7));
-    assert_eq!(run_job(&env).await, "1 new days, latest 2026-11-16");
+    assert_eq!(
+        run_job(&env).await,
+        Ran::worked("1 new days, latest 2026-11-16")
+    );
     assert_eq!(ecb.asked().last().unwrap(), "eurofxref-daily.xml");
     assert_eq!(
         per_usd(&rates(&env).await, "GBP").as_deref(),
@@ -134,7 +145,11 @@ async fn a_failed_fetch_keeps_the_rates_and_is_tried_again_in_15_minutes() {
     let (ecb, url) = Ecb::start().await;
     let env = env_with(&url).await;
     *ecb.history.lock().unwrap() = None;
-    assert!(run_job(&env).await.starts_with("failed: "));
+    let failed = run_job(&env).await;
+    assert!(
+        !failed.idle && failed.summary.starts_with("failed: "),
+        "{failed:?}"
+    );
     let settings = env.app.get("/instance/settings", &env.owner.cookie).await;
     assert!(
         settings.body["exchange_rates"]["error"]
@@ -144,16 +159,19 @@ async fn a_failed_fetch_keeps_the_rates_and_is_tried_again_in_15_minutes() {
         "{:?}",
         settings.body
     );
-    assert_eq!(run_job(&env).await, "not due");
+    assert_eq!(run_job(&env).await, Ran::idle("not due"));
     env.app.clock.advance(time::Duration::minutes(16));
     *ecb.history.lock().unwrap() = Some("<html>maintenance</html>");
     assert_eq!(
         run_job(&env).await,
-        "failed: eurofxref-hist-90d.xml: the file has no day of rates"
+        Ran::worked("failed: eurofxref-hist-90d.xml: the file has no day of rates")
     );
     env.app.clock.advance(time::Duration::minutes(16));
     *ecb.history.lock().unwrap() = Some(HISTORY);
-    assert_eq!(run_job(&env).await, "2 new days, latest 2026-11-13");
+    assert_eq!(
+        run_job(&env).await,
+        Ran::worked("2 new days, latest 2026-11-13")
+    );
     let settings = env.app.get("/instance/settings", &env.owner.cookie).await;
     assert_eq!(settings.body["exchange_rates"]["error"], Value::Null);
     assert_eq!(settings.body["exchange_rates"]["day"], "2026-11-13");
@@ -172,7 +190,7 @@ async fn a_failed_fetch_keeps_the_rates_and_is_tried_again_in_15_minutes() {
     assert_eq!(r.body["exchange_rates"]["fetch"], false);
     env.app.clock.advance(time::Duration::days(2));
     let before = ecb.asked().len();
-    assert_eq!(run_job(&env).await, "not due");
+    assert_eq!(run_job(&env).await, Ran::idle("not due"));
     assert_eq!(ecb.asked().len(), before);
     let got = rates(&env).await;
     assert_eq!(got["fetching"], false);

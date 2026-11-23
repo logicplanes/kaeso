@@ -1119,7 +1119,8 @@ async fn an_agent_keeps_working_until_it_goes_unused_for_ninety_days() {
     assert_eq!(unused.body["error"], "invalid_grant");
     let report = kaeso_server::jobs::cleanup::run(app.state.clone())
         .await
-        .unwrap();
+        .unwrap()
+        .summary;
     assert!(report.contains("revoked 1 agents"), "{report}");
 }
 

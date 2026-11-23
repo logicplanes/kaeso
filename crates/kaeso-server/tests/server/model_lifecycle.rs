@@ -12,6 +12,7 @@ use axum::http::{Method, StatusCode};
 use common::v1::{Answer, Capture, Env, call, chat};
 use kaeso_core::clock::Clock;
 use kaeso_core::kpmr;
+use kaeso_server::jobs::Ran;
 use kaeso_store::pg::limits::UsageRow;
 use serde_json::{Value, json};
 use time::{Date, Duration};
@@ -137,7 +138,7 @@ async fn used(env: &Env, model: &str, on: Date, requests: i64) {
     .unwrap();
 }
 
-async fn run_job(env: &Env) -> String {
+async fn run_job(env: &Env) -> Ran {
     let job = kaeso_server::jobs::all()
         .into_iter()
         .find(|j| j.name == "model_lifecycle")
@@ -423,27 +424,27 @@ async fn the_lifecycle_job_announces_warns_while_the_model_is_called_and_moves_o
     retire(&env, "gpt-4o", start, shutdown, "gpt-4o-mini").await;
     assert_eq!(
         run_job(&env).await,
-        "1 announced, 0 warned, 0 moved, 0 replacements added"
+        Ran::worked("1 announced, 0 warned, 0 moved, 0 replacements added")
     );
     assert_eq!(
         run_job(&env).await,
-        "0 announced, 0 warned, 0 moved, 0 replacements added"
+        Ran::idle("0 announced, 0 warned, 0 moved, 0 replacements added")
     );
 
     // 30 days before: only a project that still calls the model hears about it.
     env.app.clock.advance(Duration::days(10));
     assert_eq!(
         run_job(&env).await,
-        "0 announced, 0 warned, 0 moved, 0 replacements added"
+        Ran::idle("0 announced, 0 warned, 0 moved, 0 replacements added")
     );
     used(&env, "gpt-4o", today(&env), 2).await;
     assert_eq!(
         run_job(&env).await,
-        "0 announced, 1 warned, 0 moved, 0 replacements added"
+        Ran::worked("0 announced, 1 warned, 0 moved, 0 replacements added")
     );
     assert_eq!(
         run_job(&env).await,
-        "0 announced, 0 warned, 0 moved, 0 replacements added"
+        Ran::idle("0 announced, 0 warned, 0 moved, 0 replacements added")
     );
 
     // A week before, and again the day before: one warning each, none for the steps skipped.
@@ -451,20 +452,20 @@ async fn the_lifecycle_job_announces_warns_while_the_model_is_called_and_moves_o
     used(&env, "gpt-4o", today(&env), 1).await;
     assert_eq!(
         run_job(&env).await,
-        "0 announced, 1 warned, 0 moved, 0 replacements added"
+        Ran::worked("0 announced, 1 warned, 0 moved, 0 replacements added")
     );
     env.app.clock.advance(Duration::days(5));
     used(&env, "gpt-4o", today(&env), 1).await;
     assert_eq!(
         run_job(&env).await,
-        "0 announced, 1 warned, 0 moved, 0 replacements added"
+        Ran::worked("0 announced, 1 warned, 0 moved, 0 replacements added")
     );
 
     env.app.clock.advance(Duration::days(1));
     retire(&env, "gpt-4o", start, shutdown, "gpt-4o-mini").await;
     assert_eq!(
         run_job(&env).await,
-        "0 announced, 0 warned, 1 moved, 0 replacements added"
+        Ran::worked("0 announced, 0 warned, 1 moved, 0 replacements added")
     );
     let route: Value = sqlx::query_scalar("SELECT route FROM aliases WHERE name = 'main'")
         .fetch_one(&env.app.state.pg)
