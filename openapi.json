@@ -48883,7 +48883,7 @@
               "boolean",
               "null"
             ],
-            "description": "Whether an event's email address counts the request for the organization member with that address; default `true`."
+            "description": "Whether an event's email address counts the request for the organization member with that address; default `false`."
           },
           "name": {
             "type": "string",

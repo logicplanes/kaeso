@@ -63,9 +63,9 @@ export function refusalText(code: string): string {
     case "no_id":
       return t("project.sources.refusal.noId", "An event had no id to tell it from the others.");
     case "too_many_tokens":
-      return t("project.sources.refusal.tooManyTokens", "An event counted more than 100 million tokens.");
+      return t("project.sources.refusal.tooManyTokens", "An event counted more than 10 million tokens.");
     case "cost_too_high":
-      return t("project.sources.refusal.costTooHigh", "An event cost more than $10,000.");
+      return t("project.sources.refusal.costTooHigh", "An event cost more than $100.");
     case "bad_status":
       return t("project.sources.refusal.badStatus", "An event's status wasn't an HTTP status.");
     case "too_old":
@@ -77,7 +77,7 @@ export function refusalText(code: string): string {
     case "unreadable":
       return t("project.sources.refusal.unreadable", "A batch wasn't what this kind of source sends.");
     case "inactive":
-      return t("project.sources.refusal.inactive", "It sent while disabled.");
+      return t("project.sources.refusal.inactive", "It sent while disabled, or after the member or service account it counts for left.");
     default:
       return code;
   }

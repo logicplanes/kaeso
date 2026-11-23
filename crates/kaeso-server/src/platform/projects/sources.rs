@@ -314,7 +314,7 @@ pub struct SourceCreate {
     #[doc = "A service account of the project to count them for instead."]
     pub service_account_id: Option<ServiceAccountId>,
     #[doc = "Whether an event's email address counts the request for the organization member \
-        with that address; default `true`."]
+        with that address; default `false`."]
     pub match_members: Option<bool>,
     #[doc = "Whether to keep prompts, replies and tool arguments the source sends; default \
         `false`."]
@@ -415,7 +415,7 @@ pub async fn create(
             secret_last4: &made.last4,
             user_id,
             service_account_id,
-            match_members: req.match_members.unwrap_or(true),
+            match_members: req.match_members.unwrap_or(false),
             content: req.content.unwrap_or(false),
             created_by: ctx.acting_user().map(|u| u.uuid()),
             at: ctx.now,

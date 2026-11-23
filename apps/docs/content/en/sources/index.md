@@ -11,7 +11,7 @@ A source lets a client that calls its providers directly, such as Claude Code, C
 1. Open the project's **Sources** and choose **Add source**.
 2. Choose what reports to Kaeso, such as **Claude Code**, and choose **Continue**.
 3. Name the source, such as `Claude Code, Ada's laptop`, and choose whom its requests count for: you or one of the project's service accounts.
-4. Keep **Match members by email** on to count an event that names a member's email address for that member. Turn on **Keep prompts and replies** to keep the content the client sends.
+4. Turn on **Match members by email** to count an event that names a member's email address for that member; it's off unless you turn it on, since anyone with the key could then name any member. Turn on **Keep prompts and replies** to keep the content the client sends.
 5. Choose **Add source**.
 
 Kaeso shows the source's key once, with the exact lines that connect its client: environment variables, a settings file, a hook or a gateway's config. Copy the key now, because Kaeso keeps only a hash of it. Put the lines where they go and use the client once. The dialog waits for the first event, then shows **Connected** and what arrived, or why Kaeso refused it.

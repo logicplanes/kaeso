@@ -175,7 +175,7 @@ function AddSourceDialog({ org, project, onClose }: { org: string; project: stri
   const [kind, setKind] = useState<SourceKindView>("claude_code");
   const [name, setName] = useState<string | null>(null);
   const [owner, setOwner] = useState(ME);
-  const [matchMembers, setMatchMembers] = useState(true);
+  const [matchMembers, setMatchMembers] = useState(false);
   const [content, setContent] = useState(false);
   const [created, setCreated] = useState<SourceCreated | null>(null);
   const shownName = name ?? kindName(kind);

@@ -32,9 +32,9 @@ const MAX_ERROR: usize = 1_000;
 /// The most characters of a tool's or a model's name, as the console shows them.
 const MAX_NAME: usize = 200;
 /// The most of each token count one request may report; more is a broken or hostile record.
-const MAX_TOKENS: u64 = 100_000_000;
+const MAX_TOKENS: u64 = 10_000_000;
 /// The most one request may report it cost, in USD.
-const MAX_COST: u64 = 10_000;
+const MAX_COST: u64 = 100;
 /// How far ahead of Kaeso's clock a record may be, for clients whose clocks run fast.
 const CLOCK_SKEW: time::Duration = time::Duration::minutes(5);
 /// Providers that make the models they list, preferred when several providers list a model.
@@ -281,18 +281,10 @@ async fn owner_counts(state: &AppState, source: &Source) -> Result<bool, StoreEr
     Ok(false)
 }
 
-/// Whom a record counts for: the member its email address names, else the source's member or
-/// service account while it still counts; none when the source counts for nobody.
-fn caller(
-    source: &Source,
-    members: &HashMap<String, Uuid>,
-    owner_counts: bool,
-    email: Option<&str>,
-) -> Option<Caller> {
+/// Whom a record of a source that still counts is for: the member its email address names,
+/// else the source's member or service account.
+fn caller(source: &Source, members: &HashMap<String, Uuid>, email: Option<&str>) -> Option<Caller> {
     let matched = email.and_then(|e| members.get(&e.to_lowercase()).copied());
-    if matched.is_none() && !owner_counts {
-        return None;
-    }
     let (user, service_account) = match (matched, source.user_id, source.service_account_id) {
         (Some(u), _, _) | (None, Some(u), _) => (Some(u), None),
         (None, None, Some(s)) => (None, Some(s)),
@@ -494,6 +486,16 @@ pub async fn record(
     };
     batch.requests.retain(|r| refuse(invalid_request(r, now)));
     batch.tool_calls.retain(|c| refuse(invalid_call(c, now)));
+    // A source whose member left the project, or whose service account was archived, counts
+    // for nobody, whatever addresses its records name: its key may be in someone's hands who no
+    // longer belongs.
+    let records = batch.requests.len() + batch.tool_calls.len();
+    if records > 0 && !owner_counts(state, source).await? {
+        out.refused += records;
+        out.refusal = Some(Refusal::Inactive);
+        batch.requests.clear();
+        batch.tool_calls.clear();
+    }
     let emails: Vec<String> = batch
         .requests
         .iter()
@@ -503,7 +505,6 @@ pub async fn record(
     // Everything that can fail runs before the records are marked as seen: an exporter whose
     // batch failed sends it again, and must not find its records taken for duplicates.
     let people = members(state, source, emails).await?;
-    let owner = owner_counts(state, source).await?;
     let request_ids: Vec<Uuid> = batch
         .requests
         .iter()
@@ -529,7 +530,7 @@ pub async fn record(
             out.duplicates += 1;
             continue;
         }
-        let Some(who) = caller(source, &people, owner, r.email.as_deref()) else {
+        let Some(who) = caller(source, &people, r.email.as_deref()) else {
             out.refused += 1;
             out.refusal = Some(Refusal::Nobody);
             continue;
@@ -542,7 +543,7 @@ pub async fn record(
             out.duplicates += 1;
             continue;
         }
-        let Some(who) = caller(source, &people, owner, c.email.as_deref()) else {
+        let Some(who) = caller(source, &people, c.email.as_deref()) else {
             out.refused += 1;
             out.refusal = Some(Refusal::Nobody);
             continue;
