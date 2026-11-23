@@ -84,9 +84,10 @@ async fn job_runs_that_find_nothing_to_do_log_at_debug_and_runs_that_do_somethin
     let _logging = tracing::subscriber::set_default(subscriber);
     let s = TestServices::start().await;
     let app = App::start(&s).await;
-    let owner = app.setup().await;
-    // A Wednesday afternoon: no weekly or monthly report is due.
+    // Set the clock before `setup()` so the owner's session isn't already stale when `cleanup`
+    // runs; Wednesday afternoon ensures no weekly or monthly report is due.
     app.clock.set(time::macros::datetime!(2026-11-18 15:00 UTC));
+    let owner = app.setup().await;
     let jobs = kaeso_server::jobs::all();
     for job in &jobs {
         kaeso_server::jobs::tick(&app.state, *job).await;

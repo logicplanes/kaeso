@@ -988,18 +988,21 @@ pub(crate) async fn settle_open(
     state: &AppState,
 ) -> Result<crate::jobs::Ran, kaeso_store::StoreError> {
     let open = store::open(&state.pg, 200).await?;
-    let asked = !open.is_empty();
     let mut ended = 0;
+    let mut failed = 0;
     for row in open {
         match refresh(state, row).await {
             Ok(r) if r.accounted_at.is_some() || ENDED.contains(&r.status.as_str()) => ended += 1,
             Ok(_) => {}
-            Err(e) => tracing::warn!(error = %e.message, "cannot ask the provider about a batch"),
+            Err(e) => {
+                failed += 1;
+                tracing::warn!(error = %e.message, "cannot ask the provider about a batch");
+            }
         }
     }
     Ok(crate::jobs::Ran::of(
         format!("{ended} batches ended"),
-        asked,
+        ended + failed > 0,
     ))
 }
 
