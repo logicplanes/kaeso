@@ -61,6 +61,22 @@ impl Tally {
         }
     }
 
+    pub fn from_counts(
+        deltas: u64,
+        bytes: u64,
+        reasoning_deltas: u64,
+        reasoning_bytes: u64,
+        final_usage: bool,
+    ) -> Tally {
+        Tally {
+            deltas,
+            bytes,
+            reasoning_deltas,
+            reasoning_bytes,
+            final_usage,
+        }
+    }
+
     pub fn has_final_usage(&self) -> bool {
         self.final_usage
     }

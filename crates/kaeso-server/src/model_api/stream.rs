@@ -1,11 +1,13 @@
+use std::pin::Pin;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::task::{Context, Poll};
 use std::time::Duration;
 
 use axum::body::Body;
 use bytes::Bytes;
-use futures::StreamExt;
-use kaeso_codecs::{StreamDecoder, StreamEncoder};
+use futures::{Stream as _, StreamExt};
+use kaeso_codecs::{StreamDecoder, StreamEncoder, StreamPassthrough};
 use kaeso_core::assembler::Assembler;
 use kaeso_core::estimate::{self, Tally};
 use kaeso_core::provider::AccountSignIn;
@@ -265,24 +267,51 @@ impl Aborted {
     }
 }
 
-pub(super) fn body(rx: Receiver<Bytes>, taken: Taken, aborted: Aborted) -> Body {
-    Body::from_stream(futures::stream::unfold(
-        Some((rx, taken, aborted)),
-        |state| async move {
-            let (mut rx, taken, aborted) = state?;
-            match rx.recv().await {
-                Some(bytes) => {
-                    taken.add(bytes.len());
-                    Some((Ok(bytes), Some((rx, taken, aborted))))
-                }
-                None if aborted.is_set() => Some((
-                    Err(std::io::Error::other("the provider's reply broke off")),
-                    None,
-                )),
-                None => None,
+struct StreamBody {
+    rx: Receiver<Bytes>,
+    taken: Taken,
+    aborted: Aborted,
+    done: bool,
+}
+
+impl hyper::body::Body for StreamBody {
+    type Data = Bytes;
+    type Error = std::io::Error;
+
+    fn poll_frame(
+        mut self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+    ) -> Poll<Option<Result<hyper::body::Frame<Self::Data>, Self::Error>>> {
+        if self.done {
+            return Poll::Ready(None);
+        }
+        match self.rx.poll_recv(cx) {
+            Poll::Ready(Some(bytes)) => {
+                self.taken.add(bytes.len());
+                Poll::Ready(Some(Ok(hyper::body::Frame::data(bytes))))
             }
-        },
-    ))
+            Poll::Ready(None) => {
+                self.done = true;
+                if self.aborted.is_set() {
+                    Poll::Ready(Some(Err(std::io::Error::other(
+                        "the provider's reply broke off",
+                    ))))
+                } else {
+                    Poll::Ready(None)
+                }
+            }
+            Poll::Pending => Poll::Pending,
+        }
+    }
+}
+
+pub(super) fn body(rx: Receiver<Bytes>, taken: Taken, aborted: Aborted) -> Body {
+    Body::new(StreamBody {
+        rx,
+        taken,
+        aborted,
+        done: false,
+    })
 }
 
 // A binary reply's handler waits for its first bytes (`None`) before it answers, or for the error
@@ -293,7 +322,7 @@ pub(super) struct Binary {
 }
 
 struct ToApp {
-    tx: Sender<Bytes>,
+    tx: Option<Sender<Bytes>>,
     taken: Taken,
     progress: StreamProgress,
     arrived: std::time::Instant,
@@ -305,20 +334,31 @@ struct ToApp {
 }
 
 impl ToApp {
+    fn is_closed(&self) -> bool {
+        self.tx.as_ref().is_none_or(Sender::is_closed)
+    }
+
+    fn close(&mut self) {
+        self.tx = None;
+    }
+
     async fn deliver(&mut self, bytes: Bytes) -> bool {
+        let Some(tx) = self.tx.as_ref() else {
+            return false;
+        };
         let patience = if self.stopping {
             SHUTDOWN_WRITE
         } else {
             self.patience
         };
         // Most chunks fit in the channel at once; only a full one needs the timer and the cut.
-        let bytes = match self.tx.try_send(bytes) {
+        let bytes = match tx.try_send(bytes) {
             Ok(()) => return true,
             Err(TrySendError::Closed(_)) => return false,
             Err(TrySendError::Full(bytes)) => bytes,
         };
         tokio::select! {
-            sent = self.tx.send(bytes) => sent.is_ok(),
+            sent = tx.send(bytes) => sent.is_ok(),
             () = tokio::time::sleep(patience) => {
                 tracing::info!(waited = ?patience, "the app stopped reading a stream; ending it");
                 self.stalled = !self.stopping;
@@ -334,7 +374,7 @@ impl ToApp {
     // A write that failed because the gateway is shutting down, not because the app left: only a
     // closed channel means the app is gone; one that merely stopped reading still gets a shutdown.
     fn left(&self) -> bool {
-        !self.cut_short || self.tx.is_closed()
+        !self.cut_short || self.is_closed()
     }
 
     async fn reply(&mut self, bytes: Vec<u8>) -> bool {
@@ -406,10 +446,48 @@ fn encode(
     })
 }
 
+/// Events already decoded while peeking the start of a stream, passed on to the pump so the
+/// first chunks are not decoded twice.
+pub(super) struct Initial {
+    pub(super) events: Vec<StreamEvent>,
+    pub(super) received: usize,
+    pub(super) error: Option<UpstreamError>,
+}
+
+/// Raw bytes already scanned while peeking a same-dialect passthrough stream.
+pub(super) struct PassthroughInitial {
+    pub(super) bytes: Vec<u8>,
+    pub(super) events: u32,
+    pub(super) ended: bool,
+    pub(super) eof: bool,
+    pub(super) received: usize,
+    pub(super) error: Option<UpstreamError>,
+    pub(super) provider_error: Option<KppError>,
+}
+
+pub(super) enum Peeked {
+    Decoded {
+        decoder: Box<dyn StreamDecoder>,
+        initial: Initial,
+    },
+    PutBack,
+}
+
+pub(super) enum Mode {
+    Codec {
+        decoder: Box<dyn StreamDecoder>,
+        encoder: Box<dyn StreamEncoder>,
+        initial: Option<Initial>,
+    },
+    Passthrough {
+        passthrough: Box<dyn StreamPassthrough>,
+        initial: Option<PassthroughInitial>,
+    },
+}
+
 pub(super) struct Parts {
     pub(super) chunks: kaeso_upstream::ByteStream,
-    pub(super) decoder: Box<dyn StreamDecoder>,
-    pub(super) encoder: Box<dyn StreamEncoder>,
+    pub(super) mode: Mode,
     pub(super) app: DialectId,
     pub(super) keepalive: Keepalive,
     pub(super) counter: InputCounter,
@@ -451,6 +529,20 @@ pub(super) async fn hold(
 /// first output are small, such as a response start and pings.
 const PEEK_MOST: usize = 64 * 1024;
 
+async fn poll_next_now(
+    chunks: &mut kaeso_upstream::ByteStream,
+) -> Poll<Option<Result<Bytes, UpstreamError>>> {
+    std::future::poll_fn(|cx| Poll::Ready(Pin::new(&mut *chunks).poll_next(cx))).await
+}
+
+fn extend_events(dst: &mut Vec<StreamEvent>, src: Vec<StreamEvent>) {
+    if dst.is_empty() {
+        *dst = src;
+    } else {
+        dst.extend(src);
+    }
+}
+
 /// Reads a provider's event stream until its first event that carries output, and returns the
 /// provider's error when one comes before it: such a stream fails the attempt like an error
 /// status would, and an alias route can fall back. It stops waiting when the first keepalive
@@ -460,12 +552,20 @@ pub(super) async fn peek(
     mut decoder: Box<dyn StreamDecoder>,
     wait: Duration,
 ) -> Option<KppError> {
-    let until = Instant::now() + wait;
+    let sleep = sleep_until(Instant::now() + wait);
+    tokio::pin!(sleep);
     let mut read = Vec::new();
     let mut size = 0usize;
     while size < PEEK_MOST {
-        let Ok(next) = tokio::time::timeout_at(until, chunks.next()).await else {
-            break;
+        let next = match poll_next_now(chunks).await {
+            Poll::Ready(item) => item,
+            Poll::Pending => {
+                tokio::select! {
+                    biased;
+                    next = chunks.next() => next,
+                    () = &mut sleep => break,
+                }
+            }
         };
         let (events, ended) = match next {
             Some(Ok(bytes)) => {
@@ -483,7 +583,7 @@ pub(super) async fn peek(
             // the cut-off reply, which stays the pump's to report.
             None => (decoder.flush(), true),
         };
-        match first_of(events) {
+        match first_of(&events) {
             Seen::Error(err) => return Some(err),
             Seen::Output => break,
             Seen::Nothing if ended => break,
@@ -494,16 +594,160 @@ pub(super) async fn peek(
     None
 }
 
+/// Like [`peek`], but hands the live decoder and already-decoded events on to the pump instead of
+/// putting the raw bytes back to be decoded a second time.
+pub(super) async fn peek_keep(
+    chunks: &mut kaeso_upstream::ByteStream,
+    mut decoder: Box<dyn StreamDecoder>,
+    wait: Duration,
+) -> Result<Peeked, KppError> {
+    let sleep = sleep_until(Instant::now() + wait);
+    tokio::pin!(sleep);
+    let mut read = Vec::new();
+    let mut events = Vec::new();
+    let mut received = 0usize;
+    let mut error = None;
+    while received < PEEK_MOST {
+        let next = match poll_next_now(chunks).await {
+            Poll::Ready(item) => item,
+            Poll::Pending => {
+                tokio::select! {
+                    biased;
+                    next = chunks.next() => next,
+                    () = &mut sleep => break,
+                }
+            }
+        };
+        match next {
+            Some(Ok(bytes)) => {
+                received = received.saturating_add(bytes.len());
+                let batch = decoder.feed(&bytes);
+                read.push(bytes);
+                match first_of(&batch) {
+                    Seen::Error(err) => return Err(err),
+                    Seen::Output => {
+                        extend_events(&mut events, batch);
+                        break;
+                    }
+                    Seen::Nothing => extend_events(&mut events, batch),
+                }
+            }
+            Some(Err(e)) => {
+                error = Some(e);
+                break;
+            }
+            // `flush` marks some decoders inert, so an empty or cut-off stream with no error is
+            // put back for a fresh decoder whose `finish` reports it as the pump expects.
+            None => {
+                let flushed = decoder.flush();
+                if let Seen::Error(err) = first_of(&flushed) {
+                    return Err(err);
+                }
+                chunks.put_back(read, None);
+                return Ok(Peeked::PutBack);
+            }
+        }
+    }
+    Ok(Peeked::Decoded {
+        decoder,
+        initial: Initial {
+            events,
+            received,
+            error,
+        },
+    })
+}
+
+/// Peeks a same-dialect passthrough stream until output arrives, failing the attempt if the
+/// provider sends an error event before any output.
+pub(super) async fn peek_passthrough(
+    chunks: &mut kaeso_upstream::ByteStream,
+    mut passthrough: Box<dyn StreamPassthrough>,
+    wait: Duration,
+) -> Result<(Box<dyn StreamPassthrough>, PassthroughInitial), KppError> {
+    let sleep = sleep_until(Instant::now() + wait);
+    tokio::pin!(sleep);
+    let mut out = Vec::new();
+    let mut events = 0u32;
+    let mut ended = false;
+    let mut eof = false;
+    let mut received = 0usize;
+    let mut saw_output = false;
+    let mut error = None;
+    let mut provider_error = None;
+    while received < PEEK_MOST {
+        let next = match poll_next_now(chunks).await {
+            Poll::Ready(item) => item,
+            Poll::Pending => {
+                tokio::select! {
+                    biased;
+                    next = chunks.next() => next,
+                    () = &mut sleep => break,
+                }
+            }
+        };
+        match next {
+            Some(Ok(bytes)) => {
+                received = received.saturating_add(bytes.len());
+                let step = passthrough.feed(&bytes, &mut out);
+                events = events.saturating_add(step.events);
+                ended |= step.ended;
+                saw_output |= step.saw_output;
+                if let Some(err) = step.error {
+                    if !saw_output {
+                        return Err(err);
+                    }
+                    provider_error = Some(err);
+                    break;
+                }
+                if saw_output || ended {
+                    break;
+                }
+            }
+            Some(Err(e)) => {
+                error = Some(e);
+                break;
+            }
+            None => {
+                let step = passthrough.flush_eof_error(&mut out);
+                events = events.saturating_add(step.events);
+                ended |= step.ended;
+                saw_output |= step.saw_output;
+                if let Some(err) = step.error {
+                    if !saw_output {
+                        return Err(err);
+                    }
+                    provider_error = Some(err);
+                }
+                eof = true;
+                break;
+            }
+        }
+    }
+    Ok((
+        passthrough,
+        PassthroughInitial {
+            bytes: out,
+            events,
+            ended,
+            eof,
+            received,
+            error,
+            provider_error,
+        },
+    ))
+}
+
 enum Seen {
     Error(KppError),
     Output,
     Nothing,
 }
 
-fn first_of(events: Vec<StreamEvent>) -> Seen {
+fn first_of(events: &[StreamEvent]) -> Seen {
     for event in events {
         match event {
-            StreamEvent::Error(err) => return Seen::Error(err),
+            StreamEvent::Error(err) => return Seen::Error(err.clone()),
             StreamEvent::ResponseStart(_) | StreamEvent::Extra(_) => {}
             _ => return Seen::Output,
         }
@@ -593,284 +837,858 @@ impl Reserved {
     }
 }
 
-pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
-    let state = rec.state().clone();
-    let mut reserved = Reserved::new(&mut rec);
-    let Parts {
-        mut chunks,
-        mut decoder,
-        mut encoder,
-        app: app_dialect,
-        keepalive,
-        counter,
-        mut carry,
-        keep_reply,
-        account,
-        taken,
-        binary,
-        mut restoring,
-    } = parts;
-    let (mut first, aborted) = match binary {
-        Some(b) => (Some(b.first), Some(b.aborted)),
-        None => (None, None),
-    };
-    let mut asm = if keep_reply {
-        Assembler::new(counter.dialect)
-    } else {
-        Assembler::without_blocks(counter.dialect)
-    };
-    let mut tally = Tally::new();
-    let mut streamed = StreamedMedia::new(rec.outcome().content_kept, rec.outcome().media_kept);
-    let mut app = ToApp {
-        tx,
-        taken,
-        progress: StreamProgress::default(),
-        arrived: rec.arrived(),
-        cut: state.in_flight.cut(),
-        patience: state.config.upstream.stream_idle_timeout,
-        stopping: false,
-        stalled: false,
-        cut_short: false,
-    };
-    let limits = &state.config.streams;
-    let max_bytes = limits.max_bytes.0;
-    // The reply, its log copy and an encoder that answers with the whole reply at its end grow
-    // with every byte the provider sends, so the stream holds the answers' memory for them.
-    let mut holding = state.upstream.answers().map(AnswerMemory::charge);
-    let mut received = 0usize;
-    let mut gone = false;
-    let mut broken: Option<Broken> = None;
-    let mut last_event_at: Option<u64> = None;
-    let mut processing = Processing::default();
-    let mut last_write = Instant::now();
-    let frame = encoder.keepalive();
-    {
-        let watch = app.tx.clone();
-        let closed = watch.closed();
-        tokio::pin!(closed);
-        let quiet = sleep_until(keepalive.deadline(last_write).unwrap_or(last_write));
-        tokio::pin!(quiet);
-        let cut = app.cut.clone();
-        let cut = cut.cancelled();
-        tokio::pin!(cut);
-        let too_long = tokio::time::sleep(limits.max_duration);
-        tokio::pin!(too_long);
-        'read: loop {
-            let next = tokio::select! {
-                () = &mut closed => { gone = true; break 'read; }
-                () = &mut too_long, if !limits.max_duration.is_zero() => {
-                    if last_event_at.is_none()
-                        && !end_capped(&mut app, encoder.as_mut(), &mut broken).await
-                    {
-                        gone = true;
-                    }
-                    break 'read;
-                }
-                () = &mut cut => {
-                    if last_event_at.is_none() {
-                        end_shutdown(&mut app, encoder.as_mut(), &mut broken).await;
-                    }
-                    gone = app.tx.is_closed();
-                    break 'read;
-                }
-                next = chunks.next() => {
-                    reserved.keep(&rec);
-                    next
-                }
-                () = &mut quiet, if keepalive.interval.is_some() => {
-                    if let Some(due) = keepalive.deadline(last_write)
-                        && due > Instant::now()
-                    {
-                        quiet.as_mut().reset(due);
-                        continue;
-                    }
-                    reserved.keep(&rec);
-                    if !app.keepalive(encoder.keepalive()).await {
-                        gone = cut_off(&mut app, encoder.as_mut(), &mut broken, last_event_at).await;
-                        break 'read;
-                    }
-                    last_write = Instant::now();
-                    if let Some(due) = keepalive.deadline(last_write) {
-                        quiet.as_mut().reset(due);
-                    }
-                    continue;
-                }
-            };
-            if let (Some(Ok(bytes)), Some(h)) = (&next, holding.as_mut()) {
-                received = received.saturating_add(bytes.len());
-                if last_event_at.is_none() && h.cover_streamed(received).await.is_err() {
-                    if !end_capped(&mut app, encoder.as_mut(), &mut broken).await {
-                        gone = true;
-                    }
-                    break 'read;
+// Cap how many already-buffered bytes are coalesced into one downstream write so slow clients
+// and large bursts still stream smoothly without extra latency on slow providers.
+const COALESCE_LIMIT: usize = 32 * 1024;
+// Hyper's HTTP/1.1 client body channel holds one decoded chunk at a time; yielding once after
+// the first chunk lets its connection task drain already-buffered TCP bytes without adding TTFT
+// delay or waiting on slow streams.
+const MAX_COALESCE_YIELDS: usize = 64;
+
+struct PendingOut {
+    bytes: Vec<u8>,
+    ends: bool,
+}
+
+enum BatchStart {
+    Initial(Initial),
+    PassthroughInitial(PassthroughInitial),
+    Chunk(Option<Result<Bytes, UpstreamError>>),
+}
+
+enum StreamEngine {
+    Codec {
+        decoder: Box<dyn StreamDecoder>,
+        encoder: Box<dyn StreamEncoder>,
+        asm: Assembler,
+        streamed: StreamedMedia,
+    },
+    Passthrough(Box<dyn StreamPassthrough>),
+}
+
+impl StreamEngine {
+    fn encode_error(&mut self, err: &KppError, broken: &mut Option<Broken>) -> Vec<u8> {
+        match self {
+            StreamEngine::Codec { encoder, .. } => {
+                match encode(encoder.as_mut(), &StreamEvent::Error(err.clone()), broken) {
+                    Ok(bytes) | Err(bytes) => bytes,
                 }
             }
-            let (events, last) = match next {
-                Some(Ok(bytes)) => {
-                    let mut events = processing.time(|| decoder.feed(&bytes));
-                    app.progress.count(&events);
-                    let mut failed = false;
-                    for e in &mut events {
-                        if let StreamEvent::Error(err) = e {
-                            super::pipeline::redact_key_fragments(err);
-                            if let Some(limited) = super::accounts::plan_limit(account, err) {
-                                *err = limited;
-                            }
-                            broken.get_or_insert_with(|| Broken::event(err));
-                            failed = true;
-                        }
-                    }
-                    (events, failed)
+            StreamEngine::Passthrough(p) => p.encode_error(err),
+        }
+    }
+
+    fn keepalive(&mut self) -> Vec<u8> {
+        match self {
+            StreamEngine::Codec { encoder, .. } => encoder.keepalive(),
+            StreamEngine::Passthrough(p) => p.keepalive(),
+        }
+    }
+
+    fn finish_tail(&mut self, broken: &mut Option<Broken>) -> Vec<u8> {
+        match self {
+            StreamEngine::Codec { encoder, .. } => encoder.finish().unwrap_or_else(|e| {
+                tracing::error!(error = %e, "kpp cannot end the stream for the app");
+                broken.get_or_insert_with(|| Broken::encoder(e));
+                Vec::new()
+            }),
+            StreamEngine::Passthrough(_) => Vec::new(),
+        }
+    }
+
+    fn has_final_usage(&self, tally: &Tally) -> bool {
+        match self {
+            StreamEngine::Codec { .. } => tally.has_final_usage(),
+            StreamEngine::Passthrough(p) => p.summary().tally.final_usage,
+        }
+    }
+}
+
+trait ErrorEncoder {
+    fn encode_stream_error(&mut self, err: &KppError, broken: &mut Option<Broken>) -> Vec<u8>;
+}
+
+impl ErrorEncoder for dyn StreamEncoder {
+    fn encode_stream_error(&mut self, err: &KppError, broken: &mut Option<Broken>) -> Vec<u8> {
+        match encode(self, &StreamEvent::Error(err.clone()), broken) {
+            Ok(bytes) | Err(bytes) => bytes,
+        }
+    }
+}
+
+impl ErrorEncoder for StreamEngine {
+    fn encode_stream_error(&mut self, err: &KppError, broken: &mut Option<Broken>) -> Vec<u8> {
+        self.encode_error(err, broken)
+    }
+}
+
+struct Pump {
+    rec: Recording,
+    reserved: Reserved,
+    chunks: Option<kaeso_upstream::ByteStream>,
+    engine: StreamEngine,
+    app_dialect: DialectId,
+    keepalive: Keepalive,
+    counter: InputCounter,
+    carry: Option<StreamCarry>,
+    account: Option<AccountSignIn>,
+    first: Option<tokio::sync::oneshot::Sender<Option<KppError>>>,
+    aborted: Option<Aborted>,
+    restoring: Option<crate::services::guardrails::rules::Restoring>,
+    tally: Tally,
+    app: ToApp,
+    max_bytes: u64,
+    max_duration: Duration,
+    holding: Option<kaeso_upstream::memory::Charge>,
+    received: usize,
+    gone: bool,
+    broken: Option<Broken>,
+    last_event_at: Option<u64>,
+    processing: Processing,
+    last_write: Instant,
+    frame: Vec<u8>,
+    done: bool,
+    initial: Option<Initial>,
+    passthrough_initial: Option<PassthroughInitial>,
+}
+
+impl Pump {
+    fn new(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) -> Pump {
+        let state = rec.state().clone();
+        let reserved = Reserved::new(&mut rec);
+        let Parts {
+            chunks,
+            mode,
+            app: app_dialect,
+            keepalive,
+            counter,
+            carry,
+            keep_reply,
+            account,
+            taken,
+            binary,
+            restoring,
+        } = parts;
+        let (first, aborted) = match binary {
+            Some(b) => (Some(b.first), Some(b.aborted)),
+            None => (None, None),
+        };
+        let (mut engine, initial, passthrough_initial) = match mode {
+            Mode::Codec {
+                decoder,
+                encoder,
+                initial,
+            } => {
+                let asm = if keep_reply {
+                    Assembler::new(counter.dialect)
+                } else {
+                    Assembler::without_blocks(counter.dialect)
+                };
+                let streamed =
+                    StreamedMedia::new(rec.outcome().content_kept, rec.outcome().media_kept);
+                (
+                    StreamEngine::Codec {
+                        decoder,
+                        encoder,
+                        asm,
+                        streamed,
+                    },
+                    initial,
+                    None,
+                )
+            }
+            Mode::Passthrough {
+                passthrough,
+                initial,
+            } => (StreamEngine::Passthrough(passthrough), None, initial),
+        };
+        let app = ToApp {
+            tx: Some(tx),
+            taken,
+            progress: StreamProgress::default(),
+            arrived: rec.arrived(),
+            cut: state.in_flight.cut(),
+            patience: state.config.upstream.stream_idle_timeout,
+            stopping: false,
+            stalled: false,
+            cut_short: false,
+        };
+        let limits = &state.config.streams;
+        let max_bytes = limits.max_bytes.0;
+        let max_duration = limits.max_duration;
+        // The reply, its log copy and an encoder that answers with the whole reply at its end grow
+        // with every byte the provider sends, so the stream holds the answers' memory for them.
+        let holding = state.upstream.answers().map(AnswerMemory::charge);
+        let frame = engine.keepalive();
+        Pump {
+            rec,
+            reserved,
+            chunks: Some(chunks),
+            engine,
+            app_dialect,
+            keepalive,
+            counter,
+            carry,
+            account,
+            first,
+            aborted,
+            restoring,
+            tally: Tally::new(),
+            app,
+            max_bytes,
+            max_duration,
+            holding,
+            received: 0,
+            gone: false,
+            broken: None,
+            last_event_at: None,
+            processing: Processing::default(),
+            last_write: Instant::now(),
+            frame,
+            done: false,
+            initial,
+            passthrough_initial,
+        }
+    }
+
+    fn record_event_errors(&mut self, events: &mut [StreamEvent]) -> bool {
+        let mut failed = false;
+        for e in events {
+            if let StreamEvent::Error(err) = e {
+                super::pipeline::redact_key_fragments(err);
+                if let Some(limited) = super::accounts::plan_limit(self.account, err) {
+                    *err = limited;
                 }
-                Some(Err(e)) if last_event_at.is_some() => {
+                self.broken.get_or_insert_with(|| Broken::event(err));
+                failed = true;
+            }
+        }
+        failed
+    }
+
+    fn process_one_chunk(
+        &mut self,
+        next: Option<Result<Bytes, UpstreamError>>,
+        out: &mut Vec<u8>,
+        ends: &mut bool,
+        in_place: &mut u32,
+    ) -> (bool, bool) {
+        match &mut self.engine {
+            StreamEngine::Passthrough(pass) => match next {
+                Some(Ok(bytes)) => {
+                    let step = pass.feed(&bytes, out);
+                    self.app.progress.events = self.app.progress.events.saturating_add(step.events);
+                    *ends |= step.ended;
+                    if let Some(mut err) = step.error {
+                        super::pipeline::redact_key_fragments(&mut err);
+                        if let Some(limited) = super::accounts::plan_limit(self.account, &err) {
+                            err = limited;
+                        }
+                        self.broken.get_or_insert_with(|| Broken::event(&err));
+                        out.extend_from_slice(&pass.encode_error(&err));
+                        return (true, false);
+                    }
+                    (false, false)
+                }
+                Some(Err(e)) if *ends || self.last_event_at.is_some() => {
                     tracing::debug!(error = %e, "the provider's stream broke after its last event");
-                    (Vec::new(), true)
+                    (true, false)
                 }
                 Some(Err(e)) => {
                     count_upstream_error(
                         transport_kind(&e),
-                        rec.outcome().provider.unwrap_or_default(),
+                        self.rec.outcome().provider.unwrap_or_default(),
                     );
                     let err = upstream_error(&e);
-                    broken.get_or_insert_with(|| Broken::transport(&e, err.clone()));
-                    (vec![StreamEvent::Error(err)], true)
+                    self.broken
+                        .get_or_insert_with(|| Broken::transport(&e, err.clone()));
+                    out.extend_from_slice(&pass.encode_error(&err));
+                    (true, false)
                 }
                 None => {
-                    let mut events = processing.time(|| decoder.finish());
-                    app.progress.count(&events);
-                    for e in &mut events {
-                        if let StreamEvent::Error(err) = e {
-                            super::pipeline::redact_key_fragments(err);
-                            broken.get_or_insert_with(|| Broken::ended(err.clone()));
-                        }
+                    let step = pass.finish(out);
+                    self.app.progress.events = self.app.progress.events.saturating_add(step.events);
+                    *ends |= step.ended;
+                    if let Some(mut err) = step.error {
+                        super::pipeline::redact_key_fragments(&mut err);
+                        self.broken
+                            .get_or_insert_with(|| Broken::ended(err.clone()));
+                        out.extend_from_slice(&pass.encode_error(&err));
                     }
-                    (events, true)
+                    (true, false)
+                }
+            },
+            StreamEngine::Codec { .. } => {
+                let (events, chunk_last) = self.decode_chunk(next, *ends);
+                let stop = self.encode_events(events, out, ends, in_place);
+                (chunk_last, stop)
+            }
+        }
+    }
+
+    fn decode_chunk(
+        &mut self,
+        next: Option<Result<Bytes, UpstreamError>>,
+        ended_in_batch: bool,
+    ) -> (Vec<StreamEvent>, bool) {
+        let StreamEngine::Codec { decoder, .. } = &mut self.engine else {
+            return (Vec::new(), true);
+        };
+        match next {
+            Some(Ok(bytes)) => {
+                let mut events = decoder.feed(&bytes);
+                self.app.progress.count(&events);
+                let failed = self.record_event_errors(&mut events);
+                (events, failed)
+            }
+            Some(Err(e)) if ended_in_batch || self.last_event_at.is_some() => {
+                tracing::debug!(error = %e, "the provider's stream broke after its last event");
+                (Vec::new(), true)
+            }
+            Some(Err(e)) => {
+                count_upstream_error(
+                    transport_kind(&e),
+                    self.rec.outcome().provider.unwrap_or_default(),
+                );
+                let err = upstream_error(&e);
+                self.broken
+                    .get_or_insert_with(|| Broken::transport(&e, err.clone()));
+                (vec![StreamEvent::Error(err)], true)
+            }
+            None => {
+                let mut events = decoder.finish();
+                self.app.progress.count(&events);
+                for e in &mut events {
+                    if let StreamEvent::Error(err) = e {
+                        super::pipeline::redact_key_fragments(err);
+                        self.broken
+                            .get_or_insert_with(|| Broken::ended(err.clone()));
+                    }
+                }
+                (events, true)
+            }
+        }
+    }
+
+    fn encode_events(
+        &mut self,
+        events: Vec<StreamEvent>,
+        out: &mut Vec<u8>,
+        ends: &mut bool,
+        in_place: &mut u32,
+    ) -> bool {
+        let StreamEngine::Codec {
+            encoder,
+            asm,
+            streamed,
+            ..
+        } = &mut self.engine
+        else {
+            return false;
+        };
+        let events = match self.restoring.as_mut() {
+            Some(r) => r.apply(events),
+            None => events,
+        };
+        let mut stop = false;
+        for event in &events {
+            asm.feed(event);
+            self.tally.feed(event);
+            streamed.feed(event);
+            if let Some(c) = self.carry.as_mut() {
+                c.observe(event);
+            }
+            let bytes = match encode(encoder.as_mut(), event, &mut self.broken) {
+                Ok(bytes) => {
+                    *ends |= matches!(event, StreamEvent::ResponseStop(_));
+                    bytes
+                }
+                Err(bytes) => {
+                    stop = true;
+                    bytes
                 }
             };
-            let events = match restoring.as_mut() {
-                Some(r) => r.apply(events),
-                None => events,
-            };
-            let mut out = Vec::new();
-            let mut stop = false;
-            let mut ends = false;
-            let mut in_place = 0u32;
-            for event in &events {
-                asm.feed(event);
-                tally.feed(event);
-                streamed.feed(event);
-                if let Some(c) = carry.as_mut() {
-                    c.observe(event);
-                }
-                let bytes = match processing.time(|| encode(encoder.as_mut(), event, &mut broken)) {
-                    Ok(bytes) => {
-                        ends |= matches!(event, StreamEvent::ResponseStop(_));
-                        bytes
-                    }
-                    Err(bytes) => {
-                        stop = true;
-                        bytes
-                    }
-                };
-                if stands_in(&frame, &bytes, event, app_dialect) {
-                    in_place += 1;
-                }
-                if out.is_empty() {
-                    out = bytes;
-                } else {
-                    out.extend_from_slice(&bytes);
-                }
-                if stop {
-                    break;
-                }
+            if stands_in(&self.frame, &bytes, event, self.app_dialect) {
+                *in_place += 1;
             }
-            if !out.is_empty() {
-                if !app.reply(out).await {
-                    gone = cut_off(&mut app, encoder.as_mut(), &mut broken, last_event_at).await;
-                    break 'read;
-                }
-                last_write = Instant::now();
-                app.progress.keepalives = app.progress.keepalives.saturating_add(in_place);
-                if let Some(f) = first.take() {
-                    let _ = f.send(None);
-                }
-            }
-            if ends {
-                last_event_at.get_or_insert(app.progress.bytes);
-            }
-            if last_event_at.is_none() && max_bytes > 0 && app.progress.bytes >= max_bytes {
-                if !end_capped(&mut app, encoder.as_mut(), &mut broken).await {
-                    gone = true;
-                }
-                break 'read;
+            if out.is_empty() {
+                *out = bytes;
+            } else {
+                out.extend_from_slice(&bytes);
             }
             if stop {
-                break 'read;
-            }
-            if last {
                 break;
             }
         }
+        stop
     }
-    // An early exit leaves what the decoder held back: the app's stream is over, but the logged
-    // reply and the usage estimate still count it.
-    let held = processing.time(|| decoder.flush());
-    app.progress.count(&held);
-    for event in &held {
-        asm.feed(event);
-        tally.feed(event);
-        streamed.feed(event);
+
+    fn can_finish_before_accounting(&self) -> bool {
+        self.broken.is_none()
+            && self.first.is_none()
+            && !self.rec.reservation().is_held()
+            && self.rec.kept.is_none()
+            && self.carry.is_none()
     }
-    drop(chunks);
-    let cancelled = gone && !last_event_at.is_some_and(|at| app.taken.reached(at));
-    let mut assembled = asm.finish();
-    if !assembled.complete
-        && let Some(r) = assembled.response.as_mut()
-    {
-        r.stop = StopReason::Other(INCOMPLETE.to_owned());
+
+    async fn process_batch(&mut self, start: BatchStart) -> Option<PendingOut> {
+        let mut out = Vec::new();
+        let mut stop = false;
+        let mut ends = false;
+        let mut in_place = 0u32;
+        let mut last = false;
+        let mut capped = false;
+        let work_started = std::time::Instant::now();
+        match start {
+            BatchStart::Initial(mut init) => {
+                if init.received > 0
+                    && let Some(h) = self.holding.as_mut()
+                {
+                    self.received = self.received.saturating_add(init.received);
+                    if self.last_event_at.is_none()
+                        && h.cover_streamed(self.received).await.is_err()
+                    {
+                        capped = true;
+                        last = true;
+                    }
+                }
+                if !capped {
+                    self.app.progress.count(&init.events);
+                    last = self.record_event_errors(&mut init.events);
+                    stop = self.encode_events(init.events, &mut out, &mut ends, &mut in_place);
+                    if !stop
+                        && !last
+                        && let Some(err) = init.error
+                    {
+                        let (chunk_last, chunk_stop) = self.process_one_chunk(
+                            Some(Err(err)),
+                            &mut out,
+                            &mut ends,
+                            &mut in_place,
+                        );
+                        last = chunk_last;
+                        stop = chunk_stop;
+                    }
+                }
+            }
+            BatchStart::PassthroughInitial(init) => {
+                if init.received > 0
+                    && let Some(h) = self.holding.as_mut()
+                {
+                    self.received = self.received.saturating_add(init.received);
+                    if self.last_event_at.is_none()
+                        && h.cover_streamed(self.received).await.is_err()
+                    {
+                        capped = true;
+                        last = true;
+                    }
+                }
+                if !capped {
+                    out = init.bytes;
+                    self.app.progress.events = self.app.progress.events.saturating_add(init.events);
+                    ends |= init.ended;
+                    if let Some(mut err) = init.provider_error {
+                        super::pipeline::redact_key_fragments(&mut err);
+                        if let Some(limited) = super::accounts::plan_limit(self.account, &err) {
+                            err = limited;
+                        }
+                        self.broken.get_or_insert_with(|| Broken::event(&err));
+                        out.extend_from_slice(&self.engine.encode_error(&err, &mut self.broken));
+                        last = true;
+                    } else if let Some(err) = init.error {
+                        let (chunk_last, chunk_stop) = self.process_one_chunk(
+                            Some(Err(err)),
+                            &mut out,
+                            &mut ends,
+                            &mut in_place,
+                        );
+                        last = chunk_last;
+                        stop = chunk_stop;
+                    } else if init.eof {
+                        let (chunk_last, chunk_stop) =
+                            self.process_one_chunk(None, &mut out, &mut ends, &mut in_place);
+                        last = chunk_last;
+                        stop = chunk_stop;
+                    }
+                }
+            }
+            BatchStart::Chunk(next) => {
+                if let (Some(Ok(bytes)), Some(h)) = (&next, self.holding.as_mut()) {
+                    self.received = self.received.saturating_add(bytes.len());
+                    if self.last_event_at.is_none()
+                        && h.cover_streamed(self.received).await.is_err()
+                    {
+                        capped = true;
+                        last = true;
+                    }
+                }
+                if !capped {
+                    let (chunk_last, chunk_stop) =
+                        self.process_one_chunk(next, &mut out, &mut ends, &mut in_place);
+                    last = chunk_last;
+                    stop = chunk_stop;
+                }
+            }
+        }
+        // Drain any chunks already buffered in the upstream connection into the same write so
+        // fast responses don't pay a channel send and HTTP chunk frame per SSE event.
+        let mut yields = 0usize;
+        while !last
+            && !stop
+            && !capped
+            && out.len() < COALESCE_LIMIT
+            && (self.max_bytes == 0
+                || self.app.progress.bytes.saturating_add(out.len() as u64) < self.max_bytes)
+            && !self.app.cut.is_cancelled()
+        {
+            let Some(chunks) = self.chunks.as_mut() else {
+                break;
+            };
+            let next = match poll_next_now(chunks).await {
+                Poll::Ready(next) => next,
+                Poll::Pending if self.app.progress.bytes > 0 && yields < MAX_COALESCE_YIELDS => {
+                    yields += 1;
+                    tokio::task::yield_now().await;
+                    let Some(chunks) = self.chunks.as_mut() else {
+                        break;
+                    };
+                    let Poll::Ready(next) = poll_next_now(chunks).await else {
+                        break;
+                    };
+                    next
+                }
+                Poll::Pending => break,
+            };
+            if let (Some(Ok(bytes)), Some(h)) = (&next, self.holding.as_mut()) {
+                self.received = self.received.saturating_add(bytes.len());
+                if !ends
+                    && self.last_event_at.is_none()
+                    && h.cover_streamed(self.received).await.is_err()
+                {
+                    capped = true;
+                    last = true;
+                    break;
+                }
+            }
+            let (chunk_last, chunk_stop) =
+                self.process_one_chunk(next, &mut out, &mut ends, &mut in_place);
+            last = chunk_last;
+            stop = chunk_stop;
+        }
+        self.processing.0 += work_started.elapsed();
+        if last
+            && !stop
+            && !capped
+            && self.can_finish_before_accounting()
+            && (ends
+                || self.last_event_at.is_some()
+                || self.max_bytes == 0
+                || self.app.progress.bytes.saturating_add(out.len() as u64) < self.max_bytes)
+        {
+            self.app.progress.keepalives = self.app.progress.keepalives.saturating_add(in_place);
+            self.done = true;
+            return Some(PendingOut { bytes: out, ends });
+        }
+        if !out.is_empty() {
+            if !self.app.reply(out).await {
+                self.gone = cut_off(
+                    &mut self.app,
+                    &mut self.engine,
+                    &mut self.broken,
+                    self.last_event_at,
+                )
+                .await;
+                self.done = true;
+                return None;
+            }
+            self.last_write = Instant::now();
+            self.app.progress.keepalives = self.app.progress.keepalives.saturating_add(in_place);
+            if let Some(f) = self.first.take() {
+                let _ = f.send(None);
+            }
+        }
+        if ends {
+            self.last_event_at.get_or_insert(self.app.progress.bytes);
+        }
+        if capped
+            || (self.last_event_at.is_none()
+                && self.max_bytes > 0
+                && self.app.progress.bytes >= self.max_bytes)
+        {
+            if !end_capped(&mut self.app, &mut self.engine, &mut self.broken).await {
+                self.gone = true;
+            }
+            self.done = true;
+            return None;
+        }
+        if stop || last {
+            self.done = true;
+        }
+        None
     }
-    if !gone && broken.is_none() && !assembled.complete {
-        let err = KppError::provider("The provider's stream ended before the reply was complete.")
-            .with_status(502);
-        let bytes = match processing.time(|| {
-            encode(
-                encoder.as_mut(),
-                &StreamEvent::Error(err.clone()),
-                &mut broken,
-            )
-        }) {
-            Ok(bytes) | Err(bytes) => bytes,
+
+    async fn run(mut self, mut pending: Option<PendingOut>) {
+        if !self.done {
+            if let Some(init) = self.passthrough_initial.take() {
+                pending = self
+                    .process_batch(BatchStart::PassthroughInitial(init))
+                    .await;
+            } else if let Some(init) = self.initial.take() {
+                pending = self.process_batch(BatchStart::Initial(init)).await;
+            }
+        }
+        if !self.done {
+            let Some(watch) = self.app.tx.clone() else {
+                self.gone = true;
+                self.finalize(pending).await;
+                return;
+            };
+            let closed = watch.closed();
+            tokio::pin!(closed);
+            let quiet = sleep_until(
+                self.keepalive
+                    .deadline(self.last_write)
+                    .unwrap_or(self.last_write),
+            );
+            tokio::pin!(quiet);
+            let cut = self.app.cut.clone();
+            let cut = cut.cancelled();
+            tokio::pin!(cut);
+            let too_long = tokio::time::sleep(self.max_duration);
+            tokio::pin!(too_long);
+            'read: loop {
+                let next = tokio::select! {
+                    () = &mut closed => { self.gone = true; break 'read; }
+                    () = &mut too_long, if !self.max_duration.is_zero() => {
+                        if self.last_event_at.is_none()
+                            && !end_capped(&mut self.app, &mut self.engine, &mut self.broken).await
+                        {
+                            self.gone = true;
+                        }
+                        break 'read;
+                    }
+                    () = &mut cut => {
+                        if self.last_event_at.is_none() {
+                            end_shutdown(&mut self.app, &mut self.engine, &mut self.broken).await;
+                        }
+                        self.gone = self.app.is_closed();
+                        break 'read;
+                    }
+                    next = async {
+                        match self.chunks.as_mut() {
+                            Some(chunks) => chunks.next().await,
+                            None => None,
+                        }
+                    } => {
+                        self.reserved.keep(&self.rec);
+                        next
+                    }
+                    () = &mut quiet, if self.keepalive.interval.is_some() => {
+                        if let Some(due) = self.keepalive.deadline(self.last_write)
+                            && due > Instant::now()
+                        {
+                            quiet.as_mut().reset(due);
+                            continue;
+                        }
+                        self.reserved.keep(&self.rec);
+                        let ka = self.engine.keepalive();
+                        if !self.app.keepalive(ka).await {
+                            self.gone = cut_off(
+                                &mut self.app,
+                                &mut self.engine,
+                                &mut self.broken,
+                                self.last_event_at,
+                            )
+                            .await;
+                            break 'read;
+                        }
+                        self.last_write = Instant::now();
+                        if let Some(due) = self.keepalive.deadline(self.last_write) {
+                            quiet.as_mut().reset(due);
+                        }
+                        continue;
+                    }
+                };
+                pending = self.process_batch(BatchStart::Chunk(next)).await;
+                if self.done {
+                    break 'read;
+                }
+            }
+        }
+        self.finalize(pending).await;
+    }
+
+    async fn finalize(mut self, pending: Option<PendingOut>) {
+        self.chunks = None;
+        let mut assembled = match &mut self.engine {
+            StreamEngine::Codec {
+                decoder,
+                asm,
+                streamed,
+                ..
+            } => {
+                // An early exit leaves what the decoder held back: the app's stream is over, but
+                // the logged reply and the usage estimate still count it.
+                let held = self.processing.time(|| decoder.flush());
+                self.app.progress.count(&held);
+                for event in &held {
+                    asm.feed(event);
+                    self.tally.feed(event);
+                    streamed.feed(event);
+                }
+                std::mem::replace(asm, Assembler::without_blocks(self.counter.dialect)).finish()
+            }
+            StreamEngine::Passthrough(pass) => {
+                let summary = pass.summary();
+                self.tally = Tally::from_counts(
+                    summary.tally.deltas,
+                    summary.tally.bytes,
+                    summary.tally.reasoning_deltas,
+                    summary.tally.reasoning_bytes,
+                    summary.tally.final_usage,
+                );
+                let response = summary.started.then(|| {
+                    let mut r = kaeso_kpp::Response::new(summary.id, summary.model, Vec::new());
+                    r.stop = summary.stop;
+                    r.usage = summary.usage;
+                    r
+                });
+                kaeso_core::assembler::Assembled {
+                    response,
+                    complete: summary.complete,
+                    error: None,
+                    images: 0,
+                    audio_bytes: 0,
+                    audio_ms: None,
+                    characters: None,
+                }
+            }
         };
-        broken.get_or_insert_with(|| Broken::ended(err));
-        if !app.reply(bytes).await {
-            gone = true;
+        if !assembled.complete
+            && let Some(r) = assembled.response.as_mut()
+        {
+            r.stop = StopReason::Other(INCOMPLETE.to_owned());
+        }
+        let mut fused = pending;
+        if !self.gone && self.broken.is_none() && !assembled.complete {
+            let err =
+                KppError::provider("The provider's stream ended before the reply was complete.")
+                    .with_status(502);
+            let bytes = self
+                .processing
+                .time(|| self.engine.encode_error(&err, &mut self.broken));
+            self.broken.get_or_insert_with(|| Broken::ended(err));
+            if let Some(p) = fused.take()
+                && !p.bytes.is_empty()
+                && !self.app.reply(p.bytes).await
+            {
+                self.gone = true;
+            }
+            if !self.gone && !self.app.reply(bytes).await {
+                self.gone = true;
+            }
+        }
+        let tail = if self.gone {
+            Vec::new()
+        } else {
+            self.engine.finish_tail(&mut self.broken)
+        };
+        let mut to_app = Some(tail);
+        if let Some(mut p) = fused {
+            let mut tail_len = 0u64;
+            if self.broken.is_none()
+                && let Some(tail) = to_app.take()
+            {
+                tail_len = tail.len() as u64;
+                if p.bytes.is_empty() {
+                    p.bytes = tail;
+                } else {
+                    p.bytes.extend_from_slice(&tail);
+                }
+            }
+            if !p.bytes.is_empty() {
+                if !self.app.reply(p.bytes).await {
+                    self.gone = cut_off(
+                        &mut self.app,
+                        &mut self.engine,
+                        &mut self.broken,
+                        self.last_event_at,
+                    )
+                    .await;
+                } else if p.ends {
+                    self.last_event_at
+                        .get_or_insert(self.app.progress.bytes.saturating_sub(tail_len));
+                }
+            }
+            if !self.gone && self.broken.is_none() && to_app.is_none() {
+                // Close the body channel before background accounting so the HTTP layer can flush
+                // the terminating chunk immediately.
+                self.app.close();
+                self.finish_accounting(assembled, None).await;
+                return;
+            }
+        }
+        if let Some(tail) = &to_app {
+            self.app.progress.bytes += tail.len() as u64;
+        }
+        let cancelled = self.gone
+            && !self
+                .last_event_at
+                .is_some_and(|at| self.app.taken.reached(at));
+        if cancelled {
+            self.finish_cancelled(assembled).await;
+            return;
+        }
+        self.finish_accounting(assembled, to_app).await;
+    }
+
+    async fn finish_cancelled(mut self, assembled: kaeso_core::assembler::Assembled) {
+        let ended = self.app.arrived.elapsed();
+        let (estimate, reported) = self.record_outcome(assembled);
+        if estimate {
+            let count = reported.total_input_tokens() == 0;
+            if count {
+                self.rec.outcome().duration = ended;
+            }
+            let input = if count {
+                Some(self.counter.count().await.tokens())
+            } else {
+                None
+            };
+            let o = self.rec.outcome();
+            o.usage = Some(estimate::complete(&reported, &self.tally, input));
+            o.usage_estimated = true;
+            count_estimate(EstimateReason::Cancelled, o.provider.unwrap_or_default());
+        }
+        if self.app.stalled {
+            let provider = self.rec.outcome().provider.unwrap_or_default();
+            metrics::counter!(crate::metrics::STREAM_FAILURES, "kind" => CLIENT_STALLED, "provider" => provider)
+                .increment(1);
+            self.rec.finish_stalled().await;
+        } else {
+            self.rec.finish_cancelled().await;
         }
     }
-    let tail = if gone {
-        Vec::new()
-    } else {
-        encoder.finish().unwrap_or_else(|e| {
-            tracing::error!(error = %e, "kpp cannot end the stream for the app");
-            broken.get_or_insert_with(|| Broken::encoder(e));
-            Vec::new()
-        })
-    };
-    app.progress.bytes += tail.len() as u64;
-    let kind = rec.outcome().kind;
-    // Image, speech and transcript streams report usage on their last event, or bill by unit.
-    let media = matches!(
-        kind,
-        RequestKind::Image | RequestKind::Speech | RequestKind::Transcription
-    );
-    let estimate = !media
-        && !tally.has_final_usage()
-        && (assembled.complete || gone || (broken.is_some() && assembled.response.is_some()));
-    let ended = app.arrived.elapsed();
-    {
-        if let (Some(r), Some(kept)) = (&assembled.response, rec.kept.as_mut()) {
+
+    fn record_outcome(
+        &mut self,
+        assembled: kaeso_core::assembler::Assembled,
+    ) -> (bool, kaeso_kpp::Usage) {
+        let kind = self.rec.outcome().kind;
+        // Image, speech and transcript streams report usage on their last event, or bill by unit.
+        let media = matches!(
+            kind,
+            RequestKind::Image | RequestKind::Speech | RequestKind::Transcription
+        );
+        let estimate = !media
+            && !self.tally.has_final_usage()
+            && (assembled.complete
+                || self.gone
+                || (self.broken.is_some() && assembled.response.is_some()));
+        if let (Some(r), Some(kept)) = (&assembled.response, self.rec.kept.as_mut()) {
             kept.response_id = Some(r.id.clone());
         }
-        let o = rec.outcome();
+        let o = self.rec.outcome();
         if let Some(r) = &assembled.response {
             o.usage = Some(r.usage.clone());
             o.response_model = Some(r.model.clone());
@@ -897,88 +1715,122 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
             r.clone_from(&o.requested_model.clone().unwrap_or_default());
         }
         o.reply = if media { None } else { assembled.response };
-        if media && assembled.complete {
+        if media
+            && assembled.complete
+            && let StreamEngine::Codec { streamed, .. } = &mut self.engine
+        {
             let model = o.response_model.clone().unwrap_or_default();
+            let streamed = std::mem::replace(streamed, StreamedMedia::new(false, false));
             o.media_reply_logged = streamed.reply(&model, o.content_type.as_deref());
         }
-        o.stream_progress = Some(app.progress);
-        o.stream_processing = Some(processing.0);
+        o.stream_progress = Some(self.app.progress);
+        o.stream_processing = Some(self.processing.0);
+        let reported = o.usage.clone().unwrap_or_default();
+        (estimate, reported)
     }
-    let reported = rec.outcome().usage.clone().unwrap_or_default();
-    let count = estimate && reported.total_input_tokens() == 0;
-    let mut to_app = Some(tail);
-    if count {
-        if let Some(tail) = to_app.take()
+
+    async fn finish_accounting(
+        mut self,
+        assembled: kaeso_core::assembler::Assembled,
+        mut to_app: Option<Vec<u8>>,
+    ) {
+        let ended = self.app.arrived.elapsed();
+        let (estimate, reported) = self.record_outcome(assembled);
+        let count = estimate && reported.total_input_tokens() == 0;
+        if count {
+            if let Some(tail) = to_app.take()
+                && !tail.is_empty()
+            {
+                self.app.deliver(Bytes::from(tail)).await;
+            }
+            self.rec.outcome().duration = ended;
+        }
+        if estimate {
+            let input = if count {
+                Some(self.counter.count().await.tokens())
+            } else {
+                None
+            };
+            let reason = if self.broken.is_some() {
+                EstimateReason::Failed
+            } else {
+                EstimateReason::Unreported
+            };
+            let o = self.rec.outcome();
+            o.usage = Some(estimate::complete(&reported, &self.tally, input));
+            o.usage_estimated = true;
+            count_estimate(reason, o.provider.unwrap_or_default());
+        }
+        if let Some(c) = self.carry
+            && self.broken.is_none()
+        {
+            c.keep().await;
+        }
+        if let (Some(b), Some(aborted)) = (&self.broken, &self.aborted) {
+            match self.first.take() {
+                Some(f) => {
+                    let _ = f.send(Some(b.err.clone().with_status(b.status)));
+                }
+                None => aborted.set(),
+            }
+        }
+        if let Some(f) = self.first.take() {
+            let _ = f.send(None);
+        }
+        match self.broken {
+            Some(b) => {
+                let provider = self.rec.outcome().provider.unwrap_or_default();
+                metrics::counter!(crate::metrics::STREAM_FAILURES, "kind" => b.kind.clone(), "provider" => provider)
+                    .increment(1);
+                self.rec.fail_as(&b.kind, &b.err, b.status).await;
+            }
+            None => self.rec.finish(200).await,
+        }
+        if let Some(tail) = to_app
             && !tail.is_empty()
         {
-            app.deliver(Bytes::from(tail)).await;
+            self.app.deliver(Bytes::from(tail)).await;
         }
-        rec.outcome().duration = ended;
-    }
-    if estimate {
-        let input = if count {
-            Some(counter.count().await.tokens())
-        } else {
-            None
-        };
-        let reason = if cancelled {
-            EstimateReason::Cancelled
-        } else if broken.is_some() {
-            EstimateReason::Failed
-        } else {
-            EstimateReason::Unreported
-        };
-        let o = rec.outcome();
-        o.usage = Some(estimate::complete(&reported, &tally, input));
-        o.usage_estimated = true;
-        count_estimate(reason, o.provider.unwrap_or_default());
-    }
-    if cancelled && app.stalled {
-        let provider = rec.outcome().provider.unwrap_or_default();
-        metrics::counter!(crate::metrics::STREAM_FAILURES, "kind" => CLIENT_STALLED, "provider" => provider)
-            .increment(1);
-        rec.finish_stalled().await;
-        return;
-    }
-    if cancelled {
-        rec.finish_cancelled().await;
-        return;
-    }
-    if let Some(c) = carry
-        && broken.is_none()
-    {
-        c.keep().await;
-    }
-    if let (Some(b), Some(aborted)) = (&broken, &aborted) {
-        match first.take() {
-            Some(f) => {
-                let _ = f.send(Some(b.err.clone().with_status(b.status)));
-            }
-            None => aborted.set(),
-        }
-    }
-    if let Some(f) = first.take() {
-        let _ = f.send(None);
-    }
-    match broken {
-        Some(b) => {
-            let provider = rec.outcome().provider.unwrap_or_default();
-            metrics::counter!(crate::metrics::STREAM_FAILURES, "kind" => b.kind.clone(), "provider" => provider)
-                .increment(1);
-            rec.fail_as(&b.kind, &b.err, b.status).await;
-        }
-        None => rec.finish(200).await,
-    }
-    if let Some(tail) = to_app
-        && !tail.is_empty()
-    {
-        app.deliver(Bytes::from(tail)).await;
     }
 }
 
-async fn cut_off(
+/// Pushes any already-decoded or already-buffered SSE chunks into `tx` before the response is
+/// returned so the HTTP layer writes headers and the first bytes together without a task hop;
+/// spawns the pump only when more chunks or async finalization remain.
+pub(super) async fn start(parts: Parts, tx: Sender<Bytes>, rec: Recording) {
+    let state = rec.state().clone();
+    let mut pump = Pump::new(parts, tx, rec);
+    let pending = if let Some(init) = pump.passthrough_initial.take() {
+        pump.process_batch(BatchStart::PassthroughInitial(init))
+            .await
+    } else if let Some(init) = pump.initial.take() {
+        pump.process_batch(BatchStart::Initial(init)).await
+    } else if !pump.app.cut.is_cancelled()
+        && let Some(chunks) = pump.chunks.as_mut()
+        && let Poll::Ready(first) = poll_next_now(chunks).await
+    {
+        pump.process_batch(BatchStart::Chunk(first)).await
+    } else {
+        None
+    };
+    if pump.done
+        && pump.can_finish_before_accounting()
+        && !pump.gone
+        && pump.engine.has_final_usage(&pump.tally)
+    {
+        pump.finalize(pending).await;
+    } else {
+        state.in_flight.spawn(pump.run(pending));
+    }
+}
+
+pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, rec: Recording) {
+    Pump::new(parts, tx, rec).run(None).await;
+}
+
+async fn cut_off<E: ErrorEncoder + ?Sized>(
     app: &mut ToApp,
-    encoder: &mut dyn StreamEncoder,
+    encoder: &mut E,
     broken: &mut Option<Broken>,
     last_event_at: Option<u64>,
 ) -> bool {
@@ -988,35 +1840,31 @@ async fn cut_off(
     if last_event_at.is_none() {
         end_shutdown(app, encoder, broken).await;
     }
-    app.tx.is_closed()
+    app.is_closed()
 }
 
-async fn end_shutdown(
+async fn end_shutdown<E: ErrorEncoder + ?Sized>(
     app: &mut ToApp,
-    encoder: &mut dyn StreamEncoder,
+    encoder: &mut E,
     broken: &mut Option<Broken>,
 ) -> bool {
     app.stopping = true;
     let err = shutting_down();
     broken.get_or_insert_with(|| Broken::shutdown(err.clone()));
-    let bytes = match encode(encoder, &StreamEvent::Error(err), broken) {
-        Ok(bytes) | Err(bytes) => bytes,
-    };
+    let bytes = encoder.encode_stream_error(&err, broken);
     app.reply(bytes).await
 }
 
-async fn end_capped(
+async fn end_capped<E: ErrorEncoder + ?Sized>(
     app: &mut ToApp,
-    encoder: &mut dyn StreamEncoder,
+    encoder: &mut E,
     broken: &mut Option<Broken>,
 ) -> bool {
     let err =
         KppError::provider("The reply reached this install's limit for a stream; Kaeso ended it.")
             .with_status(502);
     broken.get_or_insert_with(|| Broken::capped(err.clone()));
-    let bytes = match encode(encoder, &StreamEvent::Error(err), broken) {
-        Ok(bytes) | Err(bytes) => bytes,
-    };
+    let bytes = encoder.encode_stream_error(&err, broken);
     app.reply(bytes).await
 }
 
@@ -1078,7 +1926,7 @@ mod tests {
         let (tx, rx) = tokio::sync::mpsc::channel(capacity);
         let cut = CancellationToken::new();
         let app = ToApp {
-            tx,
+            tx: Some(tx),
             taken: Taken::default(),
             progress: StreamProgress::default(),
             arrived: std::time::Instant::now(),
@@ -1201,5 +2049,99 @@ mod tests {
             !taken.reached(25),
             "a queued last event never reached the app"
         );
+    }
+
+    #[tokio::test]
+    async fn stream_body_reports_aborted_when_channel_closes_with_abort_set() {
+        use http_body_util::BodyExt;
+        let (tx, rx) = tokio::sync::mpsc::channel(4);
+        let aborted = Aborted::default();
+        let mut body = body(rx, Taken::default(), aborted.clone());
+        tx.send(Bytes::from_static(b"audio")).await.unwrap();
+        aborted.set();
+        drop(tx);
+        let first = body.frame().await.unwrap().unwrap();
+        assert_eq!(first.into_data().unwrap(), Bytes::from_static(b"audio"));
+        assert!(body.frame().await.unwrap().is_err());
+        assert!(body.frame().await.is_none());
+    }
+
+    #[tokio::test]
+    async fn peek_keep_and_peek_passthrough_match_peek_behaviour() {
+        let ctx = kaeso_codecs::EgressCtx::for_kind(
+            RequestKind::Generate,
+            kaeso_kpp::StreamMode::on(false),
+        );
+        let enc_ctx =
+            kaeso_codecs::EncodeCtx::new(RequestKind::Generate, kaeso_kpp::StreamMode::on(false));
+
+        let err_stream = responses_stream("error-at-start");
+        let lines = |bytes: &[u8]| {
+            kaeso_upstream::ByteStream::replay(
+                bytes
+                    .split_inclusive(|b| *b == b'\n')
+                    .map(Bytes::copy_from_slice)
+                    .collect(),
+            )
+        };
+
+        let mut chunks = lines(&err_stream);
+        let dec = kaeso_codecs::dispatch::stream_decoder(DialectId::OpenAiResponses, &ctx).unwrap();
+        let err = match peek_keep(&mut chunks, dec, Duration::from_secs(15)).await {
+            Err(e) => e,
+            Ok(_) => panic!("expected error before output"),
+        };
+        assert_eq!(err.kind, kaeso_kpp::ErrorKind::ProviderError);
+
+        let mut chunks = lines(&err_stream);
+        let pass =
+            kaeso_codecs::passthrough::for_stream(DialectId::OpenAiResponses, &ctx, &enc_ctx)
+                .unwrap();
+        let err = match peek_passthrough(&mut chunks, pass, Duration::from_secs(15)).await {
+            Err(e) => e,
+            Ok(_) => panic!("expected error before output"),
+        };
+        assert_eq!(err.kind, kaeso_kpp::ErrorKind::ProviderError);
+
+        // Output-bearing stream keeps decoded events / raw bytes without re-reading them.
+        let basic = responses_stream("text-basic-stream");
+        let mut chunks = lines(&basic);
+        let dec = kaeso_codecs::dispatch::stream_decoder(DialectId::OpenAiResponses, &ctx).unwrap();
+        let Peeked::Decoded { initial, .. } = peek_keep(&mut chunks, dec, Duration::from_secs(15))
+            .await
+            .unwrap()
+        else {
+            panic!("expected decoded initial events");
+        };
+        assert!(!initial.events.is_empty() && initial.received > 0);
+
+        let mut chunks = lines(&basic);
+        let pass =
+            kaeso_codecs::passthrough::for_stream(DialectId::OpenAiResponses, &ctx, &enc_ctx)
+                .unwrap();
+        let (mut pass, initial) = peek_passthrough(&mut chunks, pass, Duration::from_secs(15))
+            .await
+            .unwrap();
+        let mut full = initial.bytes;
+        while let Some(chunk) = chunks.next().await {
+            let step = pass.feed(&chunk.unwrap(), &mut full);
+            assert!(step.error.is_none());
+        }
+        let step = pass.finish(&mut full);
+        assert!(step.error.is_none());
+        assert_eq!(full, basic);
+
+        // Truncated stream before output is put back by `peek_keep`.
+        let error_marker = b"event: error\n";
+        let cut = err_stream
+            .windows(error_marker.len())
+            .position(|w| w == error_marker)
+            .unwrap();
+        let mut chunks = lines(&err_stream[..cut]);
+        let dec = kaeso_codecs::dispatch::stream_decoder(DialectId::OpenAiResponses, &ctx).unwrap();
+        let res = peek_keep(&mut chunks, dec, Duration::from_secs(15))
+            .await
+            .unwrap();
+        assert!(matches!(res, Peeked::PutBack));
     }
 }

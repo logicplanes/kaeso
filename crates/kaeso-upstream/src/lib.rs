@@ -445,6 +445,7 @@ impl Upstream {
             .redirect(reqwest::redirect::Policy::none())
             .pool_idle_timeout(Duration::from_secs(90))
             .tcp_keepalive(Duration::from_secs(30))
+            .tcp_nodelay(true)
             .user_agent(self.user_agent.clone())
             .build()
             .map_err(|e| UpstreamError::Client(e.without_url()))?;

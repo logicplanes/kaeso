@@ -80,6 +80,8 @@ pub(crate) struct Decoder {
     added_arguments: HashMap<u32, String>,
     with_parts: std::collections::HashSet<i64>,
     held_error: Option<(KppError, Frame)>,
+    started: bool,
+    terminated: bool,
     called: bool,
     inert: bool,
 }
@@ -101,6 +103,8 @@ impl Decoder {
             added_arguments: HashMap::new(),
             with_parts: std::collections::HashSet::new(),
             held_error: None,
+            started: false,
+            terminated: false,
             called: false,
             inert: false,
         }
@@ -164,6 +168,123 @@ impl Decoder {
         self.flush_pending(out);
     }
 
+    // Fast path for cross-dialect streams (`!preserve_wire`): hot delta and stop events skip
+    // `Box<RawValue>`, `serde_json::Value`, `Engine`, and `Overrides::diff` while emitting the
+    // exact same KPP events.
+    fn try_fast_event(&mut self, data: &str, out: &mut Vec<StreamEvent>) -> bool {
+        #[derive(serde::Deserialize)]
+        struct FastEvent<'a> {
+            #[serde(default, rename = "type")]
+            ty: Option<&'a str>,
+            #[serde(default)]
+            output_index: Option<i64>,
+            #[serde(default)]
+            content_index: Option<i64>,
+            #[serde(default)]
+            summary_index: Option<i64>,
+            #[serde(default, borrow)]
+            delta: Option<std::borrow::Cow<'a, str>>,
+        }
+
+        let Ok(f) = serde_json::from_str::<FastEvent<'_>>(data) else {
+            return false;
+        };
+        let mut emit_delta = |index: u32, delta: Delta| {
+            let mut ev = BlockDelta::new(index, delta);
+            ev.extras.origin = Some(self.origin.clone());
+            out.push(StreamEvent::BlockDelta(ev));
+        };
+        match f.ty {
+            Some("response.output_text.delta") => {
+                let (Some(index), Some(text)) =
+                    (self.part(f.output_index, f.content_index), f.delta)
+                else {
+                    return false;
+                };
+                self.streamed.insert(index);
+                emit_delta(index, Delta::Text(text.into_owned()));
+                true
+            }
+            Some("response.refusal.delta") => {
+                let (Some(index), Some(text)) =
+                    (self.part(f.output_index, f.content_index), f.delta)
+                else {
+                    return false;
+                };
+                self.streamed.insert(index);
+                emit_delta(index, Delta::Refusal(text.into_owned()));
+                true
+            }
+            Some("response.function_call_arguments.delta") => {
+                let (Some((index, ItemKind::Call)), Some(text)) = (
+                    f.output_index.and_then(|oi| self.items.get(&oi)).copied(),
+                    f.delta,
+                ) else {
+                    return false;
+                };
+                self.streamed.insert(index);
+                emit_delta(index, Delta::ToolArguments(text.into_owned()));
+                true
+            }
+            Some("response.reasoning_text.delta" | "response.reasoning.delta") => {
+                let (Some((index, ItemKind::Reasoning)), Some(text)) = (
+                    f.output_index.and_then(|oi| self.items.get(&oi)).copied(),
+                    f.delta,
+                ) else {
+                    return false;
+                };
+                emit_delta(index, Delta::ReasoningText(text.into_owned()));
+                true
+            }
+            Some(
+                "response.reasoning_summary_text.delta" | "response.reasoning_summary_part.added",
+            ) => {
+                let si = f.summary_index.and_then(|s| u32::try_from(s).ok());
+                let Some((index, ItemKind::Reasoning)) =
+                    f.output_index.and_then(|oi| self.items.get(&oi)).copied()
+                else {
+                    return false;
+                };
+                let Some(si) = si else {
+                    return false;
+                };
+                let text = if f.ty == Some("response.reasoning_summary_part.added") {
+                    String::new()
+                } else if let Some(t) = f.delta {
+                    t.into_owned()
+                } else {
+                    return false;
+                };
+                emit_delta(index, Delta::ReasoningSummary(SummaryDelta::new(si, text)));
+                true
+            }
+            Some(
+                "response.in_progress"
+                | "response.reasoning_summary_text.done"
+                | "response.reasoning_summary_part.done"
+                | "response.reasoning_text.done"
+                | "response.reasoning.done",
+            ) => true,
+            Some("response.output_text.done" | "response.refusal.done") => self
+                .part(f.output_index, f.content_index)
+                .is_some_and(|index| self.streamed.contains(&index)),
+            Some("response.content_part.done") => {
+                if let (Some(oi), Some(ci)) = (f.output_index, f.content_index)
+                    && let Some(index) = self.parts.remove(&(oi, ci))
+                {
+                    let mut stop = BlockStop::new(index);
+                    stop.extras.origin = Some(self.origin.clone());
+                    out.push(StreamEvent::BlockStop(stop));
+                    return true;
+                }
+                f.output_index
+                    .and_then(|oi| self.items.get(&oi))
+                    .is_some_and(|(_, kind)| *kind == ItemKind::Reasoning)
+            }
+            _ => false,
+        }
+    }
+
     fn sse_item(&mut self, item: SseItem, out: &mut Vec<StreamEvent>) {
         match item {
             SseItem::Comment(c) => {
@@ -172,6 +293,15 @@ impl Decoder {
                 self.extra(out, crate::sse::comment_extra(&c), None, false);
             }
             SseItem::Event(e) => {
+                if !self.ctx.preserve_wire
+                    && self.held.is_none()
+                    && self.held_error.is_none()
+                    && self.started
+                    && e.has_data
+                    && self.try_fast_event(&e.data, out)
+                {
+                    return;
+                }
                 let sse = crate::sse::framing(&e);
                 let data: Option<Box<RawValue>> = if e.has_data {
                     serde_json::from_str(&e.data).ok()
@@ -252,9 +382,13 @@ impl Decoder {
                 self.flush_pending(out);
                 self.held_error = Some((err, f));
             }
-            Action::Pre => self.pending.push(f),
+            Action::Pre => {
+                if self.ctx.preserve_wire {
+                    self.pending.push(f);
+                }
+            }
             Action::Unstreamed(events) => {
-                if !self.engine.started()
+                if !self.started
                     && let Err(e) = self.synthesize_start(out)
                 {
                     self.flush_pending(out);
@@ -265,7 +399,9 @@ impl Decoder {
                 for event in events {
                     self.run(event, Vec::new(), out);
                 }
-                self.pending.push(f);
+                if self.ctx.preserve_wire {
+                    self.pending.push(f);
+                }
             }
             Action::Main(mut events) => {
                 let Some(last) = events.pop() else {
@@ -273,7 +409,7 @@ impl Decoder {
                     self.frame_extra(out, &f);
                     return;
                 };
-                if !self.engine.started()
+                if !self.started
                     && !last.is_error()
                     && let Err(e) = self.synthesize_start(out)
                 {
@@ -282,9 +418,10 @@ impl Decoder {
                     return;
                 }
                 for ev in events {
-                    if let Err(e) = self
-                        .engine
-                        .step(ev.event(), &mut |_, n, _| Ok(Emitted::Skipped(n)))
+                    if self.ctx.preserve_wire
+                        && let Err(e) = self
+                            .engine
+                            .step(ev.event(), &mut |_, n, _| Ok(Emitted::Skipped(n)))
                     {
                         self.flush_pending(out);
                         self.fail(out, e);
@@ -293,7 +430,7 @@ impl Decoder {
                     out.push(ev.into_event());
                 }
                 self.lifecycle(last, f, out);
-                if self.engine.terminated() {
+                if self.terminated {
                     self.inert = true;
                 }
             }
@@ -320,8 +457,11 @@ impl Decoder {
             .with_form(NATIVE, true.into())
             .with_form(SKIP, serde_json::json!(["", "@in_progress"]));
         let event = StreamEvent::ResponseStart(start);
-        self.engine
-            .step(&event, &mut |_, n, _| Ok(Emitted::Skipped(n)))?;
+        if self.ctx.preserve_wire {
+            self.engine
+                .step(&event, &mut |_, n, _| Ok(Emitted::Skipped(n)))?;
+        }
+        self.started = true;
         out.push(event);
         Ok(())
     }
@@ -417,7 +557,7 @@ impl Decoder {
         let delta = || f.str("delta").map(str::to_owned);
         let block_delta = |index: u32, d: Delta| Lifecycle::from(BlockDelta::new(index, d));
         match f.ty.as_str() {
-            "response.created" if !self.engine.started() => Action::Hold,
+            "response.created" if !self.started => Action::Hold,
             "response.output_item.added" => {
                 let (Some(oi), Some(item)) = (oi, f.raw("item")) else {
                     return self.broken(f);
@@ -747,6 +887,10 @@ impl Decoder {
     }
 
     fn lifecycle(&mut self, event: Lifecycle, main: Frame, out: &mut Vec<StreamEvent>) {
+        if !self.ctx.preserve_wire {
+            self.run(event, Vec::new(), out);
+            return;
+        }
         if !self.pending.is_empty() {
             let queue: Vec<&Frame> = self.pending.iter().chain(std::iter::once(&main)).collect();
             let mut shadow = self.engine.clone();
@@ -776,6 +920,26 @@ impl Decoder {
     }
 
     fn run(&mut self, mut event: Lifecycle, frames: Vec<Frame>, out: &mut Vec<StreamEvent>) {
+        if !self.ctx.preserve_wire {
+            match event.event() {
+                StreamEvent::ResponseStart(_) => self.started = true,
+                StreamEvent::ResponseStop(_) | StreamEvent::Error(_) => self.terminated = true,
+                _ => {}
+            }
+            if let Some(extras) = event.extras_mut()
+                && extras.origin.is_none()
+            {
+                extras.origin = Some(self.origin.clone());
+            }
+            if let Some(b) = event.block_start_mut()
+                && let BlockHeader::ToolCall(h) = &mut b.block
+            {
+                h.id = self.ctx.original_tool_id(&h.id).to_owned();
+                h.name = self.ctx.original_tool_name(&h.name).to_owned();
+            }
+            out.push(event.into_event());
+            return;
+        }
         let mut rec = Extras::new(self.origin.clone());
         let mut skips: Vec<String> = Vec::new();
         let mut qi = 0;
@@ -823,6 +987,8 @@ impl Decoder {
             }
             return;
         }
+        self.started = self.engine.started();
+        self.terminated = self.engine.terminated();
         if let Some(extras) = event.extras_mut() {
             for (k, v) in rec.fields {
                 extras.fields.insert(k, v);
@@ -928,7 +1094,12 @@ impl StreamDecoder for Decoder {
         if !self.inert {
             self.release(&mut out);
         }
-        if !self.inert && self.engine.open() {
+        let open = if self.ctx.preserve_wire {
+            self.engine.open()
+        } else {
+            self.started && !self.terminated
+        };
+        if !self.inert && open {
             self.fail(
                 &mut out,
                 KppError::provider("The provider's stream ended before the response was complete."),

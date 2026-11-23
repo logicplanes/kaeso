@@ -10,10 +10,10 @@ mod plan;
 mod profile;
 pub(crate) mod replay;
 mod request;
-mod response;
+pub(crate) mod response;
 mod stored;
 pub(crate) mod stream;
-mod wire;
+pub(crate) mod wire;
 
 #[cfg(test)]
 mod tests;

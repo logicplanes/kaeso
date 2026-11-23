@@ -174,6 +174,10 @@ pub(crate) fn flatten(d: &mut Draft<'_>, target: DialectId) -> Result<(), KppErr
 pub(crate) struct Namespaces(Vec<(String, String, String)>);
 
 impl Namespaces {
+    pub(crate) fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
     pub(crate) fn of(req: Option<&Request>) -> Namespaces {
         let Some(Request::Generate(r) | Request::CountTokens(r)) = req else {
             return Namespaces::default();
