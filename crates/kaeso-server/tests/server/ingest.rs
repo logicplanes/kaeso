@@ -575,6 +575,70 @@ async fn a_source_that_sends_too_many_batches_is_asked_to_wait() {
 }
 
 #[tokio::test]
+async fn a_source_that_sends_too_many_records_is_asked_to_wait() {
+    let env = env().await;
+    let (_, key) = source(&env, "http").await;
+    // Records from the future are refused without being kept, so the test writes nothing.
+    let calls: Vec<Value> = (0..1_000)
+        .map(|n| json!({ "id": format!("t-{n}"), "tool": "x", "started_at": "2999-01-01T00:00:00Z" }))
+        .collect();
+    let batch = || json!({ "tool_calls": calls }).to_string().into_bytes();
+    for n in 0..6 {
+        let (s, _, body) = post(
+            &env,
+            "/ingest/v1/events",
+            Some(&key),
+            "application/json",
+            false,
+            batch(),
+        )
+        .await;
+        assert_eq!(
+            s,
+            StatusCode::OK,
+            "batch {n}: {}",
+            String::from_utf8_lossy(&body)
+        );
+    }
+    let (s, h, body) = post(
+        &env,
+        "/ingest/v1/events",
+        Some(&key),
+        "application/json",
+        false,
+        batch(),
+    )
+    .await;
+    assert_eq!(s, StatusCode::TOO_MANY_REQUESTS);
+    assert!(h.contains_key("retry-after"));
+    assert!(
+        String::from_utf8_lossy(&body).contains("more than 6,000 records this minute"),
+        "{}",
+        String::from_utf8_lossy(&body)
+    );
+    let one_too_many: Vec<Value> = (0..1_001)
+        .map(|n| json!({ "id": format!("u-{n}"), "tool": "x" }))
+        .collect();
+    let (_, other) = source(&env, "http").await;
+    let (s, _, _) = post(
+        &env,
+        "/ingest/v1/events",
+        Some(&other),
+        "application/json",
+        false,
+        json!({ "tool_calls": one_too_many })
+            .to_string()
+            .into_bytes(),
+    )
+    .await;
+    assert_eq!(
+        s,
+        StatusCode::PAYLOAD_TOO_LARGE,
+        "a batch holds at most 1,000 records"
+    );
+}
+
+#[tokio::test]
 async fn the_consoles_http_example_is_taken_as_it_is() {
     let env = env().await;
     let (_, key) = source(&env, "http").await;

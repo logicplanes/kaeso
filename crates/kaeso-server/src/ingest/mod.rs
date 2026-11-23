@@ -27,20 +27,71 @@ use crate::http::client_ip::ClientIp;
 use crate::services::observed::{self, Batch, Recorded, Refusal};
 use crate::state::AppState;
 
-/// The most a request body may be as sent, and once gzip is undone.
+/// The most a request body may be as sent, and once gzip is undone; JSON takes several times
+/// its size in memory once parsed, so it may be less.
 const MAX_BODY: usize = 8 * 1024 * 1024;
 const MAX_INFLATED: u64 = 16 * 1024 * 1024;
+const MAX_INFLATED_JSON: u64 = 8 * 1024 * 1024;
 /// The most records one batch may hold. OpenTelemetry SDKs export at most 512 at a time.
-const MAX_RECORDS: usize = 5_000;
-/// Batches a source may send a minute; a busy coding agent exports a few each minute.
+const MAX_RECORDS: usize = 1_000;
+/// Batches and records a source may send a minute; a busy coding agent exports a few batches
+/// each minute, and a team's proxy a few records a second.
 const BATCHES_PER_MINUTE: i64 = 600;
+const RECORDS_PER_MINUTE: i64 = 6_000;
+/// Records a source may send a day, which also bounds the ids Kaeso remembers for it.
+const RECORDS_PER_DAY: i64 = 200_000;
+/// Batches of one source in progress at the same time, fewer than the decoding turns: a client
+/// exports its logs, traces and metrics side by side.
+const BUSY_PER_SOURCE: usize = 3;
 const VALKEY_DEADLINE: Duration = Duration::from_secs(2);
 /// How long a source that found Kaeso unavailable is asked to wait.
 const RETRY_LATER: u64 = 30;
 
-// Bodies are unzipped and decoded off the async workers, a few at a time, so a burst of large
-// batches costs a bounded amount of memory.
+// Bodies are unzipped and decoded a few at a time, off the async workers, so a burst of large
+// batches costs a bounded amount of memory; a slow upload is read before it takes a turn.
 static DECODING: LazyLock<Semaphore> = LazyLock::new(|| Semaphore::new(4));
+static BUSY: LazyLock<std::sync::Mutex<std::collections::HashMap<uuid::Uuid, usize>>> =
+    LazyLock::new(Default::default);
+
+// One of a source's batches in progress; the source may have `BUSY_PER_SOURCE` at once, so one
+// source can't hold every decoding turn.
+struct Busy(uuid::Uuid);
+
+impl Busy {
+    fn take(source: uuid::Uuid) -> Result<Busy, Refused> {
+        let mut busy = BUSY
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let n = busy.entry(source).or_insert(0);
+        if *n >= BUSY_PER_SOURCE {
+            return Err(Refused {
+                retry_after: Some(1),
+                ..Refused::new(
+                    StatusCode::TOO_MANY_REQUESTS,
+                    "rate_limited",
+                    RESOURCE_EXHAUSTED,
+                    "This source has three batches in progress; send the next one when one ends.",
+                )
+            });
+        }
+        *n += 1;
+        Ok(Busy(source))
+    }
+}
+
+impl Drop for Busy {
+    fn drop(&mut self) {
+        let mut busy = BUSY
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if let Some(n) = busy.get_mut(&self.0) {
+            *n = n.saturating_sub(1);
+            if *n == 0 {
+                busy.remove(&self.0);
+            }
+        }
+    }
+}
 
 pub fn router() -> Router<AppState> {
     Router::new()
@@ -145,7 +196,7 @@ fn too_large() -> Refused {
         StatusCode::PAYLOAD_TOO_LARGE,
         "request_too_large",
         RESOURCE_EXHAUSTED,
-        "A batch may be at most 8 MiB, 16 MiB unzipped, and 5,000 records.",
+        "A batch may be at most 8 MiB, 16 MiB unzipped (8 MiB for JSON), and 1,000 records.",
     )
 }
 
@@ -274,6 +325,89 @@ async fn within_rate(state: &AppState, source: &Source) -> Result<(), Refused> {
     }
 }
 
+// Each record costs a log row, a usage row and a limit charge, so a source's records count too,
+// not only its batches.
+async fn within_record_rate(
+    state: &AppState,
+    source: &Source,
+    records: usize,
+) -> Result<(), Refused> {
+    let now = state.clock.now().unix_timestamp();
+    let minute = state
+        .valkey
+        .key(&format!("obsrecords:{}:{}", source.id, now / 60));
+    let day = state
+        .valkey
+        .key(&format!("obsrecords:{}:d{}", source.id, now / 86_400));
+    let n = i64::try_from(records).unwrap_or(i64::MAX);
+    let mut conn = state.valkey.conn();
+    let counted: Result<Result<(i64, i64), redis::RedisError>, _> = tokio::time::timeout(
+        VALKEY_DEADLINE,
+        redis::pipe()
+            .atomic()
+            .cmd("INCRBY")
+            .arg(&minute)
+            .arg(n)
+            .cmd("EXPIRE")
+            .arg(&minute)
+            .arg(120)
+            .ignore()
+            .cmd("INCRBY")
+            .arg(&day)
+            .arg(n)
+            .cmd("EXPIRE")
+            .arg(&day)
+            .arg(2 * 86_400)
+            .ignore()
+            .query_async::<(i64, i64)>(&mut conn),
+    )
+    .await;
+    let refused = |retry: i64, message: &str| Refused {
+        retry_after: Some(u64::try_from(retry).unwrap_or(60)),
+        ..Refused::new(
+            StatusCode::TOO_MANY_REQUESTS,
+            "rate_limited",
+            RESOURCE_EXHAUSTED,
+            message,
+        )
+    };
+    let refusal = match counted {
+        Ok(Ok((m, _))) if m > RECORDS_PER_MINUTE => refused(
+            60 - now % 60,
+            "This source sent more than 6,000 records this minute; send the rest shortly.",
+        ),
+        Ok(Ok((_, d))) if d > RECORDS_PER_DAY => refused(
+            86_400 - now % 86_400,
+            "This source sent more than 200,000 records today; send the rest tomorrow.",
+        ),
+        _ => return Ok(()),
+    };
+    // A refused batch keeps none of its records, so its retries don't use up the day.
+    let _: Result<Result<(), redis::RedisError>, _> = tokio::time::timeout(
+        VALKEY_DEADLINE,
+        redis::pipe()
+            .cmd("DECRBY")
+            .arg(&minute)
+            .arg(n)
+            .ignore()
+            .cmd("EXPIRE")
+            .arg(&minute)
+            .arg(120)
+            .ignore()
+            .cmd("DECRBY")
+            .arg(&day)
+            .arg(n)
+            .ignore()
+            .cmd("EXPIRE")
+            .arg(&day)
+            .arg(2 * 86_400)
+            .ignore()
+            .query_async::<()>(&mut conn),
+    )
+    .await;
+    Err(refusal)
+}
+
 async fn raw_body(req: Request) -> Result<(HeaderMap, Bytes), Refused> {
     let (parts, body) = req.into_parts();
     let raw = http_body_util::Limited::new(body, MAX_BODY)
@@ -284,7 +418,7 @@ async fn raw_body(req: Request) -> Result<(HeaderMap, Bytes), Refused> {
     Ok((parts.headers, raw))
 }
 
-fn inflate(headers: &HeaderMap, raw: Bytes) -> Result<Bytes, Refused> {
+fn inflate(headers: &HeaderMap, raw: Bytes, most: u64) -> Result<Bytes, Refused> {
     let encoding = headers
         .get(header::CONTENT_ENCODING)
         .and_then(|v| v.to_str().ok())
@@ -294,10 +428,10 @@ fn inflate(headers: &HeaderMap, raw: Bytes) -> Result<Bytes, Refused> {
         Some("gzip" | "x-gzip") => {
             let mut out = Vec::new();
             flate2::read::MultiGzDecoder::new(raw.as_ref())
-                .take(MAX_INFLATED + 1)
+                .take(most + 1)
                 .read_to_end(&mut out)
                 .map_err(|_| unreadable())?;
-            if out.len() as u64 > MAX_INFLATED {
+            if out.len() as u64 > most {
                 return Err(too_large());
             }
             Ok(Bytes::from(out))
@@ -306,15 +440,17 @@ fn inflate(headers: &HeaderMap, raw: Bytes) -> Result<Bytes, Refused> {
     }
 }
 
-/// Unzips and reads a body off the async workers, a few at a time.
-async fn decoded<T, F>(headers: HeaderMap, raw: Bytes, read: F) -> Result<T, Refused>
+/// Reads a source's body, then unzips and decodes it in its turn, off the async workers.
+async fn decoded<T, F>(source: &Source, req: Request, most: u64, read: F) -> Result<T, Refused>
 where
     T: Send + 'static,
     F: FnOnce(&HeaderMap, &[u8]) -> Result<T, Refused> + Send + 'static,
 {
+    let _busy = Busy::take(source.id)?;
+    let (headers, raw) = raw_body(req).await?;
     let _turn = DECODING.acquire().await.map_err(|_| unavailable())?;
     tokio::task::spawn_blocking(move || {
-        let bytes = inflate(&headers, raw)?;
+        let bytes = inflate(&headers, raw, most)?;
         read(&headers, &bytes)
     })
     .await
@@ -362,9 +498,11 @@ async fn note_unreadable(state: &AppState, source: &Source) {
 }
 
 async fn recorded(state: &AppState, source: &Source, batch: Batch) -> Result<Recorded, Refused> {
-    if batch.requests.len() + batch.tool_calls.len() > MAX_RECORDS {
+    let records = batch.requests.len() + batch.tool_calls.len();
+    if records > MAX_RECORDS {
         return Err(too_large());
     }
+    within_record_rate(state, source, records).await?;
     observed::record(state, source, batch).await.map_err(|e| {
         tracing::error!(error = %e, source = %source.id, "cannot record a source's batch");
         unavailable()
@@ -472,8 +610,11 @@ async fn otlp_export(
 ) -> Result<Response, Refused> {
     let source = source(state, req.headers(), ip).await?;
     within_rate(state, &source).await?;
-    let (headers, raw) = raw_body(req).await?;
-    let read = decoded(headers, raw, move |_, bytes| {
+    let most = match encoding {
+        Encoding::Protobuf => MAX_INFLATED,
+        Encoding::Json => MAX_INFLATED_JSON,
+    };
+    let read = decoded(&source, req, most, move |_, bytes| {
         read_otlp(signal, encoding, bytes)
     })
     .await;
@@ -556,15 +697,11 @@ async fn json_batch<F>(
     read: F,
 ) -> Result<Response, Refused>
 where
-    F: FnOnce(&[u8]) -> Option<Batch> + Send + 'static,
+    F: FnOnce(&[u8]) -> Result<Batch, Refused> + Send + 'static,
 {
     let source = source(state, req.headers(), ip).await?;
     within_rate(state, &source).await?;
-    let (headers, raw) = raw_body(req).await?;
-    let batch = decoded(headers, raw, move |_, bytes| {
-        read(bytes).ok_or_else(unreadable)
-    })
-    .await;
+    let batch = decoded(&source, req, MAX_INFLATED_JSON, move |_, bytes| read(bytes)).await;
     let batch = match batch {
         Ok(b) => b,
         Err(refused) => {
@@ -580,8 +717,14 @@ where
 
 async fn json_events(State(state): State<AppState>, ip: ClientIp, req: Request) -> Response {
     json_batch(&state, ip, req, |bytes| {
-        let e = serde_json::from_slice::<events::Events>(bytes).ok()?;
-        (e.requests.len() + e.tool_calls.len() <= MAX_RECORDS).then(|| events::batch(e))
+        if otlp::too_many_json_values(bytes) {
+            return Err(too_large());
+        }
+        let e = serde_json::from_slice::<events::Events>(bytes).map_err(|_| unreadable())?;
+        if e.requests.len() + e.tool_calls.len() > MAX_RECORDS {
+            return Err(too_large());
+        }
+        Ok(events::batch(e))
     })
     .await
     .unwrap_or_else(IntoResponse::into_response)
@@ -589,8 +732,14 @@ async fn json_events(State(state): State<AppState>, ip: ClientIp, req: Request) 
 
 async fn json_litellm(State(state): State<AppState>, ip: ClientIp, req: Request) -> Response {
     json_batch(&state, ip, req, |bytes| {
-        let items = json_values(bytes)?;
-        (items.len() <= MAX_RECORDS).then(|| map::litellm(&items))
+        if otlp::too_many_json_values(bytes) {
+            return Err(too_large());
+        }
+        let items = json_values(bytes).ok_or_else(unreadable)?;
+        if items.len() > MAX_RECORDS {
+            return Err(too_large());
+        }
+        Ok(map::litellm(&items))
     })
     .await
     .unwrap_or_else(IntoResponse::into_response)
@@ -598,16 +747,21 @@ async fn json_litellm(State(state): State<AppState>, ip: ClientIp, req: Request)
 
 async fn json_antigravity(State(state): State<AppState>, ip: ClientIp, req: Request) -> Response {
     json_batch(&state, ip, req, |bytes| {
-        let Ok(Json::Object(body)) = serde_json::from_slice::<Json>(bytes) else {
-            return None;
+        if otlp::too_many_json_values(bytes) {
+            return Err(too_large());
+        }
+        let Ok(Json::Object(mut body)) = serde_json::from_slice::<Json>(bytes) else {
+            return Err(unreadable());
         };
-        let hook = body.get("hook").cloned().unwrap_or(Json::Null);
-        let steps = body
-            .get("steps")
-            .and_then(Json::as_array)
-            .cloned()
-            .unwrap_or_default();
-        (steps.len() <= MAX_RECORDS).then(|| map::antigravity(&hook, &steps))
+        let hook = body.remove("hook").unwrap_or(Json::Null);
+        let steps = match body.remove("steps") {
+            Some(Json::Array(steps)) => steps,
+            _ => Vec::new(),
+        };
+        if steps.len() > MAX_RECORDS {
+            return Err(too_large());
+        }
+        Ok(map::antigravity(&hook, &steps))
     })
     .await
     .unwrap_or_else(IntoResponse::into_response)
@@ -686,6 +840,134 @@ mod tests {
             Err(otlp::DecodeError::TooMany)
         );
         assert!(otlp::count_protobuf(&[0x0a, 0x05, 0x12], &[1, 2, 2]).is_err());
+    }
+
+    // One resource with an attribute of `attributes` bytes, `empty` scopes without records and
+    // `full` scopes with one record each.
+    fn resource_with_scopes(attributes: usize, empty: usize, full: usize) -> Vec<u8> {
+        let value = vec![b'x'; attributes];
+        let mut any = vec![0x0a];
+        any.extend(varint(value.len()));
+        any.extend(&value);
+        let mut kv = vec![0x0a, 0x01, b'k', 0x12];
+        kv.extend(varint(any.len()));
+        kv.extend(&any);
+        let mut resource = vec![0x0a];
+        resource.extend(varint(kv.len()));
+        resource.extend(&kv);
+        let mut inner = vec![0x0a];
+        inner.extend(varint(resource.len()));
+        inner.extend(&resource);
+        for _ in 0..empty {
+            inner.extend([0x12, 0x00]);
+        }
+        for _ in 0..full {
+            inner.extend([0x12, 0x02, 0x12, 0x00]);
+        }
+        let mut resource_logs = vec![0x0a];
+        resource_logs.extend(varint(inner.len()));
+        resource_logs.extend(&inner);
+        resource_logs
+    }
+
+    #[test]
+    fn a_body_of_many_empty_scopes_is_refused_and_empty_scopes_are_left_out() {
+        assert_eq!(
+            otlp::logs_from_protobuf(&resource_with_scopes(64, MAX_RECORDS + 1, 1), MAX_RECORDS)
+                .map(|g| g.len()),
+            Err(otlp::DecodeError::TooMany),
+            "every scope counts, not only its records"
+        );
+        let groups =
+            otlp::logs_from_protobuf(&resource_with_scopes(64, 3, 1), MAX_RECORDS).unwrap();
+        assert_eq!(groups.len(), 1, "scopes without records are left out");
+        assert_eq!(groups[0].resource.str("k").map(str::len), Some(64));
+
+        let scopes: Vec<Json> = (0..=MAX_RECORDS).map(|_| json!({})).collect();
+        let body = serde_json::to_vec(&json!({
+            "resourceLogs": [{ "resource": { "attributes": [] }, "scopeLogs": scopes }]
+        }))
+        .unwrap();
+        assert_eq!(
+            otlp::logs_from_json(&body, MAX_RECORDS).map(|g| g.len()),
+            Err(otlp::DecodeError::TooMany)
+        );
+    }
+
+    #[test]
+    fn a_resource_keeps_only_short_values_as_they_are_copied_into_every_record() {
+        let long =
+            otlp::logs_from_protobuf(&resource_with_scopes(2_000, 0, 1), MAX_RECORDS).unwrap();
+        assert_eq!(
+            long[0].resource.get("k"),
+            None,
+            "2,000 bytes can't be a name"
+        );
+        let short =
+            otlp::logs_from_protobuf(&resource_with_scopes(1_000, 0, 1), MAX_RECORDS).unwrap();
+        assert_eq!(short[0].resource.str("k").map(str::len), Some(1_000));
+    }
+
+    #[test]
+    fn a_body_of_millions_of_tiny_fields_is_refused_before_it_is_decoded() {
+        // One record whose attributes are 300,000 empty key-values: two bytes each on the wire.
+        let mut attributes = Vec::new();
+        for _ in 0..300_000 {
+            attributes.extend([0x32, 0x00]);
+        }
+        let mut record = vec![0x12];
+        record.extend(varint(attributes.len()));
+        record.extend(&attributes);
+        let mut scope = vec![0x12];
+        scope.extend(varint(record.len()));
+        scope.extend(&record);
+        let mut body = vec![0x0a];
+        body.extend(varint(scope.len()));
+        body.extend(&scope);
+        assert_eq!(
+            otlp::logs_from_protobuf(&body, MAX_RECORDS).map(|g| g.len()),
+            Err(otlp::DecodeError::TooMany)
+        );
+
+        let objects = "{\"a\":0},".repeat(300_000);
+        let json = format!("{{\"resourceLogs\":[{objects}{{}}]}}");
+        assert_eq!(
+            otlp::logs_from_json(json.as_bytes(), MAX_RECORDS).map(|g| g.len()),
+            Err(otlp::DecodeError::TooMany)
+        );
+        assert_eq!(otlp::count_json_values(br#"{"a":"{[}]","b":[1,{}]}"#), 3);
+    }
+
+    #[test]
+    fn fields_nested_deeper_than_the_count_reads_still_count() {
+        // Empty key-values inside twenty kvlist values, inside one record attribute.
+        let mut inner = Vec::new();
+        for _ in 0..300_000 {
+            inner.extend([0x0a, 0x00]);
+        }
+        for _ in 0..20 {
+            // KeyValueList { values = 1 } inside AnyValue { kvlist_value = 6 }.
+            let mut list = vec![0x32];
+            list.extend(varint(inner.len()));
+            list.extend(&inner);
+            inner = list;
+        }
+        assert!(otlp::count_fields(&inner, 12, otlp::MAX_FIELDS) > otlp::MAX_FIELDS);
+
+        let scalars = format!("[{}0]", "0,".repeat(1_100_000));
+        assert!(otlp::too_many_json_values(scalars.as_bytes()));
+        assert!(!otlp::too_many_json_values(br#"{"a":[1,2,3],"b":"x,y:z"}"#));
+    }
+
+    #[test]
+    fn a_resource_is_shared_by_its_scopes_instead_of_copied() {
+        let groups =
+            otlp::logs_from_protobuf(&resource_with_scopes(64, 0, 2), MAX_RECORDS).unwrap();
+        assert_eq!(groups.len(), 2);
+        assert!(std::sync::Arc::ptr_eq(
+            &groups[0].resource,
+            &groups[1].resource
+        ));
     }
 
     fn varint(mut n: usize) -> Vec<u8> {

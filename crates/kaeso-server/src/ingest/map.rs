@@ -223,10 +223,9 @@ fn claude_code(groups: &[Group<LogRecord>], batch: &mut Batch) {
                         tags: Vec::new(),
                         provider_request_id: request_id.map(str::to_owned),
                         dialect: Some(DialectId::AnthropicMessages),
-                        prompt: a
-                            .str("prompt.id")
-                            .and_then(|p| content.prompts.get(p).cloned()),
-                        reply: request_id.and_then(|id| content.replies.get(id).cloned()),
+                        // A prompt goes with the first request it led to, not copied into each.
+                        prompt: a.str("prompt.id").and_then(|p| content.prompts.remove(p)),
+                        reply: request_id.and_then(|id| content.replies.remove(id)),
                     });
                 }
                 "claude_code.tool_result" => {
@@ -527,7 +526,7 @@ fn gemini_cli(groups: &[Group<LogRecord>], batch: &mut Batch) {
                         tags: Vec::new(),
                         provider_request_id: None,
                         dialect: Some(DialectId::Gemini),
-                        prompt: prompts.get(prompt_id).cloned(),
+                        prompt: prompts.remove(prompt_id),
                         reply: text(a.str("response_text")),
                     });
                 }

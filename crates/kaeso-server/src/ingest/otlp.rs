@@ -131,7 +131,8 @@ pub struct Span {
 /// Records of one resource and scope, as the exporter grouped them.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Group<T> {
-    pub resource: Attrs,
+    /// Shared by every scope of the resource, so a resource named once is held once.
+    pub resource: std::sync::Arc<Attrs>,
     pub scope: String,
     pub items: Vec<T>,
 }
@@ -293,18 +294,6 @@ mod pb {
         pub(super) code: i32,
     }
 
-    #[derive(Clone, PartialEq, prost::Message)]
-    pub(super) struct ExportMetricsServiceRequest {
-        #[prost(message, repeated, tag = "1")]
-        pub(super) resource_metrics: Vec<ResourceMetrics>,
-    }
-
-    #[derive(Clone, PartialEq, prost::Message)]
-    pub(super) struct ResourceMetrics {
-        #[prost(message, optional, tag = "1")]
-        pub(super) resource: Option<Resource>,
-    }
-
     /// `google.rpc.Status`, the body of an OTLP/HTTP error answered in protobuf.
 
     #[derive(Clone, PartialEq, prost::Message)]
@@ -359,21 +348,150 @@ fn pb_attrs(kvs: Vec<pb::KeyValue>) -> Attrs {
 }
 
 fn pb_resource(r: Option<pb::Resource>) -> Attrs {
-    r.map(|r| pb_attrs(r.attributes)).unwrap_or_default()
+    small(r.map(|r| pb_attrs(r.attributes)).unwrap_or_default())
+}
+
+/// The most attributes Kaeso keeps of a resource, and the most bytes of each text value.
+const RESOURCE_ATTRIBUTES: usize = 128;
+const RESOURCE_TEXT: usize = 1024;
+
+// A resource names the service and its user, which are copied into every record it holds, so
+// it keeps only short scalar values: a long one can't be a name, a version or an address.
+fn small(attrs: Attrs) -> Attrs {
+    Attrs(
+        attrs
+            .0
+            .into_iter()
+            .take(RESOURCE_ATTRIBUTES)
+            .filter(|(_, v)| match v {
+                Value::Str(s) => s.len() <= RESOURCE_TEXT,
+                Value::Bool(_) | Value::Int(_) | Value::Double(_) => true,
+                _ => false,
+            })
+            .collect(),
+    )
+}
+
+/// The most fields a protobuf export, or objects and arrays a JSON one, may hold at every depth
+/// together: each costs tens to hundreds of bytes once decoded, whatever it costs on the wire.
+pub const MAX_FIELDS: usize = 250_000;
+
+/// How many fields a protobuf message holds at every depth, counted on the wire: a
+/// length-delimited field that reads as a message counts its own fields too. Stops past `most`.
+pub fn count_fields(body: &[u8], depth: usize, most: usize) -> usize {
+    let mut at = 0usize;
+    let mut count = 0usize;
+    while at < body.len() && count <= most {
+        let Some((key, used)) = varint(body.get(at..).unwrap_or_default()) else {
+            return count;
+        };
+        at += used;
+        count += 1;
+        match key & 7 {
+            0 => match varint(body.get(at..).unwrap_or_default()) {
+                Some((_, used)) => at += used,
+                None => return count,
+            },
+            1 => at += 8,
+            5 => at += 4,
+            2 => {
+                let Some((len, used)) = varint(body.get(at..).unwrap_or_default()) else {
+                    return count;
+                };
+                at += used;
+                let Some(end) = usize::try_from(len).ok().and_then(|l| at.checked_add(l)) else {
+                    return count;
+                };
+                let Some(inner) = body.get(at..end) else {
+                    return count;
+                };
+                if count_protobuf(inner, &[0]).is_ok() {
+                    // Below the deepest level read, every field takes at least two bytes.
+                    count = count.saturating_add(if depth == 0 {
+                        inner.len() / 2
+                    } else {
+                        count_fields(inner, depth - 1, most.saturating_sub(count))
+                    });
+                }
+                at = end;
+            }
+            _ => return count,
+        }
+    }
+    count
+}
+
+/// The most values a JSON body may hold, counted by its separators: a value takes a few bytes on
+/// the wire but tens once parsed.
+pub const MAX_JSON_VALUES: usize = 1_000_000;
+
+/// Whether a JSON text holds more objects and arrays than `MAX_FIELDS`, or more values than
+/// `MAX_JSON_VALUES`, counted on its bytes before it is parsed.
+pub fn too_many_json_values(body: &[u8]) -> bool {
+    let (containers, separators) = json_tokens(body);
+    containers > MAX_FIELDS || containers.saturating_add(separators) > MAX_JSON_VALUES
+}
+
+/// How many objects and arrays a JSON text holds, counted on its bytes before it is parsed.
+pub fn count_json_values(body: &[u8]) -> usize {
+    json_tokens(body).0
+}
+
+fn json_tokens(body: &[u8]) -> (usize, usize) {
+    let mut separators = 0usize;
+    let mut count = 0usize;
+    let mut in_string = false;
+    let mut escaped = false;
+    for &b in body {
+        if in_string {
+            match (escaped, b) {
+                (true, _) => escaped = false,
+                (false, b'\\') => escaped = true,
+                (false, b'"') => in_string = false,
+                _ => {}
+            }
+        } else {
+            match b {
+                b'"' => in_string = true,
+                b'{' | b'[' => count += 1,
+                b',' | b':' => separators += 1,
+                _ => {}
+            }
+        }
+    }
+    (count, separators)
+}
+
+// Resources, scopes and records each count against `max`, on the wire before anything is
+// decoded: a body of millions of empty scopes costs as much to decode as one of records.
+fn too_many_protobuf(body: &[u8], max: usize) -> Result<bool, DecodeError> {
+    if count_fields(body, 12, MAX_FIELDS) > MAX_FIELDS {
+        return Ok(true);
+    }
+    for path in [&[1][..], &[1, 2], &[1, 2, 2]] {
+        if count_protobuf(body, path)? > max {
+            return Ok(true);
+        }
+    }
+    Ok(false)
 }
 
 pub fn logs_from_protobuf(body: &[u8], max: usize) -> Result<Vec<Group<LogRecord>>, DecodeError> {
-    if count_protobuf(body, &[1, 2, 2])? > max {
+    if too_many_protobuf(body, max)? {
         return Err(DecodeError::TooMany);
     }
     let req = <pb::ExportLogsServiceRequest as prost::Message>::decode(body)
         .map_err(|e| DecodeError::Protobuf(e.to_string()))?;
     let mut out = Vec::new();
     for rl in req.resource_logs {
-        let resource = pb_resource(rl.resource);
-        for sl in rl.scope_logs {
+        let resource = std::sync::Arc::new(pb_resource(rl.resource));
+        for sl in rl
+            .scope_logs
+            .into_iter()
+            .filter(|sl| !sl.log_records.is_empty())
+        {
             out.push(Group {
-                resource: resource.clone(),
+                resource: std::sync::Arc::clone(&resource),
                 scope: sl.scope.map(|s| s.name).unwrap_or_default(),
                 items: sl
                     .log_records
@@ -395,17 +513,17 @@ pub fn logs_from_protobuf(body: &[u8], max: usize) -> Result<Vec<Group<LogRecord
 }
 
 pub fn spans_from_protobuf(body: &[u8], max: usize) -> Result<Vec<Group<Span>>, DecodeError> {
-    if count_protobuf(body, &[1, 2, 2])? > max {
+    if too_many_protobuf(body, max)? {
         return Err(DecodeError::TooMany);
     }
     let req = <pb::ExportTraceServiceRequest as prost::Message>::decode(body)
         .map_err(|e| DecodeError::Protobuf(e.to_string()))?;
     let mut out = Vec::new();
     for rs in req.resource_spans {
-        let resource = pb_resource(rs.resource);
-        for ss in rs.scope_spans {
+        let resource = std::sync::Arc::new(pb_resource(rs.resource));
+        for ss in rs.scope_spans.into_iter().filter(|ss| !ss.spans.is_empty()) {
             out.push(Group {
-                resource: resource.clone(),
+                resource: std::sync::Arc::clone(&resource),
                 scope: ss.scope.map(|s| s.name).unwrap_or_default(),
                 items: ss
                     .spans
@@ -427,11 +545,10 @@ pub fn spans_from_protobuf(body: &[u8], max: usize) -> Result<Vec<Group<Span>>, 
     Ok(out)
 }
 
-/// The number of resources a metrics export names; Kaeso counts no usage from metrics.
+/// The number of resources a metrics export names, counted on the wire without decoding it;
+/// Kaeso counts no usage from metrics.
 pub fn metrics_from_protobuf(body: &[u8]) -> Result<usize, DecodeError> {
-    let req = <pb::ExportMetricsServiceRequest as prost::Message>::decode(body)
-        .map_err(|e| DecodeError::Protobuf(e.to_string()))?;
-    Ok(req.resource_metrics.len())
+    count_protobuf(body, &[1])
 }
 
 /// An OTLP/HTTP error body for a protobuf request: `google.rpc.Status` with its gRPC code.
@@ -500,15 +617,23 @@ fn varint(b: &[u8]) -> Option<(u64, usize)> {
     None
 }
 
-/// How many records a JSON export holds, read from the parsed body before its records are.
+/// How many records a JSON export holds, read from the parsed body before its records are:
+/// the most of its resources, its scopes and its records, since each costs as much to read.
 pub fn count_json(root: &Json, outer: &str, inner: &str, items: &str) -> usize {
-    root.get(outer)
-        .and_then(Json::as_array)
-        .into_iter()
-        .flatten()
-        .flat_map(|r| r.get(inner).and_then(Json::as_array).into_iter().flatten())
+    let resources = root.get(outer).and_then(Json::as_array);
+    let scopes = || {
+        resources
+            .into_iter()
+            .flatten()
+            .flat_map(|r| r.get(inner).and_then(Json::as_array).into_iter().flatten())
+    };
+    let records = scopes()
         .map(|s| s.get(items).and_then(Json::as_array).map_or(0, Vec::len))
-        .sum()
+        .sum();
+    resources
+        .map_or(0, Vec::len)
+        .max(scopes().count())
+        .max(records)
 }
 
 /// The body of an export's answer: empty when everything was taken, else `partial_success`
@@ -623,10 +748,18 @@ fn groups<T>(
         .ok_or_else(|| DecodeError::Json(format!("`{outer}` is not a list")))?;
     let mut out = Vec::new();
     for r in list {
-        let resource = json_attrs(r.get("resource").and_then(|r| r.get("attributes")));
+        let resource = std::sync::Arc::new(small(json_attrs(
+            r.get("resource").and_then(|r| r.get("attributes")),
+        )));
         for s in r.get(inner).and_then(Json::as_array).into_iter().flatten() {
+            if s.get(items)
+                .and_then(Json::as_array)
+                .is_none_or(Vec::is_empty)
+            {
+                continue;
+            }
             out.push(Group {
-                resource: resource.clone(),
+                resource: std::sync::Arc::clone(&resource),
                 scope: s
                     .get("scope")
                     .and_then(|s| s.get("name"))
@@ -647,6 +780,9 @@ fn groups<T>(
 }
 
 fn parse(body: &[u8]) -> Result<Json, DecodeError> {
+    if too_many_json_values(body) {
+        return Err(DecodeError::TooMany);
+    }
     serde_json::from_slice(body).map_err(|e| DecodeError::Json(e.to_string()))
 }
 

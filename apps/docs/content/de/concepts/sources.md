@@ -83,7 +83,7 @@ Eine Quelle behält die Prompts, Antworten und Tool-Argumente, die ihr Client se
 
 Jede Quelle hat einen Schlüssel, `sk-kso-src-…`, den Kaeso einmal zeigt und nur als Hash behält. Er funktioniert nur an `/ingest`: Er ruft kein Modell auf und erreicht weder die Platform-API noch das MCP-Portal. Ein Client sendet ihn als `Authorization: Bearer sk-kso-src-…` oder im Header `X-Kaeso-Source-Key`.
 
-Ein Stapel enthält höchstens 5.000 Datensätze und 8 MiB, entpackt 16 MiB, und eine Quelle darf 600 Stapel pro Minute senden. Die Stapel einer deaktivierten oder archivierten Quelle oder einer Quelle in einem archivierten Projekt werden abgelehnt. Quellen zu sehen braucht das Recht `sources.view`, das jede Projektrolle hat; sie hinzuzufügen und zu ändern braucht `sources.manage`, das Admins und Entwickler haben.
+Ein Stapel enthält höchstens 1.000 Datensätze und 8 MiB, entpackt 16 MiB oder 8 MiB bei JSON. Eine Quelle darf 600 Stapel pro Minute senden, drei gleichzeitig, und 6.000 Datensätze (Anfragen und Tool-Aufrufe) pro Minute und 200.000 pro Tag; darüber hinaus antwortet Kaeso mit 429 und `Retry-After` und behält nichts vom Stapel. Ein Stapel mit mehr Feldern oder Werten, als Kaeso auf einmal lesen kann, wird mit 413 abgelehnt. Die Stapel einer deaktivierten oder archivierten Quelle oder einer Quelle in einem archivierten Projekt werden abgelehnt. Quellen zu sehen braucht das Recht `sources.view`, das jede Projektrolle hat; sie hinzuzufügen und zu ändern braucht `sources.manage`, das Admins und Entwickler haben.
 
 ## Nächste Schritte
 
