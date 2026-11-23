@@ -23,7 +23,7 @@ Kaeso answers with what it kept:
 
 ## Send a batch
 
-A batch is one JSON object with `requests` and `tool_calls`, either of which may be left out. Send at most 5,000 records and 8 MiB a batch, gzipped with `Content-Encoding: gzip` if you like. A record Kaeso can't keep is refused alone: `refused` counts them and `refusal` names the reason of the last one, such as `no_model`. A body Kaeso can't read is answered with `400`, and nothing of it is kept.
+A batch is one JSON object with `requests` and `tool_calls`, either of which may be left out. Send at most 1,000 records and 8 MiB a batch, gzipped with `Content-Encoding: gzip` if you like. A record Kaeso can't keep is refused alone: `refused` counts them and `refusal` names the reason of the last one, such as `no_model`. A body Kaeso can't read is answered with `400`, and nothing of it is kept.
 
 Every record needs an `id` that is unique within the source. Send a record again with the same `id` and Kaeso keeps it once, so you can retry a batch that failed.
 

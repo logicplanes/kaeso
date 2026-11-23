@@ -83,7 +83,7 @@ A source keeps the prompts, replies and tool arguments its client sends only whe
 
 Each source has a key, `sk-kso-src-…`, which Kaeso shows once and keeps only as a hash. It works only on `/ingest`: it calls no model and reaches neither the Platform API nor the MCP portal. A client sends it as `Authorization: Bearer sk-kso-src-…`, or in the `X-Kaeso-Source-Key` header.
 
-A batch holds at most 5,000 records and 8 MiB, 16 MiB once unzipped, and a source may send 600 batches a minute. A disabled or archived source, or one in an archived project, has its batches refused. Seeing sources takes the right `sources.view`, which every project role has; adding and changing them takes `sources.manage`, which admins and developers have.
+A batch holds at most 1,000 records and 8 MiB, 16 MiB once unzipped or 8 MiB for JSON. A source may send 600 batches a minute, three at a time, and 6,000 records (requests and tool calls) a minute and 200,000 a day; past that Kaeso answers 429 with `Retry-After` and keeps nothing of the batch. A batch with more fields or values than Kaeso can read at once is refused with 413. A disabled or archived source, or one in an archived project, has its batches refused. Seeing sources takes the right `sources.view`, which every project role has; adding and changing them takes `sources.manage`, which admins and developers have.
 
 ## Next steps
 
