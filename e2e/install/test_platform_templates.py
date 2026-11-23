@@ -252,7 +252,27 @@ def test_aws_routes_api_paths_to_the_gateway_and_keeps_the_data_stores_private(m
     assert env["KAESO_METRICS_LISTEN"] == "127.0.0.1:9100"
     assert env["KAESO_TRUSTED_PROXIES"] == {"FindInMap": ["Network", "Vpc", "Cidr"]}, "only the VPC, where the load balancer sits"
     assert gateway["ReadonlyRootFilesystem"] is True and gateway["StopTimeout"] == 75
-    assert {s["Name"] for s in gateway["Secrets"] if isinstance(s, dict) and "Name" in s} == {"KAESO_MASTER_KEYS"}
+    assert {s["Name"]: s["ValueFrom"] for s in gateway["Secrets"] if isinstance(s, dict) and "Name" in s} == {
+        "KAESO_MASTER_KEYS": {"Ref": "MasterKeysSecret"},
+        "KAESO_POSTGRES_URL": {"Ref": "PostgresUrlSecret"},
+        "KAESO_VALKEY_URL": {"Ref": "ValkeyUrlSecret"},
+    }
+    assert not (SECRET_KEYS & set(env)), "every secret enters the task through Secrets, not Environment"
+    readable = resources["ExecutionRole"]["Properties"]["Policies"][0]["PolicyDocument"]["Statement"][0]["Resource"]
+    assert readable[:3] == [
+        {"Ref": "PostgresUrlSecret"},
+        {"Ref": "ValkeyUrlSecret"},
+        {"Ref": "MasterKeysSecret"},
+    ]
+    assert {"Ref": "DatabasePassword"} not in readable and {"Ref": "CacheAuthToken"} not in readable
+    assert "sslmode=require" in json.dumps(resources["PostgresUrlSecret"]["Properties"]["SecretString"])
+    assert "rediss://" in json.dumps(resources["ValkeyUrlSecret"]["Properties"]["SecretString"])
+    for name, resource in resources.items():
+        if resource["Type"] == "AWS::ECS::TaskDefinition":
+            for container in resource["Properties"]["ContainerDefinitions"]:
+                for entry in container.get("Environment", []):
+                    dumped = json.dumps(entry["Value"])
+                    assert "resolve:secretsmanager" not in dumped and "resolve:ssm-secure" not in dumped, (name, entry["Name"])
     assert managed_aws["Parameters"]["MasterKeys"]["NoEcho"] is True
 
 

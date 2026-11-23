@@ -300,6 +300,24 @@ Resources:
     Properties:
       Description: The SMTP password
       SecretString: !Ref SmtpPassword
+  PostgresUrlSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Description: The PostgreSQL URL with its password
+      SecretString: !Sub
+        - "postgres://kaeso:${Password}@${Host}:${Port}/kaeso?sslmode=require"
+        - Password: !Sub "{{resolve:secretsmanager:${DatabasePassword}:SecretString:password}}"
+          Host: !GetAtt Database.Endpoint.Address
+          Port: !GetAtt Database.Endpoint.Port
+  ValkeyUrlSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Description: The Valkey URL with its AUTH token
+      SecretString: !Sub
+        - "rediss://:${Token}@${Host}:${Port}"
+        - Token: !Sub "{{resolve:secretsmanager:${CacheAuthToken}:SecretString}}"
+          Host: !GetAtt Cache.PrimaryEndPoint.Address
+          Port: !GetAtt Cache.PrimaryEndPoint.Port
 
   LoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
@@ -432,8 +450,8 @@ Resources:
               - Effect: Allow
                 Action: secretsmanager:GetSecretValue
                 Resource:
-                  - !Ref DatabasePassword
-                  - !Ref CacheAuthToken
+                  - !Ref PostgresUrlSecret
+                  - !Ref ValkeyUrlSecret
                   - !Ref MasterKeysSecret
                   - !If [HasClickHouse, !Ref ClickHouseSecret, !Ref "AWS::NoValue"]
                   - !If [HasSmtpPassword, !Ref SmtpPasswordSecret, !Ref "AWS::NoValue"]
@@ -498,20 +516,10 @@ Resources:
             - { Name: KAESO_SMTP_FROM, Value: !Ref SmtpFrom }
             - { Name: KAESO_LOG_FORMAT, Value: json }
             - { Name: KAESO_AWS_AMBIENT_CREDENTIALS, Value: !Ref BedrockAccess }
-            - Name: KAESO_POSTGRES_URL
-              Value: !Sub
-                - "postgres://kaeso:${Password}@${Host}:${Port}/kaeso?sslmode=require"
-                - Password: !Sub "{{resolve:secretsmanager:${DatabasePassword}:SecretString:password}}"
-                  Host: !GetAtt Database.Endpoint.Address
-                  Port: !GetAtt Database.Endpoint.Port
-            - Name: KAESO_VALKEY_URL
-              Value: !Sub
-                - "rediss://:${Token}@${Host}:${Port}"
-                - Token: !Sub "{{resolve:secretsmanager:${CacheAuthToken}:SecretString}}"
-                  Host: !GetAtt Cache.PrimaryEndPoint.Address
-                  Port: !GetAtt Cache.PrimaryEndPoint.Port
           Secrets:
             - { Name: KAESO_MASTER_KEYS, ValueFrom: !Ref MasterKeysSecret }
+            - { Name: KAESO_POSTGRES_URL, ValueFrom: !Ref PostgresUrlSecret }
+            - { Name: KAESO_VALKEY_URL, ValueFrom: !Ref ValkeyUrlSecret }
             - !If [HasClickHouse, { Name: KAESO_CLICKHOUSE_URL, ValueFrom: !Ref ClickHouseSecret }, !Ref "AWS::NoValue"]
             - !If [HasSmtpPassword, { Name: KAESO_SMTP_PASSWORD, ValueFrom: !Ref SmtpPasswordSecret }, !Ref "AWS::NoValue"]
           LogConfiguration:
