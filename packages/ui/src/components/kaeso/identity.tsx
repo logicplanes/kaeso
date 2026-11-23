@@ -1,4 +1,4 @@
-import { forwardRef, useId } from "react";
+import { forwardRef, useId, useState } from "react";
 import { cn } from "../../utils/cn.js";
 import { icons } from "../../icons/vocabulary.js";
 import { Icon, type IconData } from "../icon/icon.js";
@@ -6,22 +6,23 @@ import { Tooltip } from "../tooltip/tooltip.js";
 import { Badge } from "../badge/badge.js";
 import { CopyButton } from "../copy-button/copy-button.js";
 import { PROVIDER_MARKS, type ProviderMark } from "./provider-marks.js";
+import { MODEL_MAKERS, modelMaker } from "./model-makers.js";
+import { lazyModule, useLazyModule } from "../../utils/lazy-module.js";
 import { useProviderMarkOf } from "../../utils/provider-marks.js";
 import { useUiText, type UiText } from "../../i18n/context.js";
 import { useFormatters } from "../../i18n/formatters.js";
 
 export const KAESO_IDENTITY_VARIANTS = {
   provider: {
-    sm: { classes: "size-16 rounded-cell text-micro", description: "16px, inside table cells" },
-    md: { classes: "size-20 rounded-avatar text-micro", description: "20px (default)" },
-    lg: { classes: "size-28 rounded-org text-caption", description: "28px" },
-    xl: { classes: "size-40 rounded-org text-body", description: "40px: a provider's own page or card" },
+    sm: { classes: "size-16 rounded-cell", description: "16px, inside table cells" },
+    md: { classes: "size-20 rounded-avatar", description: "20px (default)" },
+    lg: { classes: "size-28 rounded-org", description: "28px" },
+    xl: { classes: "size-40 rounded-org", description: "40px: a provider's own page or card" },
   },
 } as const;
 export const KAESO_IDENTITY_DEFAULT_VARIANTS = { provider: "md" } as const;
 
 export const providerName = (id: string, name?: string | undefined) => name?.trim() || id;
-const providerLetter = (id: string, name?: string | undefined) => (/[\p{L}\p{N}]/u.exec(providerName(id, name))?.[0] ?? id.slice(0, 1)).toLocaleUpperCase();
 
 const MARK_SIZE = { sm: "size-10", md: "size-12", lg: "size-16", xl: "size-24" } as const;
 
@@ -54,32 +55,82 @@ function MarkGlyph({ mark, className }: { mark: ProviderMark; className: string 
   );
 }
 
+export interface ProviderTile {
+  mark: ProviderMark | undefined;
+  /** The tile's accessible name: the provider's, or the model's maker on the provider when the tile shows the maker's mark. */
+  label: string;
+  /** The maker's mark is still loading: the tile stays empty rather than flash the provider's mark or a letter. */
+  pending: boolean;
+}
+
+const vendorMarks = lazyModule(() => import("./vendor-marks.js"), { base: () => import.meta.url });
+let vendorMarkIds: ReadonlySet<string> | undefined;
+const isVendorMark = (key: string) =>
+  (vendorMarkIds ??= new Set(
+    Object.values(MODEL_MAKERS)
+      .flatMap((maker) => (maker.mark ? [maker.mark] : []))
+      .filter((mark) => !PROVIDER_MARKS[mark]),
+  )).has(key);
+
+/**
+ * The mark a provider's tile shows and what it is called. Given the `model` a row is about, the tile shows the mark of
+ * the model's maker, read from the model id (`openai.gpt-6.2-astra` on Amazon Bedrock shows OpenAI's), and the provider's
+ * own mark when the id names no maker.
+ */
+export function useProviderTile({
+  provider,
+  name,
+  mark: chosen,
+  model,
+}: {
+  provider: string;
+  name?: string | undefined;
+  mark?: string | null | undefined;
+  model?: string | undefined;
+}): ProviderTile {
+  const t = useUiText();
+  const markOf = useProviderMarkOf();
+  const [failed, setFailed] = useState(false);
+  const own = chosen ?? markOf(provider) ?? provider;
+  const found = model ? modelMaker(model) : undefined;
+  const maker = found?.mark && found.mark !== own ? { name: found.name, mark: found.mark } : undefined;
+  const wanted = isVendorMark(maker?.mark ?? own) && !failed;
+  const vendors = useLazyModule(vendorMarks, wanted, () => setFailed(true));
+  const markFor = (key: string) => PROVIDER_MARKS[key] ?? vendors?.VENDOR_MARKS[key];
+  const label = providerName(provider, name);
+  const made = maker && markFor(maker.mark);
+  const pending = wanted && !vendors;
+  if (maker && (made || pending))
+    return { mark: made, label: t("providerBadge.makerOnProvider", "{maker} model on {provider}", { maker: maker.name, provider: label }), pending };
+  return { mark: markFor(own), label, pending };
+}
+
 export const ProviderBadge = forwardRef<
   HTMLSpanElement,
   {
     provider: string;
     name?: string | undefined;
     mark?: string | null | undefined;
+    model?: string | undefined;
     icon?: IconData | undefined;
     size?: keyof typeof KAESO_IDENTITY_VARIANTS.provider | undefined;
     withName?: boolean | undefined;
     className?: string | undefined;
   }
->(function ProviderBadge({ provider, name, mark: chosen, icon, size = "md", withName, className }, ref) {
-  const markOf = useProviderMarkOf();
-  const mark = PROVIDER_MARKS[chosen ?? markOf(provider) ?? provider];
+>(function ProviderBadge({ provider, name, mark: chosen, model, icon, size = "md", withName, className }, ref) {
+  const { mark, label: tileLabel, pending } = useProviderTile({ provider, name, mark: chosen, model });
   const label = providerName(provider, name);
   const tile = (
     <span
       aria-hidden={withName || undefined}
-      {...(!withName ? { role: "img", "aria-label": label } : {})}
+      {...(!withName ? { role: "img", "aria-label": tileLabel } : {})}
       className={cn(
-        "inline-flex shrink-0 items-center justify-center bg-raised font-semibold shadow-ring",
+        "inline-flex shrink-0 items-center justify-center bg-raised shadow-ring",
         mark ? (mark.color ?? "text-fg") : "text-fg-secondary",
         KAESO_IDENTITY_VARIANTS.provider[size].classes,
       )}
     >
-      {mark ? <MarkGlyph mark={mark} className={MARK_SIZE[size]} /> : icon ? <Icon icon={icon} className={MARK_SIZE[size]} /> : providerLetter(provider, name)}
+      {mark ? <MarkGlyph mark={mark} className={MARK_SIZE[size]} /> : pending ? null : <Icon icon={icon ?? icons.provider} className={MARK_SIZE[size]} />}
     </span>
   );
   if (!withName)
@@ -134,7 +185,7 @@ export const ModelLabel = forwardRef<HTMLSpanElement, ModelLabelProps>(function 
 ) {
   return (
     <span ref={ref} className={cn("inline-flex max-w-full min-w-0 items-center gap-8", className)}>
-      {mark && <ProviderBadge provider={provider} name={providerDisplayName} />}
+      {mark && <ProviderBadge provider={provider} name={providerDisplayName} model={model} />}
       {name && stacked ? (
         <span className="flex min-w-0 flex-col">
           <span className="truncate text-body text-fg">{name}</span>

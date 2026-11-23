@@ -104,6 +104,9 @@ jobs:
               - .claude-plugin/**
               - .cursor-plugin/**
               - crates/kaeso-server/assets/mcp-stats.html
+              # The UI library's mark tests read the shipped catalogue and the inference servers.
+              - crates/kaeso-core/data/kpmr.json
+              - crates/kaeso-core/src/servers.rs
             # The console's, the docs site's and the showcase's own suites run only when they or what they build on changed.
             console:
               - package.json

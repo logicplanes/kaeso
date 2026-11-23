@@ -355,6 +355,7 @@ const en: Readonly<Record<string, string>> = {
   "probabilityBar.below": "<{percent}",
   "probabilityBar.chosen": "{percent}, chosen",
   "probabilityBar.missing": "Not given",
+  "providerBadge.makerOnProvider": "{maker} model on {provider}",
   "providerPicker.choose": "Choose a provider",
   "providerPicker.connected": "Connected",
   "providerPicker.noMatch": "No providers match",

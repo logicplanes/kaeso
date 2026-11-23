@@ -102,11 +102,15 @@ function NewModelCards({ org, project, projectName, className }: { org: string; 
           <ModelCard
             key={`${m.provider}/${m.model_id}`}
             className={className}
-            mark={<ProviderBadge provider={m.provider} name={providers.name(m.provider)} size="lg" />}
+            mark={<ProviderBadge provider={m.provider} name={providers.name(m.provider)} model={m.model_id} size="lg" />}
             name={m.name || m.model_id}
             model={m.model_id}
             {...(fresh ? { badge: <Badge tone="ink">{t("kaeso.home.new", "New")}</Badge> } : {})}
-            detail={m.release_date ? t("kaeso.home.released", "Released {date}", { date: formatDate(m.release_date) }) : providers.name(m.provider)}
+            detail={
+              m.release_date
+                ? t("kaeso.home.providerReleased", "{provider} · Released {date}", { provider: providers.name(m.provider), date: formatDate(m.release_date) })
+                : providers.name(m.provider)
+            }
             facts={[
               ...(m.context_limit ? [{ label: t("kaeso.home.context", "Context"), value: formatContext(m.context_limit) }] : []),
               ...(m.input_price && m.output_price
