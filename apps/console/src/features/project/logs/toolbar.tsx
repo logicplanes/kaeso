@@ -229,16 +229,27 @@ export function useLoadMoreNearEnd(
     fetchNextPage,
   }: { hasNextPage: boolean; isFetchingNextPage: boolean; isFetchNextPageError: boolean; fetchNextPage: () => unknown },
 ) {
-  const loadMore = useEffectEvent(() => void fetchNextPage());
+  const loadMore = useEffectEvent(() => hasNextPage && !isFetchingNextPage && !isFetchNextPageError && void fetchNextPage());
   useEffect(() => {
     const more = scroller.current?.querySelector("nav");
     if (!more || !hasNextPage || isFetchingNextPage || isFetchNextPageError) return;
-    const seen = new IntersectionObserver((entries) => entries.some((e) => e.isIntersecting) && loadMore(), {
-      root: scrollParentOf(scroller.current),
-      rootMargin: "800px 0px",
-    });
+    // Tab scrolls Load more into view; loading then would push the focused button away before it's pressed.
+    let near = false;
+    const load = (focused: EventTarget | null) => near && !(focused instanceof Node && more.contains(focused)) && loadMore();
+    const seen = new IntersectionObserver(
+      (entries) => {
+        near = entries.some((e) => e.isIntersecting);
+        load(document.activeElement);
+      },
+      { root: scrollParentOf(scroller.current), rootMargin: "800px 0px" },
+    );
+    const left = (e: FocusEvent) => load(e.relatedTarget);
     seen.observe(more);
-    return () => seen.disconnect();
+    more.addEventListener("focusout", left);
+    return () => {
+      seen.disconnect();
+      more.removeEventListener("focusout", left);
+    };
   }, [scroller, hasNextPage, isFetchingNextPage, isFetchNextPageError]);
 }
 

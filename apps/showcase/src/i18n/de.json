@@ -134,7 +134,7 @@
   "Called once every cell is filled.": "Wird aufgerufen, sobald jede Zelle gefüllt ist.",
   "Called to go to the next page.": "Wird aufgerufen, um zur nächsten Seite zu wechseln.",
   "Called to go to the previous page.": "Wird aufgerufen, um zur vorherigen Seite zu wechseln.",
-  "Called to load the next rows.": "Wird aufgerufen, um die nächsten Zeilen zu laden.",
+  "Called to load the next rows. When Load more asked for them, focus moves to the first new row once they arrive; screen readers hear how many came.": "Wird aufgerufen, um die nächsten Zeilen zu laden. Hat „Mehr laden“ sie angefordert, geht der Fokus nach dem Laden auf die erste neue Zeile; Screenreader hören, wie viele dazukamen.",
   "Called when Try again is pressed after `error`; without it, the button doesn't show.": "Wird aufgerufen, wenn nach `error` „Erneut versuchen“ gedrückt wird; ohne diese Funktion erscheint der Button nicht.",
   "Called when a row is clicked; rows then show that they can be opened.": "Wird beim Klick auf eine Zeile aufgerufen; die Zeilen zeigen dann, dass sie sich öffnen lassen.",
   "Called when a row is opened with a click or Enter. Enter with ⌘ or Ctrl is left to the surrounding form.": "Wird aufgerufen, wenn eine Zeile per Klick oder Eingabetaste geöffnet wird. Die Eingabetaste mit ⌘ oder Strg bleibt dem umgebenden Formular überlassen.",

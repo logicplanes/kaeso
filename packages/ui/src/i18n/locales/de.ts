@@ -95,6 +95,8 @@ const de: Readonly<Record<string, string>> = {
   "copyButton.copied": "Kopiert",
   "copyButton.copy": "Kopieren",
   "dataTable.loadFailed": "Zeilen konnten nicht geladen werden",
+  "dataTable.moreRows": "{count, plural, one {# weitere Zeile geladen} other {# weitere Zeilen geladen}}",
+  "dataTable.moreRowsAll": "{count, plural, one {# weitere Zeile geladen; alle Zeilen angezeigt} other {# weitere Zeilen geladen; alle Zeilen angezeigt}}",
   "dataTable.narrowColumn": "Spalte verschmälern",
   "dataTable.noRows": "Keine Zeilen",
   "dataTable.reloadToRetry": "Seite neu laden und erneut versuchen.",
