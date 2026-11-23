@@ -246,7 +246,7 @@ describe("LogInspector", () => {
   it("says a source reported an observed request, names the source and the cost it reported", async () => {
     signedIn();
     projectData({ sources: [externalSource()] });
-    const observed = { source: "observed" as const, source_id: "src_claude", key_id: null, cost: "0.5", cost_basis: "source" as const };
+    const observed = { source: "observed" as const, source_id: "src_claude", key_id: null, cost: "0.5", cost_basis: "source" as const, has_content: false };
     logsData({ rows: [logRow(observed)], entries: [logEntry(observed)] });
     const { user, router } = await renderApp(projectPath("logs?log=req_0001"));
     const panel = await sheet();
