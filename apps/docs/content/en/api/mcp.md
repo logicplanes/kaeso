@@ -350,13 +350,13 @@ The console manages agents through these routes, tagged `agents` in [`openapi.js
 
 | Route | Access | Does |
 | --- | --- | --- |
-| `GET me/agents`, `GET me/agents/{agent}` | Session | Your agents, newest first, with their model family, client, rights (`grant`), creation and last use |
+| `GET me/agents`, `GET me/agents/{agent}` | Session | Your agents, newest first, with their model family, client, rights (`grant`, in the organizations and areas open to this session), creation and last use |
 | `PATCH me/agents/{agent}` | Session | Changes `name` |
-| `PUT me/agents/{agent}/rights` | Session | Replaces the agent's rights. Giving a sensitive right it didn't have needs a [recent sign-in](platform-api.md#recent-sign-in) |
+| `PUT me/agents/{agent}/rights` | Session | Replaces the agent's rights within the organizations and areas open to this session; closed ones keep what it had. Giving a sensitive right it didn't have needs a [recent sign-in](platform-api.md#recent-sign-in) |
 | `DELETE me/agents/{agent}` | Session | Revokes the agent. Its tokens stop working at once |
-| `GET me/agents/{agent}/activity` | Session | Its tool calls, newest first |
+| `GET me/agents/{agent}/activity` | Session | Its tool calls, newest first, with IDs outside this session's open organizations and areas left as `null` |
 | `GET me/agents/catalogue` | Session | Every right an agent can be given by level, the presets and their ceilings, the instance presets, the rights no agent gets and the model families |
-| `GET me/agents/grantable` | Session | What you could give an agent now, in each organization and project |
+| `GET me/agents/grantable` | Session | What this session could give an agent now, in each open organization and project |
 | `POST me/agent-requests/view`, `…/approve`, `…/deny` | Session | The consent page. Each takes the `request` from the page's `#request=` |
 | `GET orgs/{org}/agents` | `members.view` | The members' agents that may act in the organization |
 | `DELETE orgs/{org}/agents/{agent}` | `members.rights.update`, session | Closes the organization to the agent. Its member can open it again |

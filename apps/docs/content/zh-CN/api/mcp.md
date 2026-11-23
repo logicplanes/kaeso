@@ -350,13 +350,13 @@ Kaeso 将智能体的每次工具调用保留 90 天：工具、目标、结果�
 
 | 路由 | 访问 | 作用 |
 | --- | --- | --- |
-| `GET me/agents`、`GET me/agents/{agent}` | 会话 | 您的智能体，最新的在前，包括模型系列、客户端、权限（`grant`）、创建时间和上次使用时间 |
+| `GET me/agents`、`GET me/agents/{agent}` | 会话 | 您的智能体，最新的在前，包括模型系列、客户端、权限（`grant`，限于当前会话可打开的组织和区域）、创建时间和上次使用时间 |
 | `PATCH me/agents/{agent}` | 会话 | 更改 `name` |
-| `PUT me/agents/{agent}/rights` | 会话 | 替换智能体的权限。授予它原本没有的敏感权限需要[近期登录](platform-api.md#近期登录) |
+| `PUT me/agents/{agent}/rights` | 会话 | 在当前会话可打开的组织和区域内替换智能体的权限；未打开的部分保持原有权限。授予它原本没有的敏感权限需要[近期登录](platform-api.md#近期登录) |
 | `DELETE me/agents/{agent}` | 会话 | 撤销智能体。其令牌立即失效 |
-| `GET me/agents/{agent}/activity` | 会话 | 其工具调用，最新的在前 |
+| `GET me/agents/{agent}/activity` | 会话 | 其工具调用，最新的在前，当前会话可打开的组织和区域之外的 ID 置为 `null` |
 | `GET me/agents/catalogue` | 会话 | 按层级列出可授予智能体的每项权限、各预设及其上限、实例预设、不会授予智能体的权限以及模型系列 |
-| `GET me/agents/grantable` | 会话 | 您当前在每个组织和项目中可以授予智能体的权限 |
+| `GET me/agents/grantable` | 会话 | 当前会话在每个已打开的组织和项目中可以授予智能体的权限 |
 | `POST me/agent-requests/view`、`…/approve`、`…/deny` | 会话 | 授权页面。每个都接受页面 `#request=` 中的 `request` |
 | `GET orgs/{org}/agents` | `members.view` | 可以在组织中行事的成员智能体 |
 | `DELETE orgs/{org}/agents/{agent}` | `members.rights.update`，会话 | 对该智能体关闭组织。其成员可以重新开放 |

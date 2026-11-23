@@ -198,12 +198,23 @@ pub struct AgentView {
     pub last_used_at: Option<OffsetDateTime>,
 }
 
-async fn view(state: &AppState, a: &Agent, held: &[service::HeldOrg]) -> ApiResult<AgentView> {
+async fn view(
+    state: &AppState,
+    a: &Agent,
+    sh: &service::SessionHoldings,
+    session: &kaeso_store::pg::sessions::SessionRow,
+) -> ApiResult<AgentView> {
     let mut conn = state.pg.acquire().await?;
-    let grant = service::as_seen(
+    let mut grant = service::as_seen(
         &AgentGrant::from_store(&agents::grant_of(&mut conn, a).await?),
-        held,
+        &sh.open,
     );
+    grant
+        .orgs
+        .retain(|id, _| sh.open.iter().any(|h| h.id == *id));
+    if !sh.can_administer_instance(session) {
+        grant.instance = kaeso_core::rights::InstanceRights::EMPTY;
+    }
     let client = match a.client_id {
         Some(id) => agents::get_client(&mut *conn, id).await?.map(|c| c.name),
         None => None,
@@ -219,6 +230,19 @@ async fn view(state: &AppState, a: &Agent, held: &[service::HeldOrg]) -> ApiResu
     })
 }
 
+fn require_agent_editable(
+    sh: &service::SessionHoldings,
+    session: &kaeso_store::pg::sessions::SessionRow,
+    a: &Agent,
+) -> ApiResult<()> {
+    if sh.account_gap.is_some()
+        && (session.oidc_org_id.is_none() || a.oidc_org_id != session.oidc_org_id)
+    {
+        crate::platform::access::refuse(sh.account_gap)?;
+    }
+    Ok(())
+}
+
 async fn own(state: &AppState, ctx: &Ctx, id: &str) -> ApiResult<Agent> {
     let id: AgentId = id.parse().map_err(|_| ApiError::not_found("agent"))?;
     agents::get(&state.pg, ctx.user_id()?.uuid(), id.uuid())
@@ -230,16 +254,19 @@ async fn own(state: &AppState, ctx: &Ctx, id: &str) -> ApiResult<Agent> {
     get,
     path = "/me/agents",
     summary = "The user's agents, newest first.",
+    description = "Each agent's `grant` lists only organizations whose `access` in\n\
+    `auth/session` is `ok`, and `instance` rights only when this session may\n\
+    administer the instance.",
     tag = "agents",
     responses((status = 200, body = List<AgentView>))
 )]
 pub async fn list(State(state): State<AppState>, ctx: Ctx) -> ApiResult<Json<List<AgentView>>> {
-    let user = ctx.user_id()?.uuid();
-    let rows = agents::list(&state.pg, user).await?;
-    let held = service::holdings(&state.pg, user).await?;
+    let session = ctx.session()?;
+    let rows = agents::list(&state.pg, session.user_id).await?;
+    let sh = service::session_holdings(&state, session).await?;
     let mut out = Vec::with_capacity(rows.len());
     for a in &rows {
-        out.push(view(&state, a, &held).await?);
+        out.push(view(&state, a, &sh, session).await?);
     }
     Ok(Json(List::complete(out)))
 }
@@ -248,6 +275,9 @@ pub async fn list(State(state): State<AppState>, ctx: Ctx) -> ApiResult<Json<Lis
     get,
     path = "/me/agents/{agent}",
     summary = "One of the user's agents.",
+    description = "Its `grant` lists only organizations whose `access` in `auth/session`\n\
+    is `ok`, and `instance` rights only when this session may administer the\n\
+    instance.",
     tag = "agents",
     params(("agent" = AgentId, Path)),
     responses((status = 200, body = AgentView))
@@ -257,10 +287,10 @@ pub async fn get(
     ctx: Ctx,
     Path(id): Path<String>,
 ) -> ApiResult<Json<AgentView>> {
+    let session = ctx.session()?;
     let a = own(&state, &ctx, &id).await?;
-    Ok(Json(
-        view(&state, &a, &service::holdings(&state.pg, a.user_id).await?).await?,
-    ))
+    let sh = service::session_holdings(&state, session).await?;
+    Ok(Json(view(&state, &a, &sh, session).await?))
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -276,6 +306,8 @@ pub struct AgentUpdate {
     patch,
     path = "/me/agents/{agent}",
     summary = "Renames an agent.",
+    description = "A session from the SSO of an organization that doesn't manage the\n\
+    account can rename only agents authorized from that SSO.",
     tag = "agents",
     params(("agent" = AgentId, Path)),
     request_body = AgentUpdate,
@@ -287,12 +319,14 @@ pub async fn update(
     Path(id): Path<String>,
     Body(req): Body<AgentUpdate>,
 ) -> ApiResult<Json<AgentView>> {
-    let user = ctx.user_id()?;
+    let session = ctx.session()?;
+    let sh = service::session_holdings(&state, session).await?;
     let id: AgentId = id.parse().map_err(|_| ApiError::not_found("agent"))?;
     let mut tx = state.pg.begin().await?;
-    let a = agents::lock(&mut tx, user.uuid(), id.uuid())
+    let a = agents::lock(&mut tx, session.user_id, id.uuid())
         .await?
         .ok_or_else(|| ApiError::not_found("agent"))?;
+    require_agent_editable(&sh, session, &a)?;
     let name = validate_name("name", &req.name)?;
     agents::rename(&mut *tx, a.id, &name).await?;
     ctx.audit(None, Action::AgentUpdate)
@@ -303,54 +337,92 @@ pub async fn update(
         .await?;
     tx.commit().await?;
     let a = own(&state, &ctx, &id.to_string()).await?;
-    Ok(Json(
-        view(&state, &a, &service::holdings(&state.pg, a.user_id).await?).await?,
-    ))
-}
-
-async fn granting_for(
-    state: &AppState,
-    ctx: &Ctx,
-) -> ApiResult<(Vec<service::HeldOrg>, bool, InstancePolicy)> {
-    let session = ctx.session()?;
-    let holdings = service::holdings(&state.pg, session.user_id).await?;
-    let instance = InstancePolicy::from_store(&agents::instance_policy(&state.pg).await?);
-    Ok((holdings, session.is_instance_admin, instance))
+    Ok(Json(view(&state, &a, &sh, session).await?))
 }
 
 pub(crate) async fn validated(
     state: &AppState,
     ctx: &Ctx,
-    before: Option<&AgentGrant>,
+    existing: Option<(&Agent, &AgentGrant)>,
     body: &GrantBody,
-) -> ApiResult<AgentGrant> {
-    let (holdings, is_instance_admin, instance) = granting_for(state, ctx).await?;
+) -> ApiResult<(AgentGrant, service::SessionHoldings)> {
+    let session = ctx.session()?;
+    let sh = service::session_holdings(state, session).await?;
+    let instance = InstancePolicy::from_store(&agents::instance_policy(&state.pg).await?);
     if !instance.allowed {
         return Err(ApiError::PermissionDenied(
             crate::auth::agents::Refusal::NotAllowed.message().into(),
         ));
     }
-    let grant = service::validate(
+    if let Some((agent, _)) = existing {
+        require_agent_editable(&sh, session, agent)?;
+    }
+    if !body.instance.is_empty() && session.is_instance_admin && sh.instance_gap.is_some() {
+        crate::platform::access::refuse(sh.instance_gap)?;
+    }
+    let mut grant = service::validate(
         &Granting {
-            holdings: &holdings,
-            is_instance_admin,
+            holdings: &sh.open,
+            is_instance_admin: sh.can_administer_instance(session),
             instance,
         },
         body,
     )?;
-    if service::gains_sensitive(before, &grant) {
+    if sh.account_gap.is_some()
+        && (!grant
+            .account
+            .minus(service::read_only_account_rights())
+            .is_empty()
+            || grant.future.is_some())
+    {
+        crate::platform::access::refuse(sh.account_gap)?;
+    }
+    if let Some((agent, before)) = existing {
+        if let Some(m) = &sh.managed
+            && m.require_sso
+            && !(crate::platform::access::from_sso(session)
+                && session.oidc_org_id == Some(m.org_id))
+            && agent.oidc_org_id == Some(m.org_id)
+            && service::future_expands(before.future.as_ref(), grant.future.as_ref())
+        {
+            crate::platform::access::refuse(Some(crate::platform::access::PolicyGap::NeedsSso))?;
+        }
+        if (agent.second_factor || agent.sign_in_method == "oidc")
+            && !session.second_factor
+            && !crate::platform::access::from_sso(session)
+            && service::future_expands(before.future.as_ref(), grant.future.as_ref())
+        {
+            crate::platform::access::refuse(Some(crate::platform::access::PolicyGap::Needs2fa))?;
+        }
+        if session.is_instance_admin && sh.instance_gap.is_some() {
+            grant.instance = before.instance;
+        }
+        let before_seen = service::as_seen(before, &sh.all);
+        for closed in &sh.closed {
+            grant
+                .orgs
+                .insert(*closed, before_seen.orgs.get(closed).cloned().flatten());
+        }
+    } else {
+        for closed in &sh.closed {
+            grant.orgs.insert(*closed, None);
+        }
+    }
+    if service::gains_sensitive(existing.map(|(_, b)| b), &grant) {
         ctx.require_recent_sign_in()?;
     }
-    Ok(grant)
+    Ok((grant, sh))
 }
 
 #[utoipa::path(
     put,
     path = "/me/agents/{agent}/rights",
     summary = "Replaces an agent's rights.",
-    description = "Only rights the user holds, the instance's and each org's agent policy\n\
-    allow, and agents may be given. Giving sensitive rights it didn't have\n\
-    needs a sign-in within the last 15 minutes.",
+    description = "Only rights the user holds in organizations open to this session,\n\
+    the instance's and each org's agent policy allow, and agents may be given.\n\
+    Closed organizations and hidden instance rights keep what the agent already\n\
+    had. Giving sensitive rights it didn't have needs a sign-in within the last\n\
+    15 minutes.",
     tag = "agents",
     params(("agent" = AgentId, Path)),
     request_body = GrantBody,
@@ -362,31 +434,32 @@ pub async fn set_rights(
     Path(id): Path<String>,
     Body(req): Body<GrantBody>,
 ) -> ApiResult<Json<AgentView>> {
-    let user = ctx.user_id()?;
+    let session = ctx.session()?;
     let id: AgentId = id.parse().map_err(|_| ApiError::not_found("agent"))?;
     let mut tx = state.pg.begin().await?;
-    let a = agents::lock(&mut tx, user.uuid(), id.uuid())
+    let a = agents::lock(&mut tx, session.user_id, id.uuid())
         .await?
         .ok_or_else(|| ApiError::not_found("agent"))?;
     let before = AgentGrant::from_store(&agents::grant_of(&mut tx, &a).await?);
-    let after = validated(&state, &ctx, Some(&before), &req).await?;
+    let (after, sh) = validated(&state, &ctx, Some((&a, &before)), &req).await?;
     agents::replace_grant(&mut tx, a.id, &after.to_store()).await?;
-    let held = service::holdings(&state.pg, a.user_id).await?;
     ctx.audit(None, Action::AgentRightsUpdate)
         .target("agent", id)
-        .before(GrantBody::of(&service::as_seen(&before, &held)))
+        .before(GrantBody::of(&service::as_seen(&before, &sh.all)))
         .after(GrantBody::of(&after))
         .write(&mut tx)
         .await?;
     tx.commit().await?;
     let a = own(&state, &ctx, &id.to_string()).await?;
-    Ok(Json(view(&state, &a, &held).await?))
+    Ok(Json(view(&state, &a, &sh, session).await?))
 }
 
 #[utoipa::path(
     delete,
     path = "/me/agents/{agent}",
     summary = "Revokes an agent; its tokens stop working at once.",
+    description = "A session from the SSO of an organization that doesn't manage the\n\
+    account can revoke only agents authorized from that SSO.",
     tag = "agents",
     params(("agent" = AgentId, Path)),
     responses((status = 204, description = "Revoked."))
@@ -396,12 +469,14 @@ pub async fn revoke(
     ctx: Ctx,
     Path(id): Path<String>,
 ) -> ApiResult<StatusCode> {
-    let user = ctx.user_id()?;
+    let session = ctx.session()?;
+    let sh = service::session_holdings(&state, session).await?;
     let id: AgentId = id.parse().map_err(|_| ApiError::not_found("agent"))?;
     let mut tx = state.pg.begin().await?;
-    let a = agents::lock(&mut tx, user.uuid(), id.uuid())
+    let a = agents::lock(&mut tx, session.user_id, id.uuid())
         .await?
         .ok_or_else(|| ApiError::not_found("agent"))?;
+    require_agent_editable(&sh, session, &a)?;
     agents::revoke(&mut tx, a.id, ctx.now).await?;
     ctx.audit(None, Action::AgentRevoke)
         .target("agent", id)
@@ -444,6 +519,8 @@ pub struct AgentActivityView {
     get,
     path = "/me/agents/{agent}/activity",
     summary = "An agent's tool calls, newest first; kept for 90 days.",
+    description = "Leaves `org_id`, `project_id` and `target` as `null` on calls\n\
+    outside the organizations and areas open to this session.",
     tag = "agents",
     params(("agent" = AgentId, Path), PageParams),
     responses((status = 200, body = List<AgentActivityView>))
@@ -454,23 +531,63 @@ pub async fn activity(
     Path(id): Path<String>,
     Query(page): Query<PageParams>,
 ) -> ApiResult<Json<List<AgentActivityView>>> {
+    let session = ctx.session()?;
     let a = own(&state, &ctx, &id).await?;
+    let sh = service::session_holdings(&state, session).await?;
+    let can_admin = sh.can_administer_instance(session);
     let page = page.page()?;
     let rows = agents::activity(&state.pg, a.id, page.after, page.fetch()).await?;
+    let mut open_keys = std::collections::BTreeSet::new();
+    if !sh.closed.is_empty() {
+        let mut checked = std::collections::BTreeSet::new();
+        for r in &rows {
+            if r.org_id.is_none()
+                && r.tool.contains("_me_keys_")
+                && let Some(key_id) = r
+                    .target
+                    .as_deref()
+                    .and_then(|t| t.parse::<kaeso_core::id::ApiKeyId>().ok())
+                && checked.insert(key_id)
+                && let Some(key) =
+                    kaeso_store::pg::keys::get_of_user(&state.pg, session.user_id, key_id.uuid())
+                        .await?
+                && sh.open.iter().any(|h| h.id == key.org_id)
+            {
+                open_keys.insert(key_id);
+            }
+        }
+    }
     Ok(Json(List::from_rows(
         &page,
         rows,
         |r| r.id,
-        |r| AgentActivityView {
-            id: AgentActivityId::from_uuid(r.id),
-            at: r.at,
-            tool: r.tool,
-            org_id: r.org_id.map(OrgId::from_uuid),
-            project_id: r.project_id.map(ProjectId::from_uuid),
-            target: r.target,
-            status: u16::try_from(r.status).unwrap_or_default(),
-            result: r.result,
-            ip: r.ip.map(|n| n.addr().to_string()),
+        |r| {
+            let open = if let Some(o) = r.org_id {
+                sh.open.iter().any(|h| h.id == o)
+            } else if r.tool.contains("_instance_") {
+                can_admin
+            } else if r.tool.contains("_me_keys_") && !sh.closed.is_empty() {
+                r.target
+                    .as_deref()
+                    .and_then(|t| t.parse::<kaeso_core::id::ApiKeyId>().ok())
+                    .is_some_and(|k| open_keys.contains(&k))
+            } else {
+                true
+            };
+            AgentActivityView {
+                id: AgentActivityId::from_uuid(r.id),
+                at: r.at,
+                tool: r.tool,
+                org_id: open.then_some(r.org_id).flatten().map(OrgId::from_uuid),
+                project_id: open
+                    .then_some(r.project_id)
+                    .flatten()
+                    .map(ProjectId::from_uuid),
+                target: open.then_some(r.target).flatten(),
+                status: u16::try_from(r.status).unwrap_or_default(),
+                result: r.result,
+                ip: r.ip.map(|n| n.addr().to_string()),
+            }
         },
     )))
 }
@@ -697,11 +814,23 @@ pub struct Grantable {
     get,
     path = "/me/agents/grantable",
     summary = "What the user could give an agent now, per organization and project.",
+    description = "Leaves out organizations whose `access` in `auth/session` isn't `ok`,\n\
+    `instance` rights when the session can't administer the instance, and write\n\
+    rights on `account` when the session came from the SSO of an organization\n\
+    that doesn't manage the account.",
     tag = "agents",
     responses((status = 200, body = Grantable))
 )]
 pub async fn grantable(State(state): State<AppState>, ctx: Ctx) -> ApiResult<Json<Grantable>> {
-    let (holdings, is_admin, instance) = granting_for(&state, &ctx).await?;
+    let session = ctx.session()?;
+    let sh = service::session_holdings(&state, session).await?;
+    let instance = InstancePolicy::from_store(&agents::instance_policy(&state.pg).await?);
+    let is_admin = session.is_instance_admin && sh.instance_gap.is_none();
+    let account = if sh.account_gap.is_none() {
+        kaeso_core::rights::AccountRights::all().names()
+    } else {
+        service::read_only_account_rights().names()
+    };
     Ok(Json(Grantable {
         instance: if is_admin {
             instance.max.rights().names()
@@ -710,8 +839,9 @@ pub async fn grantable(State(state): State<AppState>, ctx: Ctx) -> ApiResult<Jso
         },
         allowed: instance.allowed,
         instance_max: instance.max.as_str(),
-        account: kaeso_core::rights::AccountRights::all().names(),
-        orgs: holdings
+        account,
+        orgs: sh
+            .open
             .iter()
             .map(|o| {
                 let ceiling = o.policy.max.project_ceiling();
@@ -883,18 +1013,18 @@ async fn portal_view(
     let (Some(org_grant), Some(p)) = (found.org_grant.as_ref(), found.project.as_ref()) else {
         return Err(ApiError::not_found("project"));
     };
-    if p.archived_at.is_some() {
-        return Err(ApiError::not_found("project"));
-    }
-    if found.org.state != "active" {
-        return Err(ApiError::OrgScheduledForDeletion);
-    }
     crate::platform::access::require_policy(
         state,
         session,
         crate::platform::access::Area::of_org(&found.org),
     )
     .await?;
+    if p.archived_at.is_some() {
+        return Err(ApiError::not_found("project"));
+    }
+    if found.org.state != "active" {
+        return Err(ApiError::OrgScheduledForDeletion);
+    }
     let org_grant = crate::platform::grants::org_from_store(org_grant)?;
     let project_grant = found
         .project_grant
@@ -1042,7 +1172,7 @@ pub async fn approve(
             "This sign-in is for a project's MCP portal; reload the page.".into(),
         ));
     }
-    let grant = validated(&state, &ctx, None, &req.grant).await?;
+    let (grant, _) = validated(&state, &ctx, None, &req.grant).await?;
     let id = AgentId::new();
     let mut tx = state.pg.begin().await?;
     if !agents::use_request(&mut *tx, r.id, ctx.now).await? {

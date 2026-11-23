@@ -13,7 +13,7 @@ use uuid::Uuid;
 use crate::auth::agents::{
     AgentCaller, AgentGrant, InstancePolicy, OrgAccess, OrgPolicy, Projects,
 };
-use crate::platform::access::{Area, managed_by, policy_gap};
+use crate::platform::access::{Area, PolicyGap, managed_by, policy_gap};
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::grants::{org_from_store, project_from_store};
 use crate::platform::me::agents::{GrantBody, OrgGrantBody};
@@ -117,6 +117,85 @@ pub async fn holdings(pg: &PgPool, user: Uuid) -> ApiResult<Vec<HeldOrg>> {
         });
     }
     Ok(out)
+}
+
+pub struct SessionHoldings {
+    pub open: Vec<HeldOrg>,
+    pub all: Vec<HeldOrg>,
+    pub closed: BTreeSet<Uuid>,
+    pub managed: Option<kaeso_store::pg::oidc::Manager>,
+    pub instance_gap: Option<PolicyGap>,
+    pub account_gap: Option<PolicyGap>,
+}
+
+impl SessionHoldings {
+    pub fn can_administer_instance(&self, session: &kaeso_store::pg::sessions::SessionRow) -> bool {
+        session.is_instance_admin && self.instance_gap.is_none()
+    }
+}
+
+pub fn read_only_account_rights() -> AccountRights {
+    AccountRights::EMPTY
+        .with(AccountRight::AccountView)
+        .with(AccountRight::AccountKeysView)
+}
+
+pub async fn session_holdings(
+    state: &AppState,
+    session: &kaeso_store::pg::sessions::SessionRow,
+) -> ApiResult<SessionHoldings> {
+    let all = holdings(&state.pg, session.user_id).await?;
+    let managed = managed_by(state, session).await?;
+    let manager_org = managed.as_ref().map(|m| m.org_id);
+    let mut open = Vec::with_capacity(all.len());
+    let mut closed = BTreeSet::new();
+    for held in &all {
+        if policy_gap(session, manager_org, held.area).is_none() {
+            open.push(held.clone());
+        } else {
+            closed.insert(held.id);
+        }
+    }
+    if let Some(m) = &managed
+        && m.require_sso
+        && !(crate::platform::access::from_sso(session) && session.oidc_org_id == Some(m.org_id))
+    {
+        closed.insert(m.org_id);
+    }
+    let instance_gap = if session.is_instance_admin {
+        let admin_sso = if crate::platform::access::from_sso(session) {
+            kaeso_store::pg::instance::admin_sso_org(&state.pg).await?
+        } else {
+            None
+        };
+        policy_gap(session, manager_org, Area::Instance { admin_sso })
+    } else {
+        None
+    };
+    let account_gap = policy_gap(session, manager_org, Area::Account);
+    Ok(SessionHoldings {
+        open,
+        all,
+        closed,
+        managed,
+        instance_gap,
+        account_gap,
+    })
+}
+
+pub fn future_expands(before: Option<&OrgAccess>, after: Option<&OrgAccess>) -> bool {
+    let Some(after) = after else {
+        return false;
+    };
+    let Some(before) = before else {
+        return true;
+    };
+    !after.rights.minus(before.rights).is_empty()
+        || !after
+            .projects
+            .every_project()
+            .minus(before.projects.every_project())
+            .is_empty()
 }
 
 pub struct Granting<'a> {

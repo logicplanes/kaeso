@@ -4633,7 +4633,7 @@
           "agents"
         ],
         "summary": "The user's agents, newest first.",
-        "description": "**Access:** a signed-in console session; no right is needed. Agents can't use it.",
+        "description": "Each agent's `grant` lists only organizations whose `access` in\n`auth/session` is `ok`, and `instance` rights only when this session may\nadminister the instance.\n\n**Access:** a signed-in console session; no right is needed. Agents can't use it.",
         "operationId": "getMeAgents",
         "responses": {
           "200": {
@@ -4735,7 +4735,7 @@
           "agents"
         ],
         "summary": "What the user could give an agent now, per organization and project.",
-        "description": "**Access:** a signed-in console session; no right is needed. Agents can't use it.",
+        "description": "Leaves out organizations whose `access` in `auth/session` isn't `ok`,\n`instance` rights when the session can't administer the instance, and write\nrights on `account` when the session came from the SSO of an organization\nthat doesn't manage the account.\n\n**Access:** a signed-in console session; no right is needed. Agents can't use it.",
         "operationId": "getMeAgentsGrantable",
         "responses": {
           "200": {
@@ -4786,7 +4786,7 @@
           "agents"
         ],
         "summary": "One of the user's agents.",
-        "description": "**Access:** a signed-in console session; no right is needed. Agents can't use it.",
+        "description": "Its `grant` lists only organizations whose `access` in `auth/session`\nis `ok`, and `instance` rights only when this session may administer the\ninstance.\n\n**Access:** a signed-in console session; no right is needed. Agents can't use it.",
         "operationId": "getMeAgentsAgent",
         "parameters": [
           {
@@ -4845,7 +4845,7 @@
           "agents"
         ],
         "summary": "Revokes an agent; its tokens stop working at once.",
-        "description": "**Access:** a signed-in console session; no right is needed. Agents can't use it.",
+        "description": "A session from the SSO of an organization that doesn't manage the\naccount can revoke only agents authorized from that SSO.\n\n**Access:** a signed-in console session; no right is needed. Agents can't use it.",
         "operationId": "deleteMeAgentsAgent",
         "parameters": [
           {
@@ -4898,7 +4898,7 @@
           "agents"
         ],
         "summary": "Renames an agent.",
-        "description": "**Access:** a signed-in console session; no right is needed. Agents can't use it.",
+        "description": "A session from the SSO of an organization that doesn't manage the\naccount can rename only agents authorized from that SSO.\n\n**Access:** a signed-in console session; no right is needed. Agents can't use it.",
         "operationId": "patchMeAgentsAgent",
         "parameters": [
           {
@@ -4972,7 +4972,7 @@
           "agents"
         ],
         "summary": "An agent's tool calls, newest first; kept for 90 days.",
-        "description": "**Access:** a signed-in console session; no right is needed. Agents can't use it.",
+        "description": "Leaves `org_id`, `project_id` and `target` as `null` on calls\noutside the organizations and areas open to this session.\n\n**Access:** a signed-in console session; no right is needed. Agents can't use it.",
         "operationId": "getMeAgentsAgentActivity",
         "parameters": [
           {
@@ -5055,7 +5055,7 @@
           "agents"
         ],
         "summary": "Replaces an agent's rights.",
-        "description": "Only rights the user holds, the instance's and each org's agent policy\nallow, and agents may be given. Giving sensitive rights it didn't have\nneeds a sign-in within the last 15 minutes.\n\n**Access:** a signed-in console session; no right is needed. Agents can't use it.",
+        "description": "Only rights the user holds in organizations open to this session,\nthe instance's and each org's agent policy allow, and agents may be given.\nClosed organizations and hidden instance rights keep what the agent already\nhad. Giving sensitive rights it didn't have needs a sign-in within the last\n15 minutes.\n\n**Access:** a signed-in console session; no right is needed. Agents can't use it.",
         "operationId": "putMeAgentsAgentRights",
         "parameters": [
           {

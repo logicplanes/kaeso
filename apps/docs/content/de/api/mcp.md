@@ -350,13 +350,13 @@ Die Konsole verwaltet Agenten über diese Routen, in [`openapi.json`](platform-a
 
 | Route | Zugriff | Tut |
 | --- | --- | --- |
-| `GET me/agents`, `GET me/agents/{agent}` | Sitzung | Ihre Agenten, die neuesten zuerst, mit Modellfamilie, Client, Rechten (`grant`), Erstellung und letzter Nutzung |
+| `GET me/agents`, `GET me/agents/{agent}` | Sitzung | Ihre Agenten, die neuesten zuerst, mit Modellfamilie, Client, Rechten (`grant`, in den für diese Sitzung offenen Organisationen und Bereichen), Erstellung und letzter Nutzung |
 | `PATCH me/agents/{agent}` | Sitzung | Ändert `name` |
-| `PUT me/agents/{agent}/rights` | Sitzung | Ersetzt die Rechte des Agenten. Ein sensibles Recht zu geben, das er nicht hatte, erfordert eine [kürzliche Anmeldung](platform-api.md#kürzliche-anmeldung) |
+| `PUT me/agents/{agent}/rights` | Sitzung | Ersetzt die Rechte des Agenten in den für diese Sitzung offenen Organisationen und Bereichen; geschlossene behalten, was er hatte. Ein sensibles Recht zu geben, das er nicht hatte, erfordert eine [kürzliche Anmeldung](platform-api.md#kürzliche-anmeldung) |
 | `DELETE me/agents/{agent}` | Sitzung | Widerruft den Agenten. Seine Tokens hören sofort auf zu funktionieren |
-| `GET me/agents/{agent}/activity` | Sitzung | Seine Tool-Aufrufe, die neuesten zuerst |
+| `GET me/agents/{agent}/activity` | Sitzung | Seine Tool-Aufrufe, die neuesten zuerst, mit IDs außerhalb der für diese Sitzung offenen Organisationen und Bereiche als `null` |
 | `GET me/agents/catalogue` | Sitzung | Jedes Recht, das ein Agent erhalten kann, nach Ebene, die Vorlagen und ihre Obergrenzen, die Instanz-Vorlagen, die Rechte, die kein Agent erhält, und die Modellfamilien |
-| `GET me/agents/grantable` | Sitzung | Was Sie einem Agenten jetzt geben könnten, in jeder Organisation und jedem Projekt |
+| `GET me/agents/grantable` | Sitzung | Was diese Sitzung einem Agenten jetzt geben könnte, in jeder offenen Organisation und jedem Projekt |
 | `POST me/agent-requests/view`, `…/approve`, `…/deny` | Sitzung | Die Zustimmungsseite. Jede nimmt den `request` aus `#request=` der Seite |
 | `GET orgs/{org}/agents` | `members.view` | Die Agenten von Mitgliedern, die in der Organisation handeln dürfen |
 | `DELETE orgs/{org}/agents/{agent}` | `members.rights.update`, Sitzung | Schließt die Organisation für den Agenten. Sein Mitglied kann sie wieder öffnen |

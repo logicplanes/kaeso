@@ -2568,3 +2568,443 @@ async fn mcp_speaks_the_stateless_protocol_and_the_older_ones() {
     .expect_status(StatusCode::OK);
     assert!(legacy_read.body["result"].get("ttlMs").is_none());
 }
+
+async fn make_session(
+    app: &App,
+    user_id: &str,
+    method: &str,
+    second_factor: bool,
+    oidc_org_id: Option<&str>,
+) -> String {
+    use kaeso_core::clock::Clock;
+    let token = kaeso_crypto::random_token();
+    let now = app.clock.now();
+    kaeso_store::pg::sessions::insert(
+        &app.state.pg,
+        &kaeso_store::pg::sessions::NewSession {
+            id: uuid::Uuid::now_v7(),
+            token_hash: &kaeso_core::secret::hash(&token),
+            user_id: common::uuid(user_id),
+            method,
+            second_factor,
+            oidc_org_id: oidc_org_id.map(common::uuid),
+            signed_in_at: now,
+            now,
+            expires_at: now + time::Duration::days(7),
+            ip: None,
+            user_agent: None,
+        },
+    )
+    .await
+    .unwrap();
+    token
+}
+
+#[tokio::test]
+async fn agent_views_and_grants_keep_to_the_sessions_open_orgs_and_areas() {
+    let (s, app, owner) = setup().await;
+    let strict_org = app
+        .post(
+            "/me/orgs",
+            json!({ "name": "VaultOrg" }),
+            Some(&owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::CREATED)
+        .body["id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let strict_project =
+        common::create_project(&app, &strict_org, &owner.cookie, "VaultProject").await;
+
+    let open_project = projects_of(&app, &owner).await[0].clone();
+    let open_key = personal_key(&app, &owner, &open_project).await;
+    let strict_key = app
+        .post(
+            &format!("/orgs/{strict_org}/projects/{strict_project}/keys"),
+            json!({ "name": "vault-mine" }),
+            Some(&owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::CREATED)
+        .body["id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+
+    let two_factor_cookie = make_session(&app, &owner.user_id, "password", true, None).await;
+    let acme_only = sign_in(
+        &app,
+        &two_factor_cookie,
+        grant(&owner.org_id, &["org.view"], &["project.view"]),
+    )
+    .await;
+    let mut both_grant = with_keys(builder(&owner.org_id));
+    both_grant["instance"] = json!(["instance.system.view", "instance.users.view"]);
+    both_grant["orgs"].as_array_mut().unwrap().push(json!({
+        "org": strict_org,
+        "included": true,
+        "rights": ["org.view"],
+        "projects": {
+            "all": false,
+            "rights": [],
+            "selected": [{ "project": strict_project, "rights": ["project.view"] }]
+        }
+    }));
+    let vault_agent = sign_in(&app, &two_factor_cookie, both_grant).await;
+    let called = tool(
+        &app,
+        &vault_agent.access,
+        "get_orgs_org",
+        json!({ "org": strict_org }),
+    )
+    .await;
+    assert_eq!(called["isError"], false, "{called:?}");
+    let called_open_key = tool(
+        &app,
+        &vault_agent.access,
+        "get_me_keys_key",
+        json!({ "key": open_key }),
+    )
+    .await;
+    assert_eq!(called_open_key["isError"], false, "{called_open_key:?}");
+    let called_strict_key = tool(
+        &app,
+        &vault_agent.access,
+        "get_me_keys_key",
+        json!({ "key": strict_key }),
+    )
+    .await;
+    assert_eq!(called_strict_key["isError"], false, "{called_strict_key:?}");
+    let called_inst_user = tool(
+        &app,
+        &vault_agent.access,
+        "get_instance_users_user",
+        json!({ "user": owner.user_id }),
+    )
+    .await;
+    assert_eq!(called_inst_user["isError"], false, "{called_inst_user:?}");
+
+    sqlx::query("UPDATE organizations SET require_2fa = true WHERE id = $1")
+        .bind(common::uuid(&strict_org))
+        .execute(&app.state.pg)
+        .await
+        .unwrap();
+
+    let password_only = make_session(&app, &owner.user_id, "password", false, None).await;
+    let grantable = app
+        .get("/me/agents/grantable", &password_only)
+        .await
+        .expect_status(StatusCode::OK);
+    let g_text = grantable.body.to_string();
+    assert!(!g_text.contains("VaultOrg"), "{g_text}");
+    assert!(!g_text.contains("VaultProject"), "{g_text}");
+    assert!(!g_text.contains(&strict_org), "{g_text}");
+    assert!(!g_text.contains(&strict_project), "{g_text}");
+    assert_eq!(grantable.body["orgs"].as_array().unwrap().len(), 1);
+    assert_eq!(grantable.body["orgs"][0]["id"], owner.org_id);
+
+    for path in ["/me/agents", &format!("/me/agents/{}", vault_agent.agent)] {
+        let viewed = app
+            .get(path, &password_only)
+            .await
+            .expect_status(StatusCode::OK);
+        let text = viewed.body.to_string();
+        assert!(!text.contains(&strict_org), "{path}: {text}");
+        assert!(!text.contains(&strict_project), "{path}: {text}");
+    }
+
+    let activity = app
+        .get(
+            &format!("/me/agents/{}/activity", vault_agent.agent),
+            &password_only,
+        )
+        .await
+        .expect_status(StatusCode::OK);
+    let act_text = activity.body.to_string();
+    assert!(!act_text.contains(&strict_org), "{act_text}");
+    assert!(!act_text.contains(&strict_key), "{act_text}");
+    assert!(act_text.contains(&open_key), "{act_text}");
+    assert!(act_text.contains(&owner.user_id), "{act_text}");
+    let org_call = activity.body["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|e| e["tool"] == "get_orgs_org")
+        .unwrap();
+    assert_eq!(org_call["org_id"], Value::Null);
+    assert_eq!(org_call["target"], Value::Null);
+
+    let mut add_closed = grant(&owner.org_id, &["org.view"], &["project.view"]);
+    add_closed["orgs"].as_array_mut().unwrap().push(json!({
+        "org": strict_org,
+        "included": true,
+        "rights": ["org.view"],
+        "projects": { "all": true, "rights": ["project.view"], "selected": [] }
+    }));
+    let refused_closed = app
+        .call(
+            Method::PUT,
+            &format!("/me/agents/{}/rights", acme_only.agent),
+            Some(add_closed),
+            Some(&password_only),
+        )
+        .await;
+    assert_eq!(
+        refused_closed.status,
+        StatusCode::NOT_FOUND,
+        "{:?}",
+        refused_closed.body
+    );
+
+    let mut add_future = grant(&owner.org_id, &["org.view"], &["project.view"]);
+    add_future["future_orgs"] =
+        json!({ "rights": ["org.view"], "project_rights": ["project.view"] });
+    let refused_future = app
+        .call(
+            Method::PUT,
+            &format!("/me/agents/{}/rights", acme_only.agent),
+            Some(add_future.clone()),
+            Some(&password_only),
+        )
+        .await;
+    assert_eq!(
+        refused_future.status,
+        StatusCode::FORBIDDEN,
+        "{:?}",
+        refused_future.body
+    );
+
+    let no_2fa_future = sign_in(&app, &password_only, add_future).await;
+    sqlx::query("UPDATE organizations SET require_2fa = false WHERE id = $1")
+        .bind(common::uuid(&strict_org))
+        .execute(&app.state.pg)
+        .await
+        .unwrap();
+    let still_closed = tool(
+        &app,
+        &no_2fa_future.access,
+        "get_orgs_org",
+        json!({ "org": strict_org }),
+    )
+    .await;
+    assert_eq!(still_closed["isError"], true, "{still_closed:?}");
+    assert_eq!(
+        still_closed["structuredContent"]["error"]["type"],
+        "not_found"
+    );
+    sqlx::query("UPDATE organizations SET require_2fa = true WHERE id = $1")
+        .bind(common::uuid(&strict_org))
+        .execute(&app.state.pg)
+        .await
+        .unwrap();
+
+    let mut keep_open = grant(
+        &owner.org_id,
+        &["org.view", "members.view"],
+        &["project.view"],
+    );
+    keep_open["instance"] = json!(["instance.system.view", "instance.users.view"]);
+    app.call(
+        Method::PUT,
+        &format!("/me/agents/{}/rights", vault_agent.agent),
+        Some(keep_open),
+        Some(&password_only),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    let kept = tool(
+        &app,
+        &vault_agent.access,
+        "get_orgs_org",
+        json!({ "org": strict_org }),
+    )
+    .await;
+    assert_eq!(kept["isError"], false, "{kept:?}");
+
+    let guest_sso = make_session(&app, &owner.user_id, "oidc", false, Some(&owner.org_id)).await;
+    let guest_g = app
+        .get("/me/agents/grantable", &guest_sso)
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(guest_g.body["instance"], json!([]));
+    assert_eq!(
+        guest_g.body["account"],
+        json!(["account.view", "account.keys.view"])
+    );
+    assert_eq!(guest_g.body["orgs"].as_array().unwrap().len(), 1);
+    assert_eq!(guest_g.body["orgs"][0]["id"], owner.org_id);
+
+    let client = register(&app, "Guest tool").await;
+    for bad_grant in [
+        {
+            let mut g = grant(&owner.org_id, &["org.view"], &["project.view"]);
+            g["instance"] = json!(["instance.system.view"]);
+            g
+        },
+        {
+            let mut g = grant(&owner.org_id, &["org.view"], &["project.view"]);
+            g["account"] = json!(["account.view", "account.update"]);
+            g
+        },
+        {
+            let mut g = grant(&owner.org_id, &["org.view"], &["project.view"]);
+            g["future_orgs"] =
+                json!({ "rights": ["org.view"], "project_rights": ["project.view"] });
+            g
+        },
+    ] {
+        let req_tok = request_token(&app, &client).await;
+        let r = approve(&app, &guest_sso, &req_tok, bad_grant.clone()).await;
+        assert_eq!(r.status, StatusCode::FORBIDDEN, "{bad_grant}: {:?}", r.body);
+        assert_eq!(r.error_type(), "other_sign_in_required");
+    }
+
+    for r in [
+        app.call(
+            Method::PUT,
+            &format!("/me/agents/{}/rights", acme_only.agent),
+            Some(grant(&owner.org_id, &["org.view"], &["project.view"])),
+            Some(&guest_sso),
+        )
+        .await,
+        app.call(
+            Method::PATCH,
+            &format!("/me/agents/{}", acme_only.agent),
+            Some(json!({ "name": "Renamed" })),
+            Some(&guest_sso),
+        )
+        .await,
+        app.call(
+            Method::DELETE,
+            &format!("/me/agents/{}", acme_only.agent),
+            None,
+            Some(&guest_sso),
+        )
+        .await,
+    ] {
+        assert_eq!(r.status, StatusCode::FORBIDDEN, "{:?}", r.body);
+        assert_eq!(r.error_type(), "other_sign_in_required");
+    }
+
+    let guest_activity = app
+        .get(
+            &format!("/me/agents/{}/activity", vault_agent.agent),
+            &guest_sso,
+        )
+        .await
+        .expect_status(StatusCode::OK);
+    let guest_act_text = guest_activity.body.to_string();
+    assert!(!guest_act_text.contains(&strict_org), "{guest_act_text}");
+    assert!(!guest_act_text.contains(&strict_key), "{guest_act_text}");
+    assert!(!guest_act_text.contains(&owner.user_id), "{guest_act_text}");
+    assert!(guest_act_text.contains(&open_key), "{guest_act_text}");
+
+    let orphan_sso = make_session(&app, &owner.user_id, "oidc", false, None).await;
+    for r in [
+        app.call(
+            Method::PUT,
+            &format!("/me/agents/{}/rights", acme_only.agent),
+            Some(grant(&owner.org_id, &["org.view"], &["project.view"])),
+            Some(&orphan_sso),
+        )
+        .await,
+        app.call(
+            Method::PATCH,
+            &format!("/me/agents/{}", acme_only.agent),
+            Some(json!({ "name": "OrphanRename" })),
+            Some(&orphan_sso),
+        )
+        .await,
+        app.call(
+            Method::DELETE,
+            &format!("/me/agents/{}", acme_only.agent),
+            None,
+            Some(&orphan_sso),
+        )
+        .await,
+    ] {
+        assert_eq!(r.status, StatusCode::FORBIDDEN, "{:?}", r.body);
+        assert_eq!(r.error_type(), "other_sign_in_required");
+    }
+
+    sqlx::query(
+        "INSERT INTO org_oidc (org_id, issuer, client_id, secret_ciphertext, secret_nonce, \
+         wrapped_key, key_id, verification_token) \
+         VALUES ($1, 'https://idp.example.com', 'client', '', '', '', 'k1', 'tok')",
+    )
+    .bind(common::uuid(&owner.org_id))
+    .execute(&app.state.pg)
+    .await
+    .unwrap();
+    sqlx::query(
+        "INSERT INTO org_oidc_domains (org_id, domain, verified_at) \
+         VALUES ($1, 'example.com', now())",
+    )
+    .bind(common::uuid(&owner.org_id))
+    .execute(&app.state.pg)
+    .await
+    .unwrap();
+
+    let managed_sso = make_session(&app, &owner.user_id, "oidc", false, Some(&owner.org_id)).await;
+    let sso_agent = sign_in(
+        &app,
+        &managed_sso,
+        grant(&owner.org_id, &["org.view"], &["project.view"]),
+    )
+    .await;
+    let mut sso_future = grant(&owner.org_id, &["org.view"], &["project.view"]);
+    sso_future["future_orgs"] =
+        json!({ "rights": ["org.view"], "project_rights": ["project.view"] });
+    let no_2fa_on_sso_agent = app
+        .call(
+            Method::PUT,
+            &format!("/me/agents/{}/rights", sso_agent.agent),
+            Some(sso_future),
+            Some(&password_only),
+        )
+        .await;
+    assert_eq!(
+        no_2fa_on_sso_agent.status,
+        StatusCode::FORBIDDEN,
+        "{:?}",
+        no_2fa_on_sso_agent.body
+    );
+
+    let viewed_from_managed_sso = app
+        .get(&format!("/me/agents/{}", vault_agent.agent), &managed_sso)
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(viewed_from_managed_sso.body["grant"]["instance"], json!([]));
+
+    let mut try_inst = grant(&owner.org_id, &["org.view"], &["project.view"]);
+    try_inst["instance"] = json!(["instance.system.view"]);
+    let refused_inst = app
+        .call(
+            Method::PUT,
+            &format!("/me/agents/{}/rights", vault_agent.agent),
+            Some(try_inst),
+            Some(&managed_sso),
+        )
+        .await;
+    assert_eq!(refused_inst.status, StatusCode::FORBIDDEN);
+    assert_eq!(refused_inst.error_type(), "other_sign_in_required");
+
+    app.call(
+        Method::PUT,
+        &format!("/me/agents/{}/rights", vault_agent.agent),
+        Some(grant(
+            &owner.org_id,
+            &["org.view", "usage.org.view"],
+            &["project.view"],
+        )),
+        Some(&managed_sso),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    let kept_inst = tool(&app, &vault_agent.access, "get_instance_system", json!({})).await;
+    assert_eq!(kept_inst["isError"], false, "{kept_inst:?}");
+
+    s.cleanup().await;
+}
