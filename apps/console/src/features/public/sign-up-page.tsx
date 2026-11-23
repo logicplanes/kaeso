@@ -9,6 +9,7 @@ import { usePageTitle } from "~/shell/title";
 import { signInMethodsQuery } from "~/auth/sign-in-api";
 import { fieldError } from "~/api/field-error";
 import { passwordHint, passwordOk, useSubmit } from "./form";
+import { disabledUntil } from "~/shell/disabled-until";
 import { t } from "~/i18n";
 import { tRich } from "~/i18n/rich";
 
@@ -48,6 +49,7 @@ export function SignUpPage() {
         className="flex flex-col gap-16"
         onSubmit={(e) => {
           e.preventDefault();
+          if (!email.trim()) return;
           void submit(async () => {
             setSent(data(await api.POST("/platform/v1/auth/signup", { body: { email: email.trim() } })).message);
           });
@@ -63,7 +65,14 @@ export function SignUpPage() {
           autoFocus
           error={fieldError(error, "email")}
         />
-        <Button type="submit" variant="primary" size="xl" fullWidth loading={busy} disabled={!email.trim()}>
+        <Button
+          type="submit"
+          variant="primary"
+          size="xl"
+          fullWidth
+          loading={busy}
+          {...disabledUntil(email.trim() ? undefined : t("public.emailNeeded", "Enter your email address"))}
+        >
           {t("common.continue", "Continue")}
         </Button>
         <Text variant="small" tone="secondary" className="text-center">
@@ -88,7 +97,12 @@ export function SignUpVerifyPage() {
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const { busy, error, submit } = useSubmit();
-  const ready = !!token && name.trim() && (password === "" || passwordOk(password));
+  const needs = !name.trim()
+    ? t("public.nameNeeded", "Enter your name")
+    : password !== "" && !passwordOk(password)
+      ? t("public.passwordOrNone", "Make the password 12 to 128 characters, or leave it empty")
+      : undefined;
+  const ready = !!token && !needs;
   if (error?.type === "authentication") {
     return (
       <PublicPage
@@ -152,7 +166,7 @@ export function SignUpVerifyPage() {
           description={passwordHint(password, t("public.passwordOptionalHint", "Leave empty to sign in with a link by email."))}
           error={fieldError(error, "password")}
         />
-        <Button type="submit" variant="primary" size="xl" fullWidth loading={busy} disabled={!ready}>
+        <Button type="submit" variant="primary" size="xl" fullWidth loading={busy} {...disabledUntil(needs, !token)}>
           {t("public.createAccount", "Create account")}
         </Button>
       </form>

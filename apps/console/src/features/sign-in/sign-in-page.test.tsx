@@ -1,9 +1,10 @@
-import { screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ORG, signedIn, signedOut } from "~/test/fixtures";
 import { emailSent, methods, signedInReply, ssoStart, totpRequired } from "~/test/fixtures/public";
 import { apiError, json, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
+import { expectDisabledBecause } from "~/test/disabled";
 
 const UNNAMED_PROVIDER = { org: ORG, org_name: "Northwind Labs", name: null, auto_redirect: false };
 
@@ -38,6 +39,9 @@ describe("the email step", () => {
 
   it("asks the gateway which methods the address has", async () => {
     await atMethods("/sign-in");
+    expectDisabledBecause(screen.getByRole("button", { name: "Sign in" }), "Enter your password");
+    fireEvent.submit(screen.getByLabelText("Password").closest("form") as HTMLFormElement);
+    expect(requests("POST", "auth/password")).toHaveLength(0);
     expect(requests("POST", "auth/methods").map((r) => r.body)).toEqual([{ email: "ada@example.com" }]);
     expect(screen.getByLabelText("Password")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Email me a sign-in link" })).toBeInTheDocument();
@@ -62,11 +66,13 @@ describe("the email step", () => {
   it("keeps account creation out of sight on an install by invitation", async () => {
     signedOut();
     on("GET", "auth/methods", methods({ sign_up: false }));
-    await renderApp("/sign-in");
+    const { user } = await renderApp("/sign-in");
     await screen.findByRole("textbox", { name: "Email" });
     await waitFor(() => expect(requests("GET", "auth/methods")).toHaveLength(1));
     expect(screen.queryByRole("link", { name: "Create an account" })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Continue" })).toBeDisabled();
+    expectDisabledBecause(screen.getByRole("button", { name: "Continue" }), "Enter your email address");
+    await user.type(screen.getByRole("textbox", { name: "Email" }), "{Enter}");
+    expect(requests("POST", "auth/methods")).toHaveLength(0);
   });
 
   it("says when the gateway can't be reached", async () => {
@@ -315,7 +321,9 @@ describe("two-step verification", () => {
     await user.type(field, "000000");
     expect(await (await notifications()).findByText("That code didn't work.")).toBeInTheDocument();
     await waitFor(() => expect(field).toHaveValue(""));
-    expect(screen.getByRole("button", { name: "Verify" })).toBeDisabled();
+    expectDisabledBecause(screen.getByRole("button", { name: "Verify" }), "Enter the 6-digit code");
+    fireEvent.submit(field.closest("form") as HTMLFormElement);
+    expect(requests("POST", "auth/totp")).toHaveLength(1);
   });
 
   it("takes a recovery code instead, and can switch back", async () => {
@@ -328,7 +336,7 @@ describe("two-step verification", () => {
       return signedInReply();
     });
     const verify = screen.getByRole("button", { name: "Verify" });
-    expect(verify).toBeDisabled();
+    expectDisabledBecause(verify, "Enter a recovery code");
     await user.type(screen.getByRole("textbox", { name: "Recovery code" }), " abcd-efgh ");
     await user.click(verify);
     await waitFor(() => expect(requests("POST", "auth/totp").map((r) => r.body)).toEqual([{ challenge: "chl_42", recovery_code: "abcd-efgh" }]));

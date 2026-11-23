@@ -5,6 +5,7 @@ import { emailSent, methods } from "~/test/fixtures/public";
 import { apiError, noContent, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
 import { cachedText } from "~/test/cache";
+import { expectDisabledBecause } from "~/test/disabled";
 
 const notifications = async () => within(await screen.findByRole("region", { name: "Notifications" }));
 
@@ -16,7 +17,9 @@ describe("requesting a password reset", () => {
     expect(screen.getByRole("link", { name: "Back to sign in" })).toHaveAttribute("href", "/sign-in");
     expect(screen.getByRole("link", { name: "Back to sign in" })).toHaveClass("tap-target");
     const send = screen.getByRole("button", { name: "Email me a link" });
-    expect(send).toBeDisabled();
+    expectDisabledBecause(send, "Enter your email address");
+    fireEvent.submit(screen.getByRole("textbox", { name: "Email" }).closest("form") as HTMLFormElement);
+    expect(requests("POST", "auth/password-reset")).toHaveLength(0);
     await user.type(screen.getByRole("textbox", { name: "Email" }), " ada@example.com ");
     await user.click(send);
     expect(await screen.findByText("Check your email")).toBeInTheDocument();
@@ -68,7 +71,7 @@ describe("setting a new password", () => {
     await user.type(field, "too short{Enter}");
     fireEvent.submit(field.closest("form") as HTMLFormElement);
     expect(requests("POST", "auth/password-reset/verify")).toHaveLength(0);
-    expect(screen.getByRole("button", { name: "Set password" })).toBeDisabled();
+    expectDisabledBecause(screen.getByRole("button", { name: "Set password" }), "Enter a password of 12 to 128 characters");
     await user.type(field, " but now long");
     await user.click(screen.getByRole("button", { name: "Set password" }));
     expect(await (await notifications()).findByText("Password changed; sign in with the new one")).toBeInTheDocument();

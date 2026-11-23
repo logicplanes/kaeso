@@ -7,6 +7,7 @@ import { renderApp } from "~/test/render";
 import { announceConfirmed } from "./confirm-channel";
 import { requestRecentSignIn } from "./recent-sign-in-store";
 import { notificationSettings } from "~/test/fixtures/notifications";
+import { expectDisabledBecause } from "~/test/disabled";
 
 const PATH = "/settings/account/notifications";
 const notifications = async () => within(await screen.findByRole("region", { name: "Notifications" }));
@@ -52,8 +53,9 @@ describe("signing in again with a password", () => {
     const { user } = await renderApp(PATH);
     const box = await toggle(user);
     expect(within(box).getByText("This action needs a sign-in from the last 15 minutes.")).toBeInTheDocument();
-    expect(within(box).getByRole("button", { name: "Sign in" })).toBeDisabled();
-    await user.type(await within(box).findByLabelText("Password"), "correct horse battery");
+    const field = await within(box).findByLabelText("Password");
+    expectDisabledBecause(within(box).getByRole("button", { name: "Sign in" }), "Enter your password");
+    await user.type(field, "correct horse battery");
     await user.keyboard("{Meta>}{Enter}{/Meta}");
     expect(await (await notifications()).findByText("Notifications saved")).toBeInTheDocument();
     expect(requests("POST", "auth/password").map((r) => r.body)).toEqual([{ email: "owner@example.com", password: "correct horse battery" }]);
@@ -100,7 +102,7 @@ describe("signing in again with a password", () => {
     await user.type(within(box).getByLabelText("Password"), "correct horse battery{Enter}");
     expect(await within(box).findByText("Enter the 6-digit code from your authenticator app.")).toBeInTheDocument();
     expect(requests("POST", "auth/password")).toHaveLength(1);
-    expect(within(box).getByRole("button", { name: "Verify" })).toBeDisabled();
+    expectDisabledBecause(within(box).getByRole("button", { name: "Verify" }), "Enter the 6-digit code");
     await user.type(within(box).getByRole("textbox"), "123456");
     expect(await (await notifications()).findByText("Notifications saved")).toBeInTheDocument();
     expect(requests("POST", "auth/totp").map((r) => r.body)).toEqual([{ challenge: "chl_42", code: "123456" }]);
@@ -199,7 +201,7 @@ describe("signing in again with a password", () => {
     await user.click(within(box).getByRole("button", { name: "Use a recovery code" }));
     expect(within(box).getByLabelText("Recovery code")).toHaveFocus();
     const verify = within(box).getByRole("button", { name: "Verify" });
-    expect(verify).toBeDisabled();
+    expectDisabledBecause(verify, "Enter a recovery code");
     await user.type(within(box).getByLabelText("Recovery code"), " abcd-efgh ");
     await user.keyboard("{Meta>}{Enter}{/Meta}");
     expect(await (await notifications()).findByText("Notifications saved")).toBeInTheDocument();

@@ -17,6 +17,7 @@ import { notifications } from "~/test/fixtures/org";
 import { apiError, noContent, on, page, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
 import { atFixtureTime } from "~/test/clock";
+import { expectDisabledBecause } from "~/test/disabled";
 
 atFixtureTime();
 
@@ -255,7 +256,7 @@ describe("the organization switcher", () => {
     await user.click(await screen.findByRole("menuitem", { name: "Create organization" }));
     const dialog = await screen.findByRole("dialog", { name: "Create organization" });
     const create = within(dialog).getByRole("button", { name: "Create organization" });
-    expect(create).toBeDisabled();
+    expectDisabledBecause(create, "Give the organization a name");
     await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "  Initech  ");
     await user.click(create);
     expect(await within(screen.getByRole("region", { name: "Notifications" })).findByText("Organization created")).toBeInTheDocument();

@@ -4,6 +4,7 @@ import { ORG, signedIn, signedOut, user as person, whoAmI } from "~/test/fixture
 import { agents, grantable } from "~/test/fixtures/agents";
 import { apiError, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
+import { expectDisabledBecause } from "~/test/disabled";
 
 const PENDING = "kaeso:agent-request";
 
@@ -54,6 +55,7 @@ describe("connecting an agent", () => {
     const dialog = await screen.findByRole("dialog", { name: "Customize Claude Code" });
     expect(within(dialog).getByText("Nothing changes until you authorize.")).toBeInTheDocument();
     await user.clear(within(dialog).getByLabelText("Name"));
+    expectDisabledBecause(screen.getByRole("button", { name: "Authorize", hidden: true }), "Give the agent a name in Customize");
     await user.type(within(dialog).getByLabelText("Name"), "Release helper");
     expect(within(dialog).getByRole("heading", { name: "Customize Release helper" })).toBeInTheDocument();
     await user.click(within(dialog).getByRole("button", { name: "Finish" }));

@@ -8,6 +8,7 @@ import { fieldError } from "~/api/field-error";
 import { useApiMutation } from "~/auth/mutation";
 import { membershipsQuery, sessionQuery } from "~/auth/session";
 import { t } from "~/i18n";
+import { disabledUntil } from "~/shell/disabled-until";
 
 export default function CreateOrgDialog({ onClose }: { onClose: () => void }) {
   const navigate = useNavigate();
@@ -42,7 +43,12 @@ export default function CreateOrgDialog({ onClose }: { onClose: () => void }) {
           <Dialog.Close>
             <Button>{t("common.cancel", "Cancel")}</Button>
           </Dialog.Close>
-          <Button variant="primary" loading={create.isPending} disabled={!name.trim()} onClick={() => create.mutate()}>
+          <Button
+            variant="primary"
+            loading={create.isPending}
+            {...disabledUntil(name.trim() ? undefined : t("shell.orgNameNeeded", "Give the organization a name"))}
+            onClick={() => create.mutate()}
+          >
             {t("shell.createOrg", "Create organization")}
           </Button>
         </>

@@ -4,6 +4,7 @@ import { api, data } from "~/api/client";
 import type { SignInMethods, SsoProvider } from "~/auth/sign-in-api";
 import { PublicPage } from "~/shell/public-page";
 import { t } from "~/i18n";
+import { disabledUntil } from "~/shell/disabled-until";
 import { tRich } from "~/i18n/rich";
 export { showSsoError } from "~/auth/sso-errors";
 
@@ -54,7 +55,7 @@ export function MethodsStep({
         none && !m.sign_up ? t("signIn.noMethod", "There's no way to sign in with {email} on this install. Ask an administrator.", { email: address }) : address
       }
     >
-      <form className="flex flex-col gap-16" onSubmit={(e) => (e.preventDefault(), m.password ? onPassword() : undefined)}>
+      <form className="flex flex-col gap-16" onSubmit={(e) => (e.preventDefault(), m.password && password ? onPassword() : undefined)}>
         <input type="email" name="username" autoComplete="username" value={address} readOnly hidden />
         {m.provider && (
           <Button variant={m.password ? "secondary" : "primary"} size="xl" fullWidth loading={busy === "sso"} onClick={onSso} autoFocus={!m.password}>
@@ -73,7 +74,14 @@ export function MethodsStep({
               autoFocus
               error={passwordError}
             />
-            <Button type="submit" variant="primary" size="xl" fullWidth loading={busy === "password"} disabled={!password}>
+            <Button
+              type="submit"
+              variant="primary"
+              size="xl"
+              fullWidth
+              loading={busy === "password"}
+              {...disabledUntil(password ? undefined : t("signIn.passwordNeeded", "Enter your password"))}
+            >
               {t("signIn.title", "Sign in")}
             </Button>
           </>
@@ -142,7 +150,7 @@ export function TotpStep({
             : t("signIn.codeHint", "Enter the 6-digit code from your authenticator app.")
       }
     >
-      <form className="flex flex-col gap-16" onSubmit={(e) => (e.preventDefault(), onVerify())}>
+      <form className="flex flex-col gap-16" onSubmit={(e) => (e.preventDefault(), (recovery ? code.trim() : code.length >= 6) && onVerify())}>
         {recovery ? (
           <Input
             label={t("signIn.recoveryCode", "Recovery code")}
@@ -162,7 +170,22 @@ export function TotpStep({
             autoFocus
           />
         )}
-        <Button type="submit" variant="primary" size="xl" fullWidth loading={verifying} disabled={recovery ? !code.trim() : code.length < 6}>
+        <Button
+          type="submit"
+          variant="primary"
+          size="xl"
+          fullWidth
+          loading={verifying}
+          {...disabledUntil(
+            recovery
+              ? code.trim()
+                ? undefined
+                : t("signIn.recoveryCodeNeeded", "Enter a recovery code")
+              : code.length < 6
+                ? t("signIn.codeNeeded", "Enter the 6-digit code")
+                : undefined,
+          )}
+        >
           {t("signIn.verify", "Verify")}
         </Button>
         <Text variant="small" tone="secondary" className="text-center">
