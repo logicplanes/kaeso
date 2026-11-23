@@ -436,3 +436,42 @@ pub async fn prune(db: impl PgExecutor<'_>, before: OffsetDateTime) -> Result<u6
     .await?;
     Ok(r.rows_affected())
 }
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SealedWebhook {
+    pub id: Uuid,
+    pub ciphertext: Vec<u8>,
+    pub nonce: Vec<u8>,
+    pub wrapped_key: Vec<u8>,
+    pub key_id: String,
+}
+
+pub async fn all_sealed(db: impl PgExecutor<'_>) -> Result<Vec<SealedWebhook>, StoreError> {
+    Ok(sqlx::query_as!(
+        SealedWebhook,
+        "SELECT id, ciphertext, nonce, wrapped_key, key_id FROM notification_webhooks"
+    )
+    .fetch_all(db)
+    .await?)
+}
+
+pub async fn set_wrapped_key(
+    db: impl PgExecutor<'_>,
+    id: Uuid,
+    old_wrapped_key: &[u8],
+    wrapped_key: &[u8],
+    key_id: &str,
+) -> Result<bool, StoreError> {
+    Ok(sqlx::query!(
+        "UPDATE notification_webhooks SET wrapped_key = $3, key_id = $4 \
+         WHERE id = $1 AND wrapped_key = $2",
+        id,
+        old_wrapped_key,
+        wrapped_key,
+        key_id
+    )
+    .execute(db)
+    .await?
+    .rows_affected()
+        == 1)
+}
