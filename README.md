@@ -239,7 +239,7 @@ The gateway is one Rust process with no garbage collector between your app and t
 
 ## How it compares
 
-These tables compare Kaeso with the gateways people most often weigh it against, as their own documentation, pricing pages and licenses describe them. They were read on 23 November 2026 and every entry is sourced below. Products change: [open an issue](https://github.com/logicplanes/kaeso/issues/new/choose) when an entry is out of date, and we'll correct it.
+These tables compare Kaeso with the gateways people most often weigh it against, as their own documentation, pricing pages and licenses describe them. They were read on 23 November 2026 and every entry is sourced below; [kaeso.app/compare](https://kaeso.app/compare) has a page for each product. Products change: [open an issue](https://github.com/logicplanes/kaeso/issues/new/choose) when an entry is out of date, and we'll correct it.
 
 **Yes** means the free or open-source version has it. **Paid** means a paid plan or enterprise license has it. **Partial** is explained in a note. **–** means we didn't find it in their documentation.
 

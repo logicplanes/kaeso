@@ -1,6 +1,6 @@
 [package]
 name = "kaeso-codecs"
-description = "Sans-IO codecs between KPP and the wire formats Kaeso speaks (Anthropic Messages, OpenAI Chat Completions, OpenAI Responses, OpenAI Embeddings)."
+description = "Sans-IO codecs between KPP and the wire formats the Kaeso open-source AI gateway speaks (Anthropic Messages, OpenAI Chat Completions, OpenAI Responses, OpenAI Embeddings)."
 version.workspace = true
 edition.workspace = true
 rust-version = "1.88"
