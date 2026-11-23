@@ -1082,6 +1082,36 @@ pub struct Charge {
     pub succeeded: bool,
 }
 
+/// Builds the counters of the limits an observed request is charged to, as admission does for
+/// the gateway's own requests, so its charge and the alerts it crosses land. Runs before the
+/// request's usage is buffered: a rebuild counts buffered usage, and would count it twice.
+pub async fn prepare_observed(
+    state: &AppState,
+    caller: &Caller,
+    catalogue_model_id: Uuid,
+    at: OffsetDateTime,
+) {
+    let all = match project_limits(state, caller.project_id).await {
+        Ok(all) => all,
+        Err(e) => {
+            tracing::warn!(error = %e, "cannot read the project's limits for an observed request");
+            return;
+        }
+    };
+    let applicable = limits::applicable(
+        &all,
+        caller.project_id,
+        member_of(caller),
+        caller.key_id,
+        catalogue_model_id,
+    );
+    for l in applicable.into_iter().filter(|l| !l.kind.is_rate()) {
+        if let Err(e) = rebuild_once(state, caller.project_id, l, at).await {
+            tracing::warn!(error = %e, "cannot build a limit counter for an observed request");
+        }
+    }
+}
+
 pub async fn charge(
     state: &AppState,
     caller: &Caller,

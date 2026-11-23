@@ -7,6 +7,7 @@ use std::time::Duration;
 
 use kaeso_core::catalogue::Fields;
 use kaeso_core::id::RequestId;
+use kaeso_core::rights::{ProjectRight, effective_project_rights};
 use kaeso_core::sources::{Counted, SourceKind};
 use kaeso_kpp::{Block, DialectId, GenerateRequest, Message, Request, Response, Usage};
 use kaeso_store::StoreError;
@@ -21,13 +22,79 @@ use crate::model_api::hooks::{Caller, Source as Origin};
 use crate::state::AppState;
 
 /// How long Kaeso remembers a record it logged, so an exporter that sends it again isn't counted
-/// twice. OpenTelemetry exporters give up on a batch within minutes.
+/// twice; older records are refused, as they could no longer be told apart from duplicates.
 const REMEMBERED: Duration = Duration::from_secs(7 * 24 * 3600);
 const VALKEY_DEADLINE: Duration = Duration::from_secs(2);
 /// The longest error message a log entry keeps of what a source said went wrong.
 const MAX_ERROR: usize = 1_000;
 /// The most characters of a tool's or a model's name, as the console shows them.
 const MAX_NAME: usize = 200;
+/// The most of each token count one request may report; more is a broken or hostile record.
+const MAX_TOKENS: u64 = 100_000_000;
+/// The most one request may report it cost, in USD.
+const MAX_COST: u64 = 10_000;
+/// How far ahead of Kaeso's clock a record may be, for clients whose clocks run fast.
+const CLOCK_SKEW: time::Duration = time::Duration::minutes(5);
+/// Providers that make the models they list, preferred when several providers list a model.
+const MAKERS: &[&str] = &[
+    "openai",
+    "anthropic",
+    "google",
+    "mistral",
+    "xai",
+    "deepseek",
+    "cohere",
+    "moonshotai",
+    "zai",
+    "minimax",
+    "alibaba",
+    "perplexity",
+];
+
+/// Why Kaeso didn't keep a record a source sent, as the source's `last_error` names it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Refusal {
+    /// The record names no model.
+    NoModel,
+    /// The record names no tool.
+    NoTool,
+    /// The record has none of the ids its format requires.
+    NoId,
+    /// A token count beyond what one request can use.
+    TooManyTokens,
+    /// A cost beyond what one request can cost.
+    CostTooHigh,
+    /// A status that isn't an HTTP status.
+    BadStatus,
+    /// Older than the 7 days Kaeso remembers records for.
+    TooOld,
+    /// Dated in the future.
+    InFuture,
+    /// The source counts for nobody: its member left and no email address matched.
+    Nobody,
+    /// The body isn't what the endpoint reads.
+    Unreadable,
+    /// The source is disabled or archived.
+    Inactive,
+}
+
+impl Refusal {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Refusal::NoModel => "no_model",
+            Refusal::NoTool => "no_tool",
+            Refusal::NoId => "no_id",
+            Refusal::TooManyTokens => "too_many_tokens",
+            Refusal::CostTooHigh => "cost_too_high",
+            Refusal::BadStatus => "bad_status",
+            Refusal::TooOld => "too_old",
+            Refusal::InFuture => "in_future",
+            Refusal::Nobody => "nobody",
+            Refusal::Unreadable => "unreadable",
+            Refusal::Inactive => "inactive",
+        }
+    }
+}
 
 /// A request a source reported, its token counts already the way Kaeso counts them.
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -41,7 +108,7 @@ pub struct ObservedRequest {
     /// The provider's id as KPMR names it, when the source says or Kaeso can tell.
     pub provider: Option<String>,
     pub model: String,
-    /// 200 for an answered request, else the provider's HTTP status or 500.
+    /// 200 for an answered request, else the provider's HTTP status or 502.
     pub status: u16,
     pub error_message: Option<String>,
     pub tokens: Counted,
@@ -53,6 +120,8 @@ pub struct ObservedRequest {
     /// The person the source says made the request.
     pub email: Option<String>,
     pub tags: Vec<String>,
+    /// The provider's id of the request, such as Anthropic's `req_…`, when the source names it.
+    pub provider_request_id: Option<String>,
     /// The format the client speaks with its provider, for the log's request view.
     pub dialect: Option<DialectId>,
     /// What was asked and answered, when the source sends it; kept only where content is kept.
@@ -84,15 +153,17 @@ pub struct Batch {
     pub tool_calls: Vec<ObservedToolCall>,
     /// Records the reader couldn't use, and why the last one was refused.
     pub refused: u32,
-    pub refusal: Option<String>,
+    pub refusal: Option<Refusal>,
 }
 
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Recorded {
     pub requests: usize,
     pub tool_calls: usize,
     pub duplicates: usize,
     pub refused: usize,
+    /// Why the last refused record was refused.
+    pub refusal: Option<Refusal>,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -149,12 +220,30 @@ async fn first_time(
     Ok(set.into_iter().map(|s| s.is_some()).collect())
 }
 
+/// Whether the person can see the project, so a source's requests may count for them.
+pub async fn sees_project(
+    state: &AppState,
+    org: Uuid,
+    project: Uuid,
+    user: Uuid,
+) -> Result<bool, StoreError> {
+    let Some(member) = kaeso_store::pg::members::get_org(&state.pg, org, user).await? else {
+        return Ok(false);
+    };
+    let org_grant = crate::platform::grants::org_from_store(&member.grant()).ok();
+    let own = kaeso_store::pg::members::get_project(&state.pg, project, user)
+        .await?
+        .and_then(|m| crate::platform::grants::project_from_store(&m.grant()).ok());
+    Ok(effective_project_rights(org_grant.as_ref(), own.as_ref())
+        .contains(ProjectRight::ProjectView))
+}
+
 // The person each email address names, when the source matches members and the address belongs
-// to a member of the source's organization.
+// to someone who can see the source's project.
 async fn members(
     state: &AppState,
     source: &Source,
-    emails: impl Iterator<Item = String>,
+    emails: Vec<String>,
 ) -> Result<HashMap<String, Uuid>, StoreError> {
     let mut found = HashMap::new();
     if !source.match_members {
@@ -169,33 +258,29 @@ async fn members(
         let Some(user) = kaeso_store::pg::users::get_by_email(&state.pg, &email).await? else {
             continue;
         };
-        if kaeso_store::pg::members::get_org(&state.pg, source.org_id, user.id)
-            .await?
-            .is_some()
-        {
+        if sees_project(state, source.org_id, source.project_id, user.id).await? {
             found.insert(key, user.id);
         }
     }
     Ok(found)
 }
 
-fn caller(source: &Source, members: &HashMap<String, Uuid>, email: Option<&str>) -> Caller {
+/// Whom a record counts for: the member its email address names, else the source's member or
+/// service account; none when the source counts for nobody any more.
+fn caller(source: &Source, members: &HashMap<String, Uuid>, email: Option<&str>) -> Option<Caller> {
     let matched = email.and_then(|e| members.get(&e.to_lowercase()).copied());
-    let (user, service_account) = match matched {
-        Some(u) => (Some(u), None),
-        None => (source.user_id, source.service_account_id),
+    let (user, service_account) = match (matched, source.user_id, source.service_account_id) {
+        (Some(u), _, _) | (None, Some(u), _) => (Some(u), None),
+        (None, None, Some(s)) => (None, Some(s)),
+        (None, None, None) => return None,
     };
-    Caller {
+    Some(Caller {
         org_id: source.org_id,
         project_id: source.project_id,
         key_id: None,
         user_id: user,
-        service_account_id: if user.is_some() {
-            None
-        } else {
-            service_account
-        },
-    }
+        service_account_id: service_account,
+    })
 }
 
 /// The model's prices and catalogue entry: the project's own entry first, so its price overrides
@@ -208,7 +293,13 @@ pub struct Priced {
 
 pub async fn price(state: &AppState, project: Uuid, provider: Option<&str>, model: &str) -> Priced {
     let wanted = |p: &str, m: &str| provider.is_none_or(|want| want == p) && m == model;
-    if let Ok(models) = crate::services::catalogue::project_models(state, project).await
+    let models = crate::services::catalogue::project_models(state, project)
+        .await
+        .inspect_err(|e| {
+            tracing::warn!(error = %e, "cannot read the project's models; an observed request is priced with KPMR's prices");
+        })
+        .ok();
+    if let Some(models) = models
         && let Some(entry) = models
             .catalogue
             .entries()
@@ -227,10 +318,23 @@ pub async fn price(state: &AppState, project: Uuid, provider: Option<&str>, mode
     let snapshot = &loaded.snapshot;
     let found = match provider {
         Some(p) => snapshot.model(p, model).map(|m| (p.to_owned(), m)),
-        None => snapshot
-            .providers
-            .iter()
-            .find_map(|(p, listed)| listed.models.get(model).map(|m| (p.clone(), m))),
+        None => {
+            let listing: Vec<(&String, &kaeso_core::kpmr::Model)> = snapshot
+                .providers
+                .iter()
+                .filter_map(|(p, listed)| listed.models.get(model).map(|m| (p, m)))
+                .collect();
+            // A model several providers sell is priced by its maker, or not at all: a reseller's
+            // price would be a guess.
+            match listing.as_slice() {
+                [(p, m)] => Some(((*p).clone(), *m)),
+                many => MAKERS.iter().find_map(|maker| {
+                    many.iter()
+                        .find(|(p, _)| p.as_str() == *maker)
+                        .map(|(p, m)| ((*p).clone(), *m))
+                }),
+            }
+        }
     };
     match found {
         Some((p, m)) => Priced {
@@ -289,14 +393,80 @@ fn kind_of(source: &Source) -> Option<SourceKind> {
     source.kind.parse().ok()
 }
 
+/// Why Kaeso can't keep a request, checked before anything is counted.
+fn invalid_request(r: &ObservedRequest, now: OffsetDateTime) -> Option<Refusal> {
+    let t = r.tokens;
+    if [t.input, t.output, t.cache_read, t.cache_write, t.reasoning]
+        .iter()
+        .any(|n| *n > MAX_TOKENS)
+    {
+        return Some(Refusal::TooManyTokens);
+    }
+    if r.reported_cost.is_some_and(|c| c > Decimal::from(MAX_COST)) {
+        return Some(Refusal::CostTooHigh);
+    }
+    if r.model.trim().is_empty() {
+        return Some(Refusal::NoModel);
+    }
+    if !(100..=599).contains(&r.status) {
+        return Some(Refusal::BadStatus);
+    }
+    invalid_time(r.started_at, now)
+}
+
+fn invalid_call(c: &ObservedToolCall, now: OffsetDateTime) -> Option<Refusal> {
+    if c.tool.trim().is_empty() {
+        return Some(Refusal::NoTool);
+    }
+    invalid_time(c.started_at, now)
+}
+
+fn invalid_time(at: Option<OffsetDateTime>, now: OffsetDateTime) -> Option<Refusal> {
+    let oldest = now - time::Duration::try_from(REMEMBERED).unwrap_or(time::Duration::ZERO);
+    match at {
+        Some(at) if at < oldest => Some(Refusal::TooOld),
+        Some(at) if at > now + CLOCK_SKEW => Some(Refusal::InFuture),
+        _ => None,
+    }
+}
+
 /// Logs and counts a batch a source sent. Duplicates and refused records are counted as such;
-/// nothing a source sends ever fails the batch except Kaeso's own databases.
+/// nothing a source sends ever fails the batch, only Kaeso's own databases can.
 pub async fn record(
     state: &AppState,
     source: &Source,
-    batch: Batch,
+    mut batch: Batch,
 ) -> Result<Recorded, RecordError> {
     let now = state.clock.now();
+    let mut out = Recorded {
+        refused: batch.refused as usize,
+        refusal: batch.refusal.take(),
+        ..Recorded::default()
+    };
+    if source.disabled_at.is_some() || source.archived_at.is_some() {
+        out.refused += batch.requests.len() + batch.tool_calls.len();
+        out.refusal = Some(Refusal::Inactive);
+        return Ok(out);
+    }
+    let mut refuse = |why: Option<Refusal>| match why {
+        Some(why) => {
+            out.refused += 1;
+            out.refusal = Some(why);
+            false
+        }
+        None => true,
+    };
+    batch.requests.retain(|r| refuse(invalid_request(r, now)));
+    batch.tool_calls.retain(|c| refuse(invalid_call(c, now)));
+    let emails: Vec<String> = batch
+        .requests
+        .iter()
+        .filter_map(|r| r.email.clone())
+        .chain(batch.tool_calls.iter().filter_map(|c| c.email.clone()))
+        .collect();
+    // Everything that can fail runs before the records are marked as seen: an exporter whose
+    // batch failed sends it again, and must not find its records taken for duplicates.
+    let people = members(state, source, emails).await?;
     let request_ids: Vec<Uuid> = batch
         .requests
         .iter()
@@ -311,17 +481,7 @@ pub async fn record(
     all.extend(&call_ids);
     let new = first_time(state, source.id, &all).await?;
     let (new_requests, new_calls) = new.split_at(request_ids.len());
-    let emails = batch
-        .requests
-        .iter()
-        .filter_map(|r| r.email.clone())
-        .chain(batch.tool_calls.iter().filter_map(|c| c.email.clone()));
-    let people = members(state, source, emails).await?;
     let kind = kind_of(source);
-    let mut out = Recorded {
-        refused: batch.refused as usize,
-        ..Recorded::default()
-    };
     for ((r, id), fresh) in batch
         .requests
         .into_iter()
@@ -332,7 +492,12 @@ pub async fn record(
             out.duplicates += 1;
             continue;
         }
-        record_request(state, source, kind, &people, r, id, now).await;
+        let Some(who) = caller(source, &people, r.email.as_deref()) else {
+            out.refused += 1;
+            out.refusal = Some(Refusal::Nobody);
+            continue;
+        };
+        record_request(state, source, kind, who, r, id, now).await;
         out.requests += 1;
     }
     for ((c, id), fresh) in batch.tool_calls.into_iter().zip(call_ids).zip(new_calls) {
@@ -340,21 +505,24 @@ pub async fn record(
             out.duplicates += 1;
             continue;
         }
-        record_call(state, source, &people, c, id, now).await;
+        let Some(who) = caller(source, &people, c.email.as_deref()) else {
+            out.refused += 1;
+            out.refusal = Some(Refusal::Nobody);
+            continue;
+        };
+        record_call(state, source, who, c, id, now).await;
         out.tool_calls += 1;
     }
-    let at = now;
-    let error = batch.refusal.as_deref().map(|e| cut(e, 300));
     if out.requests + out.tool_calls > 0 {
-        kaeso_store::pg::sources::touch(&state.pg, source.id, at, None).await?;
+        kaeso_store::pg::sources::touch(&state.pg, source.id, now, None).await?;
     }
-    if let Some(e) = &error {
-        kaeso_store::pg::sources::touch(&state.pg, source.id, at, Some(e)).await?;
+    if let Some(e) = out.refusal {
+        kaeso_store::pg::sources::touch(&state.pg, source.id, now, Some(e.as_str())).await?;
     }
     crate::platform::projects::sources::add_activity(
         state,
         source.id,
-        at,
+        now,
         Activity {
             batches: 1,
             requests: out.requests as i64,
@@ -371,7 +539,7 @@ async fn record_request(
     state: &AppState,
     source: &Source,
     kind: Option<SourceKind>,
-    people: &HashMap<String, Uuid>,
+    who: Caller,
     r: ObservedRequest,
     id: Uuid,
     now: OffsetDateTime,
@@ -380,11 +548,12 @@ async fn record_request(
     let provider = r
         .provider
         .clone()
+        .filter(|p| p.len() <= 64 && kaeso_core::provider::ProviderId::is_valid(p))
         .or_else(|| kind.and_then(SourceKind::provider).map(str::to_owned));
     let priced = price(state, source.project_id, provider.as_deref(), &model).await;
     let dialect = r.dialect.unwrap_or(DialectId::OpenAiChat);
     let mut o = crate::model_api::pipeline::blank_outcome(RequestId::from_uuid(id));
-    o.caller = Some(caller(source, people, r.email.as_deref()));
+    o.caller = Some(who.clone());
     o.source = Origin::Observed;
     o.source_id = Some(source.id);
     o.ingress = dialect;
@@ -392,7 +561,7 @@ async fn record_request(
     o.kind = kaeso_kpp::RequestKind::Generate;
     o.provider = priced.provider.as_deref().and_then(static_provider);
     o.custom_provider = match (&o.provider, &priced.provider) {
-        (None, Some(p)) => Some(cut(p, 64)),
+        (None, Some(p)) => Some(p.clone()),
         _ => None,
     };
     o.requested_model = Some(model.clone());
@@ -412,7 +581,7 @@ async fn record_request(
     o.ttfb = r.ttfb;
     o.user_agent = r.client.clone();
     o.tags = r.tags.clone();
-    o.upstream_request_id = Some(r.external_id.clone()).filter(|_| r.external_id.len() <= 200);
+    o.upstream_request_id = r.provider_request_id.as_deref().map(|id| cut(id, MAX_NAME));
     let kept = source
         .content
         .then(|| content(&r, dialect, &model))
@@ -422,6 +591,13 @@ async fn record_request(
         o.request_body = Some(bytes::Bytes::from(body.clone()));
     }
     o.reply = kept.and_then(|(_, reply)| serde_json::from_str::<Response>(&reply).ok());
+    crate::services::limits::prepare_observed(
+        state,
+        &who,
+        o.catalogue_model_id.unwrap_or_default(),
+        o.started_at,
+    )
+    .await;
     crate::services::usage::account(state, &o).await;
     crate::services::logs::record(state, &o).await;
 }
@@ -429,12 +605,11 @@ async fn record_request(
 async fn record_call(
     state: &AppState,
     source: &Source,
-    people: &HashMap<String, Uuid>,
+    who: Caller,
     c: ObservedToolCall,
     id: Uuid,
     now: OffsetDateTime,
 ) {
-    let who = caller(source, people, c.email.as_deref());
     let row = ToolCallRow {
         id,
         org_id: source.org_id,
@@ -489,6 +664,7 @@ async fn record_call(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use time::macros::datetime;
 
     #[test]
     fn the_same_record_of_the_same_source_gets_the_same_id() {
@@ -502,5 +678,43 @@ mod tests {
     fn long_text_is_cut_at_a_character() {
         assert_eq!(cut("äöü", 2), "äö");
         assert_eq!(cut("ab", 5), "ab");
+    }
+
+    fn request() -> ObservedRequest {
+        ObservedRequest {
+            external_id: "req_1".into(),
+            model: "claude-haiku-4-5".into(),
+            status: 200,
+            ..ObservedRequest::default()
+        }
+    }
+
+    #[test]
+    fn records_beyond_what_one_request_can_be_are_refused() {
+        let now = datetime!(2026-11-23 12:00 UTC);
+        assert_eq!(invalid_request(&request(), now), None);
+        let mut huge = request();
+        huge.tokens.output = MAX_TOKENS + 1;
+        assert!(invalid_request(&huge, now).is_some());
+        let mut dear = request();
+        dear.reported_cost = Some(Decimal::from(1_000_000));
+        assert!(invalid_request(&dear, now).is_some());
+        let mut odd = request();
+        odd.status = 7;
+        assert!(invalid_request(&odd, now).is_some());
+        let mut nameless = request();
+        nameless.model = " ".into();
+        assert!(invalid_request(&nameless, now).is_some());
+    }
+
+    #[test]
+    fn a_record_must_be_from_the_last_seven_days_and_not_from_the_future() {
+        let now = datetime!(2026-11-23 12:00 UTC);
+        let at = |t| invalid_time(Some(t), now);
+        assert_eq!(at(datetime!(2026-11-16 12:01 UTC)), None);
+        assert_eq!(at(datetime!(2026-11-16 11:59 UTC)), Some(Refusal::TooOld));
+        assert_eq!(at(datetime!(2026-11-23 12:04 UTC)), None);
+        assert_eq!(at(datetime!(2026-11-23 12:06 UTC)), Some(Refusal::InFuture));
+        assert_eq!(invalid_time(None, now), None);
     }
 }

@@ -146,7 +146,11 @@ pub struct SourceView {
     #[doc = "When Kaeso last refused something it sent."]
     #[serde(with = "time::serde::rfc3339::option")]
     pub last_error_at: Option<OffsetDateTime>,
-    #[doc = "Why."]
+    #[doc = "Why, as a code: `no_model`, `no_tool` or `no_id` for a record without what its \
+        format needs, `too_many_tokens`, `cost_too_high` or `bad_status` for numbers no request \
+        has, `too_old` (more than 7 days) or `in_future` for its date, `nobody` when the source \
+        counts for no one, `unreadable` for a body Kaeso can't read, `inactive` for a disabled \
+        source."]
     pub last_error: Option<String>,
     #[doc = "The last 14 days, oldest first; days without events are left out."]
     pub activity: Vec<SourceDay>,
@@ -291,38 +295,6 @@ pub async fn list(
     }))
 }
 
-#[utoipa::path(
-    get,
-    path = "/orgs/{org}/sources",
-    summary = "The organization's sources in every project, newest first; archived ones are left out.",
-    tag = "orgs",
-    params(("org" = OrgId, Path), PageParams),
-    responses((status = 200, body = List<SourceView>))
-)]
-pub async fn org_list(
-    State(state): State<AppState>,
-    ctx: Ctx,
-    Path(_o): Path<String>,
-    Query(page): Query<PageParams>,
-) -> ApiResult<Json<List<SourceView>>> {
-    let page = page.page()?;
-    let scope = ctx.org()?;
-    let projects: Vec<Uuid> =
-        kaeso_store::pg::projects::list(&state.pg, scope.org.id, None, None, false, None, 10_000)
-            .await?
-            .into_iter()
-            .map(|p| p.id)
-            .collect();
-    let rows =
-        store::list_org(&state.pg, scope.org.id, &projects, page.after, page.fetch()).await?;
-    let list = List::from_rows(&page, rows, |s| s.id, |s| s);
-    Ok(Json(List {
-        data: views(&state, &list.data, ctx.now).await?,
-        has_more: list.has_more,
-        next_cursor: list.next_cursor,
-    }))
-}
-
 #[derive(Debug, Deserialize, ToSchema)]
 #[schema(description = "A new source.")]
 pub struct SourceCreate {
@@ -349,6 +321,7 @@ pub struct SourceCreate {
 
 /// The member or service account a source's requests count for, checked against the project.
 async fn attribution(
+    state: &AppState,
     db: &mut PgConnection,
     ctx: &Ctx,
     user: Option<UserId>,
@@ -375,17 +348,28 @@ async fn attribution(
             }
         }
         (Some(u), None) => {
-            let member =
-                kaeso_store::pg::members::get_org(&mut *db, ctx.org()?.org.id, u.uuid()).await?;
-            if member.is_none() {
+            let sees = crate::services::observed::sees_project(
+                state,
+                ctx.org()?.org.id,
+                ctx.project()?.project.id,
+                u.uuid(),
+            )
+            .await?;
+            if !sees {
                 return Err(ApiError::invalid(
                     "user_id",
-                    "No member of this organization has that id.",
+                    "No member who can see this project has that id.",
                 ));
             }
             Ok((Some(u.uuid()), None))
         }
-        (None, None) => Ok((ctx.acting_user().map(|u| u.uuid()), None)),
+        (None, None) => match ctx.acting_user() {
+            Some(u) => Ok((Some(u.uuid()), None)),
+            None => Err(ApiError::invalid(
+                "user_id",
+                "Choose the member or service account the source counts for.",
+            )),
+        },
     }
 }
 
@@ -412,7 +396,7 @@ pub async fn create(
     let id = SourceId::new();
     let mut tx = state.pg.begin().await?;
     let (user_id, service_account_id) =
-        attribution(&mut tx, &ctx, req.user_id, req.service_account_id).await?;
+        attribution(&state, &mut tx, &ctx, req.user_id, req.service_account_id).await?;
     store::insert(
         &mut *tx,
         &NewSource {
@@ -538,7 +522,8 @@ pub async fn update(
         after.name = validate_name("name", &name)?;
     }
     if req.user_id.is_some() || req.service_account_id.is_some() {
-        let (user, sa) = attribution(&mut tx, &ctx, req.user_id, req.service_account_id).await?;
+        let (user, sa) =
+            attribution(&state, &mut tx, &ctx, req.user_id, req.service_account_id).await?;
         after.user_id = user;
         after.service_account_id = sa;
     }

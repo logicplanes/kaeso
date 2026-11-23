@@ -27178,95 +27178,6 @@
         "x-kaeso-access": "right:usage.share"
       }
     },
-    "/platform/v1/orgs/{org}/sources": {
-      "get": {
-        "tags": [
-          "orgs"
-        ],
-        "summary": "The organization's sources in every project, newest first; archived ones are left out.",
-        "description": "**Right:** `usage.org.view` on the organization in the path.",
-        "operationId": "getOrgsOrgSources",
-        "parameters": [
-          {
-            "name": "org",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/OrgId"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "description": "How many items to return, 1 to 100. Default 20.",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "format": "int32",
-              "maximum": 100,
-              "minimum": 1
-            },
-            "example": 20
-          },
-          {
-            "name": "after",
-            "in": "query",
-            "description": "The `next_cursor` of the previous page.",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/List_SourceView"
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/InvalidRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthenticated"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          },
-          "409": {
-            "$ref": "#/components/responses/Conflict"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/Internal"
-          },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          }
-        },
-        "security": [
-          {
-            "session": []
-          },
-          {
-            "api_key": []
-          },
-          {
-            "agent": []
-          }
-        ],
-        "x-kaeso-access": "right:usage.org.view"
-      }
-    },
     "/platform/v1/orgs/{org}/stored-responses": {
       "get": {
         "tags": [
@@ -39283,7 +39194,7 @@
                     "string",
                     "null"
                   ],
-                  "description": "Why."
+                  "description": "Why, as a code: `no_model`, `no_tool` or `no_id` for a record without what its format needs, `too_many_tokens`, `cost_too_high` or `bad_status` for numbers no request has, `too_old` (more than 7 days) or `in_future` for its date, `nobody` when the source counts for no one, `unreadable` for a body Kaeso can't read, `inactive` for a disabled source."
                 },
                 "last_error_at": {
                   "type": [

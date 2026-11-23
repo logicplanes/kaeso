@@ -123,16 +123,6 @@ async fn a_source_is_added_with_its_key_shown_once_and_listed_without_it() {
         "the key is never listed"
     );
 
-    let org = env
-        .app
-        .get(
-            &format!("/orgs/{}/sources", env.owner.org_id),
-            &env.owner.cookie,
-        )
-        .await;
-    assert_eq!(org.status, StatusCode::OK, "{:?}", org.body);
-    assert_eq!(org.body["data"][0]["id"], source["id"]);
-
     let bad = env
         .app
         .post(
@@ -259,7 +249,7 @@ async fn observed_requests_are_logged_priced_and_counted_once_for_the_member_the
             ..ObservedToolCall::default()
         }],
         refused: 1,
-        refusal: Some("A record has no model.".into()),
+        refusal: Some(observed::Refusal::NoModel),
     };
     let first = observed::record(&env.app.state, &source, batch.clone())
         .await
@@ -348,7 +338,7 @@ async fn observed_requests_are_logged_priced_and_counted_once_for_the_member_the
         view["activity"][0]["refused"], 2,
         "both sends refused the record"
     );
-    assert_eq!(view["last_error"], "A record has no model.");
+    assert_eq!(view["last_error"], "no_model");
 
     let calls = env
         .app
@@ -425,4 +415,196 @@ async fn a_viewer_sees_sources_but_cannot_add_one() {
         )
         .await;
     assert_eq!(add.status, StatusCode::FORBIDDEN, "{:?}", add.body);
+}
+
+#[tokio::test]
+async fn a_source_counts_only_for_people_who_can_see_its_project() {
+    let env = env().await;
+    let other =
+        common::create_project(&env.app, &env.owner.org_id, &env.owner.cookie, "Other").await;
+    let (_, outsider) = common::join(
+        &env.app,
+        &env.owner,
+        json!({ "email": "outsider@example.com", "role": "member", "project_roles": [{ "project_id": other, "role": "developer" }] }),
+        "Outsider",
+    )
+    .await;
+    let r = env
+        .app
+        .post(
+            &format!("{}/sources", base(&env)),
+            json!({ "kind": "codex", "name": "Codex", "user_id": outsider }),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{:?}", r.body);
+    assert_eq!(r.body["error"]["param"], "user_id");
+
+    let made = add(&env, json!({ "kind": "codex", "name": "Codex" })).await;
+    let id = made["source"]["id"].as_str().unwrap();
+    let source = source_row(&env, id).await;
+    observed::record(
+        &env.app.state,
+        &source,
+        Batch {
+            requests: vec![haiku("from-outsider", Some("outsider@example.com"))],
+            ..Batch::default()
+        },
+    )
+    .await
+    .unwrap();
+    flush(&env).await;
+    let users: Vec<Option<uuid::Uuid>> =
+        sqlx::query_scalar("SELECT DISTINCT user_id FROM usage_daily WHERE project_id = $1")
+            .bind(common::uuid(&env.project))
+            .fetch_all(&env.app.state.pg)
+            .await
+            .unwrap();
+    assert_eq!(
+        users,
+        vec![Some(common::uuid(&env.owner.user_id))],
+        "someone outside the project is never charged; the source's member is"
+    );
+
+    let elsewhere = env
+        .app
+        .get(
+            &format!("/orgs/{}/projects/{other}/sources/{id}", env.owner.org_id),
+            &env.owner.cookie,
+        )
+        .await;
+    assert_eq!(
+        elsewhere.status,
+        StatusCode::NOT_FOUND,
+        "a source is only found in its project"
+    );
+}
+
+#[tokio::test]
+async fn observed_spend_counts_toward_a_budget_and_a_disabled_source_counts_nothing() {
+    let env = env().await;
+    let budget = env
+        .app
+        .post(
+            &format!("{}/limits", base(&env)),
+            json!({ "level": "project", "kind": "spend_budget", "period": "month", "amount": "100" }),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(budget.status, StatusCode::CREATED, "{:?}", budget.body);
+    let limit = budget.body["id"].as_str().unwrap().to_owned();
+    let made = add(&env, json!({ "kind": "http", "name": "Scripts" })).await;
+    let id = made["source"]["id"].as_str().unwrap();
+    let source = source_row(&env, id).await;
+    let mut r = haiku("priced-by-the-source", None);
+    r.provider = None;
+    r.model = "in-house-7b".into();
+    r.reported_cost = Some(Decimal::from(3));
+    let mut absurd = haiku("absurd", None);
+    absurd.reported_cost = Some(Decimal::from(1_000_000_000));
+    let mut old = haiku("old", None);
+    old.started_at =
+        Some(kaeso_core::clock::Clock::now(&*env.app.state.clock) - time::Duration::days(8));
+    let done = observed::record(
+        &env.app.state,
+        &source,
+        Batch {
+            requests: vec![r, absurd, old],
+            ..Batch::default()
+        },
+    )
+    .await
+    .unwrap();
+    assert_eq!((done.requests, done.refused), (1, 2));
+    env.app.state.in_flight.settled().await;
+    let mut used = Value::Null;
+    for _ in 0..200 {
+        used = env
+            .app
+            .get(&format!("{}/limits/{limit}", base(&env)), &env.owner.cookie)
+            .await
+            .body["used"]
+            .clone();
+        if used == "3" {
+            break;
+        }
+        tokio::time::sleep(Duration::from_millis(10)).await;
+    }
+    assert_eq!(
+        used, "3",
+        "an observed request's spend counts toward the project's budget"
+    );
+
+    env.app
+        .call(
+            axum::http::Method::PATCH,
+            &format!("{}/sources/{id}", base(&env)),
+            Some(json!({ "disabled": true })),
+            Some(&env.owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::OK);
+    let source = source_row(&env, id).await;
+    let none = observed::record(
+        &env.app.state,
+        &source,
+        Batch {
+            requests: vec![haiku("while-disabled", None)],
+            ..Batch::default()
+        },
+    )
+    .await
+    .unwrap();
+    assert_eq!((none.requests, none.refused), (0, 1));
+}
+
+#[tokio::test]
+async fn the_log_lists_only_observed_requests_when_asked() {
+    let env = env().await;
+    common::v1::call(
+        &env,
+        "/v1/messages",
+        Some(&env.key),
+        true,
+        Some(common::v1::messages("claude-haiku-4-5", "Hi")),
+    )
+    .await;
+    let made = add(
+        &env,
+        json!({ "kind": "claude_code", "name": "Claude Code" }),
+    )
+    .await;
+    let source = source_row(&env, made["source"]["id"].as_str().unwrap()).await;
+    observed::record(
+        &env.app.state,
+        &source,
+        Batch {
+            requests: vec![haiku("req_011c", None)],
+            ..Batch::default()
+        },
+    )
+    .await
+    .unwrap();
+    flush(&env).await;
+    let all = env
+        .app
+        .get(&format!("{}/logs", base(&env)), &env.owner.cookie)
+        .await;
+    assert_eq!(
+        all.body["data"].as_array().unwrap().len(),
+        2,
+        "{:?}",
+        all.body
+    );
+    let only = env
+        .app
+        .get(
+            &format!("{}/logs?source=observed", base(&env)),
+            &env.owner.cookie,
+        )
+        .await;
+    assert_eq!(only.status, StatusCode::OK, "{:?}", only.body);
+    let rows = only.body["data"].as_array().unwrap();
+    assert_eq!(rows.len(), 1);
+    assert_eq!(rows[0]["source"], "observed");
 }

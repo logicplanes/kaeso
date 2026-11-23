@@ -788,7 +788,7 @@ impl LogFilter {
         {
             return Err(ApiError::invalid(
                 "source",
-                "`source` must be `api` or `playground`.",
+                "`source` must be `api`, `playground` or `observed`.",
             ));
         }
         Ok(Filter {
@@ -908,7 +908,7 @@ fn cost_filter(c: &str, money: &Money) -> ApiResult<String> {
         })
 }
 
-const SOURCES: [&str; 2] = ["api", "playground"];
+const SOURCES: [&str; 3] = ["api", "playground", "observed"];
 
 fn dialect_filter(field: &str, d: &str) -> ApiResult<String> {
     DialectId::ALL
