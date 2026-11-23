@@ -167,7 +167,7 @@ function LimitRow({ org, project, limit, canEdit }: { org: string; project: stri
         />
         {text.observed && (
           <Text variant="small" tone="secondary" className="mt-4">
-            {t("kaeso.limits.observedNote", "{amount} of it reported by sources; Kaeso alerts on it but can't stop those requests.", { amount: text.observed })}
+            {t("kaeso.limits.observedNote", "{amount} of it reported by sources; Kaeso counts it but can't stop those requests.", { amount: text.observed })}
           </Text>
         )}
       </div>

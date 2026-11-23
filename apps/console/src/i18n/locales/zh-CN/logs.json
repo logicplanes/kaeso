@@ -180,7 +180,6 @@
   "logs.role.tool": "工具",
   "logs.role.user": "用户",
   "logs.showNew": "{count, plural, other {显示 # 条新请求}}",
-  "logs.source.gateway": "网关",
   "logs.source.observed": "已观测",
   "logs.source.playground": "试验场",
   "logs.stop.contentFilter": "内容过滤",
@@ -343,5 +342,6 @@
   "logs.inspector.guardrailRun": "{phase}：{action}，耗时 {duration}",
   "logs.inspector.guardrails": "防护规则",
   "logs.inspector.guardrailFound": "找到：{what}",
-  "logs.inspector.line": "模型系列"
+  "logs.inspector.line": "模型系列",
+  "logs.tools.observed": "由来源上报"
 }

@@ -180,7 +180,6 @@
   "logs.role.tool": "Tool",
   "logs.role.user": "Benutzer",
   "logs.showNew": "{count, plural, one {# neue Anfrage anzeigen} other {# neue Anfragen anzeigen}}",
-  "logs.source.gateway": "Gateway",
   "logs.source.observed": "Beobachtet",
   "logs.source.playground": "Playground",
   "logs.stop.contentFilter": "Inhaltsfilter",
@@ -343,5 +342,6 @@
   "logs.inspector.guardrailRun": "{phase}: {action} in {duration}",
   "logs.inspector.guardrails": "Guardrails",
   "logs.inspector.guardrailFound": "Gefunden: {what}",
-  "logs.inspector.line": "Modelllinie"
+  "logs.inspector.line": "Modelllinie",
+  "logs.tools.observed": "Von einer Quelle gemeldet"
 }

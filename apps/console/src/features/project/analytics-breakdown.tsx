@@ -5,8 +5,8 @@ import { Button, DataTable, Empty, ModelLabel, ProviderBadge, Section, Text, col
 import { formatNumber, formatPercent, formatTokens } from "@logicplanes/kaeso-ui/format";
 import type { UsageRow } from "~/api/generated/types";
 import { allKeysQuery } from "~/api/queries/keys";
-import { useSourceNames } from "./sources/names";
-import { ReportedBy } from "./logs/columns";
+import { keyLogFilter, useSourceNames } from "./sources/names";
+import { ReportedBy } from "./sources/reported-by";
 import { useProviders } from "~/kaeso/providers";
 import { totalTokens } from "~/kaeso/tokens";
 import { costWidth, PHONE_NAME_MIN_WIDTH, hasMedia, mediaSummary, UsageCost } from "~/kaeso/media-usage";
@@ -95,11 +95,16 @@ export function Breakdown({
   const sources = useSourceNames(org, project);
   const keyName = (id: string) => {
     if (id === "playground") return t("project.overview.playground", "Playground");
-    if (id.startsWith("source:")) return t("project.analytics.sourceKey", "{name} (source)", { name: sources.name(id.slice(7)) });
+    if (id.startsWith("source:")) {
+      const source = sources.source(id.slice(7));
+      return source ? t("project.analytics.sourceKey", "{name} (source)", { name: source.name }) : t("project.analytics.aSource", "A source");
+    }
     const key = keys.data?.find((k) => k.id === id);
     return key ? keyLabel(key) : id;
   };
-  const waiting = !failed && (loading || (by === "key" && keys.isLoading) || (by === "member" && partiesLoading));
+  const waiting =
+    !failed &&
+    (loading || (by === "key" && (keys.isLoading || sources.loading)) || (by === "source" && sources.loading) || (by === "member" && partiesLoading));
   const sorted = waiting ? [] : by === "day" ? [...rows].sort((a, b) => b.key.localeCompare(a.key)) : [...rows].sort((a, b) => b.requests - a.requests);
   const shown = sortUsage(sorted, sorting);
   const memberOf = (key: string) => {
@@ -127,12 +132,7 @@ export function Breakdown({
         const [provider = "", ...rest] = r.key.split("/");
         return rest.length ? { ...period, model: rest.join("/"), provider } : undefined;
       }
-      if (by === "key")
-        return r.key === "playground"
-          ? { ...period, source: "playground" }
-          : r.key.startsWith("source:")
-            ? { ...period, source_id: r.key.slice(7) }
-            : { ...period, key: r.key };
+      if (by === "key") return { ...period, ...keyLogFilter(r.key) };
       // The gateway's own requests are the API's and the Playground's, which the log filters apart.
       if (by === "source") return r.key === "gateway" ? undefined : { ...period, source_id: r.key };
       if (by === "route") {

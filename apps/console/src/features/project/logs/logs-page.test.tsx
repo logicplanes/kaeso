@@ -489,6 +489,16 @@ describe("LogsPage", () => {
     await waitFor(() => expect(lastQuery()).toMatchObject({ source: "observed", source_id: "src_codex" }));
   });
 
+  it("offers no Reported by filter in a project without sources", async () => {
+    signedIn();
+    projectData();
+    logsData({ rows: [logRow()] });
+    const { user } = await renderApp(projectPath("logs"));
+    await user.click(await screen.findByRole("button", { name: "Add filter" }));
+    expect(await screen.findByRole("menuitem", { name: "Source" })).toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "Reported by" })).not.toBeInTheDocument();
+  });
+
   it("filters by a tag from the address or from the tags of the requests shown", async () => {
     signedIn();
     projectData();

@@ -4,7 +4,7 @@ import type { TimelineBucket, UsageRow } from "~/api/generated/types";
 import { atFixtureTime } from "~/test/clock";
 import { ORG, OTHER_PROJECT, PROJECT, project, signedIn, whoAmI, withRights, without } from "~/test/fixtures";
 import { member, usageRow as orgRow } from "~/test/fixtures/org";
-import { apiKey, catalogueModel, limit, listed, projectData, projectPath, serviceAccount, usageRow } from "~/test/fixtures/project";
+import { apiKey, catalogueModel, externalSource, limit, listed, projectData, projectPath, serviceAccount, usageRow } from "~/test/fixtures/project";
 import { apiError, on, page, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
 
@@ -133,6 +133,29 @@ describe("the analytics control room", () => {
 
     await waitFor(() => expect(tab(/^Cost/)).toHaveTextContent(/\$2\.00.*3 requests unknown/));
     expect(cell("Cost by model")).toHaveTextContent("3 requests without a price aren't included.");
+  });
+
+  it("names a source among the keys and opens what it reported", async () => {
+    signedIn();
+    projectData({ keys: [apiKey()], sources: [externalSource()] });
+    on("GET", "orgs/:org/projects/:project/logs", listed([]));
+    usage(USAGE, {
+      ...THIS_PERIOD,
+      key: [
+        usageRow({ key: "source:src_claude", requests: 25 }),
+        usageRow({ key: "playground", requests: 15 }),
+        usageRow({ key: "source:src_gone", requests: 5 }),
+      ],
+    });
+    const { user, router } = await renderApp(projectPath(`analytics?${PERIOD}&metric=tokens`));
+    const keys = within(cell("Keys by tokens")).getByRole("list");
+    expect(await within(keys).findByRole("button", { name: /A source/ })).toBeInTheDocument();
+    await user.click(await within(keys).findByRole("button", { name: /Claude Code, Ada's laptop \(source\)/ }));
+    await waitFor(() => expect(router.state.location.searchStr).toBe("?source_id=src_claude&from=2026-10-01&to=2026-10-14&utc=true"));
+    await router.navigate({ href: projectPath(`analytics?${PERIOD}`) });
+    await user.click(await screen.findByRole("tab", { name: "Keys" }));
+    expect(await screen.findByRole("heading", { name: "Share of requests" })).toBeInTheDocument();
+    expect(cell("Share of requests")).toHaveTextContent("Claude Code, Ada's laptop (source)56%Playground33%A source11%");
   });
 
   it("opens the period's failed requests of a model from the ranks, and of a key its requests", async () => {

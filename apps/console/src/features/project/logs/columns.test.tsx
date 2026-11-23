@@ -335,7 +335,7 @@ describe("observed requests", () => {
     expect(within(seen as HTMLElement).getAllByText("Claude Code, Ada's laptop")).toHaveLength(2);
     expect(within(gone as HTMLElement).getAllByText("A source")).toHaveLength(2);
     expect(play).toHaveTextContent("Playground");
-    expect(api).toHaveTextContent("Gateway");
+    expect(api).toHaveTextContent("API");
     expect(api).not.toHaveTextContent("Observed");
   });
 

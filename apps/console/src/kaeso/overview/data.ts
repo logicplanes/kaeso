@@ -1,3 +1,4 @@
+import { useSourceNames } from "~/features/project/sources/names";
 import { useQuery, type QueryKey } from "@tanstack/react-query";
 import type { UsageRow } from "~/api/generated/types";
 import { allKeysQuery } from "~/api/queries/keys";
@@ -106,6 +107,7 @@ export function useOverview(scope: Scope, search: PeriodSearch) {
 
   const models = useQuery({ ...catalogueQuery(org, project ?? ""), enabled: !!project && can("models.view") });
   const keys = useQuery({ ...allKeysQuery(org, project ?? "", { include_archived: true }), enabled: !!project && can("keys.all.view") });
+  const sources = useSourceNames(org, project ?? "");
   const projects = useQuery({ ...orgProjectsQuery(org, true), enabled: !project });
   const orgMembers = useQuery({ ...orgMembersQuery(org), enabled: !project && orgRights.has("members.view") });
   const limits = useQuery({ ...limitsQuery(org, project ?? "", { level: "project" }), enabled: !!project && can("limits.view") });
@@ -129,6 +131,10 @@ export function useOverview(scope: Scope, search: PeriodSearch) {
   };
   const keyName = (id: string) => {
     if (id === "playground") return t("project.overview.playground", "Playground");
+    if (id.startsWith("source:")) {
+      const source = sources.source(id.slice(7));
+      return source ? t("project.analytics.sourceKey", "{name} (source)", { name: source.name }) : t("project.analytics.aSource", "A source");
+    }
     const key = keys.data?.find((k) => k.id === id);
     return key ? keyLabel(key) : id;
   };

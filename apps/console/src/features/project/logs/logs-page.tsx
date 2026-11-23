@@ -319,7 +319,9 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
           : id === "source_id"
             ? sources.name(value)
             : (choice(id).find((c) => c.value === value)?.label ?? value);
-  const filterDefs: FilterDef[] = FILTER_IDS.map((id) =>
+  // Reported by offers the project's sources, so it shows where there are some, or one is chosen.
+  const filterIds = FILTER_IDS.filter((id) => id !== "source_id" || sources.sources.length > 0 || filters.source_id);
+  const filterDefs: FilterDef[] = filterIds.map((id) =>
     !isChoice(id)
       ? { id, label: filterLabel(id), flag: true, value: filters[id] ? "true" : undefined }
       : {

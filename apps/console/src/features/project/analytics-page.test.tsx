@@ -496,13 +496,14 @@ describe("AnalyticsPage", () => {
     expect(router.state.location.search).toMatchObject({ source_id: "src_claude" });
   });
 
-  it("offers no breakdown by source without the right to see sources", async () => {
+  it("offers no breakdown by source without the right to see sources, even from the address", async () => {
     signedIn({ projectRights: without("sources.view") });
     projectData();
-    usage();
-    await renderApp(projectPath(`analytics?${PERIOD}`));
+    usage({ day: [usageRow({ key: "2026-10-12", requests: 5 })] });
+    await renderApp(projectPath(`analytics?${PERIOD}&by=source`));
     await breakdown();
     expect(screen.queryByRole("radio", { name: "By source" })).not.toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "By day" })).toBeChecked();
   });
 
   it("opens the requests a row counts in the period's days", async () => {

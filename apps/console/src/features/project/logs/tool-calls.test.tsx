@@ -114,12 +114,25 @@ describe("Tool calls in the request logs", () => {
 
     await user.click(row);
     const sheet = await screen.findByRole("dialog", { name: /list_issues/ });
-    expect(await within(sheet).findByText("Observed, not routed")).toBeInTheDocument();
+    expect(await within(sheet).findByText("Reported by a source")).toBeInTheDocument();
     expect(sheet).toHaveTextContent("Claude Code, Ada's laptop reported this call; the client called the server itself");
     expect(sheet).toHaveTextContent("MCP server");
     await user.keyboard("{Escape}");
     await user.click(within(toolbar).getByRole("button", { name: "Remove the Reported by filter" }));
     await waitFor(() => expect(router.state.location.search).toEqual({ kind: "tools" }));
+  });
+
+  it("leaves the source column and filter out in a project without sources", async () => {
+    signedIn();
+    projectData({ members: [projectMember()] });
+    logsData();
+    calls([toolCall()]);
+    const { user } = await renderApp(projectPath("logs?kind=tools"));
+    const table = await screen.findByRole("grid", { name: "Tool calls" });
+    expect(within(table).queryByRole("columnheader", { name: "Reported by" })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Add filter" }));
+    expect(await screen.findByRole("menuitem", { name: "MCP server" })).toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "Reported by" })).not.toBeInTheDocument();
   });
 
   it("keeps the focus on the switch when the arrow keys change what it shows", async () => {

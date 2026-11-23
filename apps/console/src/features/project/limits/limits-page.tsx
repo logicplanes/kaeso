@@ -311,7 +311,7 @@ function LimitSubtitle({ org, project, limit, subject }: { org: string; project:
         ...(subject ? [limitKindLabel(limit.kind)] : []),
         periodLabel(limit.period),
         text.model,
-        ...(text.observed ? [t("limits.observedShort", "{amount} from sources, not stoppable", { amount: text.observed })] : []),
+        ...(text.observed ? [t("limits.observedShort", "{amount} reported by sources", { amount: text.observed })] : []),
       ].join(" · ")}
     </span>
   );

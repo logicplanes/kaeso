@@ -34,7 +34,8 @@ import { ProjectHeader } from "~/shell/project-header";
 import { usePhone } from "~/shell/use-phone";
 import { usePartyName } from "../keys/party";
 import type { LogsSearch } from "./logs-page";
-import { ReportedBy, startedColumn } from "./columns";
+import { startedColumn } from "./columns";
+import { ReportedBy } from "../sources/reported-by";
 import { useSourceNames } from "../sources/names";
 import { ToolCallsExportDialog } from "./export-dialog";
 import { useLiveToolCalls } from "./live";
@@ -134,7 +135,8 @@ export function ToolCallsPage({ org, project, search }: { org: string; project: 
 
   const spansDays = search.from && search.to ? search.from !== search.to : search.range !== "1h";
   const serverName = (id: string) => servers.data?.find((s) => s.id === id)?.name ?? id;
-  const filterDefs: FilterDef[] = TOOL_FILTER_IDS.map((id): FilterDef => {
+  const reported = sources.sources.length > 0 || !!search.source_id;
+  const filterDefs: FilterDef[] = TOOL_FILTER_IDS.filter((id) => id !== "source" || reported).map((id): FilterDef => {
     const value = search[SEARCH_OF[id]] as string | undefined;
     switch (id) {
       case "key":
@@ -192,11 +194,15 @@ export function ToolCallsPage({ org, project, search }: { org: string; project: 
     col.text({ id: "mcp_server", header: t("logs.tools.server", "MCP server"), size: 160, priority: 3 }, (r: ToolCallView) =>
       r.server ? serverName(r.server) : (r.server_name ?? "—"),
     ),
-    col.custom(
-      { id: "source", header: t("logs.filter.reportedBy", "Reported by"), size: 184, priority: 4 },
-      (r: ToolCallView) => r.source_id ?? null,
-      (v) => (v ? <ReportedBy source={sources.source(v)} /> : "—"),
-    ),
+    ...(reported || rows.some((r) => r.source_id)
+      ? [
+          col.custom(
+            { id: "source", header: t("logs.filter.reportedBy", "Reported by"), size: 184, priority: 4 },
+            (r: ToolCallView) => r.source_id ?? null,
+            (v) => (v ? <ReportedBy source={sources.source(v)} /> : "—"),
+          ),
+        ]
+      : []),
     col.duration({ id: "duration", header: t("logs.column.duration", "Duration"), size: 112, priority: 2 }, (r: ToolCallView) => r.duration_ms),
     col.custom(
       { id: "server", header: t("logs.tools.serverTime", "Server time"), size: 120, priority: 3 },
@@ -338,7 +344,7 @@ function CallBody({ org, project, call }: { org: string; project: string; call: 
   return (
     <div className="flex flex-col gap-24">
       {c.source_id && (
-        <Banner tone="info" title={t("logs.inspector.observed", "Observed, not routed")}>
+        <Banner tone="info" title={t("logs.tools.observed", "Reported by a source")}>
           {t("logs.tools.observedHint", "{source} reported this call; the client called the server itself, so Kaeso only logged it.", {
             source: sources.name(c.source_id),
           })}

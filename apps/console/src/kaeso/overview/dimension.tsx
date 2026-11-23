@@ -29,6 +29,7 @@ import { usePhone } from "~/shell/use-phone";
 import type { Overview } from "./data";
 import { cacheHit, change, type Dimension } from "./metrics";
 import { logsRange } from "./parts";
+import { keyLogFilter } from "~/features/project/sources/names";
 
 const VALUE_MAX = 168;
 const fit = (header: string, values: string[], min: number) => columnWidth(header, values, { min, max: VALUE_MAX });
@@ -138,7 +139,13 @@ export function DimensionView({ o, dim }: { o: Overview; dim: Dimension }) {
   const filter = (key: string) => {
     const [provider = "", ...model] = key.split("/");
     const params: Record<string, string> =
-      dim === "model" ? { model: model.join("/"), provider } : dim === "member" ? { member: key.replace(/^service_account:/, "sa:") } : { [dim]: key };
+      dim === "model"
+        ? { model: model.join("/"), provider }
+        : dim === "member"
+          ? { member: key.replace(/^service_account:/, "sa:") }
+          : dim === "key"
+            ? keyLogFilter(key)
+            : { [dim]: key };
     return `${new URLSearchParams(params).toString()}&${logsRange(o)}`;
   };
   const open =

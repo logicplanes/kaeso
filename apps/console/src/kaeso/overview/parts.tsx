@@ -1,4 +1,5 @@
 import { useNavigate } from "@tanstack/react-router";
+import { keyLogFilter } from "~/features/project/sources/names";
 import { Avatar, BarChart, ModelLabel, Text, TimeseriesChart, type RankItem, type TimeSeries } from "@logicplanes/kaeso-ui";
 import { formatPercent } from "@logicplanes/kaeso-ui/format";
 import type { UsageRow } from "~/api/generated/types";
@@ -151,6 +152,7 @@ export function useOpenRow(o: Overview, dim: Ranked, failed: boolean): ((id: str
   if (dim === "project") return (id) => void navigate({ href: projectPath(o.org, id) });
   if (!o.project || !o.showErrors) return undefined;
   const logs = `${projectPath(o.org, o.project)}/logs`;
-  const filter = (id: string) => (dim === "model" ? `model=${encodeURIComponent(id.split("/").slice(1).join("/"))}` : `key=${encodeURIComponent(id)}`);
+  const filter = (id: string) =>
+    dim === "model" ? `model=${encodeURIComponent(id.split("/").slice(1).join("/"))}` : new URLSearchParams(keyLogFilter(id)).toString();
   return (id) => void navigate({ href: `${logs}?${filter(id)}${failed ? "&failed=true" : ""}&${logsRange(o)}` });
 }

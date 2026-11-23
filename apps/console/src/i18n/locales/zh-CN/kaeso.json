@@ -141,7 +141,7 @@
   "kaeso.limits.enterAmount": "输入额度",
   "kaeso.limits.higherThanAbove": "高于{level, select, project {项目} other {成员}}的{limit}；下级限额不能高于上级",
   "kaeso.limits.neverResets": "永不重置",
-  "kaeso.limits.observedNote": "其中 {amount} 由来源上报；Kaeso 会据此提醒，但无法阻止这些请求。",
+  "kaeso.limits.observedNote": "其中 {amount} 由来源上报；Kaeso 会计入，但无法阻止这些请求。",
   "kaeso.limits.overLastMinute": "过去一分钟内",
   "kaeso.limits.remove": "移除限额",
   "kaeso.limits.removeHint": "{limit}将不再生效；上级限额仍然有效。",

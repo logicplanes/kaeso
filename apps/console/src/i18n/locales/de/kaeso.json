@@ -141,7 +141,7 @@
   "kaeso.limits.enterAmount": "Wert eingeben",
   "kaeso.limits.higherThanAbove": "Höher als {level, select, project {das Limit des Projekts} other {das Limit des Mitglieds}} ({limit}); eine untere Ebene darf nicht höher sein als die darüber",
   "kaeso.limits.neverResets": "Wird nie zurückgesetzt",
-  "kaeso.limits.observedNote": "{amount} davon haben Quellen gemeldet; Kaeso warnt dabei, kann diese Anfragen aber nicht stoppen.",
+  "kaeso.limits.observedNote": "{amount} davon haben Quellen gemeldet; Kaeso zählt es, kann diese Anfragen aber nicht stoppen.",
   "kaeso.limits.overLastMinute": "In der letzten Minute",
   "kaeso.limits.remove": "Limit entfernen",
   "kaeso.limits.removeHint": "Dieses Limit ({limit}) gilt dann nicht mehr; die Ebenen darüber gelten weiter.",

@@ -90,7 +90,7 @@ describe("LimitsSection", () => {
 
   it("says how much of a budget sources reported, which Kaeso can't stop", async () => {
     const { section } = await memberLimits([limit({ id: "lim_member", level: "member", amount: "20", used: "5", observed: "2", subject: grace }), memberRate]);
-    expect(await within(section).findByText("$2.00 of it reported by sources; Kaeso alerts on it but can't stop those requests.")).toBeInTheDocument();
+    expect(await within(section).findByText("$2.00 of it reported by sources; Kaeso counts it but can't stop those requests.")).toBeInTheDocument();
     expect(within(section).getAllByText(/reported by sources/)).toHaveLength(1);
   });
 

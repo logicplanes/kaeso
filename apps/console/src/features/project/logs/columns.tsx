@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Badge, Icon, CopyButton, Tag, ProviderBadge, SourceBadge, StatusCode, Text, Tooltip, col, icons, useProviderTile } from "@logicplanes/kaeso-ui";
+import { Badge, Icon, CopyButton, Tag, ProviderBadge, StatusCode, Text, Tooltip, col, icons, useProviderTile } from "@logicplanes/kaeso-ui";
 import { dateFormatter, formatDuration, formatNumber, formatPercent } from "@logicplanes/kaeso-ui/format";
 import type { ExternalSourceView, LogView, Party } from "~/api/generated/types";
 import { dialectLabel, errorKindLabel } from "~/format/labels";
@@ -8,6 +8,7 @@ import { locale, t, type Locale } from "~/i18n";
 import { common } from "~/i18n/common";
 import { inputTokens, totalTokens } from "~/kaeso/tokens";
 import { mediaCount, mediaLabel, mediaShort } from "./media";
+import { ReportedBy } from "../sources/reported-by";
 import { isDecisionDialect } from "./render";
 import { readStoredJson, writeStored } from "~/storage";
 import { inZone } from "~/format/zone";
@@ -251,14 +252,7 @@ export function logColumns({
     source: col.custom(
       { id: "source", header: columnLabel("source"), size: 184, priority: 5 },
       (r: LogView) => r.source_id ?? r.source,
-      (_v, r) =>
-        r.source_id ? (
-          <ReportedBy source={sourceOf(r.source_id)} />
-        ) : r.source === "playground" ? (
-          t("logs.source.playground", "Playground")
-        ) : (
-          t("logs.source.gateway", "Gateway")
-        ),
+      (_v, r) => (r.source_id ? <ReportedBy source={sourceOf(r.source_id)} /> : r.source === "playground" ? t("logs.source.playground", "Playground") : "API"),
     ),
     principal: col.custom(
       { id: "principal", header: columnLabel("principal"), size: 152, priority: 4 },
@@ -299,17 +293,6 @@ export function logColumns({
       (v) => (v ? <CopyButton display="inline" value={v} label={t("logs.copyUpstreamRequestId", "Copy the provider's request id")} /> : null),
     ),
   };
-}
-
-/** A source by its mark and name, or "A source" for one the person can't see. */
-export function ReportedBy({ source }: { source: ExternalSourceView | undefined }) {
-  return source ? (
-    <SourceBadge kind={source.kind} name={source.name} size="sm" withName className="min-w-0" />
-  ) : (
-    <Text tone="secondary" truncate>
-      {t("project.analytics.aSource", "A source")}
-    </Text>
-  );
 }
 
 const errorTone = (row: LogView) => (row.error_kind === "client_disconnected" ? "neutral" : row.status >= 500 ? "danger" : "warning");
