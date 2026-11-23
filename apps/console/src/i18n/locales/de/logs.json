@@ -101,6 +101,7 @@
   "logs.inspector.notLoggedNote": "Inhalt nicht protokolliert: Die Protokollierung war für die Organisation oder das Projekt aus, oder die Aufbewahrungsfrist ist abgelaufen.",
   "logs.inspector.observed": "Beobachtet, nicht geroutet",
   "logs.inspector.observedHint": "{source} hat diese Anfrage gemeldet; sie ging direkt an den Anbieter, daher hat Kaeso sie protokolliert und gezählt, konnte sie aber nicht routen, begrenzen oder stoppen.",
+  "logs.inspector.observedNoContent": "Inhalt nicht behalten: Die Quelle behält keinen, oder ihr Client hat keinen gesendet.",
   "logs.inspector.outcome": "Ergebnis",
   "logs.inspector.overhead": "Kaeso-Overhead",
   "logs.inspector.overview": "Übersicht",

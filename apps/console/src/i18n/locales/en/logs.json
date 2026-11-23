@@ -160,6 +160,7 @@
   "logs.inspector.notLoggedNote": "Content not logged: logging was off for the organization or the project, or the content has passed its retention.",
   "logs.inspector.observed": "Observed, not routed",
   "logs.inspector.observedHint": "{source} reported this request; it went straight to the provider, so Kaeso logged and counted it but couldn't route, limit or stop it.",
+  "logs.inspector.observedNoContent": "Content not kept: the source keeps none, or its client sent none.",
   "logs.inspector.onlyAlias": "Show only requests to this alias",
   "logs.inspector.onlyKey": "Show only requests with this key",
   "logs.inspector.onlyModel": "Show only requests to this model",

@@ -253,6 +253,7 @@ describe("LogInspector", () => {
     expect(await within(panel).findByText("Observed, not routed")).toBeInTheDocument();
     expect(panel).toHaveTextContent("Claude Code, Ada's laptop reported this request; it went straight to the provider");
     expect(within(panel).getByText("As the source reported it; Kaeso has no price for the model")).toBeInTheDocument();
+    expect(within(panel).getByText("Content not kept: the source keeps none, or its client sent none.")).toBeInTheDocument();
     const sent = section(panel, "Sent by");
     expect(within(sent).getByRole("link", { name: "Claude Code, Ada's laptop" })).toHaveAttribute(
       "href",

@@ -101,6 +101,7 @@
   "logs.inspector.notLoggedNote": "未记录内容：组织或项目已关闭记录，或内容已超过保留期。",
   "logs.inspector.observed": "已观测，未经路由",
   "logs.inspector.observedHint": "{source} 上报了此请求；它直接发往服务商，因此 Kaeso 只记录并统计了它，无法路由、限制或阻止。",
+  "logs.inspector.observedNoContent": "未保留内容：来源不保留内容，或其客户端未发送内容。",
   "logs.inspector.outcome": "结果",
   "logs.inspector.overhead": "Kaeso 开销",
   "logs.inspector.overview": "概览",

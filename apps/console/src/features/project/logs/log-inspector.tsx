@@ -409,10 +409,12 @@ function Overview({
       )}
       {!e.has_content && (
         <Text variant="small" tone="secondary">
-          {t(
-            "logs.inspector.notLoggedNote",
-            "Content not logged: logging was off for the organization or the project, or the content has passed its retention.",
-          )}
+          {e.source === "observed"
+            ? t("logs.inspector.observedNoContent", "Content not kept: the source keeps none, or its client sent none.")
+            : t(
+                "logs.inspector.notLoggedNote",
+                "Content not logged: logging was off for the organization or the project, or the content has passed its retention.",
+              )}
         </Text>
       )}
       {e.error_kind && (
