@@ -87,6 +87,6 @@ Ein Stapel enthält höchstens 5.000 Datensätze und 8 MiB, entpackt 16 MiB, und
 
 ## Nächste Schritte
 
-- [Quellen](../sources/index.md): Fügen Sie in der Konsole eine Quelle hinzu und verfolgen Sie, was sie meldet.
+- [Quellen verbinden](../sources/index.md): Fügen Sie in der Konsole eine Quelle hinzu und verfolgen Sie, was sie meldet.
 - [Claude Code](../sources/claude-code.md): Zählen Sie die Anfragen und MCP-Tool-Aufrufe von Claude Code.
 - [HTTP](../sources/http.md): Senden Sie Anfragen und Tool-Aufrufe aus eigenen Skripten.

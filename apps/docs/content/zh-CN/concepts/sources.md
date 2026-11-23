@@ -87,6 +87,6 @@ Kaeso 会拒绝符合以下情况的记录：
 
 ## 下一步
 
-- [来源](../sources/index.md)：在控制台中添加来源，并跟踪它上报的内容。
+- [连接来源](../sources/index.md)：在控制台中添加来源，并跟踪它上报的内容。
 - [Claude Code](../sources/claude-code.md)：统计 Claude Code 的请求和 MCP 工具调用。
 - [HTTP](../sources/http.md)：从自己的脚本发送请求和工具调用。

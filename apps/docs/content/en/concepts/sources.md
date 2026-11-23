@@ -87,6 +87,6 @@ A batch holds at most 5,000 records and 8 MiB, 16 MiB once unzipped, and a sourc
 
 ## Next steps
 
-- [Sources](../sources/index.md): Add a source in the console and follow what it reports.
+- [Connecting sources](../sources/index.md): Add a source in the console and follow what it reports.
 - [Claude Code](../sources/claude-code.md): Count Claude Code's requests and MCP tool calls.
 - [HTTP](../sources/http.md): Send requests and tool calls from your own scripts.

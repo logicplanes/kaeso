@@ -1,5 +1,5 @@
 ---
-title: Quellen
+title: Quellen verbinden
 description: Fügen Sie einem Projekt eine Quelle hinzu, verbinden Sie ihren Client und verfolgen Sie die gemeldeten Anfragen und Tool-Aufrufe.
 order: 4
 ---

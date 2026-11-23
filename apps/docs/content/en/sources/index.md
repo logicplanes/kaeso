@@ -1,5 +1,5 @@
 ---
-title: Sources
+title: Connecting sources
 description: Add a source to a project, connect its client and follow the requests and tool calls it reports.
 order: 4
 ---
