@@ -129,6 +129,7 @@ function ServerBody({ org, serverId, onClose }: { org: string; serverId: string;
   const status = statusWord(s.status);
   const connection = connectionWord(s);
   const held = (tools.data ?? []).filter((x) => x.state === "changed");
+  const heldCount = tools.data ? held.length : s.tools.changed;
   const info = serverInfoText(s.server_info);
   const names = s.projects.map((id) => all.find((p) => p.id === id)?.name ?? id);
   const shared = s.auth_method !== "none" && s.credential_mode === "shared";
@@ -272,7 +273,7 @@ function ServerBody({ org, serverId, onClose }: { org: string; serverId: string;
             loading={setAutoApprove.isPending}
             disabled={!canManage}
             {...(reason ? { disabledReason: reason } : {})}
-            onCheckedChange={(on) => (on && held.length > 0 ? setConfirmingAuto(true) : setAutoApprove.mutate({ on, server: s }))}
+            onCheckedChange={(on) => (on && heldCount > 0 ? setConfirmingAuto(true) : setAutoApprove.mutate({ on, server: s }))}
           />
           <List
             aria-label={t("orgHome.mcp.toolChanges", "Tool changes")}
@@ -321,7 +322,7 @@ function ServerBody({ org, serverId, onClose }: { org: string; serverId: string;
         description={t(
           "orgHome.mcp.autoApproveWaiting",
           "{count, plural, one {The # tool waiting for review is approved too} other {The # tools waiting for review are approved too}}; projects that have them on offer them again.",
-          { count: held.length },
+          { count: heldCount },
         )}
         confirmLabel={t("orgHome.mcp.autoApproveConfirm", "Turn on and approve")}
         loading={setAutoApprove.isPending}

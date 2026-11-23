@@ -310,12 +310,24 @@ async fn a_change_held_before_auto_approve_was_on_is_approved_at_the_next_check(
     .unwrap() else {
         panic!("the server is there")
     };
-    let synced = mcp_tools::sync(&app.state, &row).await.unwrap();
-    assert_eq!(synced.auto_approved, ["search_posts"]);
+    let changed = with_description("search_posts", "Finds posts.");
+    let (a, b) = tokio::join!(
+        mcp_tools::apply(&app.state, &row, &changed),
+        mcp_tools::apply(&app.state, &row, &changed)
+    );
+    let approved = a.unwrap().auto_approved.len() + b.unwrap().auto_approved.len();
+    assert_eq!(
+        approved, 1,
+        "overlapping checks auto-approve a held tool once"
+    );
     assert!(tool(&app, &row, "search_posts").await.is_approved());
     assert_eq!(
         history(&app, &row).await,
         [entry("search_posts", Some("auto_approved"), Some("system"))]
+    );
+    assert_eq!(
+        audited(&app, &row).await,
+        [("tool.auto_approve".to_owned(), "system".to_owned())]
     );
 }
 
@@ -364,6 +376,33 @@ async fn rejecting_a_change_switches_the_tool_off_where_it_was_on() {
     assert_eq!(
         history(&app, &row).await,
         [entry("create_post", Some("kept_off"), Some("user"))]
+    );
+    // Moving back to the approved definition and returning to the rejected one later keeps the older kept_off row intact.
+    app.clock.advance(time::Duration::minutes(1));
+    mock.set_tools(default_tools());
+    mcp_tools::sync(&app.state, &row).await.unwrap();
+    app.clock.advance(time::Duration::minutes(1));
+    mock.set_tools(with_description("create_post", "Changed."));
+    mcp_tools::sync(&app.state, &row).await.unwrap();
+    let again = tool(&app, &row, "create_post").await;
+    assert!(
+        mcp_tools::approve(
+            &app.state,
+            row.org_id,
+            again.id,
+            &again.definition_hash,
+            person(&owner),
+        )
+        .await
+        .unwrap()
+    );
+    assert_eq!(
+        history(&app, &row).await,
+        [
+            entry("create_post", Some("kept_off"), Some("user")),
+            entry("create_post", Some("restored"), Some("system")),
+            entry("create_post", Some("approved"), Some("user")),
+        ]
     );
     assert_eq!(
         mcp_tools::reject(&app.state, row.org_id, uuid::Uuid::now_v7(), person(&owner))

@@ -168,13 +168,18 @@ pub async fn apply(
     tools: &[Value],
 ) -> Result<Synced, StoreError> {
     let now = state.clock.now();
+    // Re-read the server after upstream I/O so an admin toggling auto-approve mid-sync takes effect.
+    let Some(current) = mcp_servers::get(&state.pg, server.org_id, server.id).await? else {
+        return Ok(Synced::default());
+    };
     let existing: HashMap<String, ToolRow> = store::of_server(&state.pg, server.id)
         .await?
         .into_iter()
         .map(|t| (t.name.clone(), t))
         .collect();
-    let auto = server.auto_approve_tool_changes;
+    let auto = current.auto_approve_tool_changes;
     let mut synced = Synced::default();
+    let mut dirty = false;
     let mut present: Vec<String> = Vec::new();
     let mut seen = HashSet::new();
     for tool in tools {
@@ -248,15 +253,28 @@ pub async fn apply(
                     continue;
                 }
                 let mut tx = state.pg.begin().await?;
-                let updated = store::update_definition(
-                    &mut *tx,
-                    row.id,
-                    &row.definition_hash,
-                    &d,
-                    approve_now.then_some(&approval),
-                    now,
-                )
-                .await?;
+                let updated = if differs {
+                    store::update_definition(
+                        &mut *tx,
+                        row.id,
+                        &row.definition_hash,
+                        &d,
+                        approve_now.then_some(&approval),
+                        now,
+                    )
+                    .await?
+                } else {
+                    // Guard on state = 'changed' so overlapping syncs or a concurrent approval cannot double-audit.
+                    store::approve(
+                        &mut *tx,
+                        server.org_id,
+                        row.id,
+                        &row.definition_hash,
+                        &approval,
+                        now,
+                    )
+                    .await?
+                };
                 if !updated {
                     continue;
                 }
@@ -303,6 +321,7 @@ pub async fn apply(
                     .await?;
                 }
                 tx.commit().await?;
+                dirty = true;
                 if approve_now {
                     synced.auto_approved.push(name.to_owned());
                 } else if differs && !approved {
@@ -317,7 +336,7 @@ pub async fn apply(
     if !synced.changed.is_empty() {
         tracing::info!(server = %server.id, tools = ?synced.changed, "an MCP server changed tools; they wait for review");
     }
-    if synced != Synced::default() {
+    if dirty || synced != Synced::default() {
         crate::portal::snapshot::forget_server(state, server.id).await;
     }
     Ok(synced)

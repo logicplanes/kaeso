@@ -1,0 +1,19 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE mcp_tool_changes SET outcome = $3, decided_by_kind = $4, decided_by_id = $5, decided_at = $6 WHERE id = (SELECT id FROM mcp_tool_changes WHERE tool_id = $1 ORDER BY detected_at DESC, id DESC LIMIT 1) AND to_hash = $2 AND (outcome IS NULL OR (outcome = 'kept_off' AND $3 <> 'kept_off'))",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Bytea",
+        "Text",
+        "Text",
+        "Uuid",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "7a3f9cb00c43cf0dd1b8eaafca455cbcd8fca56d50d7c13e120dc23aa6d1433b"
+}

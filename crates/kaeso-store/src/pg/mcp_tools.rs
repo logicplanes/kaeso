@@ -425,7 +425,8 @@ pub async fn decide(
 ) -> Result<u64, StoreError> {
     Ok(sqlx::query!(
         "UPDATE mcp_tool_changes SET outcome = $3, decided_by_kind = $4, decided_by_id = $5, decided_at = $6 \
-         WHERE tool_id = $1 AND to_hash = $2 \
+         WHERE id = (SELECT id FROM mcp_tool_changes WHERE tool_id = $1 ORDER BY detected_at DESC, id DESC LIMIT 1) \
+         AND to_hash = $2 \
          AND (outcome IS NULL OR (outcome = 'kept_off' AND $3 <> 'kept_off'))",
         tool_id,
         to_hash,
