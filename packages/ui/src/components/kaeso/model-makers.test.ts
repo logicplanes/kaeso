@@ -43,6 +43,8 @@ const UNMARKED_PROVIDERS: Record<string, string> = {
   "amazon-bedrock": "AWS's trademark guidelines allow its marks in plain text only",
   fal: "fal's terms forbid using its logos without its written permission",
   qianfan: "Baidu's terms forbid copying its logos without its permission",
+  sglang: "SGLang's logo is licensed CC BY-NC-ND 4.0, which allows no altered copies",
+  "mlx-lm": "MLX LM has no logo of its own, and Apple's guidelines don't allow its logo for compatibility references",
 };
 const UNMARKED_MAKERS: Record<string, string> = {
   Amazon: UNMARKED_PROVIDERS["amazon-bedrock"]!,

@@ -24,6 +24,8 @@ describe("identity parts", () => {
         <ProviderBadge provider="amazon-bedrock" name="Amazon Bedrock" />
         <ProviderBadge provider="fal" name="fal" />
         <ProviderBadge provider="qianfan" name="Baidu Qianfan" />
+        <ProviderBadge provider="sglang" name="SGLang" />
+        <ProviderBadge provider="mlx-lm" name="MLX LM" />
       </>,
     );
     expect(screen.getByText("OpenAI")).toBeInTheDocument();
@@ -31,7 +33,7 @@ describe("identity parts", () => {
     expect(other).toHaveTextContent(/^$/);
     expect(other.querySelector("svg")).toHaveClass("size-24");
     // Their owners' terms don't allow their logos here (NOTICE.md), so they show the provider icon like a custom provider.
-    for (const name of ["Amazon Bedrock", "fal", "Baidu Qianfan"]) {
+    for (const name of ["Amazon Bedrock", "fal", "Baidu Qianfan", "SGLang", "MLX LM"]) {
       const badge = screen.getByRole("img", { name });
       expect(badge).toHaveTextContent(/^$/);
       expect(badge).toHaveClass("text-fg-secondary");
@@ -278,10 +280,8 @@ const MARKED_PROVIDERS = {
   nim: "NVIDIA NIM",
   "docker-model-runner": "Docker Model Runner",
   xinference: "Xinference",
-  sglang: "SGLang",
   lmdeploy: "LMDeploy",
   localai: "LocalAI",
-  "mlx-lm": "MLX LM",
   jan: "Jan",
   koboldcpp: "KoboldCpp",
   tabbyapi: "TabbyAPI",

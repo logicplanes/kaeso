@@ -4,7 +4,7 @@ Fonts: Inter (SIL Open Font License 1.1) and Geist Mono (SIL Open Font License 1
 
 The runtime dependencies are listed in `package.json`; each is MIT, ISC, BSD-2-Clause, BSD-3-Clause, Apache-2.0 or 0BSD licensed.
 
-Some marks' path data comes from other projects. Under the MIT License (text below): LobeHub Icons, Copyright (c) 2023 LobeHub; llama.cpp, Copyright (c) 2023-2026 The ggml authors; LocalAI, Copyright (c) 2023-2025 Ettore Di Giacinto; Fluent Emoji, Copyright (c) Microsoft Corporation; Azure Quickstart Templates, Copyright (c) 2015 Microsoft Azure. Under the Apache License 2.0 (`LICENSE-Apache-2.0.txt`): Xinference, © 2026 Xinference Holdings Pte. Ltd.; SGLang, Copyright 2023-2024 SGLang Team; LMDeploy, Copyright 2023-2024 Shanghai AI Laboratory; IBM's `@carbon/ibmdotcom-web-components`, Copyright IBM Corp. 2020, 2025.
+Some marks' path data comes from other projects. Under the MIT License (text below): LobeHub Icons, Copyright (c) 2023 LobeHub; llama.cpp, Copyright (c) 2023-2026 The ggml authors; LocalAI, Copyright (c) 2023-2025 Ettore Di Giacinto; Fluent Emoji, Copyright (c) Microsoft Corporation; Azure Quickstart Templates, Copyright (c) 2015 Microsoft Azure. Under the Apache License 2.0 (`LICENSE-Apache-2.0.txt`): Xinference, © 2026 Xinference Holdings Pte. Ltd.; LMDeploy, Copyright 2023-2024 Shanghai AI Laboratory; IBM's `@carbon/ibmdotcom-web-components`, Copyright IBM Corp. 2020, 2025.
 
 The MIT License:
 

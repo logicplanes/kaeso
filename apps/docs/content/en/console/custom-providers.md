@@ -90,7 +90,7 @@ A row with **No images** is a server whose place for images Kaeso doesn't know y
 
 ## Server software
 
-Kaeso knows how the inference servers below differ from the format they speak. A custom provider that names its **Server** gets these differences on every request, and the console shows the software's mark wherever the provider appears:
+Kaeso knows how the inference servers below differ from the format they speak. A custom provider that names its **Server** gets these differences on every request, and the console shows the software's mark wherever the provider appears (SGLang and MLX LM show the provider icon instead):
 
 - `developer` messages arrive as `system` messages, because a model's chat template often knows only `system`. Qwen's templates drop a `developer` message without a word.
 - An app's output limit goes as `max_tokens`, which every one of them reads; Ollama ignores `max_completion_tokens`.

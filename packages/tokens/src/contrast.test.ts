@@ -146,8 +146,9 @@ describe.each(MODES)("contrast in %s mode", (mode) => {
 
 // Mistral's brand page forbids recolouring its icon, so its colours stay exact: 3:1 on the raised background in dark mode only.
 // PixVerse's brand page forbids changing its gradient and Moondream's mark is an illustration, so theirs stay exact too, and
-// `-inner-` colours fill shapes drawn on another colour of the same mark, never on the tile.
-const exact = (token: string) => /^(pixverse|moondream)-/.test(token) || token.includes("-inner-");
+// `-inner-` colours fill shapes drawn on another colour of the same mark, never on the tile. DeepSeek asks for its assets
+// unaltered, so its blue stays exact too (checked below).
+const exact = (token: string) => /^(pixverse|moondream)-/.test(token) || token === "deepseek" || token.includes("-inner-");
 const recoloured = Object.entries(providerMark).filter(([token]) => !token.startsWith("mistral-") && !exact(token));
 const mistral = Object.entries(providerMark).filter(([token]) => token.startsWith("mistral-"));
 
@@ -160,6 +161,12 @@ it.each(recoloured)("provider mark colour %s stands out from white in light mode
 it.each(recoloured)("provider mark colour %s is legible on its tile in both themes", (_, colour) => {
   expect(apca(colour.light, neutral["fill-1"].light)).toBeGreaterThanOrEqual(45);
   expect(apca(colour.dark, neutral["fill-1"].dark)).toBeGreaterThanOrEqual(35);
+});
+
+// DeepSeek's integration guidelines ask for its assets unaltered, so its whale keeps the published #4D6BFE in both themes.
+it("keeps DeepSeek's published blue in both themes, readable on the dark tile", () => {
+  expect(providerMark.deepseek).toEqual({ light: "#4d6bfe", dark: "#4d6bfe" });
+  expect(ratio(providerMark.deepseek.dark, neutral["fill-1"].dark)).toBeGreaterThanOrEqual(3);
 });
 
 it.each(mistral)("Mistral's colour %s stands out from the raised background in dark mode", (_, colour) => {
