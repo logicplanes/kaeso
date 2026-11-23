@@ -1,6 +1,6 @@
 # Notices
 
-Kaeso adapts code from other projects in one place: the path data of some marks in `packages/ui/src/components/kaeso/` (`provider-marks.ts`, `vendor-marks.ts`), as [Provider marks](#provider-marks) and [Model maker marks](#model-maker-marks) say for each. Under the MIT License: [LobeHub Icons](https://github.com/lobehub/lobe-icons), Copyright (c) 2023 LobeHub; [llama.cpp](https://github.com/ggml-org/llama.cpp), Copyright (c) 2023-2026 The ggml authors; [LocalAI](https://github.com/mudler/LocalAI), Copyright (c) 2023-2025 Ettore Di Giacinto; [Fluent Emoji](https://github.com/microsoft/fluentui-emoji), Copyright (c) Microsoft Corporation; and the [Azure Quickstart Templates](https://github.com/Azure/azure-quickstart-templates), Copyright (c) 2015 Microsoft Azure. Under the Apache License 2.0: [Xinference](https://github.com/xorbitsai/inference), © 2026 Xinference Holdings Pte. Ltd.; [SGLang](https://github.com/sgl-project/sglang), Copyright 2023-2024 SGLang Team; [LMDeploy](https://github.com/InternLM/lmdeploy), Copyright 2023-2024 Shanghai AI Laboratory; and IBM's [`@carbon/ibmdotcom-web-components`](https://github.com/carbon-design-system/carbon-for-ibm-dotcom), Copyright IBM Corp. 2020, 2025. The MIT License's text is at the end of this file, and the Apache License 2.0's in [`packages/ui/LICENSE-Apache-2.0.txt`](packages/ui/LICENSE-Apache-2.0.txt). Every dependency's license is checked by `cargo deny` and `pnpm licenses:check` against the [license policy](https://docs.kaeso.app/development/contributing#add-a-dependency).
+Kaeso adapts code from other projects in one place: the path data of some marks in `packages/ui/src/components/kaeso/` (`provider-marks.ts`, `vendor-marks.ts`, `source-badge.tsx`), as [Provider marks](#provider-marks), [Model maker marks](#model-maker-marks) and [Source marks](#source-marks) say for each. Under the MIT License: [LobeHub Icons](https://github.com/lobehub/lobe-icons), Copyright (c) 2023 LobeHub; [llama.cpp](https://github.com/ggml-org/llama.cpp), Copyright (c) 2023-2026 The ggml authors; [LocalAI](https://github.com/mudler/LocalAI), Copyright (c) 2023-2025 Ettore Di Giacinto; [Fluent Emoji](https://github.com/microsoft/fluentui-emoji), Copyright (c) Microsoft Corporation; and the [Azure Quickstart Templates](https://github.com/Azure/azure-quickstart-templates), Copyright (c) 2015 Microsoft Azure. Under the Apache License 2.0: [Xinference](https://github.com/xorbitsai/inference), © 2026 Xinference Holdings Pte. Ltd.; [SGLang](https://github.com/sgl-project/sglang), Copyright 2023-2024 SGLang Team; [LMDeploy](https://github.com/InternLM/lmdeploy), Copyright 2023-2024 Shanghai AI Laboratory; and IBM's [`@carbon/ibmdotcom-web-components`](https://github.com/carbon-design-system/carbon-for-ibm-dotcom), Copyright IBM Corp. 2020, 2025. The MIT License's text is at the end of this file, and the Apache License 2.0's in [`packages/ui/LICENSE-Apache-2.0.txt`](packages/ui/LICENSE-Apache-2.0.txt). Every dependency's license is checked by `cargo deny` and `pnpm licenses:check` against the [license policy](https://docs.kaeso.app/development/contributing#add-a-dependency).
 
 ## Trademarks
 
@@ -166,31 +166,7 @@ The client marks in `packages/ui/src/components/kaeso/client-button.tsx` are the
 
 ## Source marks
 
-The source marks in `packages/ui/src/components/kaeso/source-badge.tsx` are their owners' trademarks: Claude Code of Anthropic, Codex of OpenAI, Gemini CLI and Antigravity of Google, OpenTelemetry of the Cloud Native Computing Foundation, and OpenRouter of OpenRouter. Kaeso shows them only to say which client a source reports from (nominative use), and implies no affiliation or endorsement. Claude Code, Codex, Gemini CLI and Antigravity are the one-colour vectors of [Lobe Icons](https://github.com/lobehub/lobe-icons) 1.105.0 (`@lobehub/icons-static-svg`, MIT), unchanged, the two paths of Gemini CLI's joined into one; OpenTelemetry is the [Simple Icons](https://simpleicons.org) 16.38.1 vector (CC0 1.0), unchanged; OpenRouter's is its provider mark above. All are drawn in the theme's text colour. LiteLLM publishes no vector mark, so its sources show an icon.
-
-Lobe Icons' licence:
-
-> MIT License
->
-> Copyright (c) 2023 LobeHub
->
-> Permission is hereby granted, free of charge, to any person obtaining a copy
-> of this software and associated documentation files (the "Software"), to deal
-> in the Software without restriction, including without limitation the rights
-> to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-> copies of the Software, and to permit persons to whom the Software is
-> furnished to do so, subject to the following conditions:
->
-> The above copyright notice and this permission notice shall be included in all
-> copies or substantial portions of the Software.
->
-> THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-> IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-> FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-> AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-> LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-> OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-> SOFTWARE.
+The source marks in `packages/ui/src/components/kaeso/source-badge.tsx` are their owners' trademarks: Claude Code of Anthropic, Codex of OpenAI, Gemini CLI and Antigravity of Google, OpenTelemetry of the Cloud Native Computing Foundation, and OpenRouter of OpenRouter. Kaeso shows them only to say which client a source reports from (nominative use), and implies no affiliation or endorsement. Claude Code, Codex, Gemini CLI and Antigravity are the one-colour vectors of [LobeHub Icons](https://github.com/lobehub/lobe-icons) 1.105.0 (`@lobehub/icons-static-svg`, MIT, as the top of this file says), unchanged, the two paths of Gemini CLI's joined into one; OpenTelemetry is the [Simple Icons](https://simpleicons.org) 16.38.1 vector (CC0 1.0), unchanged; OpenRouter's is its provider mark above. All are drawn in the theme's text colour. LiteLLM publishes no vector mark, so its sources show an icon. Anthropic's and Google's terms restrict their logos, as [Trademarks](#trademarks) says; Kaeso shows the Claude Code, Gemini CLI and Antigravity marks on the same terms as their provider marks.
 
 ## Deploy button marks
 
