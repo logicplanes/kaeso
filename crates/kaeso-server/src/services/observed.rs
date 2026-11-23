@@ -9,7 +9,9 @@ use kaeso_core::catalogue::Fields;
 use kaeso_core::id::RequestId;
 use kaeso_core::rights::{ProjectRight, effective_project_rights};
 use kaeso_core::sources::{Counted, SourceKind};
-use kaeso_kpp::{Block, DialectId, GenerateRequest, Message, Request, Response, Usage};
+use kaeso_kpp::{
+    Block, CacheWriteBreakdown, DialectId, GenerateRequest, Message, Request, Response, Usage,
+};
 use kaeso_store::StoreError;
 use kaeso_store::clickhouse::tool_calls::ToolCallRow;
 use kaeso_store::pg::sources::{Activity, Source};
@@ -386,6 +388,12 @@ fn usage(t: Counted) -> Usage {
     u.cache_read_tokens = t.cache_read;
     u.cache_write_tokens = t.cache_write;
     u.reasoning_tokens = (t.reasoning > 0).then_some(t.reasoning);
+    // Writes kept for an hour cost more than those kept for five minutes.
+    let one_hour = t.cache_write_1h.min(t.cache_write);
+    if one_hour > 0 {
+        u.cache_write_breakdown =
+            Some(CacheWriteBreakdown::new(t.cache_write - one_hour, one_hour));
+    }
     u
 }
 

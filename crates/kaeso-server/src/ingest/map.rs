@@ -194,6 +194,7 @@ fn claude_code(groups: &[Group<LogRecord>], batch: &mut Batch) {
                         cache_read: a.u64("cache_read_tokens").unwrap_or(0),
                         cache_write: a.u64("cache_creation_tokens").unwrap_or(0),
                         reasoning: 0,
+                        cache_write_1h: a.u64("cache_creation_1h_tokens").unwrap_or(0),
                     }
                     .normalized(InputCounts::Uncached, OutputCounts::WithReasoning);
                     let end = ended(r);
@@ -379,6 +380,7 @@ fn codex(groups: &[Group<LogRecord>], batch: &mut Batch) {
                         cache_read: a.u64("cached_token_count").unwrap_or(0),
                         cache_write: a.u64("cache_write_token_count").unwrap_or(0),
                         reasoning: a.u64("reasoning_token_count").unwrap_or(0),
+                        cache_write_1h: 0,
                     }
                     .normalized(InputCounts::WithCache, OutputCounts::WithReasoning);
                     let end = ended(r);
@@ -490,6 +492,7 @@ fn gemini_cli(groups: &[Group<LogRecord>], batch: &mut Batch) {
                         cache_read: a.u64("cached_content_token_count").unwrap_or(0),
                         cache_write: 0,
                         reasoning: a.u64("thoughts_token_count").unwrap_or(0),
+                        cache_write_1h: 0,
                     }
                     .normalized(InputCounts::WithCache, OutputCounts::WithoutReasoning);
                     let prompt_id = a.str("prompt_id").unwrap_or_default();
@@ -598,6 +601,7 @@ fn semconv_tokens(a: &Attrs) -> Option<Counted> {
             cache_read: a.u64("gen_ai.usage.cache_read.input_tokens").unwrap_or(0),
             cache_write: a.u64("gen_ai.usage.cache_write.input_tokens").unwrap_or(0),
             reasoning: a.u64("gen_ai.usage.reasoning.output_tokens").unwrap_or(0),
+            cache_write_1h: 0,
         }
         .normalized(InputCounts::WithCache, OutputCounts::WithReasoning),
     )
@@ -958,6 +962,10 @@ pub fn litellm(items: &[Json]) -> Batch {
         let cache_write = usage
             .and_then(|u| json_u64(u.get("cache_creation_input_tokens")))
             .unwrap_or(0);
+        // Anthropic's usage splits the writes by how long they stay cached.
+        let cache_write_1h = usage
+            .and_then(|u| json_u64(u.get("cache_creation")?.get("ephemeral_1h_input_tokens")))
+            .unwrap_or(0);
         let reasoning = usage
             .and_then(|u| {
                 json_u64(
@@ -972,6 +980,7 @@ pub fn litellm(items: &[Json]) -> Batch {
             cache_read,
             cache_write,
             reasoning,
+            cache_write_1h,
         }
         .normalized(InputCounts::WithCache, OutputCounts::WithReasoning);
         // LiteLLM names the provider it called; a `provider/model` name says it only when the
@@ -1093,6 +1102,7 @@ pub fn antigravity(hook: &Json, steps: &[Json]) -> Batch {
                 .or(json_u64(s.get("cache_creation_input_tokens")))
                 .unwrap_or(0),
             reasoning: 0,
+            cache_write_1h: 0,
         }
         .normalized(InputCounts::Uncached, OutputCounts::WithReasoning);
         batch.requests.push(ObservedRequest {

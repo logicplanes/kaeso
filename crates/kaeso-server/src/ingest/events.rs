@@ -34,6 +34,9 @@ struct Tokens {
     cache_write_tokens: u64,
     #[serde(default)]
     reasoning_tokens: u64,
+    /// The part of `cache_write_tokens` cached for an hour, which Anthropic bills higher.
+    #[serde(default)]
+    cache_write_1h_tokens: u64,
     /// Whether `input_tokens` holds the cached tokens too, as OpenAI and Gemini count them.
     #[serde(default)]
     input_includes_cache: bool,
@@ -136,6 +139,7 @@ fn request(r: RequestIn) -> Result<ObservedRequest, Refusal> {
             cache_read: u.cache_read_tokens,
             cache_write: u.cache_write_tokens,
             reasoning: u.reasoning_tokens,
+            cache_write_1h: u.cache_write_1h_tokens,
         }
         .normalized(
             if u.input_includes_cache {

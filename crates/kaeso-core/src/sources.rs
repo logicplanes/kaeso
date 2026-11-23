@@ -130,6 +130,8 @@ pub struct Counted {
     pub cache_read: u64,
     pub cache_write: u64,
     pub reasoning: u64,
+    /// The part of `cache_write` kept for an hour, which Anthropic bills at a higher price.
+    pub cache_write_1h: u64,
 }
 
 /// What a client's input count holds besides the uncached input.
@@ -215,6 +217,7 @@ mod tests {
             cache_read: 800,
             cache_write: 0,
             reasoning: 120,
+            cache_write_1h: 0,
         };
         assert_eq!(
             openai.normalized(InputCounts::WithCache, OutputCounts::WithReasoning),
@@ -230,6 +233,7 @@ mod tests {
             cache_read: 400,
             cache_write: 0,
             reasoning: 50,
+            cache_write_1h: 0,
         };
         assert_eq!(
             gemini.normalized(InputCounts::WithCache, OutputCounts::WithoutReasoning),
@@ -245,6 +249,7 @@ mod tests {
             cache_read: 11_873,
             cache_write: 16_236,
             reasoning: 0,
+            cache_write_1h: 0,
         };
         assert_eq!(
             claude.normalized(InputCounts::Uncached, OutputCounts::WithReasoning),
@@ -260,6 +265,7 @@ mod tests {
             cache_read: 50,
             cache_write: 0,
             reasoning: 9,
+            cache_write_1h: 0,
         };
         let n = odd.normalized(InputCounts::WithCache, OutputCounts::WithReasoning);
         assert_eq!((n.input, n.output), (0, 9));

@@ -40,6 +40,10 @@ fn claude_codes_api_requests_become_requests_with_its_own_token_counts() {
         (2, 62, 11_873, 16_236)
     );
     assert_eq!(
+        r.tokens.cache_write_1h, 16_236,
+        "Claude Code caches for an hour"
+    );
+    assert_eq!(
         r.reported_cost,
         Some("0.0033971300000000004".parse().unwrap())
     );
