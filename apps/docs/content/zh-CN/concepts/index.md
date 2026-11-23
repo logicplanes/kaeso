@@ -30,6 +30,7 @@ order: 2
 | API 格式 | 请求及其回复的形式：OpenAI Chat Completions、Responses 或 Embeddings，Anthropic Messages，Gemini，或 OpenAI 的 Images API、ElevenLabs 的 API 等媒体 API（[各服务商的 API](provider-apis.md)） |
 | KPP | Kaeso Provider Protocol，一种统一格式：网关把每种 API 格式转换为它，再从它转换回去（[格式转换](format-translation.md)） |
 | 模型 API、Platform API | 实例的两个 API。应用在 `/v1`、`/v1beta` 和 `/v2` 上调用模型，控制台和脚本在 `/platform/v1` 上管理实例（[API](../api/index.md)） |
+| 来源 | 绕过 Kaeso 调用服务商的客户端（例如 Claude Code），它把请求上报给项目，在项目中作为已观测请求被记录和统计（[来源](sources.md)） |
 | MCP 服务器、MCP 门户 | MCP 服务器提供工具，例如在 X 上发帖。每个项目都在 `/mcp/<项目 ID>` 有一个 MCP 门户，把其服务器的工具提供给 claude.ai 等客户端（[MCP 门户](mcp-portal.md)） |
 
 ## 下一步
@@ -44,3 +45,4 @@ order: 2
 - [模型生命周期](model-lifecycle.md)：了解 Kaeso 如何提醒项目哪些模型即将停用，并把它们切换到替代模型。
 - [货币](currencies.md)：按欧洲央行每日汇率，以组织自己的货币显示其支出、价格和预算。
 - [MCP 门户](mcp-portal.md)：把 MCP 服务器的工具提供给 AI 客户端，并使用 Kaeso 的登录、权限、限额和日志。
+- [来源](sources.md)：统计并记录编程代理和其他网关绕过 Kaeso 直接发往服务商的请求。

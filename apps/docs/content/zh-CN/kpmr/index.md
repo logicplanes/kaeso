@@ -1,7 +1,7 @@
 ---
 title: KPMR
 description: 为每个 Kaeso 实例提供其所调用模型的价格、限制和能力的注册表。
-order: 6
+order: 7
 ---
 
 项目目录中的每个模型都以 KPMR（Kaeso Provider & Model Registry）中的值为起点：价格、限制、输入和输出，以及模型接受哪些参数。了解这些值的来源，您就能明白价格为何会自行变化，以及如何在无法访问互联网的环境中运行 Kaeso。

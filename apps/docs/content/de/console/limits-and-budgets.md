@@ -34,6 +34,8 @@ Ein Limit kann nicht höher sein als dasselbe Limit eine Ebene darüber. Das Aus
 
 Eine Rate lehnt Anfragen darüber immer ab und warnt nie. Ein Budget ist hart, solange **Danach Anfragen ablehnen** eingeschaltet ist, wie bei einem neuen Limit. Ein hartes Budget lehnt Anfragen ab, bis sein Zeitraum neu beginnt. Ein weiches Budget lässt Anfragen durch und warnt nur.
 
+Anfragen, die [Quellen](../sources/index.md) melden, zählen auf Budgets und Warnungen wie die eigenen des Gateways, und ein Budget zeigt, wie viel seiner Nutzung sie ausmachen. Kaeso kann sie nicht ablehnen, weil sie nie über Kaeso laufen, aber ein hartes Budget, das sie aufbrauchen, lehnt die Anfragen ab, die über Kaeso laufen.
+
 Ein Budget warnt bei bis zu 10 Prozentwerten seines Betrags, standardmäßig bei 50, 80 und 100 Prozent. Bei jedem schickt Kaeso eine E-Mail an die Inhaber und Admins der Organisation und an die Admins des Projekts. Beim Budget eines Schlüssels geht sie auch an dessen Inhaber. Jede E-Mail nennt die Organisation, das Projekt, wofür das Budget gilt, seinen Betrag, was verbraucht wurde und wann es zurückgesetzt wird; ein aufgebrauchtes hartes Budget schickt dieselben Fakten unter **Limit erreicht**. Jede Person kann die Warnungen unter **Budget-Warnungen** in ihrem Konto abschalten.
 
 ## Funktionen, die ein Ausgabenbudget nicht bepreisen kann

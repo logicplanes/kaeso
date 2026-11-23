@@ -1,7 +1,7 @@
 ---
 title: Self-hosting
 description: Run Kaeso on your own server and keep it configured, updated and backed up.
-order: 5
+order: 6
 ---
 
 Kaeso runs on your server as one Docker Compose project. The [quick start](../get-started/quick-start.md) installs it; these pages cover everything after that.

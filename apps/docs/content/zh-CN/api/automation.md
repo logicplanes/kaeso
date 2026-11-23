@@ -113,7 +113,7 @@ curl -s "$ORG_URL/projects/$PROJECT/logs?limit=10" \
 
 请求会在几秒内出现在日志中。调用方拥有 `costs.view` 权限时，用量中包含费用。用量接受以下查询参数：
 
-- `group_by`：`day`（默认）、`week`、`month`、`model`、`provider`、`key`、`member`、`route`、`billed_to` 或 `source`，组织的用量还可按 `project` 分组。路由的键形如 `<应用格式>:<服务商格式>:<服务商>`，例如 `openai_responses:anthropic_messages:anthropic`。`billed_to` 按付费的服务商密钥分组，即请求最后一次发送时所用的密钥；未发送给任何服务商的请求，其键为 `none`。`billed_to=<key>` 可像下面的筛选条件一样按它筛选。`source` 区分网关自己的请求（`gateway`）和各个来源上报的请求（来源的 `src_…` ID）；按 `key` 分组时，来源的请求记为 `source:<id>`，按密钥筛选时不包含它们。
+- `group_by`：`day`（默认）、`week`、`month`、`model`、`provider`、`key`、`member`、`route`、`billed_to` 或 `source`，组织的用量还可按 `project` 分组。路由的键形如 `<应用格式>:<服务商格式>:<服务商>`，例如 `openai_responses:anthropic_messages:anthropic`。`billed_to` 按付费的服务商密钥分组，即请求最后一次发送时所用的密钥；未发送给任何服务商的请求，其键为 `none`。`billed_to=<key>` 可像下面的筛选条件一样按它筛选。`source` 区分网关自己的请求（`gateway`）和各个[来源](../concepts/sources.md)上报的请求（来源的 `src_…` ID）；按 `key` 分组时，来源的请求记为 `source:<id>`，按密钥筛选时不包含它们。
 - `from` 和 `to`：UTC 日期，例如 `2026-08-15`。按天分组时，两者最多相隔 400 天。
 - `model`、`provider`、`key`、`member`、`route` 和 `source`：只看一个分组的用量，写法与该分组返回的 `key` 相同，例如 `model=openai/gpt-5` 或 `key=playground`。筛选条件可以相互组合，也可以与任意 `group_by` 组合：`group_by=day&model=openai/gpt-5&key=key_…` 即一个模型经由一个密钥的每日用量。组织的用量还接受 `project`。
 - `usage/span` 返回有用量的第一天和最后一天，便于按周或按月读取较长的时间段。

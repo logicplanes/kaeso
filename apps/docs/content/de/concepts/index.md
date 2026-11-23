@@ -30,6 +30,7 @@ Diese Seiten erklären, wie Kaeso arbeitet, damit Sie wissen, was Sie erwartet, 
 | API-Format | Die Form einer Anfrage und ihrer Antwort: OpenAI Chat Completions, Responses oder Embeddings, Anthropic Messages, Gemini oder eine Medien-API wie die Images API von OpenAI oder die von ElevenLabs ([APIs nach Anbieter](provider-apis.md)) |
 | KPP | Das Kaeso Provider Protocol, das eine Format, in das und aus dem das Gateway jedes API-Format übersetzt ([Formatübersetzung](format-translation.md)) |
 | Modell-API, Platform API | Die beiden APIs einer Installation. Apps rufen Modelle über `/v1`, `/v1beta` und `/v2` auf, Konsole und Skripte verwalten die Installation über `/platform/v1` ([API](../api/index.md)) |
+| Quelle | Ein Client, der Anbieter ohne Kaeso aufruft, etwa Claude Code, und seine Anfragen an ein Projekt meldet, wo sie als beobachtet protokolliert und gezählt werden ([Quellen](sources.md)) |
 | MCP-Server, MCP-Portal | Ein MCP-Server bietet Tools an, etwa das Posten auf X. Jedes Projekt hat unter `/mcp/<Projekt-ID>` ein MCP-Portal, das die Tools seiner Server Clients wie claude.ai anbietet ([MCP-Portal](mcp-portal.md)) |
 
 ## Nächste Schritte
@@ -44,3 +45,4 @@ Diese Seiten erklären, wie Kaeso arbeitet, damit Sie wissen, was Sie erwartet, 
 - [Modell-Lebenszyklus](model-lifecycle.md): Sehen Sie, wie Kaeso Projekte vor abgeschalteten Modellen warnt und sie auf den Nachfolger umstellt.
 - [Währungen](currencies.md): Zeigen Sie Ausgaben, Preise und Budgets einer Organisation in ihrer eigenen Währung, zu den Tageskursen der EZB.
 - [MCP-Portal](mcp-portal.md): Geben Sie KI-Clients die Tools Ihrer MCP-Server, mit Anmeldung, Rechten, Limits und Protokollen von Kaeso.
+- [Quellen](sources.md): Zählen und protokollieren Sie die Anfragen, die Coding-Agents und andere Gateways ohne Kaeso an Anbieter senden.

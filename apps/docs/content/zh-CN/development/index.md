@@ -1,7 +1,7 @@
 ---
 title: 开发
 description: 构建、测试和修改 Kaeso，从全新克隆到合并拉取请求。
-order: 7
+order: 8
 ---
 
 这些页面面向修改 Kaeso 本身的人。所有内容都在同一个仓库 [logicplanes/kaeso](https://github.com/logicplanes/kaeso) 中，并以同一个版本一起发布。

@@ -30,6 +30,7 @@ These pages explain how Kaeso works, so you know what to expect before you rely 
 | API format | The shape of a request and its reply: OpenAI Chat Completions, Responses or Embeddings, Anthropic Messages, Gemini, or a media API such as OpenAI's Images API or ElevenLabs' ([APIs by provider](provider-apis.md)) |
 | KPP | The Kaeso Provider Protocol, the one format the gateway translates every API format into and out of ([format translation](format-translation.md)) |
 | Model API, Platform API | The two APIs of an install. Apps call models on `/v1`, `/v1beta` and `/v2`, and the console and scripts manage the install on `/platform/v1` ([API](../api/index.md)) |
+| Source | A client that calls providers without Kaeso, such as Claude Code, and reports its requests to a project, where they are logged and counted as observed ([sources](sources.md)) |
 | MCP server, MCP portal | An MCP server offers tools, such as posting to X. Every project has an MCP portal at `/mcp/<project id>` that offers its servers' tools to clients such as claude.ai ([MCP portal](mcp-portal.md)) |
 
 ## Next steps
@@ -44,3 +45,4 @@ These pages explain how Kaeso works, so you know what to expect before you rely 
 - [Model lifecycle](model-lifecycle.md): See how Kaeso warns projects about retiring models and moves them to the replacement.
 - [Currencies](currencies.md): Show an organization's spend, prices and budgets in its own currency, at the ECB's daily rates.
 - [MCP portal](mcp-portal.md): Give AI clients the tools of your MCP servers, with Kaeso's sign-in, rights, limits and logs.
+- [Sources](sources.md): Count and log the requests that coding agents and other gateways send to providers without Kaeso.
