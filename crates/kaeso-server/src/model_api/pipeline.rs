@@ -2785,15 +2785,77 @@ async fn attempt(
                 .map_err(fail(Stage::Reply))
         }
         ResponseBody::Stream(mut chunks) if success => {
+            ectx.preserve_wire = ingress == plan.dialect;
             let media_type = dispatch::stream_media_type(ingress, &encode_ctx);
+            let is_sse = media_type.starts_with("text/event-stream");
+            let checks_replies = kind == RequestKind::Generate
+                && sh.guards.is_some_and(|g| g.armed.checks_replies(true));
+            let restoring = sh
+                .guards
+                .and_then(|g| g.restorer.clone())
+                .filter(|_| kind == RequestKind::Generate)
+                .map(crate::services::guardrails::rules::Restoring::new);
+            let passthrough = if is_sse
+                && ingress == plan.dialect
+                && !keep_content
+                && !checks_replies
+                && restoring.is_none()
+                && carry.is_none()
+            {
+                kaeso_codecs::passthrough::for_stream(ingress, &ectx, &encode_ctx)
+            } else {
+                None
+            };
+            let mut peeked_decoder = None;
+            let mut initial = None;
+            let mut peeked_passthrough = None;
+            let mut passthrough_initial = None;
             // An event stream answers once it carries output: one that fails before, such as an
             // account at its plan's limit, fails this attempt, and a route falls back.
-            if media_type.starts_with("text/event-stream") {
-                let peeker =
-                    dispatch::stream_decoder(plan.dialect, &ectx).map_err(fail(Stage::Reply))?;
-                if let Some(mut err) =
-                    stream::peek(&mut chunks, peeker, state.config.streams.keepalive_interval).await
-                {
+            if is_sse {
+                let peek_err = if let Some(pass) = passthrough {
+                    match stream::peek_passthrough(
+                        &mut chunks,
+                        pass,
+                        state.config.streams.keepalive_interval,
+                    )
+                    .await
+                    {
+                        Ok((pass, init)) => {
+                            peeked_passthrough = Some(pass);
+                            passthrough_initial = Some(init);
+                            None
+                        }
+                        Err(err) => Some(err),
+                    }
+                } else {
+                    let peeker = dispatch::stream_decoder(plan.dialect, &ectx)
+                        .map_err(fail(Stage::Reply))?;
+                    if checks_replies {
+                        stream::peek(&mut chunks, peeker, state.config.streams.keepalive_interval)
+                            .await
+                    } else {
+                        match stream::peek_keep(
+                            &mut chunks,
+                            peeker,
+                            state.config.streams.keepalive_interval,
+                        )
+                        .await
+                        {
+                            Ok(stream::Peeked::Decoded {
+                                decoder,
+                                initial: init,
+                            }) => {
+                                peeked_decoder = Some(decoder);
+                                initial = Some(init);
+                                None
+                            }
+                            Ok(stream::Peeked::PutBack) => None,
+                            Err(err) => Some(err),
+                        }
+                    }
+                };
+                if let Some(mut err) = peek_err {
                     redact_key_fragments(&mut err);
                     count_upstream_error(err.kind.as_str(), provider);
                     let (stage, mut err) = provider_failed(account, err);
@@ -2804,9 +2866,7 @@ async fn attempt(
                     return Err(fail(stage)(err));
                 }
             }
-            let chunks = if kind == RequestKind::Generate
-                && sh.guards.is_some_and(|g| g.armed.checks_replies(true))
-            {
+            let chunks = if checks_replies {
                 let max = state.config.body_limits.provider_response.as_usize();
                 let held = stream::hold(chunks, max).await.map_err(|e| {
                     count_upstream_error(transport_kind(&e), provider);
@@ -2836,10 +2896,26 @@ async fn attempt(
             } else {
                 chunks
             };
-            let decoder =
-                dispatch::stream_decoder(plan.dialect, &ectx).map_err(fail(Stage::Reply))?;
-            let encoder =
-                dispatch::stream_encoder(ingress, &encode_ctx).map_err(fail(Stage::Reply))?;
+            let mode = if let Some(passthrough) = peeked_passthrough {
+                stream::Mode::Passthrough {
+                    passthrough,
+                    initial: passthrough_initial,
+                }
+            } else {
+                let decoder = match peeked_decoder {
+                    Some(d) => d,
+                    None => {
+                        dispatch::stream_decoder(plan.dialect, &ectx).map_err(fail(Stage::Reply))?
+                    }
+                };
+                let encoder =
+                    dispatch::stream_encoder(ingress, &encode_ctx).map_err(fail(Stage::Reply))?;
+                stream::Mode::Codec {
+                    decoder,
+                    encoder,
+                    initial,
+                }
+            };
             let (tx, rx) = tokio::sync::mpsc::channel::<Bytes>(32);
             let taken = stream::Taken::default();
             let timing = rec.timing();
@@ -2866,8 +2942,7 @@ async fn attempt(
             let carry = carry.map(|key_id| continuity::StreamCarry::new(state.clone(), key_id));
             let parts = stream::Parts {
                 chunks,
-                decoder,
-                encoder,
+                mode,
                 app: ingress,
                 keepalive: stream::Keepalive::new(keepalive),
                 counter,
@@ -2876,38 +2951,29 @@ async fn attempt(
                 account,
                 taken: taken.clone(),
                 binary: None,
-                restoring: sh
-                    .guards
-                    .and_then(|g| g.restorer.clone())
-                    .filter(|_| kind == RequestKind::Generate)
-                    .map(crate::services::guardrails::rules::Restoring::new),
+                restoring,
             };
             let aborted = stream::Aborted::default();
             // Audio has no room for an error once it has begun, so its status waits for the
             // provider's first bytes; event streams answer at once and carry errors as events.
-            let (parts, first) = if media_type.starts_with("text/event-stream") {
-                (parts, None)
+            if is_sse {
+                stream::start(parts, tx, task_rec).await;
             } else {
                 let (first, wait) = tokio::sync::oneshot::channel();
                 let binary = stream::Binary {
                     first,
                     aborted: aborted.clone(),
                 };
-                (
-                    stream::Parts {
-                        binary: Some(binary),
-                        ..parts
-                    },
-                    Some(wait),
-                )
-            };
-            state.in_flight.spawn(stream::pump(parts, tx, task_rec));
-            if let Some(wait) = first
-                && let Ok(Some(err)) = wait.await
-            {
-                let mut failure = Failure::new(err, Stage::Provider);
-                failure.served = served.clone();
-                return Ok(Done::Refused(failure));
+                let parts = stream::Parts {
+                    binary: Some(binary),
+                    ..parts
+                };
+                state.in_flight.spawn(stream::pump(parts, tx, task_rec));
+                if let Ok(Some(err)) = wait.await {
+                    let mut failure = Failure::new(err, Stage::Provider);
+                    failure.served = served.clone();
+                    return Ok(Done::Refused(failure));
+                }
             }
             let mut resp = Response::new(stream::body(rx, taken, aborted));
             let h = resp.headers_mut();

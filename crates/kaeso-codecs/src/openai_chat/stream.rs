@@ -151,6 +151,7 @@ pub(crate) struct ChatStreamDecoder {
     started: bool,
     start_open: bool,
     base: Option<Obj>,
+    base_id: String,
     chunk_env: Option<Obj>,
     queue: Vec<Held>,
     next_block: u32,
@@ -179,6 +180,7 @@ impl ChatStreamDecoder {
             started: false,
             start_open: false,
             base: None,
+            base_id: String::new(),
             chunk_env: None,
             queue: Vec::new(),
             next_block: 0,
@@ -252,15 +254,12 @@ impl ChatStreamDecoder {
                     .iter()
                     .find(|e| matches!(e, StreamEvent::ResponseStart(_)))
             {
-                self.base = Some(start_envelope(start));
+                let base = start_envelope(start);
+                self.base_id = env_text(&base, "id");
+                self.base = Some(base);
             }
-            let response_id = self
-                .base
-                .as_ref()
-                .map(|b| env_text(b, "id"))
-                .unwrap_or_default();
             for event in &mut events {
-                give_call_an_id(event, &response_id);
+                give_call_an_id(event, &self.base_id);
             }
             if let (Some(env), Some(base)) = (&held.env, &self.base)
                 && let Some(Value::Object(form)) = events
@@ -589,15 +588,21 @@ impl ChatStreamDecoder {
         }
         // Azure's annotation-only chunks carry a choice without `delta`, also the one that ends
         // a filtered stream with `finish_reason: "content_filter"`.
-        if !raw_has_key(raw.get(), "delta") {
-            form.insert(FORM_NO_DELTA.to_owned(), Value::Bool(true));
-        }
+        let delta_ext = match known.delta {
+            Some(delta) => delta,
+            None => {
+                if !verbatim.contains_key("delta") {
+                    form.insert(FORM_NO_DELTA.to_owned(), Value::Bool(true));
+                }
+                Ext::default()
+            }
+        };
         let Ext {
             known: delta,
             extra: mut d_extra,
             verbatim: mut d_verbatim,
             ..
-        } = known.delta;
+        } = delta_ext;
         nulls_to_verbatim(&mut d_extra, &mut d_verbatim);
         if !d_verbatim.is_empty() {
             form.insert("dv".to_owned(), obj_value(&d_verbatim));
@@ -1158,12 +1163,10 @@ fn without_content_parts(mut event: SseEvent) -> SseEvent {
 
 const FORM_NO_DELTA: &str = "nd";
 
-fn raw_has_key(raw: &str, key: &str) -> bool {
-    serde_json::from_str::<IndexMap<String, &serde_json::value::RawValue>>(raw)
-        .is_ok_and(|m| m.contains_key(key))
-}
-
 fn is_error_frame(raw: &serde_json::value::RawValue) -> bool {
+    if !raw.get().contains("\"error\"") {
+        return false;
+    }
     #[derive(serde::Deserialize)]
     struct Probe {
         #[serde(default)]

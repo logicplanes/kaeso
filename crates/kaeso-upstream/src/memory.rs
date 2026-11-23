@@ -62,6 +62,30 @@ impl Charge {
         if wanted > self.memory.kib {
             return Err(Full);
         }
+        let held = self
+            .permit
+            .as_ref()
+            .map_or(0, |p| u32::try_from(p.num_permits()).unwrap_or(u32::MAX));
+        if wanted <= held {
+            return Ok(());
+        }
+        // Acquire in 16 KiB steps when memory is free so small SSE chunks don't hit the
+        // semaphore on every KiB; fall back to the exact need when memory is tight.
+        let step = 16u32.min(self.memory.kib);
+        let optimistic = wanted.next_multiple_of(step).min(self.memory.kib);
+        if optimistic > wanted
+            && let Ok(more) = self
+                .memory
+                .permits
+                .clone()
+                .try_acquire_many_owned(optimistic - held)
+        {
+            match &mut self.permit {
+                Some(p) => p.merge(more),
+                None => self.permit = Some(more),
+            }
+            return Ok(());
+        }
         self.take(wanted).await
     }
 
@@ -82,11 +106,14 @@ impl Charge {
         if wanted <= held {
             return Ok(());
         }
-        let more =
-            tokio::time::timeout(m.wait, m.permits.clone().acquire_many_owned(wanted - held))
+        let need = wanted - held;
+        let more = match m.permits.clone().try_acquire_many_owned(need) {
+            Ok(more) => more,
+            Err(_) => tokio::time::timeout(m.wait, m.permits.clone().acquire_many_owned(need))
                 .await
                 .map_err(|_| Full)?
-                .map_err(|_| Full)?;
+                .map_err(|_| Full)?,
+        };
         match &mut self.permit {
             Some(p) => p.merge(more),
             None => self.permit = Some(more),
@@ -153,6 +180,26 @@ mod tests {
         assert_eq!(memory.free(), 0);
         assert!(stream.cover_streamed(16 * 1024 + 1).await.is_err());
         drop(stream);
+        assert_eq!(memory.free(), 64 * KIB);
+    }
+
+    #[tokio::test]
+    async fn a_stream_steps_by_16kib_when_free_and_falls_back_to_exact_when_tight() {
+        let memory = AnswerMemory::new(64 * KIB, 4, Duration::ZERO);
+        let mut first = memory.charge();
+        first.cover_streamed(200).await.unwrap();
+        assert_eq!(memory.free(), 48 * KIB, "acquires a 16 KiB step when free");
+        first.cover_streamed(4 * 1024).await.unwrap();
+        assert_eq!(memory.free(), 48 * KIB, "reuses permits within the step");
+        // Occupy 44 KiB so only 4 KiB (1 KiB * factor 4) remains; a second stream requesting
+        // 1 KiB (4 KiB charge) falls back to the exact need instead of failing.
+        let mut filler = memory.charge();
+        filler.cover(11 * 1024).await.unwrap();
+        assert_eq!(memory.free(), 4 * KIB);
+        let mut second = memory.charge();
+        second.cover_streamed(1024).await.unwrap();
+        assert_eq!(memory.free(), 0);
+        drop((first, filler, second));
         assert_eq!(memory.free(), 64 * KIB);
     }
 }

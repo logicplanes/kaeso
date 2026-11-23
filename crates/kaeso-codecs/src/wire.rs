@@ -160,10 +160,10 @@ impl<T: Serialize> Ext<T> {
         T: Deserialize<'de>,
     {
         match one_pass::read::<T>(text) {
-            Some((known, extra)) => Ok(Ext {
+            Some((known, extra, verbatim)) => Ok(Ext {
                 known,
                 extra,
-                verbatim: IndexMap::new(),
+                verbatim,
             }),
             None => Ext::two_passes(text),
         }
@@ -231,11 +231,10 @@ mod one_pass {
 
     use super::{Key, carriable, struct_fields, written_names};
 
-    type Seen<'de> = Vec<(Cow<'de, str>, Option<&'de RawValue>)>;
+    type Seen<'de> = Vec<(Cow<'de, str>, Option<&'de RawValue>, bool)>;
+    type Parsed<T> = (T, IndexMap<String, RawJson>, IndexMap<String, RawJson>);
 
-    pub(super) fn read<'de, T: Deserialize<'de> + Serialize>(
-        text: &'de str,
-    ) -> Option<(T, IndexMap<String, RawJson>)> {
+    pub(super) fn read<'de, T: Deserialize<'de> + Serialize>(text: &'de str) -> Option<Parsed<T>> {
         let declared = struct_fields::<T>();
         let mut seen = Seen::new();
         let mut de = serde_json::Deserializer::from_str(text);
@@ -248,10 +247,17 @@ mod one_pass {
         de.end().ok()?;
         let written = written_names(&known).ok()?;
         let mut extra = IndexMap::new();
-        for (key, raw) in seen {
+        let mut verbatim = IndexMap::new();
+        for (key, raw, is_null) in seen {
             if declared.contains(&key.as_ref()) {
                 if !written.contains(&key.as_ref()) {
-                    return None;
+                    // Most omitted declared fields in streamed chunks are explicit `null`s such
+                    // as `finish_reason: null`; keep them verbatim without re-parsing the object.
+                    if is_null {
+                        verbatim.insert(key.into_owned(), RawJson::null());
+                    } else {
+                        return None;
+                    }
                 }
             } else if !carriable(&key) {
                 return None;
@@ -259,7 +265,7 @@ mod one_pass {
                 extra.insert(key.into_owned(), RawJson::from(raw?));
             }
         }
-        Some((known, extra))
+        Some((known, extra, verbatim))
     }
 
     #[derive(Debug)]
@@ -367,10 +373,10 @@ mod one_pass {
             let Some(Key(key)) = self.map.next_key::<Key<'de>>().map_err(unsettled)? else {
                 return Ok(None);
             };
-            if self.seen.iter().any(|(k, _)| *k == key) {
+            if self.seen.iter().any(|(k, _, _)| *k == key) {
                 return Err(Unsettled);
             }
-            self.seen.push((key.clone(), None));
+            self.seen.push((key.clone(), None, false));
             seed.deserialize(CowStrDeserializer::<Unsettled>::new(key))
                 .map(Some)
         }
@@ -379,15 +385,142 @@ mod one_pass {
             &mut self,
             seed: S,
         ) -> Result<S::Value, Unsettled> {
-            let Some((key, raw)) = self.seen.last_mut() else {
+            let Some((key, raw, is_null)) = self.seen.last_mut() else {
                 return Err(Unsettled);
             };
             if self.declared.contains(&key.as_ref()) {
-                return self.map.next_value_seed(seed).map_err(unsettled);
+                return self
+                    .map
+                    .next_value_seed(TrackNull {
+                        inner: seed,
+                        is_null,
+                    })
+                    .map_err(unsettled);
             }
             let value: &'de RawValue = self.map.next_value().map_err(unsettled)?;
             *raw = Some(value);
             seed.deserialize(value).map_err(unsettled)
+        }
+    }
+
+    struct TrackNull<'a, S> {
+        inner: S,
+        is_null: &'a mut bool,
+    }
+
+    impl<'de, S: DeserializeSeed<'de>> DeserializeSeed<'de> for TrackNull<'_, S> {
+        type Value = S::Value;
+
+        fn deserialize<D: Deserializer<'de>>(
+            self,
+            deserializer: D,
+        ) -> Result<Self::Value, D::Error> {
+            self.inner.deserialize(NullSpy {
+                inner: deserializer,
+                is_null: self.is_null,
+            })
+        }
+    }
+
+    struct NullSpy<'a, D> {
+        inner: D,
+        is_null: &'a mut bool,
+    }
+
+    impl<'de, D: Deserializer<'de>> Deserializer<'de> for NullSpy<'_, D> {
+        type Error = D::Error;
+
+        fn deserialize_any<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
+            self.inner.deserialize_any(NullVisitor {
+                inner: visitor,
+                is_null: self.is_null,
+            })
+        }
+
+        fn deserialize_option<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
+            self.inner.deserialize_option(NullVisitor {
+                inner: visitor,
+                is_null: self.is_null,
+            })
+        }
+
+        fn deserialize_unit<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
+            self.inner.deserialize_unit(NullVisitor {
+                inner: visitor,
+                is_null: self.is_null,
+            })
+        }
+
+        serde::forward_to_deserialize_any! {
+            bool i8 i16 i32 i64 i128 u8 u16 u32 u64 u128 f32 f64 char str string bytes
+            byte_buf unit_struct newtype_struct seq tuple tuple_struct map struct enum
+            identifier ignored_any
+        }
+    }
+
+    struct NullVisitor<'a, V> {
+        inner: V,
+        is_null: &'a mut bool,
+    }
+
+    impl<'de, V: Visitor<'de>> Visitor<'de> for NullVisitor<'_, V> {
+        type Value = V::Value;
+
+        fn expecting(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            self.inner.expecting(f)
+        }
+
+        fn visit_none<E: serde::de::Error>(self) -> Result<Self::Value, E> {
+            *self.is_null = true;
+            self.inner.visit_none()
+        }
+
+        fn visit_unit<E: serde::de::Error>(self) -> Result<Self::Value, E> {
+            *self.is_null = true;
+            self.inner.visit_unit()
+        }
+
+        fn visit_some<D: Deserializer<'de>>(
+            self,
+            deserializer: D,
+        ) -> Result<Self::Value, D::Error> {
+            self.inner.visit_some(deserializer)
+        }
+
+        fn visit_bool<E: serde::de::Error>(self, v: bool) -> Result<Self::Value, E> {
+            self.inner.visit_bool(v)
+        }
+
+        fn visit_i64<E: serde::de::Error>(self, v: i64) -> Result<Self::Value, E> {
+            self.inner.visit_i64(v)
+        }
+
+        fn visit_u64<E: serde::de::Error>(self, v: u64) -> Result<Self::Value, E> {
+            self.inner.visit_u64(v)
+        }
+
+        fn visit_f64<E: serde::de::Error>(self, v: f64) -> Result<Self::Value, E> {
+            self.inner.visit_f64(v)
+        }
+
+        fn visit_str<E: serde::de::Error>(self, v: &str) -> Result<Self::Value, E> {
+            self.inner.visit_str(v)
+        }
+
+        fn visit_borrowed_str<E: serde::de::Error>(self, v: &'de str) -> Result<Self::Value, E> {
+            self.inner.visit_borrowed_str(v)
+        }
+
+        fn visit_string<E: serde::de::Error>(self, v: String) -> Result<Self::Value, E> {
+            self.inner.visit_string(v)
+        }
+
+        fn visit_seq<A: serde::de::SeqAccess<'de>>(self, seq: A) -> Result<Self::Value, A::Error> {
+            self.inner.visit_seq(seq)
+        }
+
+        fn visit_map<A: MapAccess<'de>>(self, map: A) -> Result<Self::Value, A::Error> {
+            self.inner.visit_map(map)
         }
     }
 
@@ -407,7 +540,7 @@ mod one_pass {
 
         #[test]
         fn one_pass_reads_what_two_passes_read_or_leaves_it_to_them() {
-            let (known, extra) =
+            let (known, extra, verbatim) =
                 read::<Block>(r#"{"type":"text","z":{"a": 1},"text":"hi","raw":[1, 2],"y":null}"#)
                     .unwrap();
             assert_eq!(known.ty, "text");
@@ -419,10 +552,20 @@ mod one_pass {
                     .collect::<Vec<_>>(),
                 [("z", r#"{"a": 1}"#), ("y", "null")]
             );
+            assert!(verbatim.is_empty());
+            let (known, extra, verbatim) = read::<Block>(r#"{"type":"text","text":null}"#).unwrap();
+            assert_eq!(known.text, None);
+            assert!(extra.is_empty());
+            assert_eq!(
+                verbatim
+                    .iter()
+                    .map(|(k, v)| (k.as_str(), v.get()))
+                    .collect::<Vec<_>>(),
+                [("text", "null")]
+            );
             for unsettled in [
                 r#"{"type":"text","type":"text"}"#,
                 r#"{"type":"text","z":1,"z":2}"#,
-                r#"{"type":"text","text":null}"#,
                 r#"{"type":"text","a.b":1}"#,
                 r#"{"type":5}"#,
                 r#"["text"]"#,

@@ -49,7 +49,7 @@ pub(super) fn item_scope(i: usize) -> String {
     format!("@out{i}")
 }
 
-pub(super) fn decode_usage(raw: &RawValue, origin: &Origin) -> Result<Usage, KppError> {
+pub(crate) fn decode_usage(raw: &RawValue, origin: &Origin) -> Result<Usage, KppError> {
     let w: wire::UsageWire = serde_json::from_str(raw.get()).map_err(|e| {
         KppError::provider(format!(
             "The provider sent an OpenAI Responses usage object that Kaeso cannot read: {}.",
@@ -116,7 +116,7 @@ pub(super) fn usage_node(u: &Usage) -> Node {
     node
 }
 
-pub(super) fn stop_for(status: Option<&str>, reason: Option<&str>, has_calls: bool) -> StopReason {
+pub(crate) fn stop_for(status: Option<&str>, reason: Option<&str>, has_calls: bool) -> StopReason {
     match (status, reason) {
         (Some("incomplete"), Some("max_output_tokens")) => StopReason::MaxTokens,
         (Some("incomplete"), Some("content_filter")) => StopReason::ContentFilter,
@@ -235,7 +235,7 @@ pub(super) fn response_object(
         .with("usage", usage)
 }
 
-pub(super) fn failed_error(w: &wire::ResponseObject<'_>, raw: Value, origin: &Origin) -> KppError {
+pub(crate) fn failed_error(w: &wire::ResponseObject<'_>, raw: Value, origin: &Origin) -> KppError {
     let code = w.error.as_ref().and_then(|e| e.code.clone());
     let message = w
         .error
@@ -429,7 +429,7 @@ fn is_message_part(b: &Block) -> bool {
     matches!(b, Block::Text(_) | Block::Refusal(_))
 }
 
-pub(super) fn excludes_reasoning(req: Option<&kaeso_kpp::Request>) -> bool {
+pub(crate) fn excludes_reasoning(req: Option<&kaeso_kpp::Request>) -> bool {
     matches!(
         req,
         Some(kaeso_kpp::Request::Generate(g)) if g.reasoning.as_ref().is_some_and(|r| r.exclude)

@@ -61,6 +61,7 @@ pub(crate) struct ChatStreamEncoder {
     created_at: u64,
     started: bool,
     envelope: Obj,
+    foreign_text_prefix: Option<Vec<u8>>,
     role_pending: bool,
     tool_index: HashMap<u32, u32>,
     unknown_tools: HashSet<u32>,
@@ -91,6 +92,7 @@ impl ChatStreamEncoder {
             created_at: ctx.created_at.unwrap_or(0),
             started: false,
             envelope: Obj::new(),
+            foreign_text_prefix: None,
             role_pending: false,
             tool_index: HashMap::new(),
             unknown_tools: HashSet::new(),
@@ -476,6 +478,49 @@ impl ChatStreamEncoder {
             && chunk.usage.is_some()
             && form.get("ch").and_then(Value::as_str) == Some("empty")
         {
+            return Ok(out);
+        }
+        if !own
+            && !self.role_pending
+            && chunk.has_choice
+            && let Some(text) = &chunk.content
+            && chunk.refusal.is_none()
+            && chunk.reasoning.is_none()
+            && chunk.tool_calls.is_empty()
+            && chunk.audio.is_none()
+            && chunk.finish.is_none()
+            && chunk.usage.is_none()
+            && chunk.fields.is_empty()
+            && chunk.choice_fields.is_empty()
+            && chunk.delta_fields.is_empty()
+        {
+            let prefix = self.foreign_text_prefix.get_or_insert_with(|| {
+                let mut p = Vec::with_capacity(128);
+                p.extend_from_slice(b"data: {");
+                for (i, (k, v)) in self.envelope.iter().enumerate() {
+                    if i > 0 {
+                        p.push(b',');
+                    }
+                    let _ = serde_json::to_writer(&mut p, k);
+                    p.push(b':');
+                    p.extend_from_slice(v.get().as_bytes());
+                }
+                if !self.envelope.is_empty() {
+                    p.push(b',');
+                }
+                p.extend_from_slice(b"\"choices\":[{\"index\":0,\"delta\":{\"content\":");
+                p
+            });
+            out.reserve(prefix.len() + text.len() + 64);
+            out.extend_from_slice(prefix);
+            serde_json::to_writer(&mut out, text).map_err(internal)?;
+            if self.include_usage {
+                out.extend_from_slice(
+                    b"},\"logprobs\":null,\"finish_reason\":null}],\"usage\":null}\n\n",
+                );
+            } else {
+                out.extend_from_slice(b"},\"logprobs\":null,\"finish_reason\":null}]}\n\n");
+            }
             return Ok(out);
         }
         let mut obj: Tree<'_> = self

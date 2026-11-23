@@ -390,8 +390,8 @@ pub(crate) struct ChunkWire {
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub(crate) struct ChunkChoice {
     pub(crate) index: u64,
-    #[serde(default)]
-    pub(crate) delta: Ext<DeltaWire>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) delta: Option<Ext<DeltaWire>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) finish_reason: Option<String>,
 }

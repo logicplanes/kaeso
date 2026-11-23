@@ -1,11 +1,11 @@
 mod blocks;
 mod check;
-mod common;
-mod error;
+pub(crate) mod common;
+pub(crate) mod error;
 mod models;
 mod profile;
 mod request;
-mod response;
+pub(crate) mod response;
 mod stream;
 mod stream_encoder;
 mod wire;

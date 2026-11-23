@@ -1,10 +1,10 @@
 mod check;
 mod convert;
-mod error;
-mod profile;
+pub(crate) mod error;
+pub(crate) mod profile;
 mod request;
 mod request_encode;
-mod response;
+pub(crate) mod response;
 mod stream;
 mod stream_encode;
 mod transcription;

@@ -19,6 +19,7 @@ mod media;
 mod models;
 pub mod multipart;
 mod openai_models;
+pub mod passthrough;
 mod scan;
 pub mod sse;
 mod struct_fields;
@@ -77,5 +78,6 @@ pub use codec::{
     is_forwarded_header, parse_retry_after,
 };
 pub use keepalive::HIDDEN_TEXT_PER_KEEPALIVE;
+pub use passthrough::{PassthroughStep, PassthroughSummary, PassthroughTally, StreamPassthrough};
 pub use tool_patterns::ToolPatterns;
 pub use tool_roots::ToolSchemaRoot;
