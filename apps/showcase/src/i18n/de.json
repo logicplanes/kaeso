@@ -1269,5 +1269,11 @@
   "Several versions: \"Python · Node · curl\", shown as pill tabs in the title bar, the chosen one raised on the plate as in a segmented control.": "Mehrere Fassungen: „Python · Node · curl“, als Pill-Tabs in der Titelleiste, die gewählte auf der Fläche hervorgehoben wie in einem Segmented-Control.",
   "What screen readers hear as the value when `valueLabel` is not plain text, such as a shortened figure with the exact one in a tooltip: \"10,624,184 of 100,000,000\".": "Was Screenreader als Wert vorlesen, wenn `valueLabel` kein reiner Text ist, etwa eine gekürzte Zahl mit der genauen im Tooltip: „10.624.184 von 100.000.000“.",
   "Writes `cost` in place of the dollar format, such as in another currency at the day's rate.": "Schreibt `cost` anstelle des Dollarformats, etwa in einer anderen Währung zum Tageskurs.",
-  "Called when it opens or closes, with why: `item-press` when a chosen item closed it, `escape-key`, `outside-press` or `trigger-press` otherwise.": "Wird aufgerufen, wenn es sich öffnet oder schließt, mit dem Grund: `item-press`, wenn ein gewählter Eintrag es geschlossen hat, sonst `escape-key`, `outside-press` oder `trigger-press`."
+  "Called when it opens or closes, with why: `item-press` when a chosen item closed it, `escape-key`, `outside-press` or `trigger-press` otherwise.": "Wird aufgerufen, wenn es sich öffnet oder schließt, mit dem Grund: `item-press`, wenn ein gewählter Eintrag es geschlossen hat, sonst `escape-key`, `outside-press` oder `trigger-press`.",
+  "A source's client, such as Claude Code, Codex or LiteLLM, as a tile with its mark, and its name beside it.": "Der Client einer Quelle, etwa Claude Code, Codex oder LiteLLM, als Kachel mit seinem Zeichen und seinem Namen daneben.",
+  "Kinds": "Arten",
+  "The source's kind, such as `claude_code`; a kind without a mark shows the source icon.": "Die Art der Quelle, etwa `claude_code`; eine Art ohne Zeichen zeigt das Quellen-Symbol.",
+  "The name beside the tile, or the tile's accessible name; the kind's product name by default.": "Der Name neben der Kachel oder ihr barrierefreier Name; standardmäßig der Produktname der Art.",
+  "The tile's size, as a provider's tile.": "Die Größe der Kachel, wie bei einem Anbieter.",
+  "Shows the name beside the tile.": "Zeigt den Namen neben der Kachel."
 }

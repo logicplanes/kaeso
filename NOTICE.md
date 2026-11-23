@@ -164,6 +164,34 @@ The marks in `packages/ui/src/components/kaeso/vendor-marks.ts` are their owners
 
 The client marks in `packages/ui/src/components/kaeso/client-button.tsx` are their owners' trademarks: Claude of Anthropic, Cursor of Anysphere, and GitHub Copilot of GitHub. Kaeso shows them only to say which client a set of install steps is for (nominative use), and implies no affiliation or endorsement. Each is the [Simple Icons](https://simpleicons.org) vector (CC0 1.0) of that mark, unchanged, in the theme's text colour.
 
+## Source marks
+
+The source marks in `packages/ui/src/components/kaeso/source-badge.tsx` are their owners' trademarks: Claude Code of Anthropic, Codex of OpenAI, Gemini CLI and Antigravity of Google, OpenTelemetry of the Cloud Native Computing Foundation, and OpenRouter of OpenRouter. Kaeso shows them only to say which client a source reports from (nominative use), and implies no affiliation or endorsement. Claude Code, Codex, Gemini CLI and Antigravity are the one-colour vectors of [Lobe Icons](https://github.com/lobehub/lobe-icons) 1.105.0 (`@lobehub/icons-static-svg`, MIT), unchanged, the two paths of Gemini CLI's joined into one; OpenTelemetry is the [Simple Icons](https://simpleicons.org) 16.38.1 vector (CC0 1.0), unchanged; OpenRouter's is its provider mark above. All are drawn in the theme's text colour. LiteLLM publishes no vector mark, so its sources show an icon.
+
+Lobe Icons' licence:
+
+> MIT License
+>
+> Copyright (c) 2023 LobeHub
+>
+> Permission is hereby granted, free of charge, to any person obtaining a copy
+> of this software and associated documentation files (the "Software"), to deal
+> in the Software without restriction, including without limitation the rights
+> to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+> copies of the Software, and to permit persons to whom the Software is
+> furnished to do so, subject to the following conditions:
+>
+> The above copyright notice and this permission notice shall be included in all
+> copies or substantial portions of the Software.
+>
+> THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+> IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+> FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+> AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+> LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+> OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+> SOFTWARE.
+
 ## Deploy button marks
 
 The README's deploy buttons in `.github/assets/badges` show their platforms' marks, which are their owners' trademarks, only to say where a button deploys Kaeso (nominative use), and imply no affiliation or endorsement. Each mark is white on a tile in the platform's colour:
