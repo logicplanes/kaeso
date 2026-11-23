@@ -90,7 +90,7 @@ Eine Zeile mit **Keine Bilder** steht für einen Server, dessen Platz für Bilde
 
 ## Server-Software
 
-Kaeso weiß, wie die Inferenz-Server unten von dem Format abweichen, das sie sprechen. Ein eigener Anbieter, der seinen **Server** nennt, erhält diese Anpassungen bei jeder Anfrage, und die Konsole zeigt das Zeichen der Software überall, wo der Anbieter erscheint:
+Kaeso weiß, wie die Inferenz-Server unten von dem Format abweichen, das sie sprechen. Ein eigener Anbieter, der seinen **Server** nennt, erhält diese Anpassungen bei jeder Anfrage, und die Konsole zeigt das Zeichen der Software überall, wo der Anbieter erscheint (SGLang und MLX LM zeigen stattdessen das Anbietersymbol):
 
 - `developer`-Nachrichten kommen als `system`-Nachrichten an, denn die Chat-Vorlage eines Modells kennt oft nur `system`. Die Vorlagen von Qwen verwerfen eine `developer`-Nachricht kommentarlos.
 - Das Ausgabelimit einer App geht als `max_tokens`, das jeder von ihnen liest; Ollama ignoriert `max_completion_tokens`.
