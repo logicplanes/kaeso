@@ -172,12 +172,12 @@ export function modelMaker(model: string): ModelMaker | undefined {
     const maker = byNamespace.get(space);
     if (maker) return maker;
   }
-  const prefix = prefixes.find((space) => name.startsWith(`${space}-`));
-  if (prefix) return byNamespace.get(prefix);
   // A namespace no maker owns, such as `EleutherAI/gpt-j-6b`, is someone else's model whatever its name says. Only ids
   // without one, or with a host's own folder before the name (fal writes `fal-ai/flux/dev`), are read by their name.
   const outer = nearest.at(-1);
   if (outer !== undefined && !HOST_FOLDERS.has(outer)) return undefined;
+  const prefix = prefixes.find((space) => name.startsWith(`${space}-`));
+  if (prefix) return byNamespace.get(prefix);
   for (const part of [name, name.replace(EMBEDDING, ""), ...nearest]) {
     const rule = rules.find((r) => r.names?.test(part));
     if (rule) return rule;

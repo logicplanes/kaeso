@@ -177,6 +177,8 @@ describe("model makers", () => {
     "EleutherAI/gpt-j-6b",
     "AI-Sweden-Models/gpt-sw3-20b",
     "thedrummer/glm-4.5-air-steam",
+    "thedrummer/mistral-small-ft",
+    "mattshumer/reflection-llama-3.1-70b",
   ])("names no maker for %j", (id) => {
     expect(modelMaker(id)).toBeUndefined();
   });
