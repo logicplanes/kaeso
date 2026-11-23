@@ -9,7 +9,9 @@ use kaeso_core::catalogue::Fields;
 use kaeso_core::id::RequestId;
 use kaeso_core::rights::{ProjectRight, effective_project_rights};
 use kaeso_core::sources::{Counted, SourceKind};
-use kaeso_kpp::{Block, DialectId, GenerateRequest, Message, Request, Response, Usage};
+use kaeso_kpp::{
+    Block, CacheWriteBreakdown, DialectId, GenerateRequest, Message, Request, Response, Usage,
+};
 use kaeso_store::StoreError;
 use kaeso_store::clickhouse::tool_calls::ToolCallRow;
 use kaeso_store::pg::sources::{Activity, Source};
@@ -386,6 +388,12 @@ fn usage(t: Counted) -> Usage {
     u.cache_read_tokens = t.cache_read;
     u.cache_write_tokens = t.cache_write;
     u.reasoning_tokens = (t.reasoning > 0).then_some(t.reasoning);
+    // Writes kept for an hour cost more than those kept for five minutes.
+    let one_hour = t.cache_write_1h.min(t.cache_write);
+    if one_hour > 0 {
+        u.cache_write_breakdown =
+            Some(CacheWriteBreakdown::new(t.cache_write - one_hour, one_hour));
+    }
     u
 }
 
@@ -395,6 +403,9 @@ fn kind_of(source: &Source) -> Option<SourceKind> {
 
 /// Why Kaeso can't keep a request, checked before anything is counted.
 fn invalid_request(r: &ObservedRequest, now: OffsetDateTime) -> Option<Refusal> {
+    if r.external_id.trim().is_empty() {
+        return Some(Refusal::NoId);
+    }
     let t = r.tokens;
     if [t.input, t.output, t.cache_read, t.cache_write, t.reasoning]
         .iter()
@@ -415,6 +426,9 @@ fn invalid_request(r: &ObservedRequest, now: OffsetDateTime) -> Option<Refusal> 
 }
 
 fn invalid_call(c: &ObservedToolCall, now: OffsetDateTime) -> Option<Refusal> {
+    if c.external_id.trim().is_empty() {
+        return Some(Refusal::NoId);
+    }
     if c.tool.trim().is_empty() {
         return Some(Refusal::NoTool);
     }

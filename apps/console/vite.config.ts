@@ -256,6 +256,7 @@ export default defineConfig({
       "/v1": { target: gateway, changeOrigin: false },
       "/mcp": { target: gateway, changeOrigin: false },
       "/oauth": { target: gateway, changeOrigin: false },
+      "/ingest": { target: gateway, changeOrigin: false },
       "/.well-known/oauth-": { target: gateway, changeOrigin: false },
     },
     warmup: {
@@ -279,7 +280,7 @@ export default defineConfig({
   preview: {
     port: 3000,
     strictPort: true,
-    proxy: { "/platform": gateway, "/v1": gateway, "/mcp": gateway, "/oauth": gateway, "/.well-known/oauth-": gateway },
+    proxy: { "/platform": gateway, "/v1": gateway, "/mcp": gateway, "/oauth": gateway, "/ingest": gateway, "/.well-known/oauth-": gateway },
   },
   build: {
     target: "es2023",

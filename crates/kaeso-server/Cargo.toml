@@ -59,6 +59,7 @@ http-body-util.workspace = true
 flate2.workspace = true
 ruzstd.workspace = true
 resvg.workspace = true
+prost.workspace = true
 
 [lints]
 workspace = true

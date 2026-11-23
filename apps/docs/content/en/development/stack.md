@@ -25,7 +25,7 @@ flowchart TD
   gateway --> mail
 ```
 
-The console's development server passes `/platform`, `/v1`, `/mcp`, `/oauth` and the OAuth discovery addresses under `/.well-known` on to the gateway, so the browser sees one address. The session cookie is then first-party, as it is in production behind a reverse proxy.
+The console's development server passes `/platform`, `/v1`, `/mcp`, `/oauth`, `/ingest` and the OAuth discovery addresses under `/.well-known` on to the gateway, so the browser sees one address. The session cookie is then first-party, as it is in production behind a reverse proxy.
 
 ## See what runs
 

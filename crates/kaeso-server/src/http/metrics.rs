@@ -13,6 +13,8 @@ fn surface(path: &str) -> &'static str {
         "model_api"
     } else if path.starts_with("/platform/") {
         "platform_api"
+    } else if path.starts_with("/ingest/") {
+        "ingest"
     } else if path == "/healthz" || path == "/readyz" {
         "health"
     } else {

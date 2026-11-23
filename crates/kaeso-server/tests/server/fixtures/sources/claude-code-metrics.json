@@ -1,0 +1,534 @@
+{
+ "resourceMetrics": [
+  {
+   "resource": {
+    "attributes": [
+     {
+      "key": "host.arch",
+      "value": {
+       "stringValue": "amd64"
+      }
+     },
+     {
+      "key": "os.type",
+      "value": {
+       "stringValue": "linux"
+      }
+     },
+     {
+      "key": "os.version",
+      "value": {
+       "stringValue": "6.8.0"
+      }
+     },
+     {
+      "key": "service.name",
+      "value": {
+       "stringValue": "claude-code"
+      }
+     },
+     {
+      "key": "service.version",
+      "value": {
+       "stringValue": "2.1.322"
+      }
+     }
+    ],
+    "droppedAttributesCount": 0
+   },
+   "scopeMetrics": [
+    {
+     "scope": {
+      "name": "com.anthropic.claude_code",
+      "version": "2.1.322"
+     },
+     "metrics": [
+      {
+       "name": "claude_code.session.count",
+       "description": "Count of CLI sessions started",
+       "unit": "",
+       "sum": {
+        "aggregationTemporality": 1,
+        "isMonotonic": true,
+        "dataPoints": [
+         {
+          "attributes": [
+           {
+            "key": "user.id",
+            "value": {
+             "stringValue": "0000000000000000000000000000000000000000000000000000000000000000"
+            }
+           },
+           {
+            "key": "session.id",
+            "value": {
+             "stringValue": "00000000-0000-4000-8000-000000000003"
+            }
+           },
+           {
+            "key": "organization.id",
+            "value": {
+             "stringValue": "00000000-0000-4000-8000-000000000002"
+            }
+           },
+           {
+            "key": "user.email",
+            "value": {
+             "stringValue": "ada@example.com"
+            }
+           },
+           {
+            "key": "user.account_uuid",
+            "value": {
+             "stringValue": "00000000-0000-4000-8000-000000000001"
+            }
+           },
+           {
+            "key": "user.account_id",
+            "value": {
+             "stringValue": "user_01EXAMPLE0000000000000000"
+            }
+           },
+           {
+            "key": "anthropic.provider",
+            "value": {
+             "stringValue": "firstParty"
+            }
+           },
+           {
+            "key": "anthropic.custom_base_url",
+            "value": {
+             "boolValue": false
+            }
+           },
+           {
+            "key": "start_type",
+            "value": {
+             "stringValue": "fresh"
+            }
+           }
+          ],
+          "startTimeUnixNano": "1795388059424000000",
+          "timeUnixNano": "1795388061422000000",
+          "asDouble": 1
+         }
+        ]
+       }
+      },
+      {
+       "name": "claude_code.cost.usage",
+       "description": "Cost of the Claude Code session",
+       "unit": "USD",
+       "sum": {
+        "aggregationTemporality": 1,
+        "isMonotonic": true,
+        "dataPoints": [
+         {
+          "attributes": [
+           {
+            "key": "user.id",
+            "value": {
+             "stringValue": "0000000000000000000000000000000000000000000000000000000000000000"
+            }
+           },
+           {
+            "key": "session.id",
+            "value": {
+             "stringValue": "00000000-0000-4000-8000-000000000003"
+            }
+           },
+           {
+            "key": "organization.id",
+            "value": {
+             "stringValue": "00000000-0000-4000-8000-000000000002"
+            }
+           },
+           {
+            "key": "user.email",
+            "value": {
+             "stringValue": "ada@example.com"
+            }
+           },
+           {
+            "key": "user.account_uuid",
+            "value": {
+             "stringValue": "00000000-0000-4000-8000-000000000001"
+            }
+           },
+           {
+            "key": "user.account_id",
+            "value": {
+             "stringValue": "user_01EXAMPLE0000000000000000"
+            }
+           },
+           {
+            "key": "anthropic.provider",
+            "value": {
+             "stringValue": "firstParty"
+            }
+           },
+           {
+            "key": "anthropic.custom_base_url",
+            "value": {
+             "boolValue": false
+            }
+           },
+           {
+            "key": "model",
+            "value": {
+             "stringValue": "claude-haiku-5-5"
+            }
+           },
+           {
+            "key": "query_source",
+            "value": {
+             "stringValue": "main"
+            }
+           },
+           {
+            "key": "effort",
+            "value": {
+             "stringValue": "medium"
+            }
+           }
+          ],
+          "startTimeUnixNano": "1795388060378000000",
+          "timeUnixNano": "1795388061422000000",
+          "asDouble": 0.0033971300000000004
+         }
+        ]
+       }
+      },
+      {
+       "name": "claude_code.token.usage",
+       "description": "Number of tokens used",
+       "unit": "tokens",
+       "sum": {
+        "aggregationTemporality": 1,
+        "isMonotonic": true,
+        "dataPoints": [
+         {
+          "attributes": [
+           {
+            "key": "user.id",
+            "value": {
+             "stringValue": "0000000000000000000000000000000000000000000000000000000000000000"
+            }
+           },
+           {
+            "key": "session.id",
+            "value": {
+             "stringValue": "00000000-0000-4000-8000-000000000003"
+            }
+           },
+           {
+            "key": "organization.id",
+            "value": {
+             "stringValue": "00000000-0000-4000-8000-000000000002"
+            }
+           },
+           {
+            "key": "user.email",
+            "value": {
+             "stringValue": "ada@example.com"
+            }
+           },
+           {
+            "key": "user.account_uuid",
+            "value": {
+             "stringValue": "00000000-0000-4000-8000-000000000001"
+            }
+           },
+           {
+            "key": "user.account_id",
+            "value": {
+             "stringValue": "user_01EXAMPLE0000000000000000"
+            }
+           },
+           {
+            "key": "anthropic.provider",
+            "value": {
+             "stringValue": "firstParty"
+            }
+           },
+           {
+            "key": "anthropic.custom_base_url",
+            "value": {
+             "boolValue": false
+            }
+           },
+           {
+            "key": "model",
+            "value": {
+             "stringValue": "claude-haiku-5-5"
+            }
+           },
+           {
+            "key": "query_source",
+            "value": {
+             "stringValue": "main"
+            }
+           },
+           {
+            "key": "effort",
+            "value": {
+             "stringValue": "medium"
+            }
+           },
+           {
+            "key": "type",
+            "value": {
+             "stringValue": "input"
+            }
+           }
+          ],
+          "startTimeUnixNano": "1795388060378000000",
+          "timeUnixNano": "1795388061422000000",
+          "asDouble": 2
+         },
+         {
+          "attributes": [
+           {
+            "key": "user.id",
+            "value": {
+             "stringValue": "0000000000000000000000000000000000000000000000000000000000000000"
+            }
+           },
+           {
+            "key": "session.id",
+            "value": {
+             "stringValue": "00000000-0000-4000-8000-000000000003"
+            }
+           },
+           {
+            "key": "organization.id",
+            "value": {
+             "stringValue": "00000000-0000-4000-8000-000000000002"
+            }
+           },
+           {
+            "key": "user.email",
+            "value": {
+             "stringValue": "ada@example.com"
+            }
+           },
+           {
+            "key": "user.account_uuid",
+            "value": {
+             "stringValue": "00000000-0000-4000-8000-000000000001"
+            }
+           },
+           {
+            "key": "user.account_id",
+            "value": {
+             "stringValue": "user_01EXAMPLE0000000000000000"
+            }
+           },
+           {
+            "key": "anthropic.provider",
+            "value": {
+             "stringValue": "firstParty"
+            }
+           },
+           {
+            "key": "anthropic.custom_base_url",
+            "value": {
+             "boolValue": false
+            }
+           },
+           {
+            "key": "model",
+            "value": {
+             "stringValue": "claude-haiku-5-5"
+            }
+           },
+           {
+            "key": "query_source",
+            "value": {
+             "stringValue": "main"
+            }
+           },
+           {
+            "key": "effort",
+            "value": {
+             "stringValue": "medium"
+            }
+           },
+           {
+            "key": "type",
+            "value": {
+             "stringValue": "output"
+            }
+           }
+          ],
+          "startTimeUnixNano": "1795388060378000000",
+          "timeUnixNano": "1795388061422000000",
+          "asDouble": 62
+         },
+         {
+          "attributes": [
+           {
+            "key": "user.id",
+            "value": {
+             "stringValue": "0000000000000000000000000000000000000000000000000000000000000000"
+            }
+           },
+           {
+            "key": "session.id",
+            "value": {
+             "stringValue": "00000000-0000-4000-8000-000000000003"
+            }
+           },
+           {
+            "key": "organization.id",
+            "value": {
+             "stringValue": "00000000-0000-4000-8000-000000000002"
+            }
+           },
+           {
+            "key": "user.email",
+            "value": {
+             "stringValue": "ada@example.com"
+            }
+           },
+           {
+            "key": "user.account_uuid",
+            "value": {
+             "stringValue": "00000000-0000-4000-8000-000000000001"
+            }
+           },
+           {
+            "key": "user.account_id",
+            "value": {
+             "stringValue": "user_01EXAMPLE0000000000000000"
+            }
+           },
+           {
+            "key": "anthropic.provider",
+            "value": {
+             "stringValue": "firstParty"
+            }
+           },
+           {
+            "key": "anthropic.custom_base_url",
+            "value": {
+             "boolValue": false
+            }
+           },
+           {
+            "key": "model",
+            "value": {
+             "stringValue": "claude-haiku-5-5"
+            }
+           },
+           {
+            "key": "query_source",
+            "value": {
+             "stringValue": "main"
+            }
+           },
+           {
+            "key": "effort",
+            "value": {
+             "stringValue": "medium"
+            }
+           },
+           {
+            "key": "type",
+            "value": {
+             "stringValue": "cacheRead"
+            }
+           }
+          ],
+          "startTimeUnixNano": "1795388060379000000",
+          "timeUnixNano": "1795388061422000000",
+          "asDouble": 11873
+         },
+         {
+          "attributes": [
+           {
+            "key": "user.id",
+            "value": {
+             "stringValue": "0000000000000000000000000000000000000000000000000000000000000000"
+            }
+           },
+           {
+            "key": "session.id",
+            "value": {
+             "stringValue": "00000000-0000-4000-8000-000000000003"
+            }
+           },
+           {
+            "key": "organization.id",
+            "value": {
+             "stringValue": "00000000-0000-4000-8000-000000000002"
+            }
+           },
+           {
+            "key": "user.email",
+            "value": {
+             "stringValue": "ada@example.com"
+            }
+           },
+           {
+            "key": "user.account_uuid",
+            "value": {
+             "stringValue": "00000000-0000-4000-8000-000000000001"
+            }
+           },
+           {
+            "key": "user.account_id",
+            "value": {
+             "stringValue": "user_01EXAMPLE0000000000000000"
+            }
+           },
+           {
+            "key": "anthropic.provider",
+            "value": {
+             "stringValue": "firstParty"
+            }
+           },
+           {
+            "key": "anthropic.custom_base_url",
+            "value": {
+             "boolValue": false
+            }
+           },
+           {
+            "key": "model",
+            "value": {
+             "stringValue": "claude-haiku-5-5"
+            }
+           },
+           {
+            "key": "query_source",
+            "value": {
+             "stringValue": "main"
+            }
+           },
+           {
+            "key": "effort",
+            "value": {
+             "stringValue": "medium"
+            }
+           },
+           {
+            "key": "type",
+            "value": {
+             "stringValue": "cacheCreation"
+            }
+           }
+          ],
+          "startTimeUnixNano": "1795388060379000000",
+          "timeUnixNano": "1795388061422000000",
+          "asDouble": 16236
+         }
+        ]
+       }
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

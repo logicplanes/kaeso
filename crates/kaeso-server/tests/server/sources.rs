@@ -76,6 +76,7 @@ fn haiku(id: &str, email: Option<&str>) -> ObservedRequest {
             cache_read: 10_000,
             cache_write: 0,
             reasoning: 0,
+            cache_write_1h: 0,
         },
         reported_cost: Some(Decimal::from_str("0.5").unwrap()),
         client: Some("claude-cli/2.1.322".into()),
@@ -621,4 +622,53 @@ fn the_api_document_describes_a_source_with_its_own_schema() {
         "another type took the name {name}: {schema}"
     );
     assert!(schema["properties"]["status"].is_object());
+}
+
+#[tokio::test]
+async fn cache_writes_kept_for_an_hour_cost_what_an_hour_costs() {
+    let env = env().await;
+    let made = add(
+        &env,
+        json!({ "kind": "claude_code", "name": "Claude Code" }),
+    )
+    .await;
+    let id = made["source"]["id"].as_str().unwrap().to_owned();
+    let source = source_row(&env, &id).await;
+    let written = |external_id: &str, one_hour: u64| {
+        let mut r = haiku(external_id, None);
+        r.reported_cost = None;
+        r.tokens = Counted {
+            cache_write: 1_000_000,
+            cache_write_1h: one_hour,
+            ..Counted::default()
+        };
+        r
+    };
+    observed::record(
+        &env.app.state,
+        &source,
+        Batch {
+            requests: vec![written("five_minutes", 0), written("one_hour", 1_000_000)],
+            ..Batch::default()
+        },
+    )
+    .await
+    .unwrap();
+    flush(&env).await;
+    let logs = env
+        .app
+        .get(
+            &format!("{}/logs?source_id={id}", base(&env)),
+            &env.owner.cookie,
+        )
+        .await
+        .body;
+    let rows = logs["data"].as_array().unwrap();
+    assert_eq!(rows.len(), 2, "{logs}");
+    let mut costs: Vec<Decimal> = rows
+        .iter()
+        .map(|r| Decimal::from_str(r["cost"].as_str().unwrap()).unwrap())
+        .collect();
+    costs.sort();
+    assert!(costs[1] > costs[0], "an hour's writes cost more: {costs:?}");
 }

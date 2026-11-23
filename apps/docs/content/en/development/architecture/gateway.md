@@ -46,6 +46,7 @@ A Platform API request authenticates with a session cookie, an API key with plat
 | The MCP server and its OAuth sign-in (`/mcp`, `/oauth`) | `crates/kaeso-server/src/mcp` |
 | The MCP portal (`/mcp/{project}`) | `crates/kaeso-server/src/portal` |
 | SCIM 2.0 (`/platform/v1/orgs/{org}/scim/v2`) | `crates/kaeso-server/src/scim` |
+| What sources report: requests and tool calls clients made without the gateway (`/ingest`) | `crates/kaeso-server/src/ingest` |
 | The services both use | `crates/kaeso-server/src/services` |
 
 ## Crates

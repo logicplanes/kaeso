@@ -113,6 +113,8 @@ def test_api_paths_reach_the_gateway_and_everything_else_the_console(edge):
     assert httpx.get(f"{edge.url}/v1/models", timeout=10).status_code == 401
     voices = httpx.get(f"{edge.url}/v2/voices", timeout=10)
     assert voices.status_code == 401 and "detail" in voices.json(), "ElevenLabs' /v2 reaches the gateway"
+    observed = httpx.post(f"{edge.url}/ingest/otlp/v1/logs", json={"resourceLogs": []}, timeout=10)
+    assert observed.status_code == 401 and observed.json()["error"]["type"] == "authentication", "what sources report reaches the gateway"
 
 
 def test_streams_pass_through_the_edge_chunk_by_chunk(edge, project):

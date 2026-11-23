@@ -46,6 +46,7 @@ Eine Anfrage an die Platform API authentifiziert sich mit einem Sitzungscookie, 
 | Der MCP-Server und seine OAuth-Anmeldung (`/mcp`, `/oauth`) | `crates/kaeso-server/src/mcp` |
 | Das MCP-Portal (`/mcp/{project}`) | `crates/kaeso-server/src/portal` |
 | SCIM 2.0 (`/platform/v1/orgs/{org}/scim/v2`) | `crates/kaeso-server/src/scim` |
+| Was Quellen melden: Anfragen und Tool-Aufrufe, die Clients ohne das Gateway gemacht haben (`/ingest`) | `crates/kaeso-server/src/ingest` |
 | Die Services, die beide nutzen | `crates/kaeso-server/src/services` |
 
 ## Crates

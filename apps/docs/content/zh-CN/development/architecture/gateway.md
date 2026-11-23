@@ -46,6 +46,7 @@ Platform API 请求通过会话 Cookie、具有平台访问权限的 API 密钥�
 | MCP 服务器及其 OAuth 登录（`/mcp`、`/oauth`） | `crates/kaeso-server/src/mcp` |
 | MCP 门户（`/mcp/{project}`） | `crates/kaeso-server/src/portal` |
 | SCIM 2.0（`/platform/v1/orgs/{org}/scim/v2`） | `crates/kaeso-server/src/scim` |
+| 来源上报的内容：客户端绕过网关发出的请求和工具调用（`/ingest`） | `crates/kaeso-server/src/ingest` |
 | 两者共用的服务 | `crates/kaeso-server/src/services` |
 
 ## Crate

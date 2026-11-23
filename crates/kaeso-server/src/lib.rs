@@ -6,6 +6,7 @@ pub mod cache;
 pub mod config;
 pub mod health;
 pub mod http;
+pub mod ingest;
 pub mod jobs;
 pub mod mcp;
 pub mod metrics;
