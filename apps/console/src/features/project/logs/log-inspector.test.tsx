@@ -275,6 +275,16 @@ describe("LogInspector", () => {
     expect(within(section(panel, "Sent by")).queryByRole("link", { name: "A source" })).not.toBeInTheDocument();
   });
 
+  it("names a source it doesn't know as a source", async () => {
+    signedIn();
+    const observed = { source: "observed" as const, source_id: null, key_id: null };
+    logsData({ rows: [logRow(observed)], entries: [logEntry(observed)] });
+    await renderApp(projectPath("logs?log=req_0001"));
+    const panel = await sheet();
+    expect(await within(panel).findByText("Observed, not routed")).toBeInTheDocument();
+    expect(panel).toHaveTextContent("A source reported this request");
+  });
+
   it("says a request that cost nothing wasn't billed", async () => {
     signedIn();
     logsData({ rows: [logRow()], entries: [logEntry({ status: 404, error_kind: "not_found", cost: "0", cost_basis: "none" })] });

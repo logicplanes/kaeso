@@ -32,7 +32,14 @@ describe("logsLayout", () => {
 });
 
 function table(layout: LogsLayout, spansDays = true) {
-  const all = logColumns({ spansDays, layout, keyName: (id) => id, partyName: (p) => p.id ?? "", providerName: (id) => ({ openai: "OpenAI" })[id] ?? id });
+  const all = logColumns({
+    sourceOf: () => undefined,
+    spansDays,
+    layout,
+    keyName: (id) => id,
+    partyName: (p) => p.id ?? "",
+    providerName: (id) => ({ openai: "OpenAI" })[id] ?? id,
+  });
   render(<DataTable aria-label="Requests" data={[logRow()]} columns={COLUMNS.map((c) => all[c])} getRowId={(r) => r.id} />);
   return screen.getAllByRole("cell");
 }
@@ -50,6 +57,7 @@ describe("logColumns", () => {
 
   it("puts the provider's mark before the model id, named by a tooltip, when the table is narrower", () => {
     const all = logColumns({
+      sourceOf: () => undefined,
       spansDays: true,
       layout: "medium",
       withProvider: true,
@@ -109,7 +117,13 @@ describe("logColumns", () => {
   });
 
   it("puts the model first in its cell, then the outcome, the source and the message", () => {
-    const all = logColumns({ spansDays: true, keyName: (id) => id, partyName: (p) => p.id ?? "", providerName: (id) => ({ openai: "OpenAI" })[id] ?? id });
+    const all = logColumns({
+      sourceOf: () => undefined,
+      spansDays: true,
+      keyName: (id) => id,
+      partyName: (p) => p.id ?? "",
+      providerName: (id) => ({ openai: "OpenAI" })[id] ?? id,
+    });
     render(
       <DataTable
         aria-label="Requests"
@@ -123,7 +137,7 @@ describe("logColumns", () => {
   });
 
   it("shows the client, alias, formats, response cache, fallbacks and the provider's request id", () => {
-    const all = logColumns({ spansDays: true, keyName: (id) => id, partyName: (p) => p.id ?? "", providerName: (id) => id });
+    const all = logColumns({ sourceOf: () => undefined, spansDays: true, keyName: (id) => id, partyName: (p) => p.id ?? "", providerName: (id) => id });
     const ids = ["client", "alias", "formats", "cache", "fallbacks", "upstream"] as const;
     const rows = [
       logRow({
@@ -189,7 +203,13 @@ describe("logColumns", () => {
   });
 
   it("names the model the app asked for, then the outcome, when a request was refused before a model was chosen", () => {
-    const all = logColumns({ spansDays: true, keyName: (id) => id, partyName: (p) => p.id ?? "", providerName: (id) => ({ openai: "OpenAI" })[id] ?? id });
+    const all = logColumns({
+      sourceOf: () => undefined,
+      spansDays: true,
+      keyName: (id) => id,
+      partyName: (p) => p.id ?? "",
+      providerName: (id) => ({ openai: "OpenAI" })[id] ?? id,
+    });
     render(
       <DataTable
         aria-label="Requests"
@@ -209,7 +229,14 @@ describe("logColumns", () => {
   });
 
   it("leaves the provider cell empty when a request was refused before a provider was chosen", () => {
-    const all = logColumns({ spansDays: true, layout: "narrow", keyName: (id) => id, partyName: (p) => p.id ?? "", providerName: (id) => id });
+    const all = logColumns({
+      sourceOf: () => undefined,
+      spansDays: true,
+      layout: "narrow",
+      keyName: (id) => id,
+      partyName: (p) => p.id ?? "",
+      providerName: (id) => id,
+    });
     render(
       <DataTable
         aria-label="Requests"
@@ -223,7 +250,13 @@ describe("logColumns", () => {
   });
 
   it("gives a successful Playground request's tag room sooner than a failed one's", () => {
-    const all = logColumns({ spansDays: true, keyName: (id) => id, partyName: (p) => p.id ?? "", providerName: (id) => ({ openai: "OpenAI" })[id] ?? id });
+    const all = logColumns({
+      sourceOf: () => undefined,
+      spansDays: true,
+      keyName: (id) => id,
+      partyName: (p) => p.id ?? "",
+      providerName: (id) => ({ openai: "OpenAI" })[id] ?? id,
+    });
     render(
       <DataTable
         aria-label="Requests"
@@ -238,7 +271,7 @@ describe("logColumns", () => {
   });
 
   it("shows what a media request made in place of tokens it didn't count", () => {
-    const all = logColumns({ spansDays: true, keyName: (id) => id, partyName: (p) => p.id ?? "", providerName: (id) => id });
+    const all = logColumns({ sourceOf: () => undefined, spansDays: true, keyName: (id) => id, partyName: (p) => p.id ?? "", providerName: (id) => id });
     const zero = { input_tokens: 0, output_tokens: 0, cache_read_tokens: 0, cache_write_tokens: 0, reasoning_tokens: 0, estimated: false };
     const media = (id: string, unit: string, input: number, output: number) => logRow({ id, usage: zero, media: { unit, input, output, detail: "" } });
     render(
@@ -262,7 +295,7 @@ describe("logColumns", () => {
   });
 
   it("shows how much of the input was read from the cache, and marks a request sent without a breakpoint", () => {
-    const all = logColumns({ spansDays: true, keyName: (id) => id, partyName: (p) => p.id ?? "", providerName: (id) => id });
+    const all = logColumns({ sourceOf: () => undefined, spansDays: true, keyName: (id) => id, partyName: (p) => p.id ?? "", providerName: (id) => id });
     const usage = { input_tokens: 25, output_tokens: 10, cache_read_tokens: 75, cache_write_tokens: 0, reasoning_tokens: 0, estimated: false };
     render(
       <DataTable
@@ -327,10 +360,12 @@ describe("observed requests", () => {
       logRow({ id: "req_seen", source: "observed", source_id: "src_claude", key_id: null }),
       logRow({ id: "req_gone", source: "observed", source_id: "src_gone", key_id: null }),
       logRow({ id: "req_play", source: "playground", key_id: null }),
+      logRow({ id: "req_failed", source: "observed", source_id: "src_claude", key_id: null, status: 429, error_kind: "rate_limited" }),
       logRow({ id: "req_api" }),
     ];
     render(<DataTable aria-label="Requests" data={rows} columns={[all.model, all.key, all.source]} getRowId={(r) => r.id} />);
-    const [seen, gone, play, api] = screen.getAllByRole("row").slice(1);
+    const [seen, gone, play, failed, api] = screen.getAllByRole("row").slice(1);
+    expect(failed).toHaveTextContent("Observed");
     expect(seen).toHaveTextContent("Observed");
     expect(within(seen as HTMLElement).getAllByText("Claude Code, Ada's laptop")).toHaveLength(2);
     expect(within(gone as HTMLElement).getAllByText("A source")).toHaveLength(2);
@@ -340,7 +375,7 @@ describe("observed requests", () => {
   });
 
   it("show a dash for the key without the project's sources", () => {
-    const all = logColumns({ spansDays: true, keyName: (id) => id, partyName: (p) => p.id ?? "", providerName: (id) => id });
+    const all = logColumns({ sourceOf: () => undefined, spansDays: true, keyName: (id) => id, partyName: (p) => p.id ?? "", providerName: (id) => id });
     render(<DataTable aria-label="Requests" data={[logRow({ key_id: null })]} columns={[all.key]} getRowId={(r) => r.id} />);
     expect(screen.getAllByRole("cell")[0]).toHaveTextContent("—");
   });

@@ -489,6 +489,18 @@ describe("AnalyticsPage", () => {
       ]),
     );
     expect(within(table).getByRole("columnheader", { name: "Source" })).toBeInTheDocument();
+    const files: Blob[] = [];
+    const created = vi.spyOn(URL, "createObjectURL").mockImplementation((b) => (files.push(b as Blob), "blob:csv"));
+    const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
+    await user.click(screen.getByRole("button", { name: "Download CSV" }));
+    const lines = (await (files[0] as Blob).text()).trimEnd().split("\r\n");
+    expect(lines.slice(1)).toEqual([
+      expect.stringMatching(/^Gateway,/),
+      expect.stringMatching(/^"Claude Code, Ada's laptop",/),
+      expect.stringMatching(/^A source,/),
+    ]);
+    created.mockRestore();
+    click.mockRestore();
     await user.click(bodyRows(table)[0] as HTMLElement);
     expect(router.state.location.pathname).toBe(projectPath("analytics"));
     await user.click(bodyRows(table)[1] as HTMLElement);

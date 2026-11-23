@@ -170,7 +170,7 @@ export function logColumns({
   keyName,
   partyName,
   providerName,
-  sourceOf = () => undefined,
+  sourceOf,
   errors,
 }: {
   spansDays: boolean;
@@ -181,7 +181,7 @@ export function logColumns({
   partyName: (p: Party) => string;
   providerName: (id: string) => string;
   /** The source that reported an observed request, when the person may see the project's sources. */
-  sourceOf?: ((id: string | null | undefined) => ExternalSourceView | undefined) | undefined;
+  sourceOf: (id: string | null | undefined) => ExternalSourceView | undefined;
 }) {
   return {
     time: startedColumn<LogView>(spansDays, layout),

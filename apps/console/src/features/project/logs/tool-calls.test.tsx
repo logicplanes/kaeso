@@ -101,11 +101,13 @@ describe("Tool calls in the request logs", () => {
       client: "claude-code",
       upstream_ms: null,
     });
-    calls([observed, toolCall()], [{ ...observed, content: null }]);
+    const unnamed = { ...observed, id: "call_unnamed", tool: "mcp_tool", upstream_tool: "mcp_tool", server_name: null };
+    calls([observed, unnamed, toolCall()], [{ ...observed, content: null }]);
     const { user, router } = await renderApp(projectPath("logs?kind=tools&source_id=src_claude"));
     const table = await screen.findByRole("grid", { name: "Tool calls" });
     const row = await within(table).findByRole("row", { name: /list_issues/ });
     expect(row).toHaveTextContent("linear");
+    expect(within(table).getByRole("row", { name: /mcp_tool/ })).toHaveTextContent("—");
     await waitFor(() => expect(row).toHaveTextContent("Claude Code, Ada's laptop"));
     expect(within(table).getByRole("row", { name: /x__create_post/ })).toHaveTextContent("X");
     expect(requests("GET", CALLS).at(-1)?.query.get("source_id")).toBe("src_claude");
