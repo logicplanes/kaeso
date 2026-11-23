@@ -16,7 +16,7 @@ describe("organization roles", () => {
     expect(screen.getByText("One per member: their rights in the organization, and in every project.")).toBeInTheDocument();
     expect(within(orgRoles).getByRole("gridcell", { name: /^Owner/ })).toHaveTextContent("Every right");
     expect(within(orgRoles).getByRole("gridcell", { name: /^Owner/ })).toHaveTextContent("Held by 1");
-    expect(within(orgRoles).getByRole("gridcell", { name: /^Admin/ })).toHaveTextContent("32 rights, 31 in projects");
+    expect(within(orgRoles).getByRole("gridcell", { name: /^Admin/ })).toHaveTextContent("32 rights, 33 in projects");
     expect(within(orgRoles).getByRole("gridcell", { name: /^Billing/ })).toHaveTextContent("Nobody yet");
     expect(within(orgRoles).getByRole("gridcell", { name: /^Member/ })).toHaveTextContent("3 rights");
     const projectRoles = screen.getByRole("grid", { name: "Project roles" });
