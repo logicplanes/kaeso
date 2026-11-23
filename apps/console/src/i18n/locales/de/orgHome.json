@@ -387,7 +387,7 @@
   "orgHome.mcp.autoApproveOn": "{name} gibt Tool-Änderungen automatisch frei",
   "orgHome.mcp.autoApproveOff": "{name} hält Tool-Änderungen zur Prüfung zurück",
   "orgHome.mcp.autoApproveQuestion": "Tool-Änderungen von {name} automatisch freigeben?",
-  "orgHome.mcp.autoApproveWaiting": "{count, plural, one {Das # Tool, das auf Prüfung wartet, wird ebenfalls freigegeben} other {Die # Tools, die auf Prüfung warten, werden ebenfalls freigegeben}}; Projekte, in denen sie an sind, bieten sie wieder an.",
+  "orgHome.mcp.autoApproveWaiting": "{count, plural, one {Das # wartende Tool wird ebenfalls freigegeben; Projekte, in denen es an ist, bieten es wieder an.} other {Die # wartenden Tools werden ebenfalls freigegeben; Projekte, in denen sie an sind, bieten sie wieder an.}}",
   "orgHome.mcp.autoApproveConfirm": "Einschalten und freigeben",
   "orgHome.mcp.toolChanges": "Tool-Änderungen",
   "orgHome.mcp.noChanges": "Noch hat sich kein Tool geändert",
