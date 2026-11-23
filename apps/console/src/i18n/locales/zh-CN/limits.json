@@ -23,6 +23,7 @@
   "limits.noneKey": "暂无密钥限额",
   "limits.noneMember": "暂无成员限额",
   "limits.noneProject": "暂无项目限额",
+  "limits.observedShort": "{amount} 由来源上报",
   "limits.rowActions": "{limit}的操作",
   "limits.serviceAccount": "服务账号",
   "limits.soft": "软性",

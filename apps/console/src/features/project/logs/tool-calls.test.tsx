@@ -2,7 +2,7 @@ import { screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ToolCallEntryView, ToolCallView } from "~/api/generated/types";
 import { ALL_PROJECT_RIGHTS, USER, signedIn, without } from "~/test/fixtures";
-import { apiKey, projectData, projectMember, projectPath } from "~/test/fixtures/project";
+import { apiKey, externalSource, projectData, projectMember, projectPath } from "~/test/fixtures/project";
 import { listPage, logsData } from "~/test/fixtures/project-logs";
 import { apiError, on, page, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
@@ -83,6 +83,58 @@ describe("Tool calls in the request logs", () => {
     await user.click(screen.getByRole("radio", { name: "Models" }));
     expect(await screen.findByRole("grid", { name: "Requests" })).toBeInTheDocument();
     expect(window.location.search).not.toContain("kind=tools");
+  });
+
+  it("shows the MCP calls a source reported, with the server it named, and filters by the source", async () => {
+    signedIn();
+    projectData({ members: [projectMember()], sources: [externalSource()] });
+    logsData();
+    const observed = toolCall({
+      id: "call_seen",
+      tool: "list_issues",
+      upstream_tool: "list_issues",
+      server: null,
+      server_name: "linear",
+      source: "observed",
+      source_id: "src_claude",
+      key_id: null,
+      client: "claude-code",
+      upstream_ms: null,
+    });
+    const unnamed = { ...observed, id: "call_unnamed", tool: "mcp_tool", upstream_tool: "mcp_tool", server_name: null };
+    calls([observed, unnamed, toolCall()], [{ ...observed, content: null }]);
+    const { user, router } = await renderApp(projectPath("logs?kind=tools&source_id=src_claude"));
+    const table = await screen.findByRole("grid", { name: "Tool calls" });
+    const row = await within(table).findByRole("row", { name: /list_issues/ });
+    expect(row).toHaveTextContent("linear");
+    expect(within(table).getByRole("row", { name: /mcp_tool/ })).toHaveTextContent("—");
+    await waitFor(() => expect(row).toHaveTextContent("Claude Code, Ada's laptop"));
+    expect(within(table).getByRole("row", { name: /x__create_post/ })).toHaveTextContent("X");
+    expect(requests("GET", CALLS).at(-1)?.query.get("source_id")).toBe("src_claude");
+    const toolbar = screen.getByRole("toolbar", { name: "Filter tool calls" });
+    expect(within(toolbar).getByRole("group", { name: "Filter: Reported by" })).toHaveTextContent("Claude Code, Ada's laptop");
+
+    await user.click(row);
+    const sheet = await screen.findByRole("dialog", { name: /list_issues/ });
+    expect(await within(sheet).findByText("Reported by a source")).toBeInTheDocument();
+    expect(sheet).toHaveTextContent("Claude Code, Ada's laptop reported this call; the client called the server itself");
+    expect(sheet).toHaveTextContent("MCP server");
+    await user.keyboard("{Escape}");
+    await user.click(within(toolbar).getByRole("button", { name: "Remove the Reported by filter" }));
+    await waitFor(() => expect(router.state.location.search).toEqual({ kind: "tools" }));
+  });
+
+  it("leaves the source column and filter out in a project without sources", async () => {
+    signedIn();
+    projectData({ members: [projectMember()] });
+    logsData();
+    calls([toolCall()]);
+    const { user } = await renderApp(projectPath("logs?kind=tools"));
+    const table = await screen.findByRole("grid", { name: "Tool calls" });
+    expect(within(table).queryByRole("columnheader", { name: "Reported by" })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Add filter" }));
+    expect(await screen.findByRole("menuitem", { name: "MCP server" })).toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "Reported by" })).not.toBeInTheDocument();
   });
 
   it("keeps the focus on the switch when the arrow keys change what it shows", async () => {

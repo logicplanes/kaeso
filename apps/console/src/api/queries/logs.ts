@@ -22,7 +22,9 @@ export interface LogFilters {
   failed?: boolean;
   error?: string;
   stream?: boolean;
-  source?: "api" | "playground";
+  source?: "api" | "playground" | "observed";
+  /** The source that reported the requests. */
+  source_id?: string;
   ingress?: string;
   egress?: string;
   alias?: string;
@@ -102,6 +104,7 @@ export function logsParams(f: LogFilters, now = Date.now()) {
     ...(f.error ? { error_kind: f.error } : {}),
     ...(f.stream !== undefined ? { stream: f.stream } : {}),
     ...(f.source ? { source: f.source } : {}),
+    ...(f.source_id ? { source_id: f.source_id } : {}),
     // The URL may hold any text; the gateway refuses a format it doesn't know.
     ...(f.ingress ? { ingress_dialect: f.ingress as RequestFormat } : {}),
     ...(f.egress ? { egress_dialect: f.egress as RequestFormat } : {}),
@@ -213,6 +216,8 @@ export interface ToolCallFilters {
   member?: string;
   server?: string;
   tool?: string;
+  /** The source that reported the calls. */
+  source_id?: string;
   status?: "ok" | "error" | "refused";
   error?: string;
 }
@@ -236,6 +241,7 @@ export function toolCallParams(f: ToolCallFilters, now = Date.now()) {
     ...(service_account ? { service_account } : {}),
     ...(f.server ? { server: f.server } : {}),
     ...(f.tool ? { tool: f.tool } : {}),
+    ...(f.source_id ? { source_id: f.source_id } : {}),
     ...(f.status ? { status: f.status } : {}),
     ...(f.error ? { error_type: f.error } : {}),
   };

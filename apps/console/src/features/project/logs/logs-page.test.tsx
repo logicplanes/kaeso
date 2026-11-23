@@ -2,7 +2,7 @@ import { act, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import { myMembership, providers as providerList, signedIn, whoAmI, without } from "~/test/fixtures";
 import { credential, hoverReason, notifications } from "~/test/fixtures/org";
-import { alias, apiKey, catalogueModel, projectData, projectMember, projectPath, serviceAccount } from "~/test/fixtures/project";
+import { alias, apiKey, catalogueModel, externalSource, projectData, projectMember, projectPath, serviceAccount } from "~/test/fixtures/project";
 import { errorGroup, listPage, logEntry, logRow, logsData } from "~/test/fixtures/project-logs";
 import { apiError, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
@@ -466,6 +466,37 @@ describe("LogsPage", () => {
     await user.click(await screen.findByRole("menuitem", { name: "Client" }));
     await user.click(await screen.findByRole("menuitemradio", { name: "Codex" }));
     await waitFor(() => expect(router.state.location.search).toEqual({ client: "codex" }));
+  });
+
+  it("filters by the source that reported the requests, or to observed requests", async () => {
+    signedIn();
+    projectData({ sources: [externalSource(), externalSource({ id: "src_codex", kind: "codex", name: "Codex CI" })] });
+    logsData({ rows: [logRow({ source: "observed", source_id: "src_claude", key_id: null })] });
+    const { user, router } = await renderApp(projectPath("logs?source_id=src_claude"));
+    await waitFor(() => expect(lastQuery()).toMatchObject({ source_id: "src_claude" }));
+    const toolbar = screen.getByRole("toolbar", { name: "Filter requests" });
+    await waitFor(() => expect(within(toolbar).getByRole("group", { name: "Filter: Reported by" })).toHaveTextContent("Claude Code, Ada's laptop"));
+    expect(requestsTable()).toHaveTextContent("Observed");
+    await user.click(within(toolbar).getByRole("button", { name: "Remove the Reported by filter" }));
+    await user.click(screen.getByRole("button", { name: "Add filter" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Reported by" }));
+    await user.click(await screen.findByRole("menuitemradio", { name: "Codex CI" }));
+    await waitFor(() => expect(router.state.location.search).toEqual({ source_id: "src_codex" }));
+    await user.click(screen.getByRole("button", { name: "Add filter" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Source" }));
+    await user.click(await screen.findByRole("menuitemradio", { name: "Observed" }));
+    await waitFor(() => expect(router.state.location.search).toEqual({ source_id: "src_codex", source: "observed" }));
+    await waitFor(() => expect(lastQuery()).toMatchObject({ source: "observed", source_id: "src_codex" }));
+  });
+
+  it("offers no Reported by filter in a project without sources", async () => {
+    signedIn();
+    projectData();
+    logsData({ rows: [logRow()] });
+    const { user } = await renderApp(projectPath("logs"));
+    await user.click(await screen.findByRole("button", { name: "Add filter" }));
+    expect(await screen.findByRole("menuitem", { name: "Source" })).toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "Reported by" })).not.toBeInTheDocument();
   });
 
   it("filters by a tag from the address or from the tags of the requests shown", async () => {

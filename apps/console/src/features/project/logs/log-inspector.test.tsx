@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { ORG, PROJECT, USER, signedIn, without } from "~/test/fixtures";
-import { alias, apiKey, catalogueModel, me, projectData, projectPath, serviceAccount } from "~/test/fixtures/project";
+import { alias, apiKey, catalogueModel, externalSource, me, projectData, projectPath, serviceAccount } from "~/test/fixtures/project";
 import { logContent, logEntry, logRow, logsData, playgroundModel } from "~/test/fixtures/project-logs";
 import { notifications } from "~/test/fixtures/org";
 import { apiError, on, page } from "~/test/network";
@@ -241,6 +241,48 @@ describe("LogInspector", () => {
     });
     await renderApp(projectPath("logs?log=req_0001"));
     expect(await within(await sheet()).findByText("From the audio's length, which Kaeso read from the file")).toBeInTheDocument();
+  });
+
+  it("says a source reported an observed request, names the source and the cost it reported", async () => {
+    signedIn();
+    projectData({ sources: [externalSource()] });
+    const observed = { source: "observed" as const, source_id: "src_claude", key_id: null, cost: "0.5", cost_basis: "source" as const, has_content: false };
+    logsData({ rows: [logRow(observed)], entries: [logEntry(observed)] });
+    const { user, router } = await renderApp(projectPath("logs?log=req_0001"));
+    const panel = await sheet();
+    expect(await within(panel).findByText("Observed, not routed")).toBeInTheDocument();
+    expect(panel).toHaveTextContent("Claude Code, Ada's laptop reported this request; it went straight to the provider");
+    expect(within(panel).getByText("As the source reported it; Kaeso has no price for the model")).toBeInTheDocument();
+    expect(within(panel).getByText("Content not kept: the source keeps none, or its client sent none.")).toBeInTheDocument();
+    const sent = section(panel, "Sent by");
+    expect(within(sent).getByRole("link", { name: "Claude Code, Ada's laptop" })).toHaveAttribute(
+      "href",
+      expect.stringContaining("/sources?source=src_claude"),
+    );
+    await user.click(within(sent).getByRole("button", { name: "Show only requests this source reported" }));
+    await waitFor(() => expect(router.state.location.search).toMatchObject({ source_id: "src_claude" }));
+  });
+
+  it("names a source the person can't see as a source", async () => {
+    signedIn({ projectRights: without("sources.view") });
+    projectData();
+    const observed = { source: "observed" as const, source_id: "src_claude", key_id: null };
+    logsData({ rows: [logRow(observed)], entries: [logEntry(observed)] });
+    await renderApp(projectPath("logs?log=req_0001"));
+    const panel = await sheet();
+    expect(await within(panel).findByText("Observed, not routed")).toBeInTheDocument();
+    expect(panel).toHaveTextContent("A source reported this request");
+    expect(within(section(panel, "Sent by")).queryByRole("link", { name: "A source" })).not.toBeInTheDocument();
+  });
+
+  it("names a source it doesn't know as a source", async () => {
+    signedIn();
+    const observed = { source: "observed" as const, source_id: null, key_id: null };
+    logsData({ rows: [logRow(observed)], entries: [logEntry(observed)] });
+    await renderApp(projectPath("logs?log=req_0001"));
+    const panel = await sheet();
+    expect(await within(panel).findByText("Observed, not routed")).toBeInTheDocument();
+    expect(panel).toHaveTextContent("A source reported this request");
   });
 
   it("says a request that cost nothing wasn't billed", async () => {

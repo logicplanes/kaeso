@@ -1,8 +1,9 @@
-import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Banner, Spinner } from "@logicplanes/kaeso-ui";
 import { formatRelative } from "@logicplanes/kaeso-ui/format";
 import type { ExternalSourceView } from "~/api/generated/types";
-import { sourceQuery } from "~/api/queries/sources";
+import { sourceQuery, sourcesQuery } from "~/api/queries/sources";
 import { t } from "~/i18n";
 import { refusalText, totals } from "./labels";
 
@@ -21,6 +22,12 @@ export function Connection({ org, project, source }: { org: string; project: str
   });
   const s = live.data;
   const sum = totals(s);
+  // The list behind the dialog shows the source connected too.
+  const queryClient = useQueryClient();
+  const connected = !!s.first_event_at;
+  useEffect(() => {
+    if (connected) void queryClient.invalidateQueries({ queryKey: sourcesQuery(org, project).queryKey });
+  }, [connected, queryClient, org, project]);
   if (s.first_event_at)
     return (
       <Banner tone="success" title={t("project.sources.connected", "Connected")}>

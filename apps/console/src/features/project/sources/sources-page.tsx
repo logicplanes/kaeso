@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import {
   AppFrame,
+  Badge,
   Button,
   Checkbox,
   Empty,
@@ -17,7 +18,6 @@ import {
   Sparkline,
   Status,
   StepDialog,
-  Text,
   icons,
   type StepDialogResult,
 } from "@logicplanes/kaeso-ui";
@@ -90,9 +90,7 @@ export function SourcesPage({ org, project, search }: { org: string; project: st
       meta: (
         <span className="flex items-center gap-12">
           {sum.refused > 0 && (
-            <Text variant="small" tone="secondary" tabular>
-              {t("project.sources.refusedCount", "{count, plural, one {# refused} other {# refused}}", { count: sum.refused })}
-            </Text>
+            <Badge tone="warning">{t("project.sources.refusedCount", "{count, plural, one {# refused} other {# refused}}", { count: sum.refused })}</Badge>
           )}
           <Sparkline
             aria-label={t("project.sources.eventsChart", "Events a day over the last 14 days")}
@@ -215,6 +213,7 @@ function AddSourceDialog({ org, project, onClose }: { org: string; project: stri
         footer: <Button onClick={onClose}>{common.finish()}</Button>,
         content: (
           <div className="flex flex-col gap-24">
+            <Connection org={org} project={project} source={created.source} />
             <SecretReveal
               secret={created.key}
               name={created.source.name}
@@ -226,7 +225,6 @@ function AddSourceDialog({ org, project, onClose }: { org: string; project: stri
                 content: created.source.content,
               })}
             />
-            <Connection org={org} project={project} source={created.source} />
           </div>
         ),
       }

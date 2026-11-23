@@ -23,6 +23,7 @@
   "limits.noneKey": "Noch keine Schlüssellimits",
   "limits.noneMember": "Noch keine Mitgliedslimits",
   "limits.noneProject": "Noch keine Projektlimits",
+  "limits.observedShort": "{amount} von Quellen gemeldet",
   "limits.rowActions": "Aktionen für {limit}",
   "limits.serviceAccount": "Dienstkonto",
   "limits.soft": "Weich",
