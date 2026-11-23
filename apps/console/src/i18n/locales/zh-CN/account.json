@@ -215,8 +215,6 @@
   "account.connections.disconnected": "已断开与 {name} 的连接",
   "account.connections.disconnectTitle": "断开与 {name} 的连接？",
   "account.connections.disconnectHint": "在您重新连接之前，其工具对您不可用。",
-  "account.sendTestEmail": "发送测试邮件",
-  "account.testEmailSent": "测试邮件已发送",
   "account.noEmailTitle": "此实例不发送邮件",
   "account.noEmailHint": "它只把邮件写入日志；请让实例管理员设置 SMTP。",
   "account.alwaysSent": "始终发送",

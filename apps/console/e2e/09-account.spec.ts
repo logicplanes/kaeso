@@ -45,8 +45,6 @@ test("profile, notifications, sessions and memberships", async ({ page }) => {
   await budget.click();
   await page.getByRole("option", { name: "Now" }).click();
   await expect(budget).toHaveText("Now");
-  await page.getByRole("button", { name: "Send a test email" }).click();
-  await expect(page.getByText("Test email sent")).toBeVisible();
 
   await page.getByRole("link", { name: "Sessions" }).click();
   await expect(page.getByText("This device")).toBeVisible();

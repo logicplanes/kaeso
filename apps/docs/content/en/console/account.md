@@ -147,7 +147,7 @@ The weekly summary and the monthly cost report go out on their own schedule, so 
 
 An organization's [webhooks](webhooks.md) get its notices too, whatever anyone chooses here.
 
-**Send a test email** sends one to your address, at most once a minute. When the install only writes emails to its log, the page says so and offers no choices.
+When the install only writes emails to its log, the page says so and offers no choices. To check that mail goes out, an instance admin sends a test email under **Instance** › **System** ([send a test email](../self-hosting/email.md#send-a-test-email)).
 
 To stop every email about one organization except security emails, turn off **Email me about this organization** for it under **Memberships**.
 

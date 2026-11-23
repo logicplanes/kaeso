@@ -5,7 +5,7 @@ import { me } from "~/test/fixtures/instance-account";
 import { signedInReply } from "~/test/fixtures/public";
 import { apiError, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
-import { notificationSettings, testEmailSent } from "~/test/fixtures/notifications";
+import { notificationSettings } from "~/test/fixtures/notifications";
 
 const ssoSession = { ...whoAmI().session, method: "oidc", sso_org: "org_contoso" };
 const dialog = () => screen.findByRole("dialog", { name: "Sign in another way" });
@@ -56,17 +56,17 @@ describe("an account change from a single sign-on session", () => {
     on("POST", "auth/password", signedInReply());
     on("GET", "me/notifications", notificationSettings());
     let calls = 0;
-    on("POST", "me/notifications/test", () =>
+    on("PUT", "me/notifications", () =>
       ++calls === 1
         ? apiError(403, "other_sign_in_required", "You signed in with SSO; sign in with your password or a sign-in link to do this.")
-        : testEmailSent,
+        : notificationSettings({ deliveries: { weekly_summary: "now" } }),
     );
     const { user } = await renderApp("/settings/account/notifications");
-    await user.click(await screen.findByRole("button", { name: "Send a test email" }));
+    await user.click(await screen.findByRole("switch", { name: "Weekly summary" }));
     const box = await dialog();
     await user.type(await within(box).findByLabelText("Password"), "correct horse battery");
     await user.click(within(box).getByRole("button", { name: "Sign in" }));
-    await waitFor(() => expect(requests("POST", "me/notifications/test")).toHaveLength(2));
+    await waitFor(() => expect(requests("PUT", "me/notifications")).toHaveLength(2));
   });
 
   it("drops the change when the person doesn't sign in again", async () => {
@@ -74,17 +74,13 @@ describe("an account change from a single sign-on session", () => {
     on("GET", "me", me({ has_password: true }));
     on("GET", "me/sign-in-again", { password: true, magic_link: true, set_password: false, sso: [] });
     on("GET", "me/notifications", notificationSettings());
-    on(
-      "POST",
-      "me/notifications/test",
-      apiError(403, "other_sign_in_required", "You signed in with SSO; sign in with your password or a sign-in link to do this."),
-    );
+    on("PUT", "me/notifications", apiError(403, "other_sign_in_required", "You signed in with SSO; sign in with your password or a sign-in link to do this."));
     const { user } = await renderApp("/settings/account/notifications");
-    await user.click(await screen.findByRole("button", { name: "Send a test email" }));
+    await user.click(await screen.findByRole("switch", { name: "Weekly summary" }));
     const box = await dialog();
     await user.click(within(box).getByRole("button", { name: "Cancel" }));
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Sign in another way" })).not.toBeInTheDocument());
-    expect(requests("POST", "me/notifications/test")).toHaveLength(1);
+    expect(requests("PUT", "me/notifications")).toHaveLength(1);
   });
 
   it("offers no way when the account has neither a password nor sign-in links", async () => {
@@ -92,13 +88,9 @@ describe("an account change from a single sign-on session", () => {
     on("GET", "me", me({ has_password: false }));
     on("GET", "me/sign-in-again", { password: false, magic_link: false, set_password: false, sso: [] });
     on("GET", "me/notifications", notificationSettings());
-    on(
-      "POST",
-      "me/notifications/test",
-      apiError(403, "other_sign_in_required", "You signed in with SSO; sign in with your password or a sign-in link to do this."),
-    );
+    on("PUT", "me/notifications", apiError(403, "other_sign_in_required", "You signed in with SSO; sign in with your password or a sign-in link to do this."));
     const { user } = await renderApp("/settings/account/notifications");
-    await user.click(await screen.findByRole("button", { name: "Send a test email" }));
+    await user.click(await screen.findByRole("switch", { name: "Weekly summary" }));
     const box = await dialog();
     expect(await within(box).findByText("No sign-in method this install offers works for your account; ask an instance admin.")).toBeInTheDocument();
     expect(within(box).queryByRole("button", { name: "Continue with SSO" })).not.toBeInTheDocument();

@@ -30,9 +30,9 @@ describe("a change refused for a missing right", () => {
   it("shows the gateway's message outside an organization", async () => {
     signedIn();
     on("GET", "me/notifications", notificationSettings());
-    on("POST", "me/notifications/test", apiError(403, "permission_denied", "Your account can't change notifications.", { right: "org.edit" }));
+    on("PUT", "me/notifications", apiError(403, "permission_denied", "Your account can't change notifications.", { right: "org.edit" }));
     const { user } = await renderApp("/settings/account/notifications");
-    await user.click(await screen.findByRole("button", { name: "Send a test email" }));
+    await user.click(await screen.findByRole("switch", { name: "Weekly summary" }));
     expect((await (await notifications()).findAllByText("Your account can't change notifications.")).length).toBeGreaterThan(0);
   });
 });
