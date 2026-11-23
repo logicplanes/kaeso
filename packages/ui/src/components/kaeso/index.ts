@@ -9,8 +9,13 @@ export {
   RequestTimeline,
   StatusCode,
   providerName,
+  useProviderTile,
 } from "./identity.js";
-export type { Capability, KeyDisplayProps, KeyState, ModelLabelProps } from "./identity.js";
+export type { Capability, KeyDisplayProps, KeyState, ModelLabelProps, ProviderTile } from "./identity.js";
+export { PROVIDER_MARKS } from "./provider-marks.js";
+export type { ProviderMark } from "./provider-marks.js";
+export { MODEL_MAKERS, modelMaker } from "./model-makers.js";
+export type { ModelMaker } from "./model-makers.js";
 export { KAESO_MOMENTS_DEFAULT_VARIANTS, KAESO_MOMENTS_VARIANTS, SecretReveal, sdkSnippets } from "./moments.js";
 export type { SecretRevealProps, SnippetOptions } from "./moments.js";
 export {

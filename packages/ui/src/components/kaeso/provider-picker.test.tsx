@@ -28,10 +28,11 @@ describe("ProviderPicker", () => {
     expect(screen.getByRole("option", { name: "DeepSeek" })).toHaveAttribute("aria-disabled", "true");
   });
 
-  it("draws the first letter of a provider's name where it has no mark, and names one without a name by its id", () => {
+  it("draws the provider icon where a provider has no mark, and names one without a name by its id", () => {
     render(<ProviderPicker providers={[{ id: "acme", name: "Zenith Labs" }, { id: "gemini" }]} aria-label="Provider" />);
     const zenith = screen.getByRole("option", { name: "Zenith Labs" });
-    expect(zenith.querySelector("[aria-hidden] [role='img']")).toHaveTextContent(/^Z$/);
+    expect(zenith.querySelector("[aria-hidden] [role='img']")).toHaveTextContent(/^$/);
+    expect(zenith.querySelector("[aria-hidden] [role='img'] svg")).not.toBeNull();
     expect(screen.getByRole("option", { name: "gemini" })).toBeInTheDocument();
   });
 
@@ -160,9 +161,9 @@ describe("ProviderPicker", () => {
       { id: "lab-other", name: "Another server" },
     ];
     const { unmount } = render(<ProviderPicker appearance="grid" ordered providers={servers} aria-label="Server" />);
-    expect(screen.getAllByRole("radio").map((r) => r.getAttribute("aria-label") ?? r.textContent?.slice(1))).toEqual(["vLLM", "Ollama", "Another server"]);
+    expect(screen.getAllByRole("radio").map((r) => r.getAttribute("aria-label") ?? r.textContent)).toEqual(["vLLM", "Ollama", "Another server"]);
     unmount();
     render(<ProviderPicker appearance="grid" providers={servers} aria-label="Server" />);
-    expect(screen.getAllByRole("radio").map((r) => r.getAttribute("aria-label") ?? r.textContent?.slice(1))).toEqual(["Another server", "Ollama", "vLLM"]);
+    expect(screen.getAllByRole("radio").map((r) => r.getAttribute("aria-label") ?? r.textContent)).toEqual(["Another server", "Ollama", "vLLM"]);
   });
 });

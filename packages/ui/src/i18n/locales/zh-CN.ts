@@ -355,6 +355,7 @@ const zhCN: Readonly<Record<string, string>> = {
   "probabilityBar.below": "<{percent}",
   "probabilityBar.chosen": "{percent}，已选",
   "probabilityBar.missing": "未提供",
+  "providerBadge.makerOnProvider": "{provider} 上的 {maker} 模型",
   "providerPicker.choose": "选择服务商",
   "providerPicker.connected": "已连接",
   "providerPicker.noMatch": "没有匹配的服务商",

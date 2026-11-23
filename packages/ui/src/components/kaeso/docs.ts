@@ -81,11 +81,13 @@ export const docs = {
   },
   ProviderBadge: {
     description:
-      "A provider's mark on a quiet tile, in the provider's own colours for the theme, or the text colour for a mark its owner draws in black and white; for a provider without a mark, the first letter of its name, or an icon for a choice that isn't one provider. A `ProviderMarksProvider` around an app names the mark of providers whose id isn't one, such as custom providers that run vLLM or Ollama.",
+      "A provider's mark on a quiet tile, in the owner's colours for the theme, or the text colour for a mark its owner draws in black and white. In a row about one model, the mark of the model's maker, read from the model id (a GPT model on Amazon Bedrock shows OpenAI's), with the provider in its accessible name. A provider without a mark, such as another server or a proxy, shows the provider icon. A `ProviderMarksProvider` around an app names the mark of providers whose id isn't one, such as custom providers that run vLLM or Ollama.",
     props: {
-      icon: "An icon for the tile when there is no mark, instead of the first letter: for a choice that isn't one provider, such as any other server.",
+      icon: "An icon for the tile when there is no mark, instead of the provider icon: for a choice that isn't one provider, such as any other server.",
       mark: "The mark to show instead of the provider id's own or the one `ProviderMarksProvider` names, such as `vllm`.",
-      name: "The provider's name from the gateway's provider list: the badge's accessible name, the text `withName` writes and the source of the letter; the id without it.",
+      model:
+        "The model the tile stands for, in a row about one model: the tile shows the mark of the model's maker, and its accessible name says the maker and the provider.",
+      name: "The provider's name from the gateway's provider list: the badge's accessible name and the text `withName` writes; the id without it.",
       provider: "The provider id, such as `openai` or `anthropic`.",
       size: "The badge's size.",
       withName: "Writes the provider's name next to its mark.",

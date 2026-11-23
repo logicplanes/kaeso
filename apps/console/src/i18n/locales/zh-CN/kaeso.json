@@ -104,7 +104,7 @@
   "kaeso.home.readWhatsNew": "查看新功能",
   "kaeso.home.recentChanges": "最近变更",
   "kaeso.home.releaseTitle": "Kaeso {version}",
-  "kaeso.home.released": "{date} 发布",
+  "kaeso.home.providerReleased": "{provider} · {date} 发布",
   "kaeso.home.running": "当前运行",
   "kaeso.home.seeAll": "查看全部 {count} 个",
   "kaeso.home.vsBefore": "与之前 {days} 天相比",

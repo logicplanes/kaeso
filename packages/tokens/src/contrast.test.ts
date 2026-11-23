@@ -145,7 +145,10 @@ describe.each(MODES)("contrast in %s mode", (mode) => {
 });
 
 // Mistral's brand page forbids recolouring its icon, so its colours stay exact: 3:1 on the raised background in dark mode only.
-const recoloured = Object.entries(providerMark).filter(([token]) => !token.startsWith("mistral-"));
+// PixVerse's brand page forbids changing its gradient and Moondream's mark is an illustration, so theirs stay exact too, and
+// `-inner-` colours fill shapes drawn on another colour of the same mark, never on the tile.
+const exact = (token: string) => /^(pixverse|moondream)-/.test(token) || token.includes("-inner-");
+const recoloured = Object.entries(providerMark).filter(([token]) => !token.startsWith("mistral-") && !exact(token));
 const mistral = Object.entries(providerMark).filter(([token]) => token.startsWith("mistral-"));
 
 it.each(recoloured)("provider mark colour %s stands out from white in light mode and from its tile in dark mode", (_, colour) => {

@@ -84,7 +84,7 @@ function ModelRow({ option, query, providerLabel }: { option: ModelPickerOption;
     <>
       {providerLabel !== undefined && (
         <span aria-hidden className="flex">
-          <ProviderBadge provider={option.provider} name={providerLabel} />
+          <ProviderBadge provider={option.provider} name={providerLabel} model={model} />
         </span>
       )}
       <span className="flex min-w-0 flex-1 items-baseline gap-8">
