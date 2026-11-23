@@ -62,6 +62,7 @@
   "shell.page.providers": "服务商",
   "shell.page.requestLogs": "请求日志",
   "shell.page.serviceAccounts": "服务账号",
+  "shell.page.sources": "来源",
   "shell.palette.darkTheme": "使用深色主题",
   "shell.palette.empty": "没有匹配项，换个词试试。",
   "shell.palette.find": "查找（每个列表的前 100 项）",

@@ -16,3 +16,10 @@ export const sourcesQuery = (org: string, project: string) =>
         ),
       ),
   });
+
+export const sourceQuery = (org: string, project: string, source: string) =>
+  queryOptions({
+    queryKey: ["orgs", org, "projects", project, "sources", "one", source],
+    queryFn: async (): Promise<ExternalSourceView> =>
+      data(await api.GET("/platform/v1/orgs/{org}/projects/{project}/sources/{source}", { params: { path: { org, project, source } } })),
+  });

@@ -58,6 +58,7 @@ export const PROJECT_PAGES: ProjectPage[] = [
     right: "logs.metadata.view",
     key: "l",
   },
+  { id: "sources", label: () => t("shell.page.sources", "Sources"), icon: icons.source, path: "sources", right: "sources.view", key: "r" },
   { id: "models", label: () => t("common.models", "Models"), icon: icons.model, path: "models", right: "models.view", key: "m" },
   { id: "tools", label: () => t("shell.page.tools", "Tools"), icon: icons.tools, path: "tools", right: "tools.view", key: "t" },
   { id: "limits", label: () => t("shell.page.limits", "Limits"), icon: icons.limit, path: "limits", right: "limits.view", key: "i" },
