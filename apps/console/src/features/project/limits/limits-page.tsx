@@ -305,7 +305,16 @@ function LimitTitle({ limit, subject, archivedKey }: { limit: LimitView; subject
 
 function LimitSubtitle({ org, project, limit, subject }: { org: string; project: string; limit: LimitView; subject: string | undefined }) {
   const text = useLimitText(org, project, limit);
-  return <span className="hidden sm:inline">{[...(subject ? [limitKindLabel(limit.kind)] : []), periodLabel(limit.period), text.model].join(" · ")}</span>;
+  return (
+    <span className="hidden sm:inline">
+      {[
+        ...(subject ? [limitKindLabel(limit.kind)] : []),
+        periodLabel(limit.period),
+        text.model,
+        ...(text.observed ? [t("limits.observedShort", "{amount} from sources, not stoppable", { amount: text.observed })] : []),
+      ].join(" · ")}
+    </span>
+  );
 }
 
 function LimitUse({ org, project, limit }: { org: string; project: string; limit: LimitView }) {

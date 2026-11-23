@@ -206,7 +206,7 @@ function SourceBody({ org, project, sourceId, onClose }: { org: string; project:
           ]}
         />
       )}
-      <SheetLinks org={org} project={project} requests={{ key: `source:${s.id}` }} target={s.id} />
+      <SheetLinks org={org} project={project} requests={{ source_id: s.id }} target={s.id} />
       {s.last_error && s.last_error_at && (
         <Banner tone="warning" title={t("project.sources.lastErrorAt", "Refused {when}", { when: formatRelative(s.last_error_at) })}>
           {refusalText(s.last_error)}

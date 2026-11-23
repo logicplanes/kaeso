@@ -3,10 +3,11 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { setFormatTimeZone } from "@logicplanes/kaeso-ui/format";
 import { DataTable } from "@logicplanes/kaeso-ui";
 import { logRow } from "~/test/fixtures/project-logs";
+import { externalSource } from "~/test/fixtures/project";
 import { apply, load } from "~/i18n";
 import { COLUMNS, isEmbedding, isRerank, logColumns, logsLayout, providerInModel, type LogsLayout } from "./columns";
 
-const OPTIONAL = ["request", "agent", "client", "alias", "formats", "cache", "fallbacks", "upstream"];
+const OPTIONAL = ["source", "request", "agent", "client", "alias", "formats", "cache", "fallbacks", "upstream"];
 const shown = COLUMNS.filter((c) => !OPTIONAL.includes(c));
 
 describe("logsLayout", () => {
@@ -309,5 +310,38 @@ describe("isRerank", () => {
     expect(isRerank({ ingress_dialect: "cohere_rerank", egress_dialect: "jina_rerank" })).toBe(true);
     expect(isRerank({ ingress_dialect: "openai_chat", egress_dialect: "openai_chat" })).toBe(false);
     expect(isEmbedding({ ingress_dialect: "cohere_rerank", egress_dialect: "cohere_rerank" })).toBe(false);
+  });
+});
+
+describe("observed requests", () => {
+  it("are tagged, and name the source that reported them where a key would be", () => {
+    const sources = [externalSource()];
+    const all = logColumns({
+      spansDays: true,
+      keyName: (id) => id,
+      partyName: (p) => p.id ?? "",
+      providerName: (id) => id,
+      sourceOf: (id) => sources.find((x) => x.id === id),
+    });
+    const rows = [
+      logRow({ id: "req_seen", source: "observed", source_id: "src_claude", key_id: null }),
+      logRow({ id: "req_gone", source: "observed", source_id: "src_gone", key_id: null }),
+      logRow({ id: "req_play", source: "playground", key_id: null }),
+      logRow({ id: "req_api" }),
+    ];
+    render(<DataTable aria-label="Requests" data={rows} columns={[all.model, all.key, all.source]} getRowId={(r) => r.id} />);
+    const [seen, gone, play, api] = screen.getAllByRole("row").slice(1);
+    expect(seen).toHaveTextContent("Observed");
+    expect(within(seen as HTMLElement).getAllByText("Claude Code, Ada's laptop")).toHaveLength(2);
+    expect(within(gone as HTMLElement).getAllByText("A source")).toHaveLength(2);
+    expect(play).toHaveTextContent("Playground");
+    expect(api).toHaveTextContent("Gateway");
+    expect(api).not.toHaveTextContent("Observed");
+  });
+
+  it("show a dash for the key without the project's sources", () => {
+    const all = logColumns({ spansDays: true, keyName: (id) => id, partyName: (p) => p.id ?? "", providerName: (id) => id });
+    render(<DataTable aria-label="Requests" data={[logRow({ key_id: null })]} columns={[all.key]} getRowId={(r) => r.id} />);
+    expect(screen.getAllByRole("cell")[0]).toHaveTextContent("—");
   });
 });

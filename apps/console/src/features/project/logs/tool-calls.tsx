@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useInfiniteQuery, useQuery, type UseQueryResult } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import {
+  Banner,
   AppFrame,
   Button,
   DataTable,
@@ -33,7 +34,8 @@ import { ProjectHeader } from "~/shell/project-header";
 import { usePhone } from "~/shell/use-phone";
 import { usePartyName } from "../keys/party";
 import type { LogsSearch } from "./logs-page";
-import { startedColumn } from "./columns";
+import { ReportedBy, startedColumn } from "./columns";
+import { useSourceNames } from "../sources/names";
 import { ToolCallsExportDialog } from "./export-dialog";
 import { useLiveToolCalls } from "./live";
 import {
@@ -84,11 +86,12 @@ export function KindSwitch({ value, onChange }: { value: "models" | "tools"; onC
   );
 }
 
-type ToolFilterId = "key" | "member" | "server" | "tool" | "status" | "error";
-const TOOL_FILTER_IDS: ToolFilterId[] = ["key", "member", "server", "tool", "status", "error"];
+type ToolFilterId = "key" | "member" | "source" | "server" | "tool" | "status" | "error";
+const TOOL_FILTER_IDS: ToolFilterId[] = ["key", "member", "source", "server", "tool", "status", "error"];
 const SEARCH_OF: Record<ToolFilterId, keyof LogsSearch> = {
   key: "key",
   member: "member",
+  source: "source_id",
   server: "call_server",
   tool: "call_tool",
   status: "call_status",
@@ -103,6 +106,7 @@ export function ToolCallsPage({ org, project, search }: { org: string; project: 
   const needs = useNeedsRight(org, project);
   const [exporting, setExporting] = useState(false);
   const { keyName, keyOptions, memberOptions } = usePartyFilters(org, project);
+  const sources = useSourceNames(org, project);
   const tools = useQuery(projectToolsQuery(org, project));
   const servers = useQuery(projectServersQuery(org, project));
   const [density, setDensity] = useState<Density>("default");
@@ -114,6 +118,7 @@ export function ToolCallsPage({ org, project, search }: { org: string; project: 
     ...(search.member ? { member: search.member } : {}),
     ...(search.call_server ? { server: search.call_server } : {}),
     ...(search.call_tool ? { tool: search.call_tool } : {}),
+    ...(search.source_id ? { source_id: search.source_id } : {}),
     ...(search.call_status ? { status: search.call_status } : {}),
     ...(search.call_error ? { error: search.call_error } : {}),
   };
@@ -136,6 +141,15 @@ export function ToolCallsPage({ org, project, search }: { org: string; project: 
         return { id, label: t("logs.filter.key", "Key"), value, values: keyOptions, valueLabel: keyName, searchable: true };
       case "member":
         return { id, label: t("logs.filter.member", "Member"), value, values: memberOptions, searchable: true };
+      case "source":
+        return {
+          id,
+          label: t("logs.filter.reportedBy", "Reported by"),
+          value,
+          values: sources.sources.map((x) => ({ value: x.id, label: x.name })),
+          valueLabel: sources.name,
+          searchable: true,
+        };
       case "server":
         return {
           id,
@@ -174,6 +188,15 @@ export function ToolCallsPage({ org, project, search }: { org: string; project: 
     col.status({ id: "status", header: common.status(), size: phone ? 96 : 120, priority: 1 }, (r: ToolCallView) => statusOf(r.status)),
     col.text({ id: "caller", header: t("logs.tools.caller", "Caller"), size: 180, priority: 2 }, (r: ToolCallView) => partyName(r.caller)),
     col.text({ id: "client", header: t("logs.tools.client", "Client"), size: 160, priority: 3 }, (r: ToolCallView) => r.client || "—"),
+    // A call a source reported names its server as the client wrote it, with no server of Kaeso's.
+    col.text({ id: "mcp_server", header: t("logs.tools.server", "MCP server"), size: 160, priority: 3 }, (r: ToolCallView) =>
+      r.server ? serverName(r.server) : (r.server_name ?? "—"),
+    ),
+    col.custom(
+      { id: "source", header: t("logs.filter.reportedBy", "Reported by"), size: 184, priority: 4 },
+      (r: ToolCallView) => r.source_id ?? null,
+      (v) => (v ? <ReportedBy source={sources.source(v)} /> : "—"),
+    ),
     col.duration({ id: "duration", header: t("logs.column.duration", "Duration"), size: 112, priority: 2 }, (r: ToolCallView) => r.duration_ms),
     col.custom(
       { id: "server", header: t("logs.tools.serverTime", "Server time"), size: 120, priority: 3 },
@@ -213,6 +236,7 @@ export function ToolCallsPage({ org, project, search }: { org: string; project: 
             key: filters.key && keyName(filters.key),
             member: memberOptions.find((m) => m.value === filters.member)?.label,
             server: filters.server && serverName(filters.server),
+            source: filters.source_id && sources.name(filters.source_id),
           }}
           labels={{
             ...(filters.status ? { status: statusOf(filters.status).label } : {}),
@@ -306,12 +330,20 @@ function CallBody({ org, project, call }: { org: string; project: string; call: 
   const rights = useProjectRights(org, project);
   const needs = useNeedsRight(org, project);
   const partyName = usePartyName(org, project);
+  const sources = useSourceNames(org, project);
   const c = call.data;
   if (call.isError) return <Empty title={t("logs.tools.callFailed", "This tool call couldn't load")} description={call.error.message} />;
   if (!c) return <Skeleton lines={4} />;
   const status = statusOf(c.status);
   return (
     <div className="flex flex-col gap-24">
+      {c.source_id && (
+        <Banner tone="info" title={t("logs.inspector.observed", "Observed, not routed")}>
+          {t("logs.tools.observedHint", "{source} reported this call; the client called the server itself, so Kaeso only logged it.", {
+            source: sources.name(c.source_id),
+          })}
+        </Banner>
+      )}
       <Section title={t("logs.inspector.outcome", "Outcome")} spacing="none">
         <KeyValue
           layout="stacked"
@@ -331,6 +363,8 @@ function CallBody({ org, project, call }: { org: string; project: string; call: 
           className="grid grid-cols-1 gap-x-32 sm:grid-cols-2"
           items={[
             { label: t("logs.tools.caller", "Caller"), value: partyName(c.caller) },
+            ...(c.source_id ? [{ label: t("logs.filter.reportedBy", "Reported by"), value: <ReportedBy source={sources.source(c.source_id)} /> }] : []),
+            ...(!c.server && c.server_name ? [{ label: t("logs.tools.server", "MCP server"), value: c.server_name }] : []),
             { label: t("logs.tools.client", "Client"), value: c.client || "—" },
             { label: t("logs.tools.onServer", "Name on the server"), value: c.upstream_tool, mono: true },
             { label: t("logs.tools.protocol", "MCP version"), value: c.protocol_version, mono: true },

@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
-import { Badge, Icon, CopyButton, Tag, ProviderBadge, StatusCode, Text, Tooltip, col, icons, useProviderTile } from "@logicplanes/kaeso-ui";
+import { Badge, Icon, CopyButton, Tag, ProviderBadge, SourceBadge, StatusCode, Text, Tooltip, col, icons, useProviderTile } from "@logicplanes/kaeso-ui";
 import { dateFormatter, formatDuration, formatNumber, formatPercent } from "@logicplanes/kaeso-ui/format";
-import type { LogView, Party } from "~/api/generated/types";
+import type { ExternalSourceView, LogView, Party } from "~/api/generated/types";
 import { dialectLabel, errorKindLabel } from "~/format/labels";
 import { shownCost } from "~/format/currency";
 import { locale, t, type Locale } from "~/i18n";
@@ -26,6 +26,7 @@ export const COLUMNS = [
   "tokens",
   "cost",
   "key",
+  "source",
   "principal",
   "request",
   "agent",
@@ -50,6 +51,7 @@ export const columnLabel = (id: ColumnId): string =>
     tokens: common.tokens(),
     cost: common.cost(),
     key: t("logs.column.key", "Key"),
+    source: t("logs.filter.source", "Source"),
     principal: t("logs.column.principal", "Principal"),
     request: t("logs.column.requestId", "Request id"),
     agent: t("logs.column.userAgent", "User agent"),
@@ -103,7 +105,7 @@ function zoneName(): string {
   return parts.find((p) => p.type === "timeZoneName")?.value ?? "UTC";
 }
 // Shown only once someone turns them on under the display options.
-const OPTIONAL: readonly ColumnId[] = ["request", "agent", "client", "alias", "formats", "cache", "fallbacks", "upstream"];
+const OPTIONAL: readonly ColumnId[] = ["source", "request", "agent", "client", "alias", "formats", "cache", "fallbacks", "upstream"];
 const DEFAULT_COLUMNS: ColumnId[] = COLUMNS.filter((c) => !OPTIONAL.includes(c));
 
 const CACHE_VERDICTS: Record<NonNullable<LogView["response_cache"]>, () => string> = {
@@ -167,6 +169,7 @@ export function logColumns({
   keyName,
   partyName,
   providerName,
+  sourceOf = () => undefined,
   errors,
 }: {
   spansDays: boolean;
@@ -176,6 +179,8 @@ export function logColumns({
   keyName: (id: string) => string;
   partyName: (p: Party) => string;
   providerName: (id: string) => string;
+  /** The source that reported an observed request, when the person may see the project's sources. */
+  sourceOf?: ((id: string | null | undefined) => ExternalSourceView | undefined) | undefined;
 }) {
   return {
     time: startedColumn<LogView>(spansDays, layout),
@@ -237,10 +242,23 @@ export function logColumns({
       (v, r) => (r.cost_known ? shownCost(r).money.request(v) : <Text tone="secondary">{t("kaeso.usage.costUnknown", "Unknown")}</Text>),
       { align: "end" },
     ),
+    // An observed request came with no key of Kaeso's; the source that reported it stands in.
     key: col.custom(
       { id: "key", header: columnLabel("key"), size: 152, priority: 3 },
       (r: LogView) => r.key_id ?? null,
-      (v) => (v ? keyName(v) : "—"),
+      (v, r) => (v ? keyName(v) : r.source_id ? <ReportedBy source={sourceOf(r.source_id)} /> : "—"),
+    ),
+    source: col.custom(
+      { id: "source", header: columnLabel("source"), size: 184, priority: 5 },
+      (r: LogView) => r.source_id ?? r.source,
+      (_v, r) =>
+        r.source_id ? (
+          <ReportedBy source={sourceOf(r.source_id)} />
+        ) : r.source === "playground" ? (
+          t("logs.source.playground", "Playground")
+        ) : (
+          t("logs.source.gateway", "Gateway")
+        ),
     ),
     principal: col.custom(
       { id: "principal", header: columnLabel("principal"), size: 152, priority: 4 },
@@ -283,6 +301,17 @@ export function logColumns({
   };
 }
 
+/** A source by its mark and name, or "A source" for one the person can't see. */
+export function ReportedBy({ source }: { source: ExternalSourceView | undefined }) {
+  return source ? (
+    <SourceBadge kind={source.kind} name={source.name} size="sm" withName className="min-w-0" />
+  ) : (
+    <Text tone="secondary" truncate>
+      {t("project.analytics.aSource", "A source")}
+    </Text>
+  );
+}
+
 const errorTone = (row: LogView) => (row.error_kind === "client_disconnected" ? "neutral" : row.status >= 500 ? "danger" : "warning");
 
 // The resolved model only: a requested name can be a client's alias or a route that went to another maker.
@@ -312,6 +341,11 @@ function ModelCell({ row, message, provider }: { row: LogView; message: LogMessa
         <Badge tone={errorTone(row)} className="hidden shrink-0 @cell-sm:inline-flex">
           {errorKindLabel(row.error_kind)}
         </Badge>
+      )}
+      {row.source === "observed" && (
+        <Tag size="sm" variant="outline" className={row.error_kind ? "hidden shrink-0 @cell-md:inline-flex" : "hidden shrink-0 @cell-sm:inline-flex"}>
+          {t("logs.source.observed", "Observed")}
+        </Tag>
       )}
       {row.source === "playground" && (
         <Tag size="sm" variant="outline" className={row.error_kind ? "hidden shrink-0 @cell-md:inline-flex" : "hidden shrink-0 @cell-sm:inline-flex"}>

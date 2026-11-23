@@ -40,7 +40,7 @@ describe("SourceSheet", () => {
     expect(within(sheet).getByRole("status")).toHaveTextContent("An event was more than 7 days old.");
     expect(within(sheet).getByText("~/.claude/settings.json")).toBeInTheDocument();
     expect(sheet).toHaveTextContent("Bearer <your source key>");
-    expect(within(sheet).getByRole("link", { name: "See requests" })).toHaveAttribute("href", expect.stringContaining("key=source%3Asrc_claude"));
+    expect(within(sheet).getByRole("link", { name: "See requests" })).toHaveAttribute("href", expect.stringContaining("source_id=src_claude"));
     expect(sheet).toHaveTextContent("limits alert but can't stop them");
   });
 

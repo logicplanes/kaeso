@@ -2,7 +2,7 @@ import { queryOptions } from "@tanstack/react-query";
 import { api, data } from "../client";
 import type { TimelineBucket, UsageRow, UsageSpan } from "../generated/types";
 
-export type GroupBy = "day" | "week" | "month" | "model" | "key" | "member" | "route" | "project" | "billed_to";
+export type GroupBy = "day" | "week" | "month" | "model" | "key" | "member" | "route" | "project" | "billed_to" | "source";
 
 const CHARTED = { refetchOnWindowFocus: false } as const;
 

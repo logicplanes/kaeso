@@ -6,6 +6,7 @@ import {
   Badge,
   Button,
   CodeBlock,
+  Banner,
   Link,
   Collapsible,
   Empty,
@@ -43,7 +44,7 @@ import { orgProjectsQuery } from "~/api/queries/projects";
 import { aliasesQuery, catalogueQuery } from "~/api/queries/models";
 import { usePartyName } from "../keys/party";
 import { inputTokens, totalTokens } from "~/kaeso/tokens";
-import { cachedShare, isEmbedding, isRerank, sentWithoutBreakpoint } from "./columns";
+import { ReportedBy, cachedShare, isEmbedding, isRerank, sentWithoutBreakpoint } from "./columns";
 import { mediaCount, mediaLabel } from "./media";
 import { decisionAnswers, decisionView, embeddingsView, isKnownReplyForm, replyView, requestView, type DecisionView } from "./render";
 import { collectMedia, forReading } from "./logged-media";
@@ -53,6 +54,7 @@ import { logMessage, useGatewayErrors } from "./messages";
 import { CodeText } from "~/kaeso/code-text";
 import { useRememberRecent } from "~/shell/recent";
 import { useProjectRights } from "~/auth/rights";
+import { useSourceNames } from "../sources/names";
 import { useNeedsRight } from "~/auth/needs-right";
 import { toast } from "~/shell/toast";
 import { readDraft, writeDraft } from "../playground/draft";
@@ -92,7 +94,7 @@ function ConversationPending({ messages }: { messages: number }) {
 }
 
 /** One filter of the request log, set from a value the inspector shows. */
-export type InspectorFilter = Pick<LogFilters, "status" | "model" | "provider" | "alias" | "key" | "member" | "tag">;
+export type InspectorFilter = Pick<LogFilters, "status" | "model" | "provider" | "alias" | "key" | "member" | "tag" | "source_id">;
 
 export function LogInspector({
   org,
@@ -338,6 +340,7 @@ function useTargets(org: string, project: string, e: LogEntryView, keyName: (id:
     // The keys the log page lists, archived ones included, are the ones the person may open.
     key: e.key_id && keyName(e.key_id) !== e.key_id ? `${base}/keys?key=${e.key_id}` : undefined,
     sender: sender ? (user ? `${base}/members?member=${e.principal_id}` : `${base}/service-accounts?account=${e.principal_id}`) : undefined,
+    source: e.source_id && rights.has("sources.view") ? `${base}/sources?source=${e.source_id}` : undefined,
   };
 }
 
@@ -368,6 +371,7 @@ function Overview({
   const partyName = usePartyName(org, project);
   const modelName = useModelName(org, project);
   const targets = useTargets(org, project, e, keyName);
+  const sources = useSourceNames(org, project);
   const only = (filter: InspectorFilter) => () => onFilter(filter);
   const providers = useProviders(org);
   const u = e.usage;
@@ -393,6 +397,15 @@ function Overview({
   ];
   return (
     <div className="mt-24 flex flex-col gap-32">
+      {e.source === "observed" && (
+        <Banner tone="info" title={t("logs.inspector.observed", "Observed, not routed")}>
+          {t(
+            "logs.inspector.observedHint",
+            "{source} reported this request; it went straight to the provider, so Kaeso logged and counted it but couldn't route, limit or stop it.",
+            { source: e.source_id ? sources.name(e.source_id) : t("project.analytics.aSource", "A source") },
+          )}
+        </Banner>
+      )}
       {!e.has_content && (
         <Text variant="small" tone="secondary">
           {t(
@@ -480,9 +493,11 @@ function Overview({
                 ? t("logs.inspector.costUnknown", "No price for what it made")
                 : e.cost_basis === "measured"
                   ? t("logs.inspector.costMeasured", "From the audio's length, which Kaeso read from the file")
-                  : u.estimated
-                    ? t("logs.inspector.estimated", "Estimated")
-                    : undefined
+                  : e.cost_basis === "source"
+                    ? t("logs.inspector.costFromSource", "As the source reported it; Kaeso has no price for the model")
+                    : u.estimated
+                      ? t("logs.inspector.estimated", "Estimated")
+                      : undefined
           }
         />
       </StatGroup>
@@ -620,16 +635,31 @@ function Overview({
                 </Filtered>
               ),
             },
-            e.key_id
+            e.source_id
               ? {
-                  label: t("logs.column.key", "Key"),
+                  label: t("logs.filter.reportedBy", "Reported by"),
                   value: (
-                    <Filtered label={t("logs.inspector.onlyKey", "Show only requests with this key")} onFilter={only({ key: e.key_id })}>
-                      <Opens href={targets.key}>{keyName(e.key_id)}</Opens>
+                    <Filtered label={t("logs.inspector.onlySource", "Show only requests this source reported")} onFilter={only({ source_id: e.source_id })}>
+                      {targets.source ? (
+                        <Link href={targets.source} className="flex min-w-0">
+                          <ReportedBy source={sources.source(e.source_id)} />
+                        </Link>
+                      ) : (
+                        <ReportedBy source={sources.source(e.source_id)} />
+                      )}
                     </Filtered>
                   ),
                 }
-              : { label: t("logs.filter.source", "Source"), value: t("logs.source.playground", "Playground") },
+              : e.key_id
+                ? {
+                    label: t("logs.column.key", "Key"),
+                    value: (
+                      <Filtered label={t("logs.inspector.onlyKey", "Show only requests with this key")} onFilter={only({ key: e.key_id })}>
+                        <Opens href={targets.key}>{keyName(e.key_id)}</Opens>
+                      </Filtered>
+                    ),
+                  }
+                : { label: t("logs.filter.source", "Source"), value: t("logs.source.playground", "Playground") },
             { label: t("logs.inspector.clientIp", "Client IP"), value: <Long mono>{e.client_ip}</Long> },
             ...(e.client
               ? [

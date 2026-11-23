@@ -10,7 +10,7 @@ import { catalogueQuery } from "~/api/queries/models";
 import { useApiMutation } from "~/auth/mutation";
 import { limitDescription, limitKindLabel, periodLabel } from "~/format/labels";
 import { alertMarks } from "~/format/alert-marks";
-import { limitUse } from "~/format/limit-use";
+import { limitAmount, limitUse } from "~/format/limit-use";
 import { modelName } from "~/format/models";
 import { t } from "~/i18n";
 import { parentConflict, parentFilters } from "./limit-checks";
@@ -128,6 +128,8 @@ export function useLimitText(org: string, project: string, limit: LimitView) {
   return {
     kind: (money ? "spend" : limit.kind === "request_rate" || limit.kind === "tool_call_rate" ? "requests" : "tokens") as "spend" | "requests" | "tokens",
     value: limitUse(limit, (values) => t("kaeso.limits.usedOf", "{used} of {amount}", values)),
+    // The part of the use that sources reported: counted and alerted on, never stopped.
+    observed: limit.observed && Number(limit.observed) > 0 ? limitAmount(limit.kind, limit.observed, { currency: limit.currency }).short : undefined,
     model:
       limit.kind === "tool_call_rate"
         ? t("kaeso.limits.allTools", "All tools")
@@ -163,6 +165,11 @@ function LimitRow({ org, project, limit, canEdit }: { org: string; project: stri
           hard={limit.hard}
           resets={text.resets}
         />
+        {text.observed && (
+          <Text variant="small" tone="secondary" className="mt-4">
+            {t("kaeso.limits.observedNote", "{amount} of it reported by sources; Kaeso alerts on it but can't stop those requests.", { amount: text.observed })}
+          </Text>
+        )}
       </div>
       {canEdit && (
         <span className="flex items-center gap-4">

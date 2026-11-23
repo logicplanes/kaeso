@@ -31,6 +31,7 @@ export function AnalyticsPage({ org, project, search, view }: { org: string; pro
   const by = search.by === "client" && !o.hourly ? "day" : (search.by ?? "day");
   const span = useQuery(usageSpanQuery(org, project));
   const routes = useQuery({ ...projectUsageQuery(org, project, o.from, o.to, "route"), enabled: by === "route" });
+  const sources = useQuery({ ...projectUsageQuery(org, project, o.from, o.to, "source"), enabled: by === "source" });
   const clients = useQuery({
     ...timelineQuery(org, project, `${o.from}T00:00:00Z`, `${shiftDay(o.to, 1)}T00:00:00Z`, "hour", { group_by: "client" }),
     enabled: by === "client",
@@ -60,7 +61,8 @@ export function AnalyticsPage({ org, project, search, view }: { org: string; pro
       </Tabs.List>
     </Tabs>
   );
-  const table = by === "day" ? o.daily : by === "route" ? routes : by === "client" ? clients : (o.grouped[by] ?? o.daily);
+  const table =
+    by === "day" ? o.daily : by === "route" ? routes : by === "client" ? clients : by === "source" ? sources : (o.grouped[by as Dimension] ?? o.daily);
 
   return (
     <>

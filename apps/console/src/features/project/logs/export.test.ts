@@ -78,6 +78,16 @@ describe("exportFilters", () => {
     expect(exportFilters({ client: "codex" })).toEqual([{ label: "Client", value: "Codex" }]);
     expect(exportFilters({ error_message: "quota" })).toEqual([{ label: "Error message", value: "contains “quota”" }]);
   });
+
+  it("names observed requests and the source that reported them", () => {
+    expect(exportFilters({ source: "observed", source_id: "src_claude" }, { source: "Claude Code, Ada's laptop" })).toEqual([
+      { label: "Source", value: "Observed" },
+      { label: "Reported by", value: "Claude Code, Ada's laptop" },
+    ]);
+    expect(exportFilters({ source_id: "src_claude" })).toEqual([{ label: "Reported by", value: "src_claude" }]);
+    expect(toolExportFilters({ source_id: "src_claude" }, { source: "Claude Code" })).toEqual([{ label: "Reported by", value: "Claude Code" }]);
+    expect(toolExportFilters({ source_id: "src_claude" })).toEqual([{ label: "Reported by", value: "src_claude" }]);
+  });
 });
 
 describe("exportRequest", () => {

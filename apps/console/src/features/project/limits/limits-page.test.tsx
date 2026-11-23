@@ -77,6 +77,14 @@ describe("LimitsPage", () => {
     ]);
   });
 
+  it("notes the part of a budget's use that sources reported", async () => {
+    signedIn();
+    stubProject({ limits: [limit({ used: "12.5", observed: "4", amount: "50" }), limit({ id: "lim_none", observed: "0" })] });
+    await renderApp(projectPath("limits"));
+    expect(await screen.findByText(/\$4\.00 from sources, not stoppable/)).toBeInTheDocument();
+    expect(screen.getAllByText(/from sources, not stoppable/)).toHaveLength(1);
+  });
+
   it("wraps its header's sort, share and add actions on a narrow screen instead of pushing them past the edge", async () => {
     signedIn();
     stubProject();

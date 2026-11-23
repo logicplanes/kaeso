@@ -25,6 +25,7 @@
   "limits.noneKey": "No key limits yet",
   "limits.noneMember": "No member limits yet",
   "limits.noneProject": "No project limits yet",
+  "limits.observedShort": "{amount} from sources, not stoppable",
   "limits.rowActions": "Actions for the {limit}",
   "limits.serviceAccount": "Service account",
   "limits.soft": "Soft",

@@ -20,6 +20,7 @@ import { showExportProgress } from "~/shell/export-job";
 import { ProjectHeader } from "~/shell/project-header";
 import { usePhone } from "~/shell/use-phone";
 import { usePartyName } from "../keys/party";
+import { useSourceNames } from "../sources/names";
 import { COLUMNS, columnLabel, logColumns, logsLayout, providerInModel, storeColumns, storedColumns, type ColumnId } from "./columns";
 import { ExportDialog } from "./export-dialog";
 import { cacheLabel, outcomeLabel } from "./export";
@@ -74,6 +75,7 @@ type FilterId =
   | "error"
   | "stream"
   | "source"
+  | "source_id"
   | "min_cost"
   | "failed"
   | "response_cache"
@@ -102,6 +104,7 @@ const FILTER_IDS: FilterId[] = [
   "error_message",
   "stream",
   "source",
+  "source_id",
   "client",
   "response_cache",
   "min_duration_ms",
@@ -135,6 +138,7 @@ const CHOICE_PATCH: { [K in ChoiceFilterId]: (v: string | undefined) => SearchPa
   status: (v) => ({ status: v ? Number(v) : undefined }),
   stream: (v) => ({ stream: v === undefined ? undefined : v === "true" }),
   source: (v) => ({ source: v as LogFilters["source"] }),
+  source_id: (source_id) => ({ source_id }),
 };
 const filterLabel = (id: FilterId): string =>
   ({
@@ -156,6 +160,7 @@ const filterLabel = (id: FilterId): string =>
     error: t("logs.filter.error", "Error kind"),
     stream: t("logs.filter.streaming", "Streaming"),
     source: t("logs.filter.source", "Source"),
+    source_id: t("logs.filter.reportedBy", "Reported by"),
     alias: t("logs.filter.alias", "Alias"),
     fell_back: t("logs.filter.fellBack", "Fell back"),
     endpoint: t("logs.filter.endpoint", "Endpoint"),
@@ -200,6 +205,7 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
   const providers = useProviderFilterOptions(org);
   const catalog = useProviders(org);
   const partyName = usePartyName(org, project);
+  const sources = useSourceNames(org, project);
   const [columns, setColumns] = useState<ColumnId[]>(storedColumns);
   const [density, setDensity] = useState<Density>("default");
   const [squeezed, setSqueezed] = useState<string[]>([]);
@@ -224,7 +230,7 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
   const errors = useGatewayErrors();
   const layout = logsLayout(width, phone, spansDays, columns);
   const withProvider = providerInModel(layout, columns);
-  const all = logColumns({ spansDays, layout, withProvider, keyName, partyName, providerName: catalog.name, errors });
+  const all = logColumns({ spansDays, layout, withProvider, keyName, partyName, providerName: catalog.name, sourceOf: sources.source, errors });
   const shownColumns = COLUMNS.filter((c) => columns.includes(c) && !(withProvider && c === "provider")).map((c) => all[c]);
 
   const modelGroups = useModelGroups(
@@ -291,10 +297,13 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
                                           { value: "true", label: t("logs.filter.streamed", "Streamed") },
                                           { value: "false", label: t("logs.filter.notStreamed", "Not streamed") },
                                         ]
-                                      : [
-                                          { value: "api", label: "API" },
-                                          { value: "playground", label: t("logs.source.playground", "Playground") },
-                                        ];
+                                      : id === "source_id"
+                                        ? sources.sources.map((x) => ({ value: x.id, label: x.name }))
+                                        : [
+                                            { value: "api", label: "API" },
+                                            { value: "playground", label: t("logs.source.playground", "Playground") },
+                                            { value: "observed", label: t("logs.source.observed", "Observed") },
+                                          ];
   const current = (id: ChoiceFilterId): string | undefined => {
     const v = filters[id];
     return v === undefined ? undefined : String(v);
@@ -307,7 +316,9 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
         ? catalog.name(value)
         : id === "min_duration_ms"
           ? formatDuration(Number(value))
-          : (choice(id).find((c) => c.value === value)?.label ?? value);
+          : id === "source_id"
+            ? sources.name(value)
+            : (choice(id).find((c) => c.value === value)?.label ?? value);
   const filterDefs: FilterDef[] = FILTER_IDS.map((id) =>
     !isChoice(id)
       ? { id, label: filterLabel(id), flag: true, value: filters[id] ? "true" : undefined }
@@ -322,7 +333,8 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
               ? { groups: providerGroups, width: "sm" as const }
               : {
                   values: choice(id),
-                  searchable: id === "key" || id === "member" || id === "alias" || id === "endpoint" || id === "requested_model" || id === "tag",
+                  searchable:
+                    id === "key" || id === "member" || id === "alias" || id === "endpoint" || id === "requested_model" || id === "tag" || id === "source_id",
                   ...(id === "error_message"
                     ? {
                         operator: t("logs.filter.contains", "contains"),
@@ -371,6 +383,7 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
             member: memberOptions.find((m) => m.value === filters.member)?.label,
             model: catalogue.data?.find((m) => m.model_id === filters.model)?.effective.display_name ?? undefined,
             provider: filters.provider && catalog.name(filters.provider),
+            source: filters.source_id && sources.name(filters.source_id),
             minCost: filters.min_cost && money.price(filters.min_cost),
           }}
           canContent={rights.has("logs.content.view")}

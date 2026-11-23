@@ -33,6 +33,8 @@ export type ExportNames = {
   member?: string | undefined;
   model?: string | undefined;
   provider?: string | undefined;
+  /** The name of the source that reported the requests. */
+  source?: string | undefined;
   /** The minimum cost as the organization's currency writes it. */
   minCost?: string | undefined;
 };
@@ -70,7 +72,12 @@ export function exportFilters(f: LogFilters, names: ExportNames = {}): { label: 
       label: t("logs.filter.streaming", "Streaming"),
       value: f.stream !== undefined && (f.stream ? t("logs.filter.streamed", "Streamed") : t("logs.filter.notStreamed", "Not streamed")),
     },
-    { label: t("logs.filter.source", "Source"), value: f.source && (f.source === "api" ? "API" : t("logs.source.playground", "Playground")) },
+    {
+      label: t("logs.filter.source", "Source"),
+      value:
+        f.source && (f.source === "api" ? "API" : f.source === "observed" ? t("logs.source.observed", "Observed") : t("logs.source.playground", "Playground")),
+    },
+    { label: t("logs.filter.reportedBy", "Reported by"), value: f.source_id && (names.source ?? f.source_id) },
     { label: t("logs.filter.alias", "Alias"), value: f.alias },
     { label: t("logs.filter.fellBack", "Fell back"), value: !!f.fell_back && common.yes() },
     { label: t("logs.filter.endpoint", "Endpoint"), value: f.endpoint },
@@ -100,7 +107,7 @@ export function exportRequest(org: string, project: string, f: LogFilters, forma
   };
 }
 
-export type ToolExportNames = { key?: string | undefined; member?: string | undefined; server?: string | undefined };
+export type ToolExportNames = { key?: string | undefined; member?: string | undefined; server?: string | undefined; source?: string | undefined };
 
 export function toolExportFilters(
   f: ToolCallFilters,
@@ -110,6 +117,7 @@ export function toolExportFilters(
   const filters: { label: string; value: string | false | undefined }[] = [
     { label: t("logs.filter.key", "Key"), value: f.key && (names.key ?? f.key) },
     { label: t("logs.filter.member", "Member"), value: f.member && (names.member ?? f.member.replace(/^(user|sa):/, "")) },
+    { label: t("logs.filter.reportedBy", "Reported by"), value: f.source_id && (names.source ?? f.source_id) },
     { label: t("logs.tools.server", "MCP server"), value: f.server && (names.server ?? f.server) },
     { label: t("logs.tools.tool", "Tool"), value: f.tool },
     { label: common.status(), value: f.status && (labels.status ?? f.status) },

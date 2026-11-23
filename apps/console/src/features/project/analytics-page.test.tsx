@@ -470,6 +470,41 @@ describe("AnalyticsPage", () => {
     click.mockRestore();
   });
 
+  it("breaks usage down by source, the gateway's own apart, and opens what a source reported", async () => {
+    signedIn();
+    projectData({ sources: [externalSource()] });
+    usage({
+      source: [usageRow({ key: "gateway", requests: 10 }), usageRow({ key: "src_claude", requests: 6 }), usageRow({ key: "src_gone", requests: 1 })],
+    });
+    const { user, router } = await renderApp(projectPath(`analytics?${PERIOD}`));
+    await breakdown();
+    await user.click(screen.getByRole("radio", { name: "By source" }));
+    await waitFor(() => expect(router.state.location.search).toMatchObject({ by: "source" }));
+    const table = await breakdown();
+    await waitFor(() =>
+      expect(bodyRows(table).map((r) => r.textContent)).toEqual([
+        expect.stringContaining("Gateway"),
+        expect.stringContaining("Claude Code, Ada's laptop"),
+        expect.stringContaining("A source"),
+      ]),
+    );
+    expect(within(table).getByRole("columnheader", { name: "Source" })).toBeInTheDocument();
+    await user.click(bodyRows(table)[0] as HTMLElement);
+    expect(router.state.location.pathname).toBe(projectPath("analytics"));
+    await user.click(bodyRows(table)[1] as HTMLElement);
+    await waitFor(() => expect(router.state.location.pathname).toBe(projectPath("logs")));
+    expect(router.state.location.search).toMatchObject({ source_id: "src_claude" });
+  });
+
+  it("offers no breakdown by source without the right to see sources", async () => {
+    signedIn({ projectRights: without("sources.view") });
+    projectData();
+    usage();
+    await renderApp(projectPath(`analytics?${PERIOD}`));
+    await breakdown();
+    expect(screen.queryByRole("radio", { name: "By source" })).not.toBeInTheDocument();
+  });
+
   it("opens the requests a row counts in the period's days", async () => {
     signedIn();
     projectData({ keys: [apiKey()], members: [projectMember()], accounts: [serviceAccount()], models: [catalogueModel()] });
@@ -501,7 +536,7 @@ describe("AnalyticsPage", () => {
     await open("key", 1);
     await opened({ source: "playground" });
     await open("key", 2);
-    await opened({ key: "source:src_claude" });
+    await opened({ source_id: "src_claude" });
     await open("member", 0);
     await opened({ member: "sa:sa_deploy" });
     await open("member", 1);

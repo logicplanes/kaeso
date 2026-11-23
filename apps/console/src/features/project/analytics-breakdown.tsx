@@ -5,7 +5,8 @@ import { Button, DataTable, Empty, ModelLabel, ProviderBadge, Section, Text, col
 import { formatNumber, formatPercent, formatTokens } from "@logicplanes/kaeso-ui/format";
 import type { UsageRow } from "~/api/generated/types";
 import { allKeysQuery } from "~/api/queries/keys";
-import { sourcesQuery } from "~/api/queries/sources";
+import { useSourceNames } from "./sources/names";
+import { ReportedBy } from "./logs/columns";
 import { useProviders } from "~/kaeso/providers";
 import { totalTokens } from "~/kaeso/tokens";
 import { costWidth, PHONE_NAME_MIN_WIDTH, hasMedia, mediaSummary, UsageCost } from "~/kaeso/media-usage";
@@ -25,13 +26,14 @@ import { common } from "~/i18n/common";
 
 type By = NonNullable<AnalyticsSearch["by"]>;
 
-const byOptions = (g: Granularity, clients: boolean): { value: By; label: string }[] => [
+const byOptions = (g: Granularity, clients: boolean, sources: boolean): { value: By; label: string }[] => [
   { value: "day", label: t("project.overview.byTime", "{granularity, select, week {By week} month {By month} other {By day}}", { granularity: g }) },
   { value: "model", label: t("project.overview.byModel", "By model") },
   { value: "key", label: t("project.overview.byKey", "By key") },
   { value: "member", label: t("project.overview.byMember", "By member") },
   { value: "route", label: t("project.overview.byRoute", "By route") },
   ...(clients ? [{ value: "client" as const, label: t("project.overview.byClient", "By client") }] : []),
+  ...(sources ? [{ value: "source" as const, label: t("project.overview.bySource", "By source") }] : []),
 ];
 const timeHeader = (g: Granularity) => t("project.overview.time", "{granularity, select, week {Week} month {Month} other {Day}}", { granularity: g });
 
@@ -90,13 +92,10 @@ export function Breakdown({
   const keys = useQuery({ ...allKeysQuery(org, project, { include_archived: true }), enabled: by === "key" && rights.has("keys.all.view") });
   const partyName = usePartyName(org, project);
   const partiesLoading = usePartyNamesLoading(org, project);
-  const sources = useQuery({ ...sourcesQuery(org, project), enabled: by === "key" && rights.has("sources.view") });
+  const sources = useSourceNames(org, project);
   const keyName = (id: string) => {
     if (id === "playground") return t("project.overview.playground", "Playground");
-    if (id.startsWith("source:")) {
-      const source = sources.data?.find((s) => `source:${s.id}` === id);
-      return source ? t("project.analytics.sourceKey", "{name} (source)", { name: source.name }) : t("project.analytics.aSource", "A source");
-    }
+    if (id.startsWith("source:")) return t("project.analytics.sourceKey", "{name} (source)", { name: sources.name(id.slice(7)) });
     const key = keys.data?.find((k) => k.id === id);
     return key ? keyLabel(key) : id;
   };
@@ -113,6 +112,7 @@ export function Breakdown({
     if (by === "key") return keyName(r.key);
     if (by === "route") return routeText(r.key, providers.name);
     if (by === "client") return clientLabel(r.key);
+    if (by === "source") return r.key === "gateway" ? t("project.overview.gateway", "Gateway") : sources.name(r.key);
     const m = memberOf(r.key);
     const name = partyName({ kind: m.sa ? "service_account" : "user", id: m.id });
     return m.sa ? serviceAccountName(name) : name;
@@ -127,7 +127,14 @@ export function Breakdown({
         const [provider = "", ...rest] = r.key.split("/");
         return rest.length ? { ...period, model: rest.join("/"), provider } : undefined;
       }
-      if (by === "key") return r.key === "playground" ? { ...period, source: "playground" } : { ...period, key: r.key };
+      if (by === "key")
+        return r.key === "playground"
+          ? { ...period, source: "playground" }
+          : r.key.startsWith("source:")
+            ? { ...period, source_id: r.key.slice(7) }
+            : { ...period, key: r.key };
+      // The gateway's own requests are the API's and the Playground's, which the log filters apart.
+      if (by === "source") return r.key === "gateway" ? undefined : { ...period, source_id: r.key };
       if (by === "route") {
         const [ingress = "", egress = "", provider = ""] = r.key.split(":");
         return ingress ? { ...period, ingress, egress, provider } : undefined;
@@ -151,6 +158,8 @@ export function Breakdown({
       );
     }
     if (by === "key") return <Text truncate>{keyName(r.key)}</Text>;
+    if (by === "source")
+      return r.key === "gateway" ? <Text truncate>{t("project.overview.gateway", "Gateway")}</Text> : <ReportedBy source={sources.source(r.key)} />;
     if (by === "route") return <RouteLabel route={r.key} providerName={providers.name} />;
     if (by === "client")
       return (
@@ -174,7 +183,9 @@ export function Breakdown({
             ? t("project.overview.route", "Route")
             : by === "client"
               ? t("project.overview.client", "Client")
-              : t("project.overview.member", "Member");
+              : by === "source"
+                ? t("project.overview.source", "Source")
+                : t("project.overview.member", "Member");
   const cacheHeader = t("project.overview.cacheHit", "Cache hit");
   const errorsHeader = t("project.overview.errors", "Errors");
   const cache = col.custom(
@@ -315,7 +326,12 @@ export function Breakdown({
       }
       actions={
         <span className="flex max-w-full min-w-0 flex-wrap items-center gap-8">
-          <GroupBy label={t("project.overview.groupBy", "Group by")} value={by} onChange={onByChange} options={byOptions(granularity, clients)} />
+          <GroupBy
+            label={t("project.overview.groupBy", "Group by")}
+            value={by}
+            onChange={onByChange}
+            options={byOptions(granularity, clients, rights.has("sources.view"))}
+          />
           <Button size="sm" variant="ghost" leadingIcon={icons.download} disabled={shown.length === 0} onClick={download}>
             {t("project.overview.downloadCsv", "Download CSV")}
           </Button>

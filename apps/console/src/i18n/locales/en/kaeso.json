@@ -223,6 +223,7 @@
   "kaeso.limits.enterAmount": "Enter an amount",
   "kaeso.limits.higherThanAbove": "Higher than the {level, select, project {project's} other {member's}} {limit}; a lower level can't be higher than the one above it",
   "kaeso.limits.neverResets": "Never resets",
+  "kaeso.limits.observedNote": "{amount} of it reported by sources; Kaeso alerts on it but can't stop those requests.",
   "kaeso.limits.overLastMinute": "Over the last minute",
   "kaeso.limits.remove": "Remove limit",
   "kaeso.limits.removeHint": "The {limit} stops applying; the levels above it still do.",

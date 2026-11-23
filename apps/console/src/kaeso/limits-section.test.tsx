@@ -88,6 +88,12 @@ describe("LimitsSection", () => {
     expect(requests("GET", LIMITS).map((r) => Object.fromEntries(r.query))).toEqual(expect.arrayContaining([{ user: "usr_grace" }, { level: "project" }]));
   });
 
+  it("says how much of a budget sources reported, which Kaeso can't stop", async () => {
+    const { section } = await memberLimits([limit({ id: "lim_member", level: "member", amount: "20", used: "5", observed: "2", subject: grace }), memberRate]);
+    expect(await within(section).findByText("$2.00 of it reported by sources; Kaeso alerts on it but can't stop those requests.")).toBeInTheDocument();
+    expect(within(section).getAllByText(/reported by sources/)).toHaveLength(1);
+  });
+
   it("shows and takes spend budgets in the organization's currency", async () => {
     signedIn({ memberships: [myMembership({ org_currency: "EUR" })] });
     const euros = limit({ ...memberBudget, amount: "40", used: "12.1", currency: "EUR", description: "monthly spend budget of 40 EUR" });
