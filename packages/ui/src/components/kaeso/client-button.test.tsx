@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { CLIENT_MARKS, ClientButton } from "./client-button.js";
+import { CLIENT_MARK_COLORS, CLIENT_MARKS, ClientButton } from "./client-button.js";
 import { PROVIDER_MARKS } from "./provider-marks.js";
 
 describe("ClientButton", () => {
@@ -12,6 +12,12 @@ describe("ClientButton", () => {
     expect(button.querySelector("path")).toHaveAttribute("d", CLIENT_MARKS.cursor);
     await userEvent.click(button);
     expect(onClick).toHaveBeenCalledOnce();
+  });
+
+  it("draws Claude's spark in Claude's orange and the others' black-and-white marks in the text colour", () => {
+    const { container } = render(<ClientButton client="claude" aria-label="Claude" />);
+    expect(container.querySelector("svg")).toHaveClass("text-mark-claude");
+    expect(CLIENT_MARK_COLORS).toEqual({ claude: "text-mark-claude", cursor: "text-fg", "github-copilot": "text-fg", chatgpt: "text-fg" });
   });
 
   it("draws a different mark for every client, and ChatGPT with OpenAI's", () => {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { SOURCE_MARKS, SOURCE_NAMES, SourceBadge } from "./source-badge.js";
+import { SOURCE_MARK_LOOKS, SOURCE_MARKS, SOURCE_NAMES, SourceBadge } from "./source-badge.js";
 import { PROVIDER_MARKS } from "./provider-marks.js";
 
 describe("SourceBadge", () => {
@@ -11,19 +11,32 @@ describe("SourceBadge", () => {
     expect(tile).toHaveClass("size-20");
   });
 
-  it("draws each client's mark in its maker's colour", () => {
-    const colour = (kind: string) => {
+  it("draws each client's mark in its maker's colours", () => {
+    const colours = (kind: string) => {
       const { container, unmount } = render(<SourceBadge kind={kind} />);
-      const svg = container.querySelector("svg");
+      const svg = container.querySelector("svg")!;
+      const found = [svg, ...svg.querySelectorAll("path, stop")].flatMap((el) => [...el.classList].filter((c) => c.startsWith("text-")));
       unmount();
-      return [...(svg?.classList ?? [])].find((c) => c.startsWith("text-"));
+      return [...new Set(found)];
     };
-    expect(colour("claude_code")).toBe("text-mark-claude-code");
-    expect(colour("gemini_cli")).toBe("text-mark-gemini-agent-platform-blue");
-    expect(colour("antigravity")).toBe("text-mark-gemini-agent-platform-blue");
-    expect(colour("opentelemetry")).toBe("text-mark-opentelemetry");
-    expect(colour("openrouter")).toBe("text-mark-openrouter");
-    expect(colour("codex")).toBe("text-fg");
+    expect(colours("claude_code")).toEqual(["text-mark-claude"]);
+    expect(colours("gemini_cli")).toEqual(["text-mark-gemini-agent-platform-red", "text-mark-gemini-agent-platform-blue"]);
+    expect(colours("antigravity")).toEqual(["text-mark-google-blue", "text-mark-google-green", "text-mark-google-yellow", "text-mark-google-red"]);
+    expect(colours("opentelemetry")).toEqual(["text-mark-opentelemetry-orange", "text-mark-opentelemetry-blue"]);
+    expect(colours("openrouter")).toEqual(["text-mark-openrouter"]);
+    expect(colours("codex")).toEqual(["text-fg"]);
+  });
+
+  it("colours the published marks without changing them, and splits OpenTelemetry's into its two colours shape for shape", () => {
+    for (const [kind, look] of Object.entries(SOURCE_MARK_LOOKS)) {
+      if (kind === "opentelemetry") continue;
+      expect(look.d ?? look.parts?.[0]?.d, kind).toBe(SOURCE_MARKS[kind]);
+    }
+    const shapes = (d: string) => (d.match(/z/gi) ?? []).length;
+    const otel = SOURCE_MARK_LOOKS.opentelemetry!.parts!;
+    expect(otel).toHaveLength(2);
+    expect(shapes(otel[0]!.d) + shapes(otel[1]!.d)).toBe(shapes(SOURCE_MARKS.opentelemetry!));
+    expect(Object.keys(SOURCE_MARK_LOOKS).sort()).toEqual(Object.keys(SOURCE_MARKS).sort());
   });
 
   it("shows its name beside the tile, which then hides from assistive technology", () => {
