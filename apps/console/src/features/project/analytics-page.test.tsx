@@ -779,7 +779,7 @@ describe("the analytics views", () => {
     const table = await screen.findByRole("grid", { name: "Modelle im Zeitraum" });
     await waitFor(() => expect(bodyRows(table)[0]).toHaveTextContent("129,9 Tsd."));
     const header = within(table).getAllByRole("row")[0] as HTMLElement;
-    expect(header.style.gridTemplateColumns).toBe("minmax(220px, 1fr) 96px 96px 84px 112px 104px 112px 128px 96px 112px");
+    expect(header.style.gridTemplateColumns).toBe("minmax(220px, 1fr) 96px 96px 88px 120px 104px 112px 128px 96px 112px");
   });
 
   it("keeps the period when it moves between views", async () => {
