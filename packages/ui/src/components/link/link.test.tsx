@@ -52,6 +52,24 @@ describe("Link", () => {
     expect(card).not.toHaveTextContent("#");
   });
 
+  it("measures its width without its padding, so a link in a row of actions keeps its words on one line", () => {
+    // Its padding sits inside its negative margins: a width limit such as max-w-full has to leave room for both.
+    for (const variant of ["inline", "action", "quiet", "standalone", "heading"] as const) {
+      render(
+        <Link href="https://example.com" variant={variant}>
+          {variant} link
+        </Link>,
+      );
+      expect(screen.getByRole("link", { name: new RegExp(`^${variant} link`) })).toHaveClass("box-content", "-mx-2", "px-2");
+    }
+    render(
+      <Link href="/next" variant="card">
+        Next page
+      </Link>,
+    );
+    expect(screen.getByRole("link", { name: "Next page" })).not.toHaveClass("box-content");
+  });
+
   it("stays in the page for an address of the app", () => {
     render(<Link href="/keys">API keys</Link>);
     const link = screen.getByRole("link", { name: "API keys" });
