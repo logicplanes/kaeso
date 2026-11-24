@@ -450,6 +450,8 @@ function UpdateSettings({ u }: { u: UpdatesView }) {
 function History() {
   const jobs = useInfiniteQuery(updateJobsQuery);
   const rows = useMemo(() => jobs.data?.pages.flatMap((p) => p.data) ?? [], [jobs.data]);
+  // Sized for the longest of en, de and zh-CN with padding ("2026年11月24日 01:05", "Gelöschter Benutzer"); 648px in all,
+  // so Started by still fits beside the others in the settings column.
   const columns = [
     col.custom(
       { id: "when", header: t("instance.updates.when", "When"), size: 192, priority: 1 },
@@ -457,12 +459,12 @@ function History() {
       (at: string) => <Text tabular>{formatDate(at, { time: true })}</Text>,
     ),
     col.custom(
-      { id: "versions", header: t("instance.updates.versions", "Versions"), size: 160, priority: 1, grow: true },
+      { id: "versions", header: t("instance.updates.versions", "Versions"), size: 136, priority: 1, grow: true },
       (j: UpdateJobView) => j,
       (j: UpdateJobView) => <Text truncate>{t("instance.updates.fromTo", "{from} to {to}", { from: j.from, to: j.to })}</Text>,
     ),
     col.custom(
-      { id: "result", header: t("instance.updates.result", "Result"), size: 168, priority: 1 },
+      { id: "result", header: t("instance.updates.result", "Result"), size: 152, priority: 1 },
       (j: UpdateJobView) => j,
       (j: UpdateJobView) => {
         const r = jobResult(j);
@@ -478,7 +480,7 @@ function History() {
       },
     ),
     col.custom(
-      { id: "by", header: t("instance.updates.by", "Started by"), size: 160, priority: 2 },
+      { id: "by", header: t("instance.updates.by", "Started by"), size: 168, priority: 2 },
       (j: UpdateJobView) =>
         j.automatic ? t("instance.updates.automatically", "Automatically") : (j.started_by?.name ?? t("instance.updates.deletedUser", "Deleted user")),
       (name: string) => <Text truncate>{name}</Text>,
