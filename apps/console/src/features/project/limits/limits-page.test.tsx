@@ -149,6 +149,8 @@ describe("LimitsPage", () => {
   });
 
   it("cuts a long name short and shows it whole on hover", async () => {
+    // The test DOM's ResizeObserver never reports; without one, cut-off text measures itself as it mounts.
+    vi.stubGlobal("ResizeObserver", undefined);
     const width = vi.spyOn(HTMLElement.prototype, "scrollWidth", "get").mockReturnValue(400);
     vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(120);
     try {
@@ -163,6 +165,7 @@ describe("LimitsPage", () => {
     } finally {
       width.mockRestore();
       vi.restoreAllMocks();
+      vi.unstubAllGlobals();
     }
   });
 
