@@ -1,15 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { Banner, Link } from "@logicplanes/kaeso-ui";
-import { api, data } from "~/api/client";
-import type { OrgRetirements } from "~/api/generated/types";
+import { orgRetirementsQuery } from "~/api/queries/projects";
 import { fullDayLabel } from "~/format/period";
 import { t } from "~/i18n";
-
-export const orgRetirementsQuery = (org: string) => ({
-  queryKey: ["orgs", org, "deprecations"] as const,
-  queryFn: async (): Promise<OrgRetirements> => data(await api.GET("/platform/v1/orgs/{org}/deprecations", { params: { path: { org } } })),
-  staleTime: 300_000,
-});
 
 const SHOWN = 5;
 

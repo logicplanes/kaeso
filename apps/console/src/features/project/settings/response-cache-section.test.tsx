@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { project, signedIn } from "~/test/fixtures";
 import { hoverReason, notifications } from "~/test/fixtures/org";
@@ -42,6 +42,20 @@ describe("project response cache", () => {
     await user.click(toggle);
     expect(await notifications().findByText("Response cache turned on")).toBeInTheDocument();
     expect(requests("PATCH", CACHE).map((r) => r.body)).toEqual([{ enabled: true }]);
+  });
+
+  it("turns the cache off, busy until the gateway answers", async () => {
+    setUp({ settings: on_ });
+    let answer = () => {};
+    on("PATCH", CACHE, () => new Promise((resolve) => (answer = () => resolve(cache()))));
+    const { user } = await renderApp(projectPath("settings"));
+    const toggle = await screen.findByRole("switch", { name: "Cache replies" });
+    expect(toggle).toBeChecked();
+    await user.click(toggle);
+    await waitFor(() => expect(toggle).toHaveAttribute("aria-busy", "true"));
+    answer();
+    expect(await notifications().findByText("Response cache turned off")).toBeInTheDocument();
+    expect(requests("PATCH", CACHE).map((r) => r.body)).toEqual([{ enabled: false }]);
   });
 
   it("changes how long replies are kept and clears the cache", async () => {

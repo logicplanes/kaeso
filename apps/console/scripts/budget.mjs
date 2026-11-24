@@ -7,11 +7,12 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 export const BUDGETS = [
   // Every gateway message has a rule in api/gateway-errors.ts, and the rules and the English error catalog load with
-  // the entry, so the sign-in page grows a little with each new message.
-  { name: "sign-in", route: "src/routes/sign-in.tsx", target: 120, ceiling: 143 },
-  // The project overview names the sources that report observed requests among its keys.
-  { name: "project overview", route: "src/routes/_app/orgs/$org/projects/$project/index.tsx", also: ["src/auth/route-gates.ts"], target: 180, ceiling: 215 },
-  { name: "org overview", route: "src/routes/_app/orgs/$org/index.tsx", target: 185, ceiling: 216 },
+  // the entry, so the sign-in page grows a little with each new message. The entry also names each route's loader.
+  { name: "sign-in", route: "src/routes/sign-in.tsx", target: 120, ceiling: 144 },
+  // The project overview names the sources that report observed requests among its keys, and loads the routes' loaders' names.
+  { name: "project overview", route: "src/routes/_app/orgs/$org/projects/$project/index.tsx", also: ["src/auth/route-gates.ts"], target: 180, ceiling: 216 },
+  // The org overview holds placeholders of its late parts and starts those parts with the route, so it doesn't jump.
+  { name: "org overview", route: "src/routes/_app/orgs/$org/index.tsx", target: 185, ceiling: 217 },
 ];
 
 export function checkBudgets({ root = ROOT, dist = join(root, "dist"), budgets = BUDGETS } = {}) {

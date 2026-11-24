@@ -17,11 +17,11 @@ import { projectUsageQuery, timelineQuery } from "~/api/queries/usage";
 import { clientUsage } from "~/format/clients";
 import { shiftDay } from "~/format/period";
 import { t } from "~/i18n";
+import { PeriodPicker } from "~/kaeso/period-picker";
 import { Share } from "~/kaeso/share";
 
 const loadParts = () => import("./analytics-breakdown");
 const Breakdown = lazy(() => loadParts().then((m) => ({ default: m.Breakdown })));
-const PeriodPicker = lazy(() => import("~/kaeso/period-picker").then((m) => ({ default: m.PeriodPicker })));
 
 const DIM: Record<ProjectView, Dimension> = { models: "model", keys: "key", members: "member" };
 
@@ -75,9 +75,7 @@ export function AnalyticsPage({ org, project, search, view }: { org: string; pro
         tabs={tabs}
         actions={
           <>
-            <Suspense fallback={null}>
-              <PeriodPicker from={o.from} to={o.to} period={o.period} days={(id) => presetDays(id, new Date(), span.data?.first_day)} onChange={setSearch} />
-            </Suspense>
+            <PeriodPicker from={o.from} to={o.to} period={o.period} days={(id) => presetDays(id, new Date(), span.data?.first_day)} onChange={setSearch} />
             <Share compact org={org} target={{ kind: "analytics", project, from: o.from, to: o.to, costs: o.showCost }} />
           </>
         }

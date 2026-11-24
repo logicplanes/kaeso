@@ -97,6 +97,7 @@
   "kaeso.home.newModelsHint": "Neueste zuerst, aus dem Modellkatalog, den Kaeso aktuell hält.",
   "kaeso.home.newRelease": "Neue Version",
   "kaeso.home.news": "Neuigkeiten",
+  "kaeso.home.noSummary": "Zu dieser Version gibt es hier keine Zusammenfassung.",
   "kaeso.home.noChanges": "Noch keine Änderungen",
   "kaeso.home.openModel": "In {project} öffnen",
   "kaeso.home.perDay": "{metric} pro Tag",

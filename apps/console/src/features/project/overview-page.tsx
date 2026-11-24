@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { lazy, Suspense } from "react";
+import { Suspense } from "react";
 import { AppFrame, Button } from "@logicplanes/kaeso-ui";
 import { limitsQuery } from "~/api/queries/limits";
 import { useProjectRights } from "~/auth/rights";
@@ -7,11 +7,7 @@ import { t } from "~/i18n";
 import { HomeMetrics } from "~/kaeso/overview/home-parts";
 import { ProjectHeader } from "~/shell/project-header";
 import { projectPath } from "~/shell/pages";
-
-// Split from the page so the overview's first load stays within its bundle budget (scripts/budget.mjs); the route preloads it.
-const ProjectGlance = lazy(() => import("./overview-glance").then((m) => ({ default: m.ProjectGlance })));
-const ShareCard = lazy(() => import("./overview-glance").then((m) => ({ default: m.ShareCard })));
-const Limit = lazy(() => import("~/kaeso/overview/limit").then((m) => ({ default: m.Limit })));
+import { Limit, ProjectGlance, ShareCard } from "./overview-parts";
 
 export function OverviewPage({ org, project }: { org: string; project: string }) {
   const rights = useProjectRights(org, project);

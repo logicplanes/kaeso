@@ -1,17 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { SettingsGroup, SettingsRow, Section, Switch } from "@logicplanes/kaeso-ui";
 import { api, data } from "~/api/client";
-import type { OrgResponseCache } from "~/api/generated/types";
+import { orgResponseCacheQuery } from "~/api/queries/orgs";
 import { useApiMutation } from "~/auth/mutation";
 import { useNeedsRight } from "~/auth/needs-right";
 import { useOrgRights } from "~/auth/session";
 import { t } from "~/i18n";
 import { toast } from "~/shell/toast";
-
-const orgResponseCacheQuery = (org: string) => ({
-  queryKey: ["orgs", org, "response-cache"] as const,
-  queryFn: async (): Promise<OrgResponseCache> => data(await api.GET("/platform/v1/orgs/{org}/response-cache", { params: { path: { org } } })),
-});
 
 export function OrgResponseCacheSection({ org }: { org: string }) {
   const needs = useNeedsRight(org);

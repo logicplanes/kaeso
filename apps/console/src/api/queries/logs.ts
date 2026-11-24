@@ -223,6 +223,35 @@ export interface ToolCallFilters {
   error?: string;
 }
 
+/** What of a request log address the tool calls are filtered by: its period and party, and the `call_*` parameters. */
+export interface ToolCallSearch {
+  range?: LogRange;
+  from?: string;
+  to?: string;
+  key?: string;
+  member?: string;
+  source_id?: string;
+  call_server?: string;
+  call_tool?: string;
+  call_status?: "ok" | "error" | "refused";
+  call_error?: string;
+}
+
+/** The tool calls' filters for an address; the page and the route's loader both read them here, so they ask for the same list. */
+export function toolCallFilters(search: ToolCallSearch): ToolCallFilters {
+  return {
+    ...(search.range ? { range: search.range } : {}),
+    ...(search.from && search.to ? { from: search.from, to: search.to } : {}),
+    ...(search.key ? { key: search.key } : {}),
+    ...(search.member ? { member: search.member } : {}),
+    ...(search.call_server ? { server: search.call_server } : {}),
+    ...(search.call_tool ? { tool: search.call_tool } : {}),
+    ...(search.source_id ? { source_id: search.source_id } : {}),
+    ...(search.call_status ? { status: search.call_status } : {}),
+    ...(search.call_error ? { error: search.call_error } : {}),
+  };
+}
+
 export function toolCallParams(f: ToolCallFilters, now = Date.now()) {
   const { from, to, key, user, service_account } = logsParams(
     {

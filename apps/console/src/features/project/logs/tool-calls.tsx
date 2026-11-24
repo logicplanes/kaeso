@@ -22,7 +22,7 @@ import {
 import { formatBytes, formatDuration, formatTimeZone } from "@logicplanes/kaeso-ui/format";
 import { isApiError } from "~/api/errors";
 import type { ToolCallEntryView, ToolCallView } from "~/api/generated/types";
-import { toolCallQuery, toolCallsInfiniteQuery, type ToolCallFilters } from "~/api/queries/logs";
+import { toolCallFilters, toolCallQuery, toolCallsInfiniteQuery } from "~/api/queries/logs";
 import { projectServersQuery, projectToolsQuery } from "~/api/queries/tools";
 import { useNeedsRight } from "~/auth/needs-right";
 import { useProjectRights } from "~/auth/rights";
@@ -113,17 +113,7 @@ export function ToolCallsPage({ org, project, search }: { org: string; project: 
   const servers = useQuery(projectServersQuery(org, project));
   const [density, setDensity] = useState<Density>("default");
   const scroller = useRef<HTMLDivElement | null>(null);
-  const filters: ToolCallFilters = {
-    ...(search.range ? { range: search.range } : {}),
-    ...(search.from && search.to ? { from: search.from, to: search.to } : {}),
-    ...(search.key ? { key: search.key } : {}),
-    ...(search.member ? { member: search.member } : {}),
-    ...(search.call_server ? { server: search.call_server } : {}),
-    ...(search.call_tool ? { tool: search.call_tool } : {}),
-    ...(search.source_id ? { source_id: search.source_id } : {}),
-    ...(search.call_status ? { status: search.call_status } : {}),
-    ...(search.call_error ? { error: search.call_error } : {}),
-  };
+  const filters = toolCallFilters(search);
   const calls = useInfiniteQuery(toolCallsInfiniteQuery(org, project, filters));
   const base = useMemo(() => calls.data?.pages.flatMap((p) => p.data) ?? [], [calls.data]);
   const { rows, pending, fresh, cut, showPending } = useLiveToolCalls({ org, project, filters, live: !!search.live, base, scroller });

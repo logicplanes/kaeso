@@ -92,7 +92,7 @@ export const docs = {
     props: {
       actions: "One or two buttons.",
       art: "The artwork on the right, 16:9 at 320px: a `ReleaseArt` with `flush`, so the whole cover shows.",
-      description: "One line, two at most.",
+      description: "One line, two at most; it keeps the room of two, so the announcement is as tall while it loads as after.",
       eyebrow: 'What kind of news: "New release". It stands under the title as a small label, never above it.',
       title: "The news itself.",
     },

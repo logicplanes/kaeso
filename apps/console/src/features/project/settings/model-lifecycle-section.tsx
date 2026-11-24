@@ -2,20 +2,15 @@ import { useQuery } from "@tanstack/react-query";
 import { Section, SettingsGroup, SettingsRow, Switch } from "@logicplanes/kaeso-ui";
 import { api, data } from "~/api/client";
 import type { ModelLifecycleSettings } from "~/api/generated/types";
+import { modelLifecycleQuery } from "~/api/queries/project-settings";
 import { useApiMutation } from "~/auth/mutation";
 import { useNeedsRight } from "~/auth/needs-right";
 import { t } from "~/i18n";
 import { toast } from "~/shell/toast";
 
-const lifecycleQuery = (org: string, project: string) => ({
-  queryKey: ["orgs", org, "projects", project, "model-lifecycle"] as const,
-  queryFn: async (): Promise<ModelLifecycleSettings> =>
-    data(await api.GET("/platform/v1/orgs/{org}/projects/{project}/model-lifecycle", { params: { path: { org, project } } })),
-});
-
 export function ModelLifecycleSection({ org, project, canChange, archived }: { org: string; project: string; canChange: boolean; archived: boolean }) {
   const needs = useNeedsRight(org, project);
-  const query = lifecycleQuery(org, project);
+  const query = modelLifecycleQuery(org, project);
   const settings = useQuery(query);
   const save = useApiMutation({
     mutationFn: async (body: ModelLifecycleSettings) =>

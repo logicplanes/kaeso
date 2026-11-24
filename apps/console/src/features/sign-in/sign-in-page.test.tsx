@@ -283,8 +283,8 @@ describe("a signed-in visit", () => {
   it("says the session stayed when single sign-on came back as another account", async () => {
     signedIn();
     on("GET", "auth/methods", methods());
-    await renderApp("/sign-in?next=/settings/account#sso_error=signed_in_as_other");
-    await waitFor(() => expect(window.location.pathname).toBe("/settings/account"));
+    await renderApp("/sign-in?next=/settings/account/profile#sso_error=signed_in_as_other");
+    await waitFor(() => expect(window.location.pathname).toBe("/settings/account/profile"));
     expect(
       await (await notifications()).findByText("This browser is signed in to another account, which stays signed in; sign out first to switch."),
     ).toBeInTheDocument();

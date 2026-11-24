@@ -134,13 +134,15 @@ export const MetricTabs = forwardRef<
                     </SwapValue>
                   )}
                 </span>
-                <span className="mt-2 flex min-h-20 w-full min-w-0 flex-wrap items-center gap-x-6">
+                {/* The change and its note run on as one text that always has two lines' room: wrapping freely, a tab grew
+                    by a line or two once its numbers came, by language and width, and moved the chart below it. */}
+                <span className="mt-2 line-clamp-2 h-36 w-full min-w-0 text-small text-fg-tertiary">
                   {loading ? (
-                    <Skeleton shape="line" className="w-80" />
+                    <Skeleton shape="word" className="w-80" />
                   ) : (
                     <>
-                      {item.change && <Delta value={item.change.value} better={item.change.better ?? "up"} />}
-                      {item.detail && <span className="min-w-0 text-small text-fg-tertiary">{item.detail}</span>}
+                      {item.change && <Delta value={item.change.value} better={item.change.better ?? "up"} className="mr-6" />}
+                      {item.detail && <span>{item.detail}</span>}
                     </>
                   )}
                 </span>

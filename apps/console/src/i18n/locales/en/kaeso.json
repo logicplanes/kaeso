@@ -178,6 +178,7 @@
   "kaeso.home.newRelease": "New release",
   "kaeso.home.news": "News",
   "kaeso.home.noChanges": "No changes yet",
+  "kaeso.home.noSummary": "There's no summary of this release to show here.",
   "kaeso.home.openModel": "Open in {project}",
   "kaeso.home.perDay": "{metric} per day",
   "kaeso.home.price": "Per 1M tokens",

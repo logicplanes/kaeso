@@ -2,17 +2,13 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Banner, Section, Select, SettingsGroup, SettingsRow, Status, Switch } from "@logicplanes/kaeso-ui";
 import { toast } from "~/shell/toast";
 import { api, data } from "~/api/client";
-import type { NotificationDelivery, NotificationSettings } from "~/api/generated/types";
+import type { NotificationDelivery } from "~/api/generated/types";
+import { notificationsQuery } from "~/api/queries/me";
 import { useApiMutation } from "~/auth/mutation";
 import { LoadFailed } from "~/features/org/load-failed";
 import { areaName, deliveryOptions, kindWords } from "~/kaeso/notification-kinds";
 import { SettingsLoading, SettingsPage } from "~/shell/settings-page";
 import { t } from "~/i18n";
-
-const notificationsQuery = {
-  queryKey: ["me", "notifications"],
-  queryFn: async (): Promise<NotificationSettings> => data(await api.GET("/platform/v1/me/notifications")),
-};
 
 type Change = { kind: string; delivery: NotificationDelivery };
 

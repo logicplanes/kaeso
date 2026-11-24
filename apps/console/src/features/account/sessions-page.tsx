@@ -5,6 +5,7 @@ import { toast } from "~/shell/toast";
 import { formatRelative } from "@logicplanes/kaeso-ui/format";
 import { api, data } from "~/api/client";
 import type { SessionListItem } from "~/api/generated/types";
+import { mySessionsQuery } from "~/api/queries/me";
 import { useApiMutation } from "~/auth/mutation";
 import { LoadFailed } from "~/features/org/load-failed";
 import { sessionMethodLabel } from "~/format/labels";
@@ -12,13 +13,8 @@ import { describeUserAgent } from "~/format/user-agent";
 import { SettingsLoading, SettingsPage } from "~/shell/settings-page";
 import { t } from "~/i18n";
 
-const sessionsQuery = {
-  queryKey: ["me", "sessions"],
-  queryFn: async (): Promise<SessionListItem[]> => data(await api.GET("/platform/v1/me/sessions")).data,
-};
-
 export function SessionsPage() {
-  const sessions = useQuery(sessionsQuery);
+  const sessions = useQuery(mySessionsQuery);
   const [ending, setEnding] = useState<SessionListItem | null>(null);
   const [endOpen, setEndOpen] = useState(false);
   const [all, setAll] = useState(false);

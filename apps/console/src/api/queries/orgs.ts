@@ -1,6 +1,18 @@
 import { queryOptions } from "@tanstack/react-query";
 import { api, data } from "../client";
-import type { InviteView, LogJobView, MemberView, MemberWithout2fa, OrgKeyView, OrgLogSettings, OrgView, SecurityView, StorageView } from "../generated/types";
+import type {
+  InviteView,
+  LogJobView,
+  MemberView,
+  MemberWithout2fa,
+  OrgKeyView,
+  OrgLogSettings,
+  OrgResponseCache,
+  OrgStoredResponses,
+  OrgView,
+  SecurityView,
+  StorageView,
+} from "../generated/types";
 import { allPages } from "../paging";
 
 export const orgViewKey = (org: string) => ["orgs", org, "view"] as const;
@@ -87,6 +99,18 @@ export const logSettingsQuery = (org: string) =>
   queryOptions({
     queryKey: ["orgs", org, "logs", "settings"],
     queryFn: async (): Promise<OrgLogSettings> => data(await api.GET("/platform/v1/orgs/{org}/logs/settings", { params: { path: { org } } })),
+  });
+
+export const orgResponseCacheQuery = (org: string) =>
+  queryOptions({
+    queryKey: ["orgs", org, "response-cache"] as const,
+    queryFn: async (): Promise<OrgResponseCache> => data(await api.GET("/platform/v1/orgs/{org}/response-cache", { params: { path: { org } } })),
+  });
+
+export const orgStoredResponsesQuery = (org: string) =>
+  queryOptions({
+    queryKey: ["orgs", org, "stored-responses"] as const,
+    queryFn: async (): Promise<OrgStoredResponses> => data(await api.GET("/platform/v1/orgs/{org}/stored-responses", { params: { path: { org } } })),
   });
 
 export const logStorageQuery = (org: string) =>

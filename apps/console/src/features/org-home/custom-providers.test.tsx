@@ -795,7 +795,8 @@ describe("custom providers", () => {
     signedIn();
     withCustom([]);
     let calls = 0;
-    on("GET", LIST, () => (++calls === 1 ? apiError(400, "invalid_request", "The custom providers are locked.") : page([customProvider()])));
+    // The route's loader asks first and the page asks again as it opens; both are refused.
+    on("GET", LIST, () => (++calls <= 2 ? apiError(400, "invalid_request", "The custom providers are locked.") : page([customProvider()])));
     const { user } = await renderApp(PATH);
     expect(await within(await table()).findByText("Couldn't load these rows")).toBeInTheDocument();
     await user.click(within(await table()).getByRole("button", { name: "Try again" }));

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, CellInset, Dashboard, DashboardCell, Legend, MetricTabs, RankList, Section, Text } from "@logicplanes/kaeso-ui";
+import { Button, CellInset, Dashboard, DashboardCell, Legend, MetricTabs, RankList, Section, Skeleton, Text } from "@logicplanes/kaeso-ui";
 import { formatLocale } from "@logicplanes/kaeso-ui/format";
 import { bucketLabel, spansYears } from "~/format/buckets";
 import { utcDay } from "~/format/period";
@@ -55,11 +55,13 @@ function ChartCell({ o, metric }: { o: Overview; metric: MetricId }) {
       title={context ? t("kaeso.overview.lastDays", "{metric} per day, the last 14 days, UTC", { metric: what }) : perBucket(o, what)}
     >
       <CellInset grow>
-        <div className="flex flex-wrap items-center justify-between gap-x-24 gap-y-6">
-          <Text variant="small" tone="tertiary">
-            {note}
+        {/* The note keeps two lines' room on narrow screens, where it wraps to show the peak's day, and one beside the
+            legend from 1024px, loading or not. The legend's words are known before the numbers, so it stands meanwhile. */}
+        <div className="flex flex-col items-start gap-y-6 lg:flex-row lg:items-center lg:justify-between lg:gap-x-24">
+          <Text variant="small" tone="tertiary" lines={2} className="max-w-full">
+            {note ?? (!context && o.pointsLoading && <Skeleton shape="word" className="w-240" />)}
           </Text>
-          {o.prevRows && !context && (
+          {!context && (o.prevRows || (o.compare && o.loading)) && (
             <Legend
               items={[
                 { id: "now", label: t("kaeso.overview.thisPeriod", "This period"), color: m.color },
@@ -111,7 +113,7 @@ function TopCell({ o, dim, metric }: { o: Overview; dim: Ranked; metric: MetricI
 
 export function ControlRoom({ o, initial = "requests" }: { o: Overview; initial?: MetricId | undefined }) {
   const [metric, setMetric] = useState<MetricId>(initial);
-  const ids: MetricId[] = ["requests", "tokens", ...(o.showCost ? (["cost"] as const) : []), "errors", ...(o.now.toolCalls > 0 ? (["tools"] as const) : [])];
+  const ids: MetricId[] = ["requests", "tokens", ...(o.showCost ? (["cost"] as const) : []), "errors", ...(o.toolsTab ? (["tools"] as const) : [])];
   const top: Ranked[] = o.project ? ["model", "key"] : ["project", "model"];
   return (
     <>

@@ -30,6 +30,8 @@ export const orgUsageQuery = (org: string, from: string, to: string, groupBy: Gr
       ).data,
   });
 
+export const monthByProjectQuery = (org: string, today: string) => orgUsageQuery(org, `${today.slice(0, 8)}01`, today, "project");
+
 export const usageSpanQuery = (org: string, project?: string) =>
   queryOptions({
     queryKey: project ? ["orgs", org, "projects", project, "usage", "span"] : ["orgs", org, "usage", "span"],
