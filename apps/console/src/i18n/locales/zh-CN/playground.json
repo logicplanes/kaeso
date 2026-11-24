@@ -79,6 +79,7 @@
   "playground.export.request": "请求 {id}",
   "playground.export.noAnswer": "无回答",
   "playground.export.predicate": "是，概率 {p}",
+  "playground.export.box": "上边 {top}，下边 {bottom}，左边 {left}，右边 {right}",
   "playground.export.refusedBecause": "已拒绝：{reason}",
   "playground.export.refused": "已拒绝",
   "playground.exportMarkdown": "Markdown",

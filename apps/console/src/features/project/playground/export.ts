@@ -73,7 +73,12 @@ function answerText(q: DecisionQuestion, a: DecisionAnswer | null): string {
     case "score":
       return formatNumber(a.score, { maximumFractionDigits: 3 });
     case "box":
-      return `top ${a.top}, bottom ${a.bottom}, left ${a.left}, right ${a.right}`;
+      return t("playground.export.box", "top {top}, bottom {bottom}, left {left}, right {right}", {
+        top: String(a.top),
+        bottom: String(a.bottom),
+        left: String(a.left),
+        right: String(a.right),
+      });
     case "refusal":
       return a.reason ? t("playground.export.refusedBecause", "refused: {reason}", { reason: a.reason }) : t("playground.export.refused", "refused");
   }

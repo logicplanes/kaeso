@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { apply, load } from "~/i18n";
 import { playgroundModel } from "~/test/fixtures/project-logs";
 import { columnsOf, conversationJson, conversationMarkdown, exportName, saveText, type Conversation } from "./export";
 import { newResponse, type ResponseState, type Turn } from "./responses";
@@ -70,6 +71,13 @@ const conversation = (): Conversation => ({
 });
 
 describe("the playground export", () => {
+  it("writes where a box is in the reader's language", async () => {
+    apply(await load("de"));
+    expect(conversationMarkdown(conversation())).toContain("- where: oben 1, unten 2, links 3, rechts 4");
+    apply(await load("zh-CN"));
+    expect(conversationMarkdown(conversation())).toContain("- where: 上边 1，下边 2，左边 3，右边 4");
+  });
+
   it("names the file after the project and the time", () => {
     expect(exportName(conversation(), "md")).toBe("playground-checkout-web-2026-11-15-1430.md");
     expect(exportName({ ...conversation(), project: "!!" }, "json")).toBe("playground-project-2026-11-15-1430.json");
