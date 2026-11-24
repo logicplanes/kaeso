@@ -29,7 +29,9 @@ export const Status = forwardRef<HTMLSpanElement, StatusProps>(function Status({
     <span
       ref={ref}
       className={cn(
-        "inline-flex items-center gap-6 font-medium",
+        // A status is a word: Chinese and Japanese ones break only where English would, between words, so a narrow row
+        // doesn't split "已连接" over two lines.
+        "inline-flex items-center gap-6 font-medium break-keep",
         size === "md" ? "text-body" : "text-small",
         KAESO_STATUS_VARIANTS.tone[tone].classes,
         className,
