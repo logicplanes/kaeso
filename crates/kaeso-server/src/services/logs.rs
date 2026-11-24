@@ -49,6 +49,26 @@ impl Entry {
     }
 }
 
+const ENTRY_BYTES: u64 = size_of::<Entry>() as u64;
+
+impl Entry {
+    // A logged text keeps the buffer it was read into, which is many times a short text's
+    // length; a waiting row would hold that memory uncounted.
+    fn fit(&mut self) {
+        if let Some(c) = &mut self.content {
+            c.request_body.shrink_to_fit();
+            c.reply.shrink_to_fit();
+        }
+        for p in &mut self.parts {
+            p.body.shrink_to_fit();
+        }
+        if let Some(c) = &mut self.call_content {
+            c.arguments.shrink_to_fit();
+            c.result.shrink_to_fit();
+        }
+    }
+}
+
 // Every finished request lands here, so the queue is split per worker thread; rows carry a
 // sequence number so taking and trimming still go oldest first across all shards.
 const SHARDS: usize = 16;
@@ -114,6 +134,7 @@ impl Buffer {
     }
 
     fn push(&self, mut entry: Entry, cap: u64, flush_rows: usize) {
+        entry.fit();
         entry.seq = self.next.fetch_add(1, Ordering::Relaxed);
         self.counted(&entry);
         let shard = crate::shard::of_this_thread(SHARDS);
@@ -1001,7 +1022,7 @@ async fn record_with(state: &AppState, o: &Outcome, body: Option<Bytes>) {
     } else {
         (None, Vec::new())
     };
-    let size = 512 + logical + text_bytes(&log);
+    let size = ENTRY_BYTES + logical + text_bytes(&log);
     let cfg = &state.config.logs;
     state.logs.push(
         Entry {
@@ -1058,7 +1079,7 @@ pub async fn record_tool_call(
         result,
         expires_at: days(row.started_at, cfg.content_days.min(cfg.metadata_days)),
     });
-    let size = 512
+    let size = ENTRY_BYTES
         + (row.tool.len()
             + row.upstream_tool.len()
             + row.error_message.len()
@@ -1295,6 +1316,66 @@ mod tests {
             call_content: None,
             size,
         }
+    }
+
+    fn roomy(text: &str) -> String {
+        let mut s = String::with_capacity(8192);
+        s.push_str(text);
+        s
+    }
+
+    #[test]
+    fn a_waiting_row_holds_no_more_than_its_text() {
+        let at = OffsetDateTime::UNIX_EPOCH;
+        let id = Uuid::nil();
+        let mut entry = row(10);
+        entry.content = Some(ContentRow {
+            request_id: id,
+            org_id: id,
+            project_id: id,
+            started_at: at,
+            request_body: roomy("{\"model\":\"m\"}"),
+            reply: roomy("{\"blocks\":[]}"),
+            expires_at: at,
+            request_parts: 0,
+        });
+        entry.parts = vec![PartRow {
+            org_id: id,
+            project_id: id,
+            hash: Default::default(),
+            body: roomy("part"),
+            first_at: at,
+            last_at: at,
+            expires_at: at,
+        }];
+        entry.call_content = Some(ToolCallContentRow {
+            id,
+            org_id: id,
+            project_id: id,
+            started_at: at,
+            arguments: roomy("{}"),
+            result: roomy("done"),
+            expires_at: at,
+        });
+        let buffer = Buffer::default();
+        buffer.push(entry, u64::MAX, usize::MAX);
+        let held: usize = buffer
+            .take(1)
+            .iter()
+            .map(|e| {
+                let content = e
+                    .content
+                    .as_ref()
+                    .map_or(0, |c| c.request_body.capacity() + c.reply.capacity());
+                let parts: usize = e.parts.iter().map(|p| p.body.capacity()).sum();
+                let call = e
+                    .call_content
+                    .as_ref()
+                    .map_or(0, |c| c.arguments.capacity() + c.result.capacity());
+                content + parts + call
+            })
+            .sum();
+        assert!(held < 256, "a row with 40 bytes of text holds {held} bytes");
     }
 
     fn seqs(entries: &[Entry]) -> Vec<u64> {
