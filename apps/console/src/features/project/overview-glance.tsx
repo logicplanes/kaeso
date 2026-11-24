@@ -211,7 +211,8 @@ function LimitsCell({ org, project, className }: { org: string; project: string;
 function LiveCell({ org, project, className }: { org: string; project: string; className: string }) {
   const navigate = useNavigate();
   const base = projectPath(org, project);
-  const logs = useQuery({ ...newestLogsQuery(org, project, {}), refetchInterval: LIVE_EVERY });
+  // It asks again every few seconds, so only for the rows it shows.
+  const logs = useQuery({ ...newestLogsQuery(org, project, {}, undefined, FEED_ROWS), refetchInterval: LIVE_EVERY });
   const keys = useQuery(allKeysQuery(org, project, { include_archived: true }));
   const rights = useProjectRights(org, project);
   const providers = useProviders(org);

@@ -94,6 +94,9 @@ describe("the project overview", () => {
     await user.click(row);
     await waitFor(() => expect(router.state.location.searchStr).toBe("?log=req_0001"));
     expect(router.state.location.pathname).toBe(projectPath("logs"));
+    // It polls every few seconds, so it asks only for the rows it shows.
+    const asked = requests("GET", "orgs/:org/projects/:project/logs").map((r) => r.query.get("limit"));
+    expect(asked[0]).toBe("7");
   });
 
   it("on a phone, gives the latest requests' models the room their keys and durations took", async () => {
