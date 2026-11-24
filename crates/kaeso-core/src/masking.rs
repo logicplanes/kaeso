@@ -370,9 +370,12 @@ fn passes(check: Check, text: &str) -> bool {
     }
 }
 
-// A card number or an IBAN next to other digits or words, such as a card's security code,
-// matches together with them and fails its checksum: the longest run of whole groups that
-// passes is the value.
+// How issuers print a card number in groups; a run of other groups that passes the checksum is
+// chance, such as one in ten lists of single digits.
+const CARD_GROUPS: [&[usize]; 4] = [&[4, 4, 4, 4], &[4, 4, 4, 4, 3], &[4, 6, 5], &[4, 6, 4]];
+
+// A value matches together with the groups next to it, such as a card's security code, and
+// then fails its checksum, so the value is looked for among the match's whole groups.
 fn passing(check: Check, text: &str) -> Option<(usize, usize)> {
     if text.is_empty() {
         return None;
@@ -380,9 +383,9 @@ fn passing(check: Check, text: &str) -> Option<(usize, usize)> {
     if passes(check, text) {
         return Some((0, text.len()));
     }
-    let (separators, from_the_start): (&[char], bool) = match check {
-        Check::Luhn => (&[' ', '-'], false),
-        Check::Iban => (&[' '], true),
+    let separators: &[char] = match check {
+        Check::Luhn => &[' ', '-'],
+        Check::Iban => &[' '],
         Check::None | Check::Ipv6 => return None,
     };
     let mut groups = Vec::new();
@@ -394,18 +397,41 @@ fn passing(check: Check, text: &str) -> Option<(usize, usize)> {
         }
     }
     groups.push((start, text.len()));
-    for len in (1..groups.len()).rev() {
-        let firsts = if from_the_start {
-            1
-        } else {
-            groups.len() - len + 1
-        };
-        for first in 0..firsts {
-            let from = groups.get(first).map(|g| g.0)?;
-            let to = groups.get(first + len - 1).map(|g| g.1)?;
-            if text.get(from..to).is_some_and(|t| passes(check, t)) {
-                return Some((from, to));
+    let run = |first: usize, len: usize| {
+        let from = groups.get(first)?.0;
+        let to = groups.get(first + len - 1)?.1;
+        text.get(from..to)
+            .is_some_and(|t| passes(check, t))
+            .then_some((from, to))
+    };
+    if check == Check::Iban {
+        // Only words are left off the end: a shorter run of the number's own groups passes by
+        // chance once in 97 times.
+        let mut len = groups.len();
+        while len > 1
+            && groups
+                .get(len - 1)
+                .and_then(|g| text.get(g.0..g.1))
+                .is_some_and(|g| g.bytes().all(|b| b.is_ascii_uppercase()))
+        {
+            len -= 1;
+            if let Some(found) = run(0, len) {
+                return Some(found);
             }
+        }
+        return None;
+    }
+    let sizes: Vec<usize> = groups.iter().map(|g| g.1 - g.0).collect();
+    for len in (1..groups.len()).rev() {
+        let found = (0..=groups.len() - len)
+            .filter(|first| {
+                sizes
+                    .get(*first..first + len)
+                    .is_some_and(|run| len == 1 || CARD_GROUPS.contains(&run))
+            })
+            .find_map(|first| run(first, len));
+        if found.is_some() {
+            return found;
         }
     }
     None
