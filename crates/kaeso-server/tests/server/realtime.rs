@@ -24,8 +24,12 @@ type Client =
     tokio_tungstenite::WebSocketStream<tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>>;
 
 async fn env() -> (Env, String) {
+    env_set(None).await
+}
+
+async fn env_set(extra: Option<&[(&str, &str)]>) -> (Env, String) {
     let capture = std::sync::Arc::new(common::v1::Capture::default());
-    let env = common::v1::env(Some(capture), None).await;
+    let env = common::v1::env(Some(capture), extra).await;
     let org = &env.owner.org_id;
     let r = env
         .app
@@ -417,4 +421,28 @@ async fn a_message_elevenlabs_refuses_closes_the_session_and_is_logged_as_failed
     let (got, code) = until_closed(&mut ws).await;
     assert_eq!(code, Some(1008));
     assert_eq!(got[0]["message_type"], "invalid_request");
+}
+
+#[tokio::test]
+async fn a_session_whose_app_stops_reading_ends_and_is_billed() {
+    let (env, base) = env_set(Some(&[("KAESO_UPSTREAM_STREAM_IDLE_TIMEOUT", "1s")])).await;
+    let path = format!("/v1/text-to-speech/{VOICE}/stream-input?model_id=eleven_flash_v2_5");
+    let (mut ws, id) = open(&base, &path, Some(&env.key)).await.unwrap();
+    let line = Message::text(json!({"text": "a"}).to_string());
+    let mut stalled = false;
+    for _ in 0..2_000_000 {
+        let sent = tokio::time::timeout(std::time::Duration::from_secs(3), ws.send(line.clone()));
+        if !matches!(sent.await, Ok(Ok(()))) {
+            stalled = true;
+            break;
+        }
+    }
+    assert!(
+        stalled,
+        "Kaeso stopped taking text once the app's socket was full"
+    );
+    let o = outcome(&env, &id).await;
+    assert_eq!(o.error_kind.as_deref(), Some("timeout"));
+    assert!(o.media.unwrap().characters > 0);
+    drop(ws);
 }
