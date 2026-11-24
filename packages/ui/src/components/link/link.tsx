@@ -57,6 +57,9 @@ export const Link = forwardRef<HTMLAnchorElement, LinkProps>(function Link({ hre
       className={cn(
         "relative -mx-2 box-decoration-clone rounded-code px-2 outline-offset-0 transition-control focus-ring",
         variant !== "inline" && "tap-target",
+        // The padding sits inside the negative margins: measured with it, a width limit such as a row of actions'
+        // max-w-full would take the padding from the text and wrap its last word.
+        variant !== "card" && "box-content",
         KAESO_LINK_VARIANTS.variant[variant].classes,
         variant === "card" && isExternal && "pe-36",
         className,
