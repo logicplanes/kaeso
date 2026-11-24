@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Badge, Icon, CopyButton, Tag, ProviderBadge, StatusCode, Text, Tooltip, col, icons, useProviderTile } from "@logicplanes/kaeso-ui";
-import { dateFormatter, formatDuration, formatNumber, formatPercent } from "@logicplanes/kaeso-ui/format";
+import { dateFormatter, formatDuration, formatNumber, formatPercent, formatTimeZone } from "@logicplanes/kaeso-ui/format";
 import type { ExternalSourceView, LogView, Party } from "~/api/generated/types";
 import { dialectLabel, errorKindLabel } from "~/format/labels";
 import { shownCost } from "~/format/currency";
@@ -11,7 +11,6 @@ import { mediaCount, mediaLabel, mediaShort } from "./media";
 import { ReportedBy } from "../sources/reported-by";
 import { isDecisionDialect } from "./render";
 import { readStoredJson, writeStored } from "~/storage";
-import { inZone } from "~/format/zone";
 import { CodeText } from "~/kaeso/code-text";
 import { logMessage, type LogMessage, type useGatewayErrors } from "./messages";
 
@@ -101,8 +100,10 @@ export function logsLayout(width: number, phone: boolean, spansDays: boolean, sh
   return width < full ? "medium" : "wide";
 }
 
-function zoneName(): string {
-  const parts = new Intl.DateTimeFormat(locale() === "en" ? "en-GB" : locale(), { timeZoneName: "short", ...inZone() }).formatToParts(new Date());
+function zoneName(timeZone: string | undefined): string {
+  const parts = new Intl.DateTimeFormat(locale() === "en" ? "en-GB" : locale(), { timeZoneName: "short", ...(timeZone ? { timeZone } : {}) }).formatToParts(
+    new Date(),
+  );
   return parts.find((p) => p.type === "timeZoneName")?.value ?? "UTC";
 }
 // Shown only once someone turns them on under the display options.
@@ -126,9 +127,11 @@ export function storeColumns(next: ColumnId[]): void {
   writeStored(COLUMNS_KEY, JSON.stringify(next));
 }
 
-export function startedColumn<T extends { started_at: string }>(spansDays: boolean, layout: LogsLayout) {
+/** The start time in the console's time zone; a page that keeps its columns passes the zone so a new one builds them again. */
+export function startedColumn<T extends { started_at: string }>(spansDays: boolean, layout: LogsLayout, timeZone = formatTimeZone()) {
   const stacked = layout === "phone" && spansDays;
-  const format = (iso: string, parts: Intl.DateTimeFormatOptions) => dateFormatter({ ...parts, hourCycle: "h23", ...inZone() }, locale())(iso);
+  const zone = timeZone ? { timeZone } : {};
+  const format = (iso: string, parts: Intl.DateTimeFormatOptions) => dateFormatter({ ...parts, hourCycle: "h23", ...zone }, locale())(iso);
   const time = (iso: string) =>
     format(iso, {
       ...(spansDays ? { day: "numeric", month: "short" } : {}),
@@ -139,7 +142,7 @@ export function startedColumn<T extends { started_at: string }>(spansDays: boole
   return col.custom(
     {
       id: "time",
-      header: layout === "phone" ? columnLabel("time") : t("logs.column.startedIn", "Started ({zone})", { zone: zoneName() }),
+      header: layout === "phone" ? columnLabel("time") : t("logs.column.startedIn", "Started ({zone})", { zone: zoneName(timeZone) }),
       size: timeWidth(spansDays, layout),
       priority: 1,
     },
@@ -172,8 +175,10 @@ export function logColumns({
   providerName,
   sourceOf,
   errors,
+  timeZone,
 }: {
   spansDays: boolean;
+  timeZone?: string | undefined;
   layout?: LogsLayout | undefined;
   withProvider?: boolean | undefined;
   errors?: ReturnType<typeof useGatewayErrors>;
@@ -184,7 +189,7 @@ export function logColumns({
   sourceOf: (id: string | null | undefined) => ExternalSourceView | undefined;
 }) {
   return {
-    time: startedColumn<LogView>(spansDays, layout),
+    time: startedColumn<LogView>(spansDays, layout, timeZone),
     status: col.custom(
       { id: "status", header: columnLabel("status"), size: STATUS_WIDTH, priority: 1 },
       (r: LogView) => r.status,

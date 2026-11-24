@@ -10,7 +10,7 @@ import { CommonErrors, filtersOf, messagePrefix } from "./common-errors";
 import { CLIENT_IDS, clientLabel } from "~/format/clients";
 import { guardrailActionLabel } from "~/format/guardrails";
 import { aliasesQuery, catalogueQuery } from "~/api/queries/models";
-import { formatDuration } from "@logicplanes/kaeso-ui/format";
+import { formatDuration, formatTimeZone } from "@logicplanes/kaeso-ui/format";
 import { DIALECTS, ERROR_KIND_IDS, dialectLabel, errorKindLabel } from "~/format/labels";
 import { useOrgMoney } from "~/kaeso/org-money";
 import { useOrgPrices } from "~/kaeso/org-prices";
@@ -230,8 +230,13 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
   const errors = useGatewayErrors();
   const layout = logsLayout(width, phone, spansDays, columns);
   const withProvider = providerInModel(layout, columns);
-  const all = logColumns({ spansDays, layout, withProvider, keyName, partyName, providerName: catalog.name, sourceOf: sources.source, errors });
-  const shownColumns = COLUMNS.filter((c) => columns.includes(c) && !(withProvider && c === "provider")).map((c) => all[c]);
+  // Built again only when what they show changes: opening a request or a live row arriving keeps the columns, so the
+  // table hands back the rows it drew instead of drawing every one again. The time zone is in the time column's header.
+  const timeZone = formatTimeZone();
+  const shownColumns = useMemo(() => {
+    const all = logColumns({ spansDays, layout, withProvider, keyName, partyName, providerName: catalog.name, sourceOf: sources.source, errors, timeZone });
+    return COLUMNS.filter((c) => columns.includes(c) && !(withProvider && c === "provider")).map((c) => all[c]);
+  }, [spansDays, layout, withProvider, keyName, partyName, catalog.name, sources.source, errors, columns, timeZone]);
 
   const modelGroups = useModelGroups(
     useMemo(

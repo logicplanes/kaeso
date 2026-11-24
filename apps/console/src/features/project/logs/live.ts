@@ -28,7 +28,10 @@ interface LiveState<T> {
   cut: boolean;
 }
 
-const empty = <T>(key: string): LiveState<T> => ({ key, extra: [], pending: [], pendingCut: false, cut: false });
+// One empty list for every state that has none: a new one on each render would give the table new rows every time,
+// and it would draw every row again. Nothing changes these lists in place.
+const NONE: never[] = [];
+const empty = <T>(key: string): LiveState<T> => ({ key, extra: NONE, pending: NONE, pendingCut: false, cut: false });
 
 export interface LiveRows<T> {
   rows: T[];
