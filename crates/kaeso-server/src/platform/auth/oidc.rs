@@ -826,6 +826,9 @@ async fn follow_address(
         tracing::warn!(user = %user.id, "the identity provider sent an address another account holds");
         return Ok(());
     }
+    for kind in [TokenKind::MagicLink, TokenKind::PasswordReset] {
+        tokens::retire_all(&mut **tx, kind, Some(user.id), ctx.now).await?;
+    }
     let id = UserId::from_uuid(user.id);
     ctx.audit(Some(org), Action::UserEmailChange)
         .by(id)
