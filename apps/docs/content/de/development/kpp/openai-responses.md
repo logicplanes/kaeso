@@ -35,9 +35,9 @@ Jeder Override merkt sich außerdem, was die kanonische Kodierung beim Dekodiere
 
 Ein `type` betrifft nur die Darstellung, wo die kanonische Kodierung an diesem Pfad ein `type` hat (Schreibweisen von Part- und Item-Typen), und beim optionalen `type: "message"` einer Eingabenachricht. Ein Objekt, das die kanonische Kodierung nicht hat und das einen anderen `type` trägt (zum Beispiel `text.format: {type: "grammar", …}`), wird als Ganzes in einem Extras-Feld aufbewahrt, sodass ein anderer Dialekt es ablehnt.
 
-Ein Schlüsselpfad kann keinen Schlüssel aufnehmen, der leer ist, `.` enthält oder mit `header:`, `@` oder `~` beginnt. Diese Schreibweisen gehören zu Schlüsselpfaden, weitergegebenen Headern (`header:openai-beta`) und Overrides mit Geltungsbereich.
+Ein Schlüssel, der leer ist, `.` oder `%` enthält oder mit `header:`, `@` oder `~` beginnt, wird in einem Schlüsselpfad maskiert. Diese Schreibweisen gehören zu Schlüsselpfaden, weitergegebenen Headern (`header:openai-beta`) und Overrides mit Geltungsbereich.
 
-Ein Objekt mit einem solchen Schlüssel wird als Ganzes verglichen. Weicht es von der kanonischen Kodierung ab, ist das ganze Objekt ein Extras-Feld an seinem eigenen Pfad. Bei einem Schlüssel auf oberster Ebene ist das der ganze Body, am leeren Pfad. Solche Schlüssel bleiben im Body: Sie werden nie als Header gesendet, und andere Dialekte lehnen sie wie jedes Extras-Feld ab.
+Die maskierte Form schreibt `.` als `%2E` und `%` als `%25`, ein führendes `@` als `%40`, ein führendes `~` als `%7E`, das `h` eines führenden `header:` als `%68` und einen leeren Schlüssel als `%`. Ein Schlüssel `a.b` ist damit das Extras-Feld `a%2Eb`, an seinem eigenen Pfad wie jeder andere Schlüssel. Solche Schlüssel bleiben im Body: Sie werden nie als Header gesendet, und andere Dialekte lehnen sie wie jedes Extras-Feld ab.
 
 Wie jeder Override gilt das Feld nur, solange der kanonische Wert an seinem Pfad unverändert ist. Ändert sich ein typisiertes Feld in diesem Objekt, wird das Objekt kanonisch geschrieben und diese Schlüssel fallen weg. Bei einem Schlüssel auf oberster Ebene ist das jedes typisierte Feld der Anfrage, etwa das `model`.
 

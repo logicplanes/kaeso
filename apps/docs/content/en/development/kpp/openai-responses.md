@@ -35,9 +35,9 @@ Each override also remembers what the canonical encoding had at its path when de
 
 A `type` is presentation only where the canonical encoding has a `type` at that path (part and item type spellings), and for the optional `type: "message"` of an input message. An object the canonical encoding lacks that carries any other `type` (for example `text.format: {type: "grammar", …}`) is kept whole as one extras field, so another dialect refuses it.
 
-A key path can't hold a key that is empty, contains `.` or starts with `header:`, `@` or `~`. Those spellings belong to key paths, forwarded headers (`header:openai-beta`) and scoped overrides.
+A key that is empty, contains `.` or `%`, or starts with `header:`, `@` or `~` is escaped in a key path. Those spellings belong to key paths, forwarded headers (`header:openai-beta`) and scoped overrides.
 
-An object with such a key is compared as a whole. When it differs from the canonical encoding, the whole object is one extras field at its own path. For a key at the top level, that is the whole body, at the empty path. Such keys stay in the body: they are never sent as headers, and other dialects refuse them like any extras field.
+The escaped form writes `.` as `%2E` and `%` as `%25`, a leading `@` as `%40`, a leading `~` as `%7E`, the `h` of a leading `header:` as `%68` and an empty key as `%`. A key `a.b` is therefore the extras field `a%2Eb`, at its own path like any other key. Such keys stay in the body: they are never sent as headers, and other dialects refuse them like any extras field.
 
 Like every override, the field applies only while the canonical value at its path is unchanged. When a typed field inside that object changes, the object is written canonically and those keys are left out. For a top-level key, that is any typed field of the request, such as the `model`.
 

@@ -100,6 +100,134 @@ fn items_an_sdk_never_writes_decode_alike_and_round_trip() {
     same_request("escaped", escaped);
 }
 
+fn reencoded(body: &[u8]) -> Option<Value> {
+    let req =
+        OpenAiResponses::decode_request(RequestKind::Generate, body, &HeaderList::new()).ok()?;
+    let mut ctx = EgressCtx::new(&req).with_provider("openai");
+    let sent = OpenAiResponses::encode_request(&req, &mut ctx).ok()?;
+    serde_json::from_slice(&sent.body).ok()
+}
+
+const ODD_KEYS: [&str; 8] = [
+    "a.b",
+    "",
+    "%",
+    "a%2Eb",
+    "@scope",
+    "~event",
+    "header:x-id",
+    "%68eader:x",
+];
+
+fn items_of<'a>(body: &'a mut Value, list: &str) -> impl Iterator<Item = &'a mut Value> {
+    body[list]
+        .as_array_mut()
+        .into_iter()
+        .flatten()
+        .filter(|item| item.is_object())
+}
+
+fn without(mut body: Value, list: Option<&str>, key: &str, name: &str) -> Value {
+    let held = json!({ "kept": 1.50 });
+    match list {
+        None => assert_eq!(
+            body.as_object_mut().unwrap().remove(key),
+            Some(held),
+            "{name} {key:?}"
+        ),
+        Some(list) => {
+            for item in items_of(&mut body, list) {
+                let fields = item.as_object_mut().unwrap();
+                assert_eq!(fields.remove(key), Some(held.clone()), "{name} {key:?}");
+            }
+        }
+    }
+    body
+}
+
+fn with(body: &[u8], list: Option<&str>, key: &str) -> Vec<u8> {
+    let mut body: Value = serde_json::from_slice(body).unwrap();
+    let held = json!({ "kept": 1.50 });
+    match list {
+        None => body[key] = held,
+        Some(list) => items_of(&mut body, list).for_each(|item| item[key] = held.clone()),
+    }
+    serde_json::to_vec(&body).unwrap()
+}
+
+#[test]
+fn a_key_a_path_cannot_spell_stays_in_a_request_with_every_other_field() {
+    for key in ODD_KEYS {
+        for (name, body) in fixtures(DIR, "requests", "json") {
+            let Some(before) = reencoded(&body) else {
+                continue;
+            };
+            for list in [None, Some("input")] {
+                let after = reencoded(&with(&body, list, key)).unwrap();
+                assert_eq!(without(after, list, key, &name), before, "{name} {key:?}");
+            }
+        }
+    }
+}
+
+#[test]
+fn a_key_a_path_cannot_spell_stays_in_a_part_a_call_and_a_result() {
+    for key in ODD_KEYS {
+        let body = with_input(vec![
+            json!({ "type": "message", "role": "user", "content": [
+                { "type": "input_text", "text": "Read this.", key: 2 },
+                { "type": "input_file", "file_id": "file-1", key: 3 },
+            ] }),
+            json!({ "type": "function_call", "call_id": "c", "name": "f", "arguments": "{}", key: 4 }),
+            json!({ "type": "function_call_output", "call_id": "c", "output": "o", key: 5 }),
+        ]);
+        let sent = encode_req(&decode_req(RequestKind::Generate, &body)).0.body;
+        assert_json_eq(key, &body, &sent);
+    }
+}
+
+#[test]
+fn a_key_a_path_cannot_spell_is_never_sent_as_a_header_and_other_dialects_refuse_it() {
+    let body =
+        br#"{"model":"gpt-5","input":[{"role":"user","content":"hi"}],"header:x-id":"1","a.b":2}"#;
+    let req = decode_req(RequestKind::Generate, body);
+    let (sent, _) = encode_req(&req);
+    assert!(
+        !format!("{:?}", sent.headers).contains("x-id"),
+        "{:?}",
+        sent.headers
+    );
+    let Request::Generate(generate) = &req else {
+        panic!("a generate request");
+    };
+    assert_eq!(generate.extras.headers().count(), 0);
+    let refused = crate::dispatch::check(DialectId::AnthropicMessages, &req, &EgressCtx::new(&req))
+        .unwrap_err();
+    assert!(refused.unsupported_feature().is_some(), "{refused:?}");
+}
+
+#[test]
+fn a_key_a_path_cannot_spell_stays_in_a_reply() {
+    let ctx = EncodeCtx::new(RequestKind::Generate, kaeso_kpp::StreamMode::Off);
+    let reencoded = |body: &[u8]| -> Option<Value> {
+        let reply =
+            OpenAiResponses::decode_response(200, &HeaderList::new(), body, &gen_ctx()).ok()?;
+        let sent = OpenAiResponses::encode_response(&reply, &ctx).ok()?;
+        serde_json::from_slice(&sent).ok()
+    };
+    for key in ODD_KEYS {
+        for (name, body) in fixtures(DIR, "responses", "json") {
+            let Some(before) = reencoded(&body) else {
+                continue;
+            };
+            for list in [None, Some("output")] {
+                let after = reencoded(&with(&body, list, key)).unwrap();
+                assert_eq!(without(after, list, key, &name), before, "{name} {key:?}");
+            }
+        }
+    }
+}
+
 fn leaf() -> impl Strategy<Value = Value> {
     prop_oneof![
         Just(Value::Null),
