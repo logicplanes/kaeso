@@ -21,13 +21,15 @@ import { formatContext, formatPrice } from "@logicplanes/kaeso-ui/format";
 import type { SearchHit } from "~/api/generated/types";
 import { newestModelsQuery } from "~/api/queries/models";
 import { whatsNewQuery } from "~/api/queries/whats-new";
-import { fullDayLabel } from "~/format/period";
+import { fullDayLabel, monthLabel } from "~/format/period";
 import { t } from "~/i18n";
 import { useProviders } from "~/kaeso/providers";
 import { projectPath } from "~/shell/pages";
 import { showWhatsNew } from "~/shell/whats-new-request";
 
 const NEW_FOR_DAYS = 45;
+// The catalogue gives `YYYY-MM` where only the month of a release is known.
+const releaseLabel = (date: string) => (date.length === 7 ? monthLabel(date) : fullDayLabel(date));
 const firstSentence = (notes: string) =>
   notes
     .split("\n")
@@ -109,7 +111,7 @@ function NewModelCards({ org, project, projectName, className }: { org: string; 
             {...(fresh ? { badge: <Badge tone="ink">{t("kaeso.home.new", "New")}</Badge> } : {})}
             detail={
               m.release_date
-                ? t("kaeso.home.providerReleased", "{provider} · Released {date}", { provider: providers.name(m.provider), date: fullDayLabel(m.release_date) })
+                ? t("kaeso.home.providerReleased", "{provider} · Released {date}", { provider: providers.name(m.provider), date: releaseLabel(m.release_date) })
                 : providers.name(m.provider)
             }
             facts={[
@@ -160,7 +162,7 @@ function MoreModels({ org, project, models, className }: { org: string; project:
         {...(m.name && m.name !== m.model_id ? { name: m.name } : {})}
       />
     ),
-    secondary: m.release_date ? fullDayLabel(m.release_date) : undefined,
+    secondary: m.release_date ? releaseLabel(m.release_date) : undefined,
   });
   return (
     <DashboardCell

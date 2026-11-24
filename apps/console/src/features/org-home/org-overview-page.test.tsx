@@ -59,14 +59,20 @@ describe("the organization overview", () => {
     signedIn({ session: whoAmI({ timezone: "America/Los_Angeles" }) });
     usage();
     on("GET", "orgs/:org/projects/:project/models/search", {
-      data: [searchHit({ provider: "anthropic", model_id: "claude-old", name: "claude-old", release_date: "2026-01-02" })],
+      data: [
+        searchHit({ provider: "anthropic", model_id: "claude-old", name: "claude-old", release_date: "2026-01-02" }),
+        searchHit({ provider: "anthropic", model_id: "claude-older", name: "claude-older", release_date: "2026-01" }),
+      ],
       has_more: false,
       not_in_catalogue: 0,
-      total: 1,
+      total: 2,
     });
     await renderApp(`/orgs/${ORG}`);
     const old = (await screen.findByRole("heading", { name: "claude-old" })).closest("article, section") as HTMLElement;
     expect(old).toHaveTextContent("Released 2 Jan 2026");
+    const older = screen.getByRole("heading", { name: "claude-older" }).closest("article, section") as HTMLElement;
+    expect(older).toHaveTextContent("Released Jan 2026");
+    expect(older).not.toHaveTextContent("Dec 2025");
   });
 
   afterEach(() => vi.unstubAllGlobals());
