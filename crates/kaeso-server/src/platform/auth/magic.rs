@@ -157,7 +157,7 @@ pub async fn verify(
     }
     users::mark_verified(&state.pg, user.id, ctx.now).await?;
     if totp::is_enabled(&state.pg, user.id).await? {
-        return challenge(&state, &ctx, &user, Method::MagicLink).await;
+        return challenge(&state, &ctx, &user, Method::MagicLink, by_operator).await;
     }
     sign_in(&state, &ctx, &user, Method::MagicLink, false, None).await
 }

@@ -145,6 +145,8 @@ pub struct SignupVerify {
     path = "/auth/signup/verify",
     summary = "Creates the account with the link and signs in. The account creation\n\
     setting is checked again: a link sent before it changed no longer works.",
+    description = "It refuses an address whose managing org requires SSO, even with a link sent \
+    before the org turned that on.",
     tag = "auth",
     request_body = SignupVerify,
     responses((status = 200, body = SignedIn))
@@ -179,6 +181,7 @@ pub async fn verify(
     if let Some(refused) = accounts::refuse_sign_up(&account_policy(&state).await?, &email) {
         return Err(refused);
     }
+    crate::services::managed::refuse_other_sign_in(&state.pg, &email).await?;
     let id = UserId::new();
     let created = users::insert(
         &mut *tx,
