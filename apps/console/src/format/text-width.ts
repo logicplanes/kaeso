@@ -3,8 +3,9 @@
 const CELL = { font: "14px", latin: 7.4, wide: 14 };
 const HEADER = { font: "500 12px", latin: 6.4, wide: 12 };
 const CELL_PADDING = 24;
-// DataTable keeps a sortable header's 12px arrow and its 4px gap in place while it's hidden, so the label doesn't move.
-const SORT_ARROW = 16;
+// DataTable keeps a sortable header's arrow (an xs icon, 14px) and its 4px gap in place while it's hidden, so the label
+// doesn't move.
+const SORT_ARROW = 18;
 
 const isWide = (code: number) => (code >= 0x2e80 && code <= 0xa4cf) || (code >= 0xac00 && code <= 0xd7a3) || (code >= 0xff00 && code <= 0xffef);
 

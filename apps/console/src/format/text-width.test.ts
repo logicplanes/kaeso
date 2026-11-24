@@ -65,6 +65,11 @@ describe("headerWidth", () => {
     expect(headerWidth("Cache-Trefferquote", 88)).toBe(160);
     expect(headerWidth("请求", 88)).toBe(88);
   });
+
+  it("leaves room for the 14px sort arrow and its 4px gap, so a header that fills its column to the pixel isn't cut", () => {
+    // "缓存命中" is 48px at 12px; with the arrow, its gap and the cell's padding it needs 90px, more than the 88px minimum.
+    expect(headerWidth("缓存命中", 88)).toBe(96);
+  });
 });
 
 describe("cellWidth", () => {
