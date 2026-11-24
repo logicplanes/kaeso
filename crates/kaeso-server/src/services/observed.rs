@@ -144,6 +144,9 @@ pub struct ObservedRequest {
     pub aliases: Vec<String>,
     /// What the request takes from an earlier batch of the same source.
     pub wants: Vec<Want>,
+    /// The client names a provider Kaeso can't tell, such as a local model server, so neither
+    /// the kind's usual provider nor a seller of the model is assumed.
+    pub unguessed: bool,
 }
 
 /// What a record can leave to a later batch of its source: clients export in batches, so a
@@ -182,6 +185,9 @@ impl Wanted {
         }
     }
 }
+
+/// What a reader carries for a conversation whose client names a provider Kaeso can't tell.
+pub const UNNAMED_PROVIDER: &str = "-";
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Want {
@@ -310,9 +316,16 @@ fn carry_key(state: &AppState, source: Uuid, what: Wanted, key: &str) -> String 
 /// that fails is sent again and must find them still there.
 async fn carry(
     state: &AppState,
-    source: Uuid,
+    source: &Source,
     batch: &mut Batch,
 ) -> Result<Vec<String>, RecordError> {
+    // Content waits in Valkey only for a source that keeps it.
+    let kept = |what: Wanted| source.content || matches!(what, Wanted::Began | Wanted::Provider);
+    batch.carried.retain(|c| kept(c.what));
+    for r in &mut batch.requests {
+        r.wants.retain(|w| kept(w.what));
+    }
+    let source = source.id;
     let mut conn = state.valkey.conn();
     if !batch.carried.is_empty() {
         let mut pipe = redis::pipe();
@@ -379,8 +392,11 @@ fn fill(r: &mut ObservedRequest, what: Wanted, value: &str) {
             }
         }
         Wanted::Provider => {
-            if r.provider.is_none() {
-                r.provider = Some(value.to_owned());
+            if r.provider.is_none() && !r.unguessed {
+                match value {
+                    UNNAMED_PROVIDER => r.unguessed = true,
+                    named => r.provider = Some(named.to_owned()),
+                }
             }
         }
         Wanted::GeminiContents => {
@@ -450,6 +466,31 @@ fn unix_ms(t: OffsetDateTime) -> i64 {
     i64::try_from(t.unix_timestamp_nanos() / 1_000_000).unwrap_or(0)
 }
 
+// Whether a project has an active source, kept for a short while: most projects have none, and
+// their requests then cost no Valkey write.
+static WITH_SOURCES: std::sync::LazyLock<moka::future::Cache<Uuid, bool>> =
+    std::sync::LazyLock::new(|| {
+        moka::future::Cache::builder()
+            .max_capacity(100_000)
+            .time_to_live(Duration::from_secs(30))
+            .build()
+    });
+
+async fn has_sources(state: &AppState, project: Uuid) -> bool {
+    if let Some(known) = WITH_SOURCES.get(&project).await {
+        return known;
+    }
+    let active = match kaeso_store::pg::sources::list(&state.pg, project, false, None, 100).await {
+        Ok(sources) => sources.iter().any(|s| s.disabled_at.is_none()),
+        Err(e) => {
+            tracing::debug!(error = %e, "cannot tell whether a project has sources");
+            return false;
+        }
+    };
+    WITH_SOURCES.insert(project, active).await;
+    active
+}
+
 /// Notes a request the gateway answered, so a source reporting the same request doesn't count it
 /// again. Runs after the response is sent; a note that can't be written only loses the match.
 pub async fn note_gateway(state: &AppState, o: &crate::model_api::hooks::Outcome) {
@@ -459,7 +500,9 @@ pub async fn note_gateway(state: &AppState, o: &crate::model_api::hooks::Outcome
     let (Some(caller), Some(usage)) = (&o.caller, &o.usage) else {
         return;
     };
-    if usage.input_tokens == 0 && usage.output_tokens == 0 {
+    if usage.input_tokens == 0 && usage.output_tokens == 0
+        || !has_sources(state, caller.project_id).await
+    {
         return;
     }
     let start = unix_ms(o.started_at);
@@ -486,54 +529,83 @@ pub async fn note_gateway(state: &AppState, o: &crate::model_api::hooks::Outcome
     }
 }
 
-/// Whether the gateway already logged the request a source reports, which then takes that
-/// gateway request out of the matching so each counts once.
-async fn made_by_gateway(state: &AppState, project: Uuid, r: &ObservedRequest) -> bool {
-    let Some(start) = r.started_at else {
-        return false;
-    };
-    let end = start + r.duration;
-    let key = fingerprint(state, project, &r.model, &usage(r.tokens));
-    // A long request may have begun well before its copy says it did, when the client only
-    // reports when it ended; its end then has to match.
-    let from = unix_ms(start - time::Duration::minutes(15));
-    let to = unix_ms(start + SAME_TIME);
+/// Which of the requests a source reports the gateway already logged; each match takes its
+/// gateway request out of the matching, so each counts once. The whole batch is looked up in two
+/// round trips.
+async fn made_by_gateway(
+    state: &AppState,
+    project: Uuid,
+    requests: &[&ObservedRequest],
+) -> Vec<bool> {
+    let mut found = vec![false; requests.len()];
+    let keys: Vec<Option<(String, i64, i64)>> = requests
+        .iter()
+        .map(|r| {
+            let start = r.started_at?;
+            let key = fingerprint(state, project, &r.model, &usage(r.tokens));
+            Some((key, unix_ms(start), unix_ms(start + r.duration)))
+        })
+        .collect();
+    if keys.iter().all(Option::is_none) {
+        return found;
+    }
+    let window = SAME_TIME.whole_milliseconds() as i64;
+    let mut pipe = redis::pipe();
+    for (key, start, _) in keys.iter().flatten() {
+        // A long request may have begun well before its copy says it did, when the client only
+        // reports when it ended; its end then has to match.
+        pipe.cmd("ZRANGEBYSCORE")
+            .arg(key)
+            .arg(start - 15 * 60_000)
+            .arg(start + window)
+            .arg("WITHSCORES");
+    }
     let mut conn = state.valkey.conn();
-    let found: Vec<(String, i64)> = match tokio::time::timeout(
+    let Ok(Ok(listed)) = tokio::time::timeout(
         VALKEY_DEADLINE,
-        redis::cmd("ZRANGEBYSCORE")
-            .arg(&key)
-            .arg(from)
-            .arg(to)
-            .arg("WITHSCORES")
-            .query_async(&mut conn),
+        pipe.query_async::<Vec<Vec<(String, i64)>>>(&mut conn),
     )
     .await
-    {
-        Ok(Ok(found)) => found,
-        _ => return false,
+    else {
+        return found;
     };
-    let close = |a: i64, b: i64| (a - b).abs() <= SAME_TIME.whole_milliseconds() as i64;
-    let Some((member, _)) = found.into_iter().find(|(member, at)| {
-        let ended = member
-            .rsplit_once(':')
-            .and_then(|(_, e)| e.parse::<i64>().ok());
-        close(*at, unix_ms(start)) || ended.is_some_and(|e| close(e, unix_ms(end)))
-    }) else {
-        return false;
-    };
+    let close = |a: i64, b: i64| (a - b).abs() <= window;
+    let mut picked: Vec<(usize, &str, &str)> = Vec::new();
+    let mut listed = listed.iter();
+    for (i, k) in keys.iter().enumerate() {
+        let Some((key, start, end)) = k else { continue };
+        let Some(candidates) = listed.next() else {
+            break;
+        };
+        let hit = candidates.iter().find(|(member, at)| {
+            let ended = member
+                .rsplit_once(':')
+                .and_then(|(_, e)| e.parse::<i64>().ok());
+            let taken = picked.iter().any(|(_, k, m)| k == key && m == member);
+            !taken && (close(*at, *start) || ended.is_some_and(|e| close(e, *end)))
+        });
+        if let Some((member, _)) = hit {
+            picked.push((i, key.as_str(), member.as_str()));
+        }
+    }
+    if picked.is_empty() {
+        return found;
+    }
+    let mut pipe = redis::pipe();
+    for (_, key, member) in &picked {
+        pipe.cmd("ZREM").arg(*key).arg(*member);
+    }
     // Of two copies racing for one gateway request, only the one that removes it matches.
-    matches!(
-        tokio::time::timeout(
-            VALKEY_DEADLINE,
-            redis::cmd("ZREM")
-                .arg(&key)
-                .arg(&member)
-                .query_async::<i64>(&mut conn),
-        )
-        .await,
-        Ok(Ok(1))
-    )
+    if let Ok(Ok(removed)) =
+        tokio::time::timeout(VALKEY_DEADLINE, pipe.query_async::<Vec<i64>>(&mut conn)).await
+    {
+        for ((i, _, _), n) in picked.iter().zip(removed) {
+            if let Some(f) = found.get_mut(*i) {
+                *f = n == 1;
+            }
+        }
+    }
+    found
 }
 
 /// Whether the person can see the project, so a source's requests may count for them.
@@ -621,22 +693,8 @@ pub struct Priced {
     pub prices: Option<Fields>,
 }
 
-pub async fn price(state: &AppState, project: Uuid, provider: Option<&str>, model: &str) -> Priced {
-    let priced = price_exactly(state, project, provider, model).await;
-    if priced.prices.is_some() {
-        return priced;
-    }
-    match without_effort(model) {
-        Some(base) => {
-            let base = price_exactly(state, project, provider, base).await;
-            if base.prices.is_some() { base } else { priced }
-        }
-        None => priced,
-    }
-}
-
-/// A model's id without the effort level some clients end it with, as Antigravity names
-/// `gemini-3-flash-low` for Gemini 3 Flash at low effort.
+/// A model's id without the effort level Antigravity ends it with, as it names Gemini 3 Flash at
+/// low effort `gemini-3-flash-low`.
 fn without_effort(model: &str) -> Option<&str> {
     ["-minimal", "-low", "-medium", "-high", "-xhigh", "-max"]
         .iter()
@@ -666,12 +724,7 @@ async fn price_guessed(
     priced
 }
 
-async fn price_exactly(
-    state: &AppState,
-    project: Uuid,
-    provider: Option<&str>,
-    model: &str,
-) -> Priced {
+pub async fn price(state: &AppState, project: Uuid, provider: Option<&str>, model: &str) -> Priced {
     let wanted = |p: &str, m: &str| provider.is_none_or(|want| want == p) && m == model;
     let models = crate::services::catalogue::project_models(state, project)
         .await
@@ -764,6 +817,12 @@ fn content(r: &ObservedRequest, dialect: DialectId, model: &str) -> Option<(Stri
                 .retain(|m| !m.blocks.is_empty() || m.role == Role::User);
             encoded(dialect, &plain)
         })
+        // Parts the dialect can't carry, such as a tool call without an id, leave the prompt.
+        .or_else(|| {
+            let mut asked = GenerateRequest::new(model);
+            asked.messages = vec![Message::user(prompt.unwrap_or_default())];
+            encoded(dialect, &asked)
+        })
         .unwrap_or_default();
     let parts = if r.reply_parts.is_empty() {
         reply.map(|t| vec![Block::text(t)]).unwrap_or_default()
@@ -853,6 +912,12 @@ pub async fn record(
     mut batch: Batch,
 ) -> Result<Recorded, RecordError> {
     let now = state.clock.now();
+    // Clients and collectors export more than model calls; a batch with nothing Kaeso reads only
+    // says something is wrong while the source has never sent anything Kaeso could record.
+    if batch.refusal == Some(Refusal::Unrecognized) && source.first_event_at.is_some() {
+        batch.refused = 0;
+        batch.refusal = None;
+    }
     let mut out = Recorded {
         refused: batch.refused as usize,
         refusal: batch.refusal.take(),
@@ -863,7 +928,6 @@ pub async fn record(
         out.refusal = Some(Refusal::Inactive);
         return Ok(out);
     }
-    let taken = carry(state, source.id, &mut batch).await?;
     let mut refuse = |why: Option<Refusal>| match why {
         Some(why) => {
             out.refused += 1;
@@ -884,6 +948,7 @@ pub async fn record(
         batch.requests.clear();
         batch.tool_calls.clear();
     }
+    let taken = carry(state, source, &mut batch).await?;
     let emails: Vec<String> = batch
         .requests
         .iter()
@@ -929,6 +994,16 @@ pub async fn record(
     let new = first_time(state, source.id, &all).await?;
     let (new_requests, new_calls) = new.split_at(request_ids.len());
     let kind = kind_of(source);
+    let candidates: Vec<&ObservedRequest> = batch
+        .requests
+        .iter()
+        .zip(new_requests)
+        .filter(|(_, fresh)| **fresh)
+        .map(|(r, _)| r)
+        .collect();
+    let mut copies = made_by_gateway(state, source.project_id, &candidates)
+        .await
+        .into_iter();
     for ((r, id), fresh) in batch
         .requests
         .into_iter()
@@ -939,15 +1014,15 @@ pub async fn record(
             out.duplicates += 1;
             continue;
         }
+        if copies.next().unwrap_or(false) {
+            out.duplicates += 1;
+            continue;
+        }
         let Some(who) = caller(source, &people, r.email.as_deref()) else {
             out.refused += 1;
             out.refusal = Some(Refusal::Nobody);
             continue;
         };
-        if made_by_gateway(state, source.project_id, &r).await {
-            out.duplicates += 1;
-            continue;
-        }
         record_request(state, source, kind, who, r, id, now).await;
         out.requests += 1;
     }
@@ -1013,13 +1088,34 @@ async fn record_request(
         .provider
         .clone()
         .filter(|p| p.len() <= 64 && kaeso_core::provider::ProviderId::is_valid(p));
-    let priced = match named {
-        Some(p) => price(state, source.project_id, Some(&p), &model).await,
-        None => {
-            let guess = kind.and_then(SourceKind::provider);
-            price_guessed(state, source.project_id, guess, &model).await
+    let priced_as = |model: String| {
+        let named = named.clone();
+        let unguessed = r.unguessed;
+        async move {
+            match named {
+                Some(p) => price(state, source.project_id, Some(&p), &model).await,
+                None if unguessed => Priced {
+                    provider: None,
+                    catalogue_model_id: None,
+                    prices: None,
+                },
+                None => {
+                    let guess = kind.and_then(SourceKind::provider);
+                    price_guessed(state, source.project_id, guess, &model).await
+                }
+            }
         }
     };
+    let mut priced = priced_as(model.clone()).await;
+    if priced.prices.is_none()
+        && kind == Some(SourceKind::Antigravity)
+        && let Some(base) = without_effort(&model)
+    {
+        let base = priced_as(base.to_owned()).await;
+        if base.prices.is_some() {
+            priced = base;
+        }
+    }
     let dialect = r.dialect.unwrap_or(DialectId::OpenAiChat);
     let mut o = crate::model_api::pipeline::blank_outcome(RequestId::from_uuid(id));
     o.caller = Some(who.clone());
@@ -1064,7 +1160,7 @@ async fn record_request(
         .then(|| content(&r, dialect, &model))
         .flatten();
     o.content_kept = kept.is_some();
-    if let Some((body, _)) = &kept {
+    if let Some((body, _)) = kept.as_ref().filter(|(body, _)| !body.is_empty()) {
         o.request_body = Some(bytes::Bytes::from(body.clone()));
     }
     o.reply = kept.and_then(|(_, reply)| serde_json::from_str::<Response>(&reply).ok());
@@ -1207,6 +1303,9 @@ mod tests {
             (prompted.prompt.as_deref(), prompted.provider.as_deref()),
             (Some("Hi"), Some("openai"))
         );
+        let mut local = request();
+        fill(&mut local, Wanted::Provider, UNNAMED_PROVIDER);
+        assert_eq!((local.provider, local.unguessed), (None, true));
     }
 
     #[test]

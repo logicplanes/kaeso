@@ -5,7 +5,7 @@ export function NotLogged({ observed }: { observed?: boolean }) {
   return observed ? (
     <Empty
       title={t("logs.inspector.notKept", "Content not kept")}
-      description={t("logs.inspector.notKeptHint", "The source keeps no content, its client sent none, or the content has passed its retention.")}
+      description={t("logs.inspector.notKeptHint", "The source keeps no content, its client sent none, or its retention has passed.")}
     />
   ) : (
     <Empty

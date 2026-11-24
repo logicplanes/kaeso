@@ -252,7 +252,7 @@ describe("LogInspector", () => {
     await openTab(user, "Request");
     const panel = await sheet();
     expect(await within(panel).findByText("Content not kept")).toBeInTheDocument();
-    expect(within(panel).getByText("The source keeps no content, its client sent none, or the content has passed its retention.")).toBeInTheDocument();
+    expect(within(panel).getByText("The source keeps no content, its client sent none, or its retention has passed.")).toBeInTheDocument();
     expect(within(panel).queryByText(/Logging was off/)).not.toBeInTheDocument();
   });
 

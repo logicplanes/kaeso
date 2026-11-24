@@ -565,15 +565,41 @@ fn codex_takes_its_prompt_start_and_provider_from_the_export_before_when_they_ca
     assert!(r.wants.is_empty(), "the batch had all of it: {:?}", r.wants);
     assert!(whole.carried.iter().all(|c| c.what == Wanted::Provider));
     assert_eq!(
-        codex_provider("gpt-oss"),
-        None,
-        "Ollama and LM Studio alike"
+        codex_provider("gpt-oss").as_deref(),
+        Some(UNNAMED_PROVIDER),
+        "Ollama and LM Studio alike: a local server, priced as nothing"
     );
     assert_eq!(
         codex_provider("Amazon Bedrock").as_deref(),
         Some("amazon-bedrock")
     );
     assert_eq!(codex_provider("My proxy"), None);
+}
+
+#[test]
+fn codex_times_a_request_from_its_own_call_not_from_a_memory_summary() {
+    let b = export(
+        "codex_exec",
+        vec![
+            record_at(
+                json!({ "event.name": "codex.api_request", "duration_ms": "100", "http.response.status_code": "200",
+                "endpoint": "/responses", "model": "gpt-5.4-mini", "conversation.id": "c1" }),
+                1_795_388_060_100_000_000,
+            ),
+            record_at(
+                json!({ "event.name": "codex.api_request", "duration_ms": "50", "http.response.status_code": "200",
+                "endpoint": "/memories/trace_summarize", "model": "gpt-5.4-mini", "conversation.id": "c1" }),
+                1_795_388_061_000_000_000,
+            ),
+            record_at(
+                json!({ "event.name": "codex.sse_event", "event.kind": "response.completed", "model": "gpt-5.4-mini",
+                "conversation.id": "c1", "input_token_count": "40", "output_token_count": "8" }),
+                1_795_388_062_000_000_000,
+            ),
+        ],
+    );
+    assert_eq!(b.requests[0].duration, Duration::from_millis(2_000));
+    assert_eq!(b.requests[0].ttfb, Some(Duration::from_millis(100)));
 }
 
 #[test]

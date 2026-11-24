@@ -1190,9 +1190,9 @@ impl Sink for Recorder {
         Box::pin(async move {
             crate::services::usage::account(state, &outcome).await;
             crate::services::otel::record(state, &outcome).await;
-            crate::services::observed::note_gateway(state, &outcome).await;
             let body = outcome.request_body.take();
             record_with(state, &outcome, body).await;
+            crate::services::observed::note_gateway(state, &outcome).await;
         })
     }
 
@@ -1206,9 +1206,9 @@ impl Sink for Recorder {
             crate::services::usage::account(state, &outcome).await;
             let _ = charged.send(());
             crate::services::otel::record(state, &outcome).await;
-            crate::services::observed::note_gateway(state, &outcome).await;
             let body = outcome.request_body.take();
             record_with(state, &outcome, body).await;
+            crate::services::observed::note_gateway(state, &outcome).await;
         })
     }
 }

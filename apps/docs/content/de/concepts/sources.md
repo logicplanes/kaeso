@@ -54,7 +54,7 @@ Clients zählen Tokens unterschiedlich: Claude Code lässt gecachte Eingabe aus 
 
 Eine Anfrage kostet, was der Katalog des Projekts für das Modell angibt. Ohne Katalogeintrag nutzt Kaeso den Preis des Modells aus [KPMR](../kpmr/index.md). Hat keiner einen Preis, behält die Anfrage die Kosten, die die Quelle gemeldet hat, etwa die von Claude Code oder LiteLLM, und ihre Details sagen das. Cache-Schreibvorgänge, die Anthropic eine Stunde lang behält, kosten den Preis für eine Stunde.
 
-Nennt ein Datensatz keinen Anbieter, sucht Kaeso das Modell beim Anbieter, den diese Art von Quelle üblicherweise aufruft, dann beim Hersteller des Modells oder bei dem einen Anbieter, der es verkauft. Ein Modell, dessen Name auf eine Effort-Stufe endet, etwa Antigravitys `gemini-3.8-flash-low`, kostet so viel wie das Modell ohne sie.
+Nennt ein Datensatz keinen Anbieter, sucht Kaeso das Modell beim Anbieter, den diese Art von Quelle üblicherweise aufruft, dann beim Hersteller des Modells oder bei dem einen Anbieter, der es verkauft. Ein Antigravity-Modell, dessen Name auf eine Effort-Stufe endet, etwa `gemini-3.8-flash-low`, kostet so viel wie das Modell ohne sie.
 
 ## Duplikate und Ablehnungen
 
@@ -73,7 +73,7 @@ Kaeso lehnt einen Datensatz ab, der:
 - einen Status hat, der kein HTTP-Status ist;
 - für niemanden zählen würde, der das Projekt sehen kann.
 
-Ein abgelehnter Datensatz ändert nichts, und die Detailansicht der Quelle zeigt den Grund für den letzten. Einen Stapel, den Kaeso nicht lesen kann, lehnt es ganz ab. Das gilt auch für einen Stapel, in dem Kaeso keinen Datensatz liest, etwa die Ereignisse eines Clients, für den es keinen Leser hat. Ein OTLP-Exporter erfährt aus `partialSuccess` in der Antwort, wie viele Datensätze abgelehnt wurden.
+Ein abgelehnter Datensatz ändert nichts, und die Detailansicht der Quelle zeigt den Grund für den letzten. Einen Stapel, den Kaeso nicht lesen kann, lehnt es ganz ab. Das gilt auch für einen Stapel, in dem Kaeso keinen Datensatz liest, etwa die Ereignisse eines Clients, für den es keinen Leser hat, solange die Quelle noch nichts erfasst hat. Danach bleiben die übrigen Datensätze eines Clients unbeachtet. Ein OTLP-Exporter erfährt aus `partialSuccess` in der Antwort, wie viele Datensätze abgelehnt wurden.
 
 ## Limits und Warnungen
 

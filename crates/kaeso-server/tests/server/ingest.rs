@@ -733,6 +733,39 @@ async fn a_source_says_why_it_records_nothing_and_metrics_alone_dont_connect_it(
     let v = view(&env, &id).await;
     assert_eq!(v["status"], "waiting", "{v:#?}");
     assert_eq!(v["last_error"], "unrecognized");
+    let (status, _, _) = post(
+        &env,
+        "/ingest/otlp/v1/logs",
+        Some(&key),
+        "application/json",
+        false,
+        fresh(&env, "claude-code-logs-1.json"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(view(&env, &id).await["status"], "connected");
+    let again = logs_body(
+        "my-app",
+        vec![record_now(
+            &env,
+            -500,
+            json!({ "event.name": "http.request", "url.path": "/" }),
+        )],
+    );
+    let (_, _, body) = post(
+        &env,
+        "/ingest/otlp/v1/logs",
+        Some(&key),
+        "application/json",
+        false,
+        again,
+    )
+    .await;
+    assert_eq!(
+        serde_json::from_slice::<Value>(&body).unwrap(),
+        json!({}),
+        "once a source records, the other records its client exports are left alone"
+    );
 }
 
 #[tokio::test]

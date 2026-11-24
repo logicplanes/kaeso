@@ -79,8 +79,6 @@ fn str_of<'a>(v: &'a Json, key: &str) -> Option<&'a str> {
     v.get(key).and_then(Json::as_str)
 }
 
-// OpenAI's Chat Completions messages -----------------------------------------------------------
-
 /// The parts of an OpenAI message's `content`: a string, or a list of `text` (and other) parts.
 fn openai_content(content: Option<&Json>) -> Vec<Block> {
     match content {
@@ -161,8 +159,6 @@ pub fn openai_messages(list: Option<&Json>) -> Exchange {
     out.system = (!system.is_empty()).then(|| system.join("\n\n"));
     out
 }
-
-// The OpenTelemetry GenAI conventions -----------------------------------------------------------
 
 /// The parts of a message under the GenAI conventions (`gen_ai.input.messages`,
 /// `gen_ai.output.messages`): `text`, `reasoning`, `tool_call` and `tool_call_response`.
@@ -250,8 +246,6 @@ pub fn semconv_reply(output: &str) -> Option<Vec<Block>> {
     };
     Some(messages.first().map(semconv_parts).unwrap_or_default())
 }
-
-// Gemini's `contents` -------------------------------------------------------------------------------
 
 fn gemini_parts(content: &Json) -> Vec<Block> {
     content

@@ -54,7 +54,7 @@ Clients count tokens differently: Claude Code leaves cached input out of its inp
 
 A request costs what the project's catalogue says the model costs. Without a catalogue entry, Kaeso uses the model's price from [KPMR](../kpmr/index.md). When neither has a price, the request keeps the cost the source reported, such as Claude Code's or LiteLLM's, and its details say so. Cache writes that Anthropic keeps for an hour cost the hour's price.
 
-When a record names no provider, Kaeso looks for the model at the provider the kind of source usually calls, then at the model's maker, or at the one provider that sells it. A model named with an effort level at its end, such as Antigravity's `gemini-3.8-flash-low`, is priced as the model without it.
+When a record names no provider, Kaeso looks for the model at the provider the kind of source usually calls, then at the model's maker, or at the one provider that sells it. An Antigravity model named with an effort level at its end, such as `gemini-3.8-flash-low`, is priced as the model without it.
 
 ## Duplicates and refusals
 
@@ -73,7 +73,7 @@ Kaeso refuses a record that:
 - has a status that isn't an HTTP status;
 - would count for nobody who can see the project.
 
-A refused record changes nothing, and the source's sheet shows the reason for the last one. A batch that Kaeso can't read is refused whole, and so is a batch in which no record is one Kaeso reads, such as the events of a client it has no reader for. An OTLP exporter learns how many records were refused from the answer's `partialSuccess`.
+A refused record changes nothing, and the source's sheet shows the reason for the last one. A batch that Kaeso can't read is refused whole, and so is a batch in which no record is one Kaeso reads, such as the events of a client it has no reader for, until the source has recorded something. After that, the other records a client exports are left alone. An OTLP exporter learns how many records were refused from the answer's `partialSuccess`.
 
 ## Limits and alerts
 

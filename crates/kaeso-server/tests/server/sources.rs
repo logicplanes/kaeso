@@ -1193,6 +1193,13 @@ async fn a_source_whose_service_account_is_archived_keeps_nothing() {
 #[tokio::test]
 async fn a_request_made_through_the_gateway_and_reported_by_its_client_counts_once() {
     let env = env().await;
+    // The gateway notes its requests for sources only in a project that has one.
+    let made = add(
+        &env,
+        json!({ "kind": "claude_code", "name": "Claude Code" }),
+    )
+    .await;
+    let source = source_row(&env, made["source"]["id"].as_str().unwrap()).await;
     let answer = common::v1::call(
         &env,
         "/v1/messages",
@@ -1216,12 +1223,6 @@ async fn a_request_made_through_the_gateway_and_reported_by_its_client_counts_on
         &time::format_description::well_known::Rfc3339,
     )
     .unwrap();
-    let made = add(
-        &env,
-        json!({ "kind": "claude_code", "name": "Claude Code" }),
-    )
-    .await;
-    let source = source_row(&env, made["source"]["id"].as_str().unwrap()).await;
     // The client's copy: its own id, its own clock a moment later, the same model and tokens.
     let copy = |id: &str, more_output: u64| ObservedRequest {
         external_id: id.into(),

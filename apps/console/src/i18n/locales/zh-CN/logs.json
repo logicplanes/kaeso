@@ -99,7 +99,7 @@
   "logs.inspector.notLogged": "未记录内容",
   "logs.inspector.notLoggedHint": "此请求运行时内容记录已关闭，或其内容已超过保留期。",
   "logs.inspector.notKept": "未保留内容",
-  "logs.inspector.notKeptHint": "来源不保留内容、其客户端未发送内容，或内容已超过保留期。",
+  "logs.inspector.notKeptHint": "来源不保留内容、其客户端未发送内容，或已超过保留期。",
   "logs.inspector.notLoggedNote": "未记录内容：组织或项目已关闭记录，或内容已超过保留期。",
   "logs.inspector.observed": "已观测，未经路由",
   "logs.inspector.observedHint": "{source} 上报了此请求；它直接发往服务商，因此 Kaeso 只记录并统计了它，无法路由、限制或阻止。",

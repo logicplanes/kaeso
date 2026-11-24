@@ -15,7 +15,7 @@ use time::OffsetDateTime;
 use super::content::{self, Exchange};
 use super::otlp::{Attrs, Group, LogRecord, Span, Value};
 use crate::services::observed::{
-    Batch, Carried, ObservedRequest, ObservedToolCall, Refusal, Want, Wanted,
+    Batch, Carried, ObservedRequest, ObservedToolCall, Refusal, UNNAMED_PROVIDER, Want, Wanted,
 };
 
 /// What clients write where they leave a value out because content logging is off.
@@ -323,8 +323,9 @@ fn codex_provider(name: &str) -> Option<String> {
         "OpenAI" => "openai",
         "Amazon Bedrock" | "Amazon Bedrock Runtime" => "amazon-bedrock",
         "Google Cloud Vertex AI" => "gemini-agent-platform",
-        // Codex names both Ollama and LM Studio `gpt-oss`.
-        "gpt-oss" | "" => return None,
+        // Codex names both Ollama and LM Studio `gpt-oss`: a local server Kaeso can't price.
+        "gpt-oss" => UNNAMED_PROVIDER,
+        "" => return None,
         other => {
             let id = other.trim().to_ascii_lowercase().replace([' ', '_'], "-");
             return kaeso_core::provider::provider(&id).map(|_| id);
@@ -453,7 +454,8 @@ fn codex(groups: &[Group<LogRecord>], batch: &mut Batch) {
                             ]),
                             started_at: started(end, headers),
                             duration: headers,
-                            provider,
+                            unguessed: provider.as_deref() == Some(UNNAMED_PROVIDER),
+                            provider: provider.filter(|p| p != UNNAMED_PROVIDER),
                             model: model.to_owned(),
                             status: status.filter(|s| *s >= 400).unwrap_or(502),
                             error_message: error.or(Some("The request failed.".into())),
@@ -462,7 +464,11 @@ fn codex(groups: &[Group<LogRecord>], batch: &mut Batch) {
                             dialect: Some(DialectId::OpenAiResponses),
                             ..ObservedRequest::default()
                         });
-                    } else if let Some(at) = ended(r) {
+                    } else if let Some(at) = ended(r)
+                        && a.str("endpoint").is_none_or(|e| e == "/responses")
+                    {
+                        // Codex's other calls, such as summarizing its memories, aren't the
+                        // conversation's next request.
                         turns.began.insert(conversation, (at - headers, headers));
                     }
                 }
@@ -492,7 +498,8 @@ fn codex(groups: &[Group<LogRecord>], batch: &mut Batch) {
                         started_at,
                         duration,
                         ttfb,
-                        provider,
+                        unguessed: provider.as_deref() == Some(UNNAMED_PROVIDER),
+                        provider: provider.filter(|p| p != UNNAMED_PROVIDER),
                         model: model.to_owned(),
                         status: 502,
                         error_message: text(a.str("error.message"))
@@ -544,7 +551,8 @@ fn codex(groups: &[Group<LogRecord>], batch: &mut Batch) {
                         started_at,
                         duration,
                         ttfb,
-                        provider,
+                        unguessed: provider.as_deref() == Some(UNNAMED_PROVIDER),
+                        provider: provider.filter(|p| p != UNNAMED_PROVIDER),
                         model: model.to_owned(),
                         status: if failed.is_some() { 502 } else { 200 },
                         error_message: failed.map(str::to_owned),
@@ -653,7 +661,7 @@ fn gemini_mcp_tool<'a>(name: &'a str, server: Option<&str>) -> &'a str {
 
 /// Carried request contents are kept only while they are small; a longer conversation's later
 /// requests still carry it whole in their own batch.
-const MOST_CARRIED: usize = 512 * 1024;
+const MOST_CARRIED: usize = 128 * 1024;
 
 // Gemini CLI's `service.version` is Node's, not its own, so its requests name no version. With
 // prompt logging on, `api_request` holds the request's whole `contents` and `api_response` the
@@ -831,8 +839,6 @@ fn gemini_cli(groups: &[Group<LogRecord>], batch: &mut Batch) {
     }
 }
 
-// Grok Build --------------------------------------------------------------------------------
-
 /// Grok Build's status for an `api_error` without one: a rate limit is a 429, the rest a 502.
 fn grok_status(a: &Attrs) -> u16 {
     status_of(a.get("status_code")).unwrap_or(match a.str("error_category") {
@@ -841,9 +847,10 @@ fn grok_status(a: &Attrs) -> u16 {
     })
 }
 
-// Grok Build's `input_tokens` is the whole prompt, its cache reads and writes included, and its
-// `output_tokens` leaves the reasoning out, as xAI's API counts them. A turn's reply comes once,
-// after the turn's last request, which it goes with.
+// Grok Build's `input_tokens` is the whole prompt, its cache reads and writes included (its
+// `TokenUsage` in xai-org/grok-build), and its `output_tokens` is xAI's `completion_tokens`, which
+// leaves the reasoning out (docs.x.ai's Responses reference: total = prompt + completion +
+// reasoning). A turn's reply comes once, after the turn's last request, which it goes with.
 fn grok(groups: &[Group<LogRecord>], batch: &mut Batch) {
     let mut prompts: HashMap<String, String> = HashMap::new();
     let mut asked = std::collections::HashSet::new();
@@ -917,7 +924,8 @@ fn grok(groups: &[Group<LogRecord>], batch: &mut Batch) {
                             )
                         }),
                         tokens,
-                        // Grok Build reports the cost xAI's API returned, in millionths of a dollar.
+                        // xAI's cost in ticks of 1e-10 USD, which Grok Build divides by 10,000
+                        // (`map_api_request` in its telemetry schema).
                         reported_cost: a
                             .u64("cost_usd_micros")
                             .filter(|c| *c > 0)
@@ -1311,9 +1319,9 @@ fn genai(a: &Attrs) -> bool {
         .any(|(k, _)| k.starts_with("gen_ai.") || k.starts_with("mcp."))
 }
 
-/// A batch none of whose records a reader knows is refused whole, so the source says why it
-/// shows nothing instead of looking connected; a batch with a record Kaeso read leaves the rest
-/// alone, as clients export more than requests.
+/// A batch none of whose records a reader knows is refused whole, so a source that has recorded
+/// nothing yet says why instead of looking fine (`observed::record` lets such a batch pass once the
+/// source has recorded something); a batch with a record Kaeso read leaves the rest alone.
 fn unrecognized<T>(batch: &mut Batch, groups: &[Group<T>], known: impl Fn(&Group<T>, &T) -> bool) {
     let records: usize = groups.iter().map(|g| g.items.len()).sum();
     if records == 0 || groups.iter().any(|g| g.items.iter().any(|r| known(g, r))) {
