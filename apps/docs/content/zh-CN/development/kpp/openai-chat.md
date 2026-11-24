@@ -145,7 +145,7 @@ OpenAI Responses 的 `custom_tool_call` 和 `local_shell_call` 项及其输出�
 | `id`、`function.name` | `ToolCallBlock.id`、`.name` | Kaeso 改写过的名称在解码回复时映射回原名。回复中没有 `id` 或 `id` 为 `""` 的调用会得到 `call_kaeso_<回复 ID>_<n>`（ID 中的字母和数字，`n` 为其位置），使其他格式的应用能够回答它；形式标记 `id` 为 Chat 应用保留收到的写法（缺失时为 `null`）。流中同样处理，`n` 为 KPP 块索引，形式标记为 `tc`。 |
 | `function.arguments` | 原始的 `ToolCallBlock.arguments` | 字符串中的 JSON 文本，逐字节保留。不是有效 JSON 或带有首尾空白的文本，其字面值保留在形式标记 `arguments` 中；此时 KPP 对空白文本存 `{}`，否则把文本存为 JSON 字符串。按照 KPP 的约定，`ToolCallBlock.arguments` 中的 JSON 字符串表示服务商发送的是非 JSON 文本，因此对来自其他方言的调用，以字符串的内容作为 `arguments` 发送；对象、数组和其他 JSON 值则以其 JSON 文本发送。 |
 | 未知键 | extras（嵌套的为 `function.<key>`） | |
-| `type: custom` | `Block::Unknown` | 在 `tool_calls` 中发回。 |
+| `type: custom`、其他类型 | `Block::Unknown` | 在 `tool_calls` 中发回。消息的 form `kept_calls` 列出它保留的其他类型，据此区分这类条目与整体保留的内容部分。 |
 | 缺少 `type`，但有 `function` 对象 | `Block::ToolCall`，形式标记 `no_type` | `ChatCompletionMessageToolCall` 要求 `type`，但某些 OpenAI 兼容服务商会省略它；只有函数调用才有 `function` 对象，因此该调用能到达每个应用。写回时不带 `type`。 |
 
 ## 回复：`CreateChatCompletionResponse`

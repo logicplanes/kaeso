@@ -6375,6 +6375,35 @@ expression: outcomes
       "totalTokenCount": 12
     }
   },
+  "unknown-tool-call-type": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "functionCall": {
+                "args": {
+                  "q": "report"
+                },
+                "id": "call_2",
+                "name": "lookup"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-5.6-sol",
+    "responseId": "chatcmpl-x9future3",
+    "usageMetadata": {
+      "candidatesTokenCount": 9,
+      "promptTokenCount": 12,
+      "totalTokenCount": 21
+    }
+  },
   "unknown-top-level-field": {
     "candidates": [
       {

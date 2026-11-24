@@ -708,11 +708,37 @@ pub(crate) fn encode_tool_call(call: &ToolCallBlock, name: &str) -> Result<RawJs
     to_raw(&ext_with(wire, &call.extras))
 }
 
-pub(crate) fn is_tool_call_item(item: &RawItem) -> bool {
-    matches!(
-        type_tag(item.raw.as_raw()).ok().flatten().as_deref(),
-        Some("function" | "custom")
-    )
+pub(crate) const FORM_KEPT_CALLS: &str = "kept_calls";
+
+// A `tool_calls` entry kept whole looks like a content part kept whole once both are blocks of
+// one message, so the message remembers the `type` of each entry it kept.
+pub(crate) fn note_kept_call(extras: &mut Extras, block: &Block) {
+    let Block::Unknown(item) = block else {
+        return;
+    };
+    let ty = type_tag(item.raw.as_raw()).ok().flatten();
+    if ty.as_deref() == Some("custom") {
+        return;
+    }
+    let ty = ty.map_or(Value::Null, Value::String);
+    let kept = extras
+        .form
+        .entry(FORM_KEPT_CALLS.to_owned())
+        .or_insert_with(|| Value::Array(Vec::new()));
+    if let Value::Array(types) = kept
+        && !types.contains(&ty)
+    {
+        types.push(ty);
+    }
+}
+
+pub(crate) fn is_tool_call_item(item: &RawItem, extras: &Extras) -> bool {
+    let ty = type_tag(item.raw.as_raw()).ok().flatten();
+    matches!(ty.as_deref(), Some("function" | "custom"))
+        || matches!(
+            extras.form_value(DIALECT, FORM_KEPT_CALLS),
+            Some(Value::Array(types)) if types.iter().any(|t| t.as_str() == ty.as_deref())
+        )
 }
 
 pub(crate) const MAX_TOOL_NAME: usize = 64;

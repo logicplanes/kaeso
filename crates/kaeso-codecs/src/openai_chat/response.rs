@@ -8,7 +8,7 @@ use serde_json::Value;
 use super::DIALECT;
 use super::convert::{
     add_nested, decode_tool_call, encode_tool_call, ext_nested, ext_with, extras_of,
-    is_tool_call_item, parse_ext, to_raw,
+    is_tool_call_item, note_kept_call, parse_ext, to_raw,
 };
 use super::profile::ReplyReasoning;
 use super::wire::{
@@ -198,13 +198,9 @@ pub(crate) fn decode_response(body: &[u8], ctx: &EgressCtx) -> Result<Reply, Kpp
     }
     for (i, call) in message.tool_calls.iter().enumerate() {
         let generated = super::stream::generated_call_id(&known.id, i);
-        blocks.push(decode_tool_call(
-            call,
-            &origin,
-            true,
-            &name_back,
-            Some(generated),
-        )?);
+        let block = decode_tool_call(call, &origin, true, &name_back, Some(generated))?;
+        note_kept_call(&mut extras, &block);
+        blocks.push(block);
     }
     let Some(finish) = choice.finish_reason else {
         return Err(KppError::provider(
@@ -400,7 +396,7 @@ pub(crate) fn encode_response(reply: &Reply, ctx: &EncodeCtx) -> Result<Vec<u8>,
             Block::ToolCall(call) => tool_calls.push(encode_tool_call(call, &call.name)?),
             Block::Unknown(item)
                 if reply_policy(Some(&item.origin), DIALECT) == ReplyPolicy::Keep
-                    && is_tool_call_item(item) =>
+                    && is_tool_call_item(item, &resp.extras) =>
             {
                 tool_calls.push(item.raw.clone());
             }

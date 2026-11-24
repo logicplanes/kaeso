@@ -1,0 +1,41 @@
+{
+  "id": "chatcmpl-x9future3",
+  "object": "chat.completion",
+  "created": 1791650200,
+  "model": "gpt-5.6-sol",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": null,
+        "refusal": null,
+        "tool_calls": [
+          {
+            "id": "call_1",
+            "type": "x_future_call",
+            "x_future_call": {
+              "name": "search",
+              "input": "report changes"
+            }
+          },
+          {
+            "id": "call_2",
+            "type": "function",
+            "function": {
+              "name": "lookup",
+              "arguments": "{\"q\":\"report\"}"
+            }
+          }
+        ]
+      },
+      "logprobs": null,
+      "finish_reason": "tool_calls"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 12,
+    "completion_tokens": 9,
+    "total_tokens": 21
+  }
+}
