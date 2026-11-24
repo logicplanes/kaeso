@@ -59,7 +59,7 @@ A managed account's sign-in through its organization's provider is a full sign-i
 
 The provider owns a managed account's address. `POST me/email` refuses it with `Your organization manages this address; change it at its identity provider.`, and a link to confirm an earlier change no longer works.
 
-When a sign-in through the provider brings another address at one of the organization's verified domains, Kaeso changes the account's address to it. Kaeso can do this because the issuer and subject link the account, not the address. The organization's audit log records the change as `user.email_change`. Kaeso never takes an address that another account holds, and the provider of an organization that doesn't manage the account never changes it.
+When a sign-in through the provider brings another address at one of the organization's verified domains, Kaeso changes the account's address to it. Kaeso can do this because the issuer and subject link the account, not the address. The organization's audit log records the change as `user.email_change`. Sign-in and password reset links sent to the earlier address stop working. Kaeso never takes an address that another account holds, and the provider of an organization that doesn't manage the account never changes it.
 
 **Account** › **Profile** shows **Managed by** and the organization's name, and an organization's **Members** page marks guests ([after signing in through single sign-on](../console/account.md#after-signing-in-through-single-sign-on)).
 
