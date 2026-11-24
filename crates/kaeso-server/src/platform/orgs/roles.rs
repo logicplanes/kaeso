@@ -631,6 +631,16 @@ pub async fn delete(
             "This role is the default role of SSO sign-ins; choose another one first.".into(),
         ));
     }
+    if kaeso_store::pg::sso_groups::rules(&mut *tx, scope.org.id)
+        .await?
+        .iter()
+        .flat_map(|r| &r.projects)
+        .any(|p| p.role_id == Some(before.id))
+    {
+        return Err(ApiError::Conflict(
+            "A group rule of single sign-on gives this role; change the rule first.".into(),
+        ));
+    }
     roles::delete(&mut *tx, scope.org.id, before.id).await?;
     ctx.audit(Some(scope.id()), Action::RoleDelete)
         .target("role", RoleId::from_uuid(before.id))

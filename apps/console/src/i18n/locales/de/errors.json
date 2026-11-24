@@ -342,6 +342,7 @@
   "errors.roleDescriptionLength": "`description` darf höchstens 200 Zeichen lang sein.",
   "errors.roleHasHolders": "Diese Rolle ist {holders}-mal vergeben (Mitglieder, Dienstkonten, Einladungen); zuerst neu zuweisen.",
   "errors.roleHoldsMoreRights": "Rollen mit Rechten, die Sie nicht haben, können Sie nicht ändern.",
+  "errors.roleInSsoGroupRule": "Eine Gruppenregel von Single Sign-on vergibt diese Rolle; zuerst die Regel ändern.",
   "errors.roleIsSsoDefault": "Diese Rolle ist die Standardrolle für SSO-Anmeldungen; zuerst eine andere wählen.",
   "errors.roleNameLength": "`name` muss 1 bis 50 Zeichen lang sein.",
   "errors.roleNameTaken": "Eine eigene Rolle mit diesem Namen gibt es schon.",

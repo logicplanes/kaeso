@@ -233,6 +233,7 @@ const messages = (): Rule[] => [
   rule("errors.builtinRolesFixed", () => t("errors.builtinRolesFixed", "Built-in roles can't be changed; create a custom role instead.")),
   rule("errors.roleHasHolders", (v) => t("errors.roleHasHolders", "{holders} members, service accounts or invites hold this role; reassign them first.", v)),
   rule("errors.roleIsSsoDefault", () => t("errors.roleIsSsoDefault", "This role is the default role of SSO sign-ins; choose another one first.")),
+  rule("errors.roleInSsoGroupRule", () => t("errors.roleInSsoGroupRule", "A group rule of single sign-on gives this role; change the rule first.")),
   rule("errors.grantExceedsOne", (v) => t("errors.grantExceedsOne", "You can't grant `{right}`: you don't hold it yourself.", v)),
   rule("errors.grantExceedsTwo", (v) => t("errors.grantExceedsTwo", "You can't grant `{right}` and 1 more right: you don't hold them yourself.", v)),
   rule("errors.grantExceedsMany", (v) => t("errors.grantExceedsMany", "You can't grant `{right}` and {more} more rights: you don't hold them yourself.", v)),
