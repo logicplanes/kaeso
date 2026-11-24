@@ -185,8 +185,63 @@ pub fn router(state: &AppState) -> (Router<AppState>, OpenApiDoc) {
         ))
         .layer(axum::middleware::from_fn(move |req, next| {
             security_headers(req, next, hsts)
-        }));
+        }))
+        .layer(compression())
+        .layer(axum::middleware::from_fn(reads_only_compressed));
     (router, doc)
+}
+
+// The console's lists, logs and charts are JSON that shrinks to about a tenth with gzip, which is
+// most of a page's load time on a slow connection. Only text is compressed: JSON, JSON lines and
+// CSV downloads (which still stream). Server-sent events, media, files and ranges go out as they are.
+fn compression()
+-> tower_http::compression::CompressionLayer<impl tower_http::compression::Predicate> {
+    use tower_http::compression::predicate::{Predicate, SizeAbove};
+    let text = |_: axum::http::StatusCode,
+                _: axum::http::Version,
+                headers: &axum::http::HeaderMap,
+                _: &axum::http::Extensions| {
+        headers
+            .get(axum::http::header::CONTENT_TYPE)
+            .and_then(|v| v.to_str().ok())
+            .is_some_and(|t| {
+                let t = t.to_ascii_lowercase();
+                t.starts_with("application/json")
+                    || t.starts_with("application/x-ndjson")
+                    || t.starts_with("text/csv")
+                    || t.starts_with("text/plain")
+            })
+    };
+    tower_http::compression::CompressionLayer::new()
+        .gzip(true)
+        .compress_when(SizeAbove::new(32).and(text))
+}
+
+// Compression lets someone who sees only the encrypted size of an answer guess a secret in it, a
+// token in a webhook URL or a prompt in the request log, by planting guesses beside it (BREACH):
+// they make the victim's browser load the page again and again from another site. Such a load
+// carries the session cookie (`SameSite=Lax` lets top-level navigations through) but the browser
+// marks it as cross-site. So an answer is compressed only for a read the browser marks as coming
+// from the console's own origin, or for one without a cookie, such as a platform key's, which no
+// browser sends by itself. Answers to changes, which can hold a new key, are never compressed.
+async fn reads_only_compressed(
+    mut req: axum::extract::Request,
+    next: axum::middleware::Next,
+) -> axum::response::Response {
+    let read = matches!(
+        *req.method(),
+        axum::http::Method::GET | axum::http::Method::HEAD
+    );
+    let headers = req.headers();
+    let own_origin = headers
+        .get("sec-fetch-site")
+        .is_some_and(|v| v.as_bytes() == b"same-origin");
+    let cookie = headers.contains_key(axum::http::header::COOKIE);
+    if !read || (cookie && !own_origin) {
+        req.headers_mut()
+            .remove(axum::http::header::ACCEPT_ENCODING);
+    }
+    next.run(req).await
 }
 
 // Handlers write audit events inside their transactions; emails about them go out only once the

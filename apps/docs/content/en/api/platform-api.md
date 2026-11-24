@@ -123,6 +123,7 @@ These actions need a recent sign-in:
 | Delete | `DELETE` removes something, such as a provider key, a member, a picture or your account. `DELETE orgs/{org}` schedules the organization for deletion instead. |
 | Audit | Every change is written to the audit log of its level, in the same transaction. |
 | Request ids | Every answer carries `kaeso-request-id`. |
+| Compression | A read (`GET`) comes back gzip-compressed when the client sends `accept-encoding: gzip`: JSON, and JSON lines and CSV downloads, but not server-sent events, media or ranges. A browser gets it only for requests from the console's own origin (`sec-fetch-site: same-origin`); a client that sends no cookie, such as one using a platform key, always gets it. Answers to changes aren't compressed. This keeps an attacker who sees only encrypted sizes from guessing secrets in an answer (BREACH). |
 
 ### Lists
 
