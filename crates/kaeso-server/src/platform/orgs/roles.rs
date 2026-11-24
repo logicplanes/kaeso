@@ -7,7 +7,6 @@ use kaeso_core::rights::{
     check_org_role_holders, check_project_change, check_project_role_holders,
 };
 use kaeso_store::pg::roles::{self, HolderDeviation, Role, RoleWrite};
-use kaeso_store::pg::sso_groups;
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 use utoipa::{IntoParams, ToSchema};
@@ -631,18 +630,6 @@ pub async fn delete(
         return Err(ApiError::Conflict(
             "This role is the default role of SSO sign-ins; choose another one first.".into(),
         ));
-    }
-    // A group rule keeps its projects' roles as JSON, which no foreign key clears as it does the
-    // rule's organization role; a role left there fails every sign-in the rule matches.
-    let mut rules = sso_groups::rules(&mut *tx, scope.org.id).await?;
-    let gives = |p: &sso_groups::RuleProject| p.role_id == Some(before.id);
-    if rules.iter().any(|r| r.projects.iter().any(gives))
-        && let Some(settings) = sso_groups::settings(&mut *tx, scope.org.id).await?
-    {
-        for r in &mut rules {
-            r.projects.retain(|p| !gives(p));
-        }
-        sso_groups::put(&mut tx, scope.org.id, &settings, &rules).await?;
     }
     roles::delete(&mut *tx, scope.org.id, before.id).await?;
     ctx.audit(Some(scope.id()), Action::RoleDelete)

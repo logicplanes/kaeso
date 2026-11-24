@@ -438,8 +438,8 @@ async fn rules_need_a_connection() {
 }
 
 #[tokio::test]
-async fn deleting_a_custom_role_takes_it_out_of_the_rules_that_give_it() {
-    let t = setup("add").await;
+async fn a_deleted_custom_role_in_a_rule_gives_nothing_and_sign_ins_go_on() {
+    let t = setup("sync").await;
     let (app, owner, idp) = (&t.app, &t.owner, &t.idp);
     let custom = app
         .post(
@@ -456,10 +456,13 @@ async fn deleting_a_custom_role_takes_it_out_of_the_rules_that_give_it() {
     let r = rules(
         app,
         owner,
-        json!({ "rules": [{ "group": "readers", "role": "developer", "projects": [
-            { "project": t.mapped, "role": custom },
-            { "project": t.by_hand, "role": "viewer" }
-        ] }] }),
+        json!({ "mode": "sync", "rules": [
+            { "group": "readers", "role": "developer", "projects": [
+                { "project": t.mapped, "role": custom },
+                { "project": t.by_hand, "role": "viewer" }
+            ] },
+            { "group": "everyone", "projects": [{ "project": t.mapped, "role": "developer" }] }
+        ] }),
     )
     .await;
     assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
@@ -479,19 +482,18 @@ async fn deleting_a_custom_role_takes_it_out_of_the_rules_that_give_it() {
             &owner.cookie,
         )
         .await;
-    assert_eq!(saved.body["rules"][0]["group"], "readers");
-    assert_eq!(saved.body["rules"][0]["role"], "developer");
-    assert_eq!(
-        saved.body["rules"][0]["projects"],
-        json!([{ "project": t.by_hand, "role": "viewer" }])
-    );
+    assert_eq!(saved.status, StatusCode::OK, "{:?}", saved.body);
 
-    idp.set_groups("gus@acme.example", Some(&["readers"]));
+    idp.set_groups("gus@acme.example", Some(&["readers", "everyone"]));
     let (_, gus) = sign_in(app, idp, "gus@acme.example").await;
     assert_eq!(role(app, owner, &gus).await, "developer");
-    assert_eq!(in_project(app, owner, &t.mapped, &gus).await, None);
     assert_eq!(
         in_project(app, owner, &t.by_hand, &gus).await.as_deref(),
         Some("viewer")
+    );
+    assert_eq!(
+        in_project(app, owner, &t.mapped, &gus).await,
+        None,
+        "the first rule for the project still decides, and its role is gone"
     );
 }
