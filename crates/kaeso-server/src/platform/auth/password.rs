@@ -258,6 +258,16 @@ pub async fn totp(
         .user_id
         .map(UserId::from_uuid)
         .ok_or_else(|| ApiError::internal("challenge without user"))?;
+    let by_operator = challenge.data.get("issued_by").and_then(|v| v.as_str())
+        == Some(crate::services::users::OPERATOR_LINK);
+    // Before the code is checked, so a refused sign-in uses up no recovery code.
+    if !by_operator
+        && let Some(email) = users::get(&state.pg, user_id.uuid())
+            .await?
+            .and_then(|u| u.email)
+    {
+        crate::services::managed::refuse_other_sign_in(&state.pg, &email).await?;
+    }
     let attempts = Attempts::for_user(&ctx, user_id);
     attempts.begin(&state).await?;
     let app_code = matches!(factor, Factor::Code(_));
@@ -294,11 +304,6 @@ pub async fn totp(
         .await?
         .filter(|u| u.state == "active")
         .ok_or_else(|| ApiError::PermissionDenied("This account is deactivated.".into()))?;
-    let by_operator = challenge.data.get("issued_by").and_then(|v| v.as_str())
-        == Some(crate::services::users::OPERATOR_LINK);
-    if !by_operator && let Some(email) = &user.email {
-        crate::services::managed::refuse_other_sign_in(&state.pg, email).await?;
-    }
     let method = match challenge.data.get("method").and_then(|m| m.as_str()) {
         Some("magic_link") => Method::MagicLink,
         _ => Method::Password,

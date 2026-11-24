@@ -293,13 +293,16 @@ async fn requiring_sso_ends_a_password_sign_in_that_waits_for_its_second_step() 
         app.clock.advance(time::Duration::seconds(30));
         common::totp_code(&secret, app)
     };
-    app.post(
-        "/me/totp/confirm",
-        json!({ "code": code(&app) }),
-        Some(&team.ada),
-    )
-    .await
-    .expect_status(StatusCode::OK);
+    let recovery = app
+        .post(
+            "/me/totp/confirm",
+            json!({ "code": code(&app) }),
+            Some(&team.ada),
+        )
+        .await
+        .expect_status(StatusCode::OK)
+        .body["recovery_codes"][0]
+        .clone();
     let challenge = password(&app, "ada@acme.example")
         .await
         .expect_status(StatusCode::ACCEPTED)
@@ -322,6 +325,17 @@ async fn requiring_sso_ends_a_password_sign_in_that_waits_for_its_second_step() 
         "a password entered before SSO was required"
     );
     assert!(r.cookie().is_none());
+    let r = app
+        .post(
+            "/auth/totp",
+            json!({ "challenge": challenge, "recovery_code": recovery }),
+            None,
+        )
+        .await;
+    assert_eq!(
+        (r.status, r.body["error"]["message"].as_str().unwrap()),
+        (StatusCode::FORBIDDEN, SSO_ONLY)
+    );
 
     use kaeso_server::services::users::{OperatorSignIn, operator_sign_in_link};
     use secrecy::ExposeSecret;
@@ -341,14 +355,14 @@ async fn requiring_sso_ends_a_password_sign_in_that_waits_for_its_second_step() 
     let r = app
         .post(
             "/auth/totp",
-            json!({ "challenge": challenge, "code": code(&app) }),
+            json!({ "challenge": challenge, "recovery_code": recovery }),
             None,
         )
         .await;
     assert_eq!(
         r.status,
         StatusCode::OK,
-        "the sign-in link from the server keeps its second step: {:?}",
+        "the sign-in link from the server keeps its second step, and the refusals used up no recovery code: {:?}",
         r.body
     );
     s.cleanup().await;
