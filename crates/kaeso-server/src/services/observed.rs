@@ -10,7 +10,7 @@ use kaeso_core::id::RequestId;
 use kaeso_core::rights::{ProjectRight, effective_project_rights};
 use kaeso_core::sources::{Counted, SourceKind};
 use kaeso_kpp::{
-    Block, CacheWriteBreakdown, DialectId, GenerateRequest, Message, Request, Response, Usage,
+    Block, CacheWriteBreakdown, DialectId, GenerateRequest, Message, Request, Response, Role, Usage,
 };
 use kaeso_store::StoreError;
 use kaeso_store::clickhouse::tool_calls::ToolCallRow;
@@ -78,6 +78,9 @@ pub enum Refusal {
     Unreadable,
     /// The source is disabled or archived.
     Inactive,
+    /// None of the batch's records is one a reader knows, such as the events of a client Kaeso
+    /// has no reader for.
+    Unrecognized,
 }
 
 impl Refusal {
@@ -94,6 +97,7 @@ impl Refusal {
             Refusal::Nobody => "nobody",
             Refusal::Unreadable => "unreadable",
             Refusal::Inactive => "inactive",
+            Refusal::Unrecognized => "unrecognized",
         }
     }
 }
@@ -129,6 +133,73 @@ pub struct ObservedRequest {
     /// What was asked and answered, when the source sends it; kept only where content is kept.
     pub prompt: Option<String>,
     pub reply: Option<String>,
+    /// The whole exchange, when the source sends more than the last prompt and the reply's text:
+    /// the system prompt, every message before the reply, and the reply's parts with its tool
+    /// calls and reasoning. Each takes the place of `prompt` or `reply` when it isn't empty.
+    pub system: Option<String>,
+    pub messages: Vec<Message>,
+    pub reply_parts: Vec<Block>,
+    /// Other ids the same call goes by in the source's records, such as the span a GenAI log
+    /// event was written in: a call reported under any of them is counted once.
+    pub aliases: Vec<String>,
+    /// What the request takes from an earlier batch of the same source.
+    pub wants: Vec<Want>,
+    /// The client names a provider Kaeso can't tell, such as a local model server, so neither
+    /// the kind's usual provider nor a seller of the model is assumed.
+    pub unguessed: bool,
+}
+
+/// What a record can leave to a later batch of its source: clients export in batches, so a
+/// prompt, the moment a request began or a conversation's provider can arrive one export before
+/// the request it belongs to.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Wanted {
+    /// The prompt a request answered; the first request that asks for it takes it.
+    Prompt,
+    /// When a request began and how long its response's headers took, as `<unix ms>:<ms>`; the
+    /// first request that asks for it takes it.
+    Began,
+    /// The provider a conversation talks to.
+    Provider,
+    /// The `contents` (JSON) of the Gemini request a reply answered; the first request that asks
+    /// for it takes it.
+    GeminiContents,
+}
+
+impl Wanted {
+    const fn as_str(self) -> &'static str {
+        match self {
+            Wanted::Prompt => "prompt",
+            Wanted::Began => "began",
+            Wanted::Provider => "provider",
+            Wanted::GeminiContents => "gemini",
+        }
+    }
+
+    // A prompt or a start belongs to a request that follows within moments; a conversation's
+    // provider holds for as long as people keep one open.
+    const fn kept(self) -> u64 {
+        match self {
+            Wanted::Prompt | Wanted::Began | Wanted::GeminiContents => 3_600,
+            Wanted::Provider => 86_400,
+        }
+    }
+}
+
+/// What a reader carries for a conversation whose client names a provider Kaeso can't tell.
+pub const UNNAMED_PROVIDER: &str = "-";
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Want {
+    pub what: Wanted,
+    pub key: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Carried {
+    pub what: Wanted,
+    pub key: String,
+    pub value: String,
 }
 
 /// A tool call a source reported.
@@ -147,12 +218,16 @@ pub struct ObservedToolCall {
     pub email: Option<String>,
     pub arguments: Option<String>,
     pub result: Option<String>,
+    /// Other ids the same call goes by, as for a request.
+    pub aliases: Vec<String>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Batch {
     pub requests: Vec<ObservedRequest>,
     pub tool_calls: Vec<ObservedToolCall>,
+    /// What the batch's records leave for the source's next batches.
+    pub carried: Vec<Carried>,
     /// Records the reader couldn't use, and why the last one was refused.
     pub refused: u32,
     pub refusal: Option<Refusal>,
@@ -195,17 +270,18 @@ fn cut(s: &str, max: usize) -> String {
     }
 }
 
-// Marks each id as seen and says which were new; Valkey decides atomically across instances.
+// Marks every id of each record as seen and says which records were new: a record is new only
+// when none of its ids was seen before. Valkey decides atomically across instances.
 async fn first_time(
     state: &AppState,
     source: Uuid,
-    ids: &[Uuid],
+    records: &[Vec<Uuid>],
 ) -> Result<Vec<bool>, RecordError> {
-    if ids.is_empty() {
-        return Ok(Vec::new());
+    if records.iter().all(Vec::is_empty) {
+        return Ok(vec![false; records.len()]);
     }
     let mut pipe = redis::pipe();
-    for id in ids {
+    for id in records.iter().flatten() {
         pipe.cmd("SET")
             .arg(state.valkey.key(&format!("obs:{source}:{id}")))
             .arg(1)
@@ -219,7 +295,324 @@ async fn first_time(
             .await
             .map_err(|_| RecordError::Valkey("timed out".into()))?
             .map_err(|e| RecordError::Valkey(e.to_string()))?;
-    Ok(set.into_iter().map(|s| s.is_some()).collect())
+    let mut set = set.into_iter();
+    Ok(records
+        .iter()
+        .map(|ids| {
+            ids.iter()
+                .fold(true, |new, _| set.next().flatten().is_some() && new)
+        })
+        .collect())
+}
+
+fn carry_key(state: &AppState, source: Uuid, what: Wanted, key: &str) -> String {
+    state
+        .valkey
+        .key(&format!("obscarry:{source}:{}:{key}", what.as_str()))
+}
+
+/// Keeps what the batch leaves for later batches, and hands each request what it wants from
+/// earlier ones. Returns the keys requests took, to forget once the batch is recorded: a batch
+/// that fails is sent again and must find them still there.
+async fn carry(
+    state: &AppState,
+    source: &Source,
+    batch: &mut Batch,
+) -> Result<Vec<String>, RecordError> {
+    // Content waits in Valkey only for a source that keeps it.
+    let kept = |what: Wanted| source.content || matches!(what, Wanted::Began | Wanted::Provider);
+    batch.carried.retain(|c| kept(c.what));
+    for r in &mut batch.requests {
+        r.wants.retain(|w| kept(w.what));
+    }
+    let source = source.id;
+    let mut conn = state.valkey.conn();
+    if !batch.carried.is_empty() {
+        let mut pipe = redis::pipe();
+        for c in &batch.carried {
+            pipe.cmd("SET")
+                .arg(carry_key(state, source, c.what, &c.key))
+                .arg(&c.value)
+                .arg("EX")
+                .arg(c.what.kept())
+                .ignore();
+        }
+        tokio::time::timeout(VALKEY_DEADLINE, pipe.query_async::<()>(&mut conn))
+            .await
+            .map_err(|_| RecordError::Valkey("timed out".into()))?
+            .map_err(|e| RecordError::Valkey(e.to_string()))?;
+    }
+    let mut wanted: Vec<String> = batch
+        .requests
+        .iter()
+        .flat_map(|r| &r.wants)
+        .map(|w| carry_key(state, source, w.what, &w.key))
+        .collect();
+    wanted.sort();
+    wanted.dedup();
+    if wanted.is_empty() {
+        return Ok(Vec::new());
+    }
+    let found: Vec<Option<String>> = tokio::time::timeout(
+        VALKEY_DEADLINE,
+        redis::cmd("MGET").arg(&wanted).query_async(&mut conn),
+    )
+    .await
+    .map_err(|_| RecordError::Valkey("timed out".into()))?
+    .map_err(|e| RecordError::Valkey(e.to_string()))?;
+    let mut found: HashMap<String, String> = wanted
+        .into_iter()
+        .zip(found)
+        .filter_map(|(k, v)| Some((k, v?)))
+        .collect();
+    let mut taken = Vec::new();
+    for r in &mut batch.requests {
+        for w in std::mem::take(&mut r.wants) {
+            let key = carry_key(state, source, w.what, &w.key);
+            let value = match w.what {
+                Wanted::Provider => found.get(&key).cloned(),
+                Wanted::Prompt | Wanted::Began | Wanted::GeminiContents => {
+                    found.remove(&key).inspect(|_| taken.push(key))
+                }
+            };
+            if let Some(value) = value {
+                fill(r, w.what, &value);
+            }
+        }
+    }
+    Ok(taken)
+}
+
+/// Gives a request what an earlier batch left for it.
+fn fill(r: &mut ObservedRequest, what: Wanted, value: &str) {
+    match what {
+        Wanted::Prompt => {
+            if r.prompt.is_none() && r.messages.is_empty() {
+                r.prompt = Some(value.to_owned());
+            }
+        }
+        Wanted::Provider => {
+            if r.provider.is_none() && !r.unguessed {
+                match value {
+                    UNNAMED_PROVIDER => r.unguessed = true,
+                    named => r.provider = Some(named.to_owned()),
+                }
+            }
+        }
+        Wanted::GeminiContents => {
+            if !r.messages.is_empty() {
+                return;
+            }
+            let exchange = serde_json::from_str(value)
+                .ok()
+                .and_then(|v| crate::ingest::content::gemini_contents(&v));
+            if let Some(e) = exchange {
+                if r.prompt.is_none() {
+                    r.prompt = e.last_user_text();
+                }
+                r.messages = e.messages;
+            }
+        }
+        Wanted::Began => {
+            let Some((at, headers)) = value.split_once(':') else {
+                return;
+            };
+            let (Ok(at), Ok(headers)) = (at.parse::<i128>(), headers.parse::<u64>()) else {
+                return;
+            };
+            let Ok(began) = OffsetDateTime::from_unix_timestamp_nanos(at * 1_000_000) else {
+                return;
+            };
+            let Some(end) = r.started_at.map(|s| s + r.duration) else {
+                return;
+            };
+            if began <= end {
+                r.started_at = Some(began);
+                r.duration = (end - began).try_into().unwrap_or_default();
+                r.ttfb = Some(Duration::from_millis(headers));
+            }
+        }
+    }
+}
+
+/// How a request made through the gateway is told apart from the copy its client reports to a
+/// source: the gateway's id never reaches the client, so the copy is matched on what both name.
+/// A copy that starts or ends within `SAME_TIME` of a gateway request of the same project and
+/// model, with the same tokens, is that request.
+const SAME_TIME: time::Duration = time::Duration::seconds(5);
+/// How long the gateway's requests wait for their copies. Clients export every few seconds, and
+/// each request the gateway answers holds a key this long, so it stays short.
+const GATEWAY_KEPT: u64 = 120;
+
+fn fingerprint(state: &AppState, project: Uuid, model: &str, usage: &Usage) -> String {
+    let model = model
+        .rsplit('/')
+        .next()
+        .unwrap_or(model)
+        .to_ascii_lowercase();
+    let input = usage
+        .input_tokens
+        .saturating_add(usage.cache_read_tokens)
+        .saturating_add(usage.cache_write_tokens);
+    let mut h = Sha256::new();
+    h.update(model.as_bytes());
+    h.update(format!(":{input}:{}", usage.output_tokens).as_bytes());
+    let d = h.finalize();
+    let tag: String = d.iter().take(12).map(|b| format!("{b:02x}")).collect();
+    state.valkey.key(&format!("obsgw:{project}:{tag}"))
+}
+
+fn unix_ms(t: OffsetDateTime) -> i64 {
+    i64::try_from(t.unix_timestamp_nanos() / 1_000_000).unwrap_or(0)
+}
+
+// Whether a project has an active source, kept for a short while: most projects have none, and
+// their requests then cost no Valkey write.
+static WITH_SOURCES: std::sync::LazyLock<moka::future::Cache<Uuid, bool>> =
+    std::sync::LazyLock::new(|| {
+        moka::future::Cache::builder()
+            .max_capacity(100_000)
+            .time_to_live(Duration::from_secs(30))
+            .build()
+    });
+
+async fn has_sources(state: &AppState, project: Uuid) -> bool {
+    if let Some(known) = WITH_SOURCES.get(&project).await {
+        return known;
+    }
+    // While PostgreSQL is away, the answer is kept too, so the requests don't all ask again.
+    let active = match kaeso_store::pg::sources::list(&state.pg, project, false, None, 100).await {
+        Ok(sources) => sources.iter().any(|s| s.disabled_at.is_none()),
+        Err(e) => {
+            tracing::debug!(error = %e, "cannot tell whether a project has sources");
+            false
+        }
+    };
+    WITH_SOURCES.insert(project, active).await;
+    active
+}
+
+/// Forgets this instance's answer for the project once a source is added or changed, so its
+/// gateway requests are noted from then on.
+pub async fn sources_changed(project: Uuid) {
+    WITH_SOURCES.invalidate(&project).await;
+}
+
+/// Notes a request the gateway answered, so a source reporting the same request doesn't count it
+/// again. Runs after the response is sent; a note that can't be written only loses the match.
+pub async fn note_gateway(state: &AppState, o: &crate::model_api::hooks::Outcome) {
+    if o.source == Origin::Observed || o.status >= 400 {
+        return;
+    }
+    let (Some(caller), Some(usage)) = (&o.caller, &o.usage) else {
+        return;
+    };
+    if usage.input_tokens == 0 && usage.output_tokens == 0
+        || !has_sources(state, caller.project_id).await
+    {
+        return;
+    }
+    let start = unix_ms(o.started_at);
+    let end = unix_ms(o.started_at + o.duration);
+    let member = format!("{}:{end}", o.request_id);
+    let mut models: Vec<&str> = [o.requested_model.as_deref(), o.model_id.as_deref()]
+        .into_iter()
+        .flatten()
+        .collect();
+    models.dedup();
+    let mut pipe = redis::pipe();
+    for model in models {
+        let key = fingerprint(state, caller.project_id, model, usage);
+        pipe.cmd("ZADD").arg(&key).arg(start).arg(&member).ignore();
+        pipe.cmd("EXPIRE").arg(&key).arg(GATEWAY_KEPT).ignore();
+    }
+    let mut conn = state.valkey.conn();
+    match tokio::time::timeout(VALKEY_DEADLINE, pipe.query_async::<()>(&mut conn)).await {
+        Ok(Ok(())) => {}
+        Ok(Err(e)) => {
+            tracing::debug!(error = %e, "cannot note a gateway request for sources to match");
+        }
+        Err(_) => tracing::debug!("noting a gateway request for sources to match timed out"),
+    }
+}
+
+/// Which of the requests a source reports the gateway already logged; each match takes its
+/// gateway request out of the matching, so each counts once. The whole batch is looked up in two
+/// round trips.
+async fn made_by_gateway(
+    state: &AppState,
+    project: Uuid,
+    requests: &[&ObservedRequest],
+) -> Vec<bool> {
+    let mut found = vec![false; requests.len()];
+    let keys: Vec<Option<(String, i64, i64)>> = requests
+        .iter()
+        .map(|r| {
+            let start = r.started_at?;
+            let key = fingerprint(state, project, &r.model, &usage(r.tokens));
+            Some((key, unix_ms(start), unix_ms(start + r.duration)))
+        })
+        .collect();
+    if keys.iter().all(Option::is_none) {
+        return found;
+    }
+    let window = SAME_TIME.whole_milliseconds() as i64;
+    let mut pipe = redis::pipe();
+    for (key, start, _) in keys.iter().flatten() {
+        // A long request may have begun well before its copy says it did, when the client only
+        // reports when it ended; its end then has to match.
+        pipe.cmd("ZRANGEBYSCORE")
+            .arg(key)
+            .arg(start - 15 * 60_000)
+            .arg(start + window)
+            .arg("WITHSCORES");
+    }
+    let mut conn = state.valkey.conn();
+    let Ok(Ok(listed)) = tokio::time::timeout(
+        VALKEY_DEADLINE,
+        pipe.query_async::<Vec<Vec<(String, i64)>>>(&mut conn),
+    )
+    .await
+    else {
+        return found;
+    };
+    let close = |a: i64, b: i64| (a - b).abs() <= window;
+    let mut picked: Vec<(usize, &str, &str)> = Vec::new();
+    let mut listed = listed.iter();
+    for (i, k) in keys.iter().enumerate() {
+        let Some((key, start, end)) = k else { continue };
+        let Some(candidates) = listed.next() else {
+            break;
+        };
+        let hit = candidates.iter().find(|(member, at)| {
+            let ended = member
+                .rsplit_once(':')
+                .and_then(|(_, e)| e.parse::<i64>().ok());
+            let taken = picked.iter().any(|(_, k, m)| k == key && m == member);
+            !taken && (close(*at, *start) || ended.is_some_and(|e| close(e, *end)))
+        });
+        if let Some((member, _)) = hit {
+            picked.push((i, key.as_str(), member.as_str()));
+        }
+    }
+    if picked.is_empty() {
+        return found;
+    }
+    let mut pipe = redis::pipe();
+    for (_, key, member) in &picked {
+        pipe.cmd("ZREM").arg(*key).arg(*member);
+    }
+    // Of two copies racing for one gateway request, only the one that removes it matches.
+    if let Ok(Ok(removed)) =
+        tokio::time::timeout(VALKEY_DEADLINE, pipe.query_async::<Vec<i64>>(&mut conn)).await
+    {
+        for ((i, _, _), n) in picked.iter().zip(removed) {
+            if let Some(f) = found.get_mut(*i) {
+                *f = n == 1;
+            }
+        }
+    }
+    found
 }
 
 /// Whether the person can see the project, so a source's requests may count for them.
@@ -307,6 +700,37 @@ pub struct Priced {
     pub prices: Option<Fields>,
 }
 
+/// A model's id without the effort level Antigravity ends it with, as it names Gemini 3 Flash at
+/// low effort `gemini-3-flash-low`.
+fn without_effort(model: &str) -> Option<&str> {
+    ["-minimal", "-low", "-medium", "-high", "-xhigh", "-max"]
+        .iter()
+        .find_map(|effort| model.strip_suffix(effort))
+        .filter(|m| !m.is_empty())
+}
+
+/// The prices of a request whose record names no provider: the provider its kind of source
+/// usually talks to first, else whichever provider sells the model. The kind's provider names the
+/// request even when neither has a price, as the client most likely spoke to it.
+async fn price_guessed(
+    state: &AppState,
+    project: Uuid,
+    guess: Option<&str>,
+    model: &str,
+) -> Priced {
+    if let Some(g) = guess {
+        let priced = price(state, project, Some(g), model).await;
+        if priced.prices.is_some() {
+            return priced;
+        }
+    }
+    let mut priced = price(state, project, None, model).await;
+    if priced.prices.is_none() && priced.provider.is_none() {
+        priced.provider = guess.map(str::to_owned);
+    }
+    priced
+}
+
 pub async fn price(state: &AppState, project: Uuid, provider: Option<&str>, model: &str) -> Priced {
     let wanted = |p: &str, m: &str| provider.is_none_or(|want| want == p) && m == model;
     let models = crate::services::catalogue::project_models(state, project)
@@ -376,25 +800,54 @@ fn static_provider(id: &str) -> Option<&'static str> {
 fn content(r: &ObservedRequest, dialect: DialectId, model: &str) -> Option<(String, String)> {
     let prompt = r.prompt.as_deref().filter(|p| !p.is_empty());
     let reply = r.reply.as_deref().filter(|p| !p.is_empty());
-    if prompt.is_none() && reply.is_none() {
+    if prompt.is_none() && reply.is_none() && r.messages.is_empty() && r.reply_parts.is_empty() {
         return None;
     }
-    let request = Request::Generate(
-        GenerateRequest::new(model).with_message(Message::user(prompt.unwrap_or_default())),
-    );
-    let mut ctx = kaeso_codecs::EgressCtx::new(&request);
-    let body = kaeso_codecs::dispatch::encode_request(dialect, &request, &mut ctx)
-        .ok()
-        .and_then(|e| String::from_utf8(e.body).ok())
+    let mut request = GenerateRequest::new(model);
+    if let Some(system) = r.system.as_deref().filter(|s| !s.is_empty()) {
+        request = request.with_system(system);
+    }
+    request.messages = if r.messages.is_empty() {
+        vec![Message::user(prompt.unwrap_or_default())]
+    } else {
+        r.messages.clone()
+    };
+    let body = encoded(dialect, &request)
+        // A dialect that can't carry reasoning given back in a request still shows the rest.
+        .or_else(|| {
+            let mut plain = request.clone();
+            for m in &mut plain.messages {
+                m.blocks.retain(|b| !matches!(b, Block::Reasoning(_)));
+            }
+            plain
+                .messages
+                .retain(|m| !m.blocks.is_empty() || m.role == Role::User);
+            encoded(dialect, &plain)
+        })
+        // Parts the dialect can't carry, such as a tool call without an id, leave the prompt.
+        .or_else(|| {
+            let mut asked = GenerateRequest::new(model);
+            asked.messages = vec![Message::user(prompt?)];
+            encoded(dialect, &asked)
+        })
         .unwrap_or_default();
-    let mut response = Response::new(
-        r.external_id.clone(),
-        model,
-        reply.map(|t| vec![Block::text(t)]).unwrap_or_default(),
-    );
+    let parts = if r.reply_parts.is_empty() {
+        reply.map(|t| vec![Block::text(t)]).unwrap_or_default()
+    } else {
+        r.reply_parts.clone()
+    };
+    let mut response = Response::new(r.external_id.clone(), model, parts);
     response.usage = usage(r.tokens);
     let reply = serde_json::to_string(&response).unwrap_or_default();
     Some((body, reply))
+}
+
+fn encoded(dialect: DialectId, request: &GenerateRequest) -> Option<String> {
+    let request = Request::Generate(request.clone());
+    let mut ctx = kaeso_codecs::EgressCtx::new(&request);
+    kaeso_codecs::dispatch::encode_request(dialect, &request, &mut ctx)
+        .ok()
+        .and_then(|e| String::from_utf8(e.body).ok())
 }
 
 fn usage(t: Counted) -> Usage {
@@ -466,6 +919,12 @@ pub async fn record(
     mut batch: Batch,
 ) -> Result<Recorded, RecordError> {
     let now = state.clock.now();
+    // Clients and collectors export more than model calls; a batch with nothing Kaeso reads only
+    // says something is wrong while the source has never sent anything Kaeso could record.
+    if batch.refusal == Some(Refusal::Unrecognized) && source.first_event_at.is_some() {
+        batch.refused = 0;
+        batch.refusal = None;
+    }
     let mut out = Recorded {
         refused: batch.refused as usize,
         refusal: batch.refusal.take(),
@@ -495,7 +954,9 @@ pub async fn record(
         out.refusal = Some(Refusal::Inactive);
         batch.requests.clear();
         batch.tool_calls.clear();
+        batch.carried.clear();
     }
+    let taken = carry(state, source, &mut batch).await?;
     let emails: Vec<String> = batch
         .requests
         .iter()
@@ -515,11 +976,42 @@ pub async fn record(
         .iter()
         .map(|c| request_id(source.id, &format!("t:{}", c.external_id)))
         .collect();
-    let mut all = request_ids.clone();
-    all.extend(&call_ids);
+    let mut all: Vec<Vec<Uuid>> = batch
+        .requests
+        .iter()
+        .zip(&request_ids)
+        .map(|(r, id)| {
+            std::iter::once(*id)
+                .chain(
+                    r.aliases
+                        .iter()
+                        .map(|a| request_id(source.id, &format!("r:{a}"))),
+                )
+                .collect()
+        })
+        .collect();
+    all.extend(batch.tool_calls.iter().zip(&call_ids).map(|(c, id)| {
+        std::iter::once(*id)
+            .chain(
+                c.aliases
+                    .iter()
+                    .map(|a| request_id(source.id, &format!("t:{a}"))),
+            )
+            .collect::<Vec<_>>()
+    }));
     let new = first_time(state, source.id, &all).await?;
     let (new_requests, new_calls) = new.split_at(request_ids.len());
     let kind = kind_of(source);
+    let candidates: Vec<&ObservedRequest> = batch
+        .requests
+        .iter()
+        .zip(new_requests)
+        .filter(|(_, fresh)| **fresh)
+        .map(|(r, _)| r)
+        .collect();
+    let mut copies = made_by_gateway(state, source.project_id, &candidates)
+        .await
+        .into_iter();
     for ((r, id), fresh) in batch
         .requests
         .into_iter()
@@ -527,6 +1019,10 @@ pub async fn record(
         .zip(new_requests)
     {
         if !*fresh {
+            out.duplicates += 1;
+            continue;
+        }
+        if copies.next().unwrap_or(false) {
             out.duplicates += 1;
             continue;
         }
@@ -551,6 +1047,9 @@ pub async fn record(
         record_call(state, source, who, c, id, now).await;
         out.tool_calls += 1;
     }
+    if !taken.is_empty() {
+        forget(state, &taken).await;
+    }
     if out.requests + out.tool_calls > 0 {
         kaeso_store::pg::sources::touch(&state.pg, source.id, now, None).await?;
     }
@@ -573,6 +1072,16 @@ pub async fn record(
     Ok(out)
 }
 
+// What requests took from earlier batches goes with them; a key left behind only expires.
+async fn forget(state: &AppState, keys: &[String]) {
+    let mut conn = state.valkey.conn();
+    let _: Result<Result<(), redis::RedisError>, _> = tokio::time::timeout(
+        VALKEY_DEADLINE,
+        redis::cmd("DEL").arg(keys).query_async::<()>(&mut conn),
+    )
+    .await;
+}
+
 async fn record_request(
     state: &AppState,
     source: &Source,
@@ -583,12 +1092,38 @@ async fn record_request(
     now: OffsetDateTime,
 ) {
     let model = cut(&r.model, MAX_NAME);
-    let provider = r
+    let named = r
         .provider
         .clone()
-        .filter(|p| p.len() <= 64 && kaeso_core::provider::ProviderId::is_valid(p))
-        .or_else(|| kind.and_then(SourceKind::provider).map(str::to_owned));
-    let priced = price(state, source.project_id, provider.as_deref(), &model).await;
+        .filter(|p| p.len() <= 64 && kaeso_core::provider::ProviderId::is_valid(p));
+    let priced_as = |model: String| {
+        let named = named.clone();
+        let unguessed = r.unguessed;
+        async move {
+            match named {
+                Some(p) => price(state, source.project_id, Some(&p), &model).await,
+                None if unguessed => Priced {
+                    provider: None,
+                    catalogue_model_id: None,
+                    prices: None,
+                },
+                None => {
+                    let guess = kind.and_then(SourceKind::provider);
+                    price_guessed(state, source.project_id, guess, &model).await
+                }
+            }
+        }
+    };
+    let mut priced = priced_as(model.clone()).await;
+    if priced.prices.is_none()
+        && kind == Some(SourceKind::Antigravity)
+        && let Some(base) = without_effort(&model)
+    {
+        let base = priced_as(base.to_owned()).await;
+        if base.prices.is_some() {
+            priced = base;
+        }
+    }
     let dialect = r.dialect.unwrap_or(DialectId::OpenAiChat);
     let mut o = crate::model_api::pipeline::blank_outcome(RequestId::from_uuid(id));
     o.caller = Some(who.clone());
@@ -596,6 +1131,14 @@ async fn record_request(
     o.source_id = Some(source.id);
     o.ingress = dialect;
     o.egress = Some(dialect);
+    if dialect == DialectId::Gemini {
+        use kaeso_codecs::gemini::GeminiAction;
+        o.gemini = Some(if r.stream {
+            GeminiAction::StreamGenerateContent
+        } else {
+            GeminiAction::GenerateContent
+        });
+    }
     o.kind = kaeso_kpp::RequestKind::Generate;
     o.provider = priced.provider.as_deref().and_then(static_provider);
     o.custom_provider = match (&o.provider, &priced.provider) {
@@ -625,7 +1168,7 @@ async fn record_request(
         .then(|| content(&r, dialect, &model))
         .flatten();
     o.content_kept = kept.is_some();
-    if let Some((body, _)) = &kept {
+    if let Some((body, _)) = kept.as_ref().filter(|(body, _)| !body.is_empty()) {
         o.request_body = Some(bytes::Bytes::from(body.clone()));
     }
     o.reply = kept.and_then(|(_, reply)| serde_json::from_str::<Response>(&reply).ok());
@@ -688,6 +1231,15 @@ async fn record_call(
             .map(|s| cut(s, MAX_NAME))
             .unwrap_or_default(),
     };
+    // Counted where Analytics reads tool calls, as the MCP portal counts its own; reported calls
+    // belong to no server of Kaeso's.
+    state.tool_usage.add(
+        row.started_at,
+        source.org_id,
+        source.project_id,
+        Uuid::nil(),
+        !c.ok,
+    );
     let content = if source.content && (c.arguments.is_some() || c.result.is_some()) {
         Some((
             c.arguments.unwrap_or_default(),
@@ -743,6 +1295,78 @@ mod tests {
         let mut nameless = request();
         nameless.model = " ".into();
         assert!(invalid_request(&nameless, now).is_some());
+    }
+
+    #[test]
+    fn a_start_from_an_earlier_batch_times_the_request_from_then() {
+        let mut r = request();
+        r.started_at = Some(datetime!(2026-11-23 12:00:04 UTC));
+        fill(&mut r, Wanted::Began, "1795435200000:300");
+        assert_eq!(r.started_at, Some(datetime!(2026-11-23 12:00:00 UTC)));
+        assert_eq!(r.duration, Duration::from_secs(4));
+        assert_eq!(r.ttfb, Some(Duration::from_millis(300)));
+        let mut late = request();
+        late.started_at = Some(datetime!(2026-11-23 11:59:00 UTC));
+        fill(&mut late, Wanted::Began, "1795435200000:300");
+        assert_eq!(
+            late.duration,
+            Duration::ZERO,
+            "a start after the end is someone else's"
+        );
+        let mut prompted = request();
+        fill(&mut prompted, Wanted::Prompt, "Hi");
+        fill(&mut prompted, Wanted::Provider, "openai");
+        assert_eq!(
+            (prompted.prompt.as_deref(), prompted.provider.as_deref()),
+            (Some("Hi"), Some("openai"))
+        );
+        let mut local = request();
+        fill(&mut local, Wanted::Provider, UNNAMED_PROVIDER);
+        assert_eq!((local.provider, local.unguessed), (None, true));
+    }
+
+    #[test]
+    fn a_model_named_with_its_effort_level_is_priced_as_the_model() {
+        assert_eq!(
+            without_effort("gemini-3.8-flash-low"),
+            Some("gemini-3.8-flash")
+        );
+        assert_eq!(without_effort("gemini-4-neon-xhigh"), Some("gemini-4-neon"));
+        assert_eq!(without_effort("gpt-5.4-mini"), None);
+        assert_eq!(without_effort("-low"), None);
+    }
+
+    #[test]
+    fn a_whole_exchange_is_logged_with_its_tool_calls_and_reasoning() {
+        let mut r = request();
+        r.system = Some("Be brief.".into());
+        r.messages = vec![
+            Message::user("Weather?"),
+            Message::new(
+                Role::Assistant,
+                vec![Block::tool_call(
+                    "c1",
+                    "weather",
+                    kaeso_kpp::RawJson::from_string("{}".into()).unwrap(),
+                )],
+            ),
+            Message::new(
+                Role::User,
+                vec![Block::tool_result("c1", vec![Block::text("Sunny")], false)],
+            ),
+        ];
+        let mut thought = kaeso_kpp::ReasoningBlock::default();
+        thought.text = vec!["From the tool.".into()];
+        r.reply_parts = vec![Block::Reasoning(thought), Block::text("Sunny.")];
+        let (body, reply) = content(&r, DialectId::OpenAiChat, "gpt-5.4").unwrap();
+        assert!(
+            body.contains("Be brief.") && body.contains("weather") && body.contains("Sunny"),
+            "{body}"
+        );
+        assert!(
+            reply.contains("From the tool.") && reply.contains("Sunny."),
+            "{reply}"
+        );
     }
 
     #[test]

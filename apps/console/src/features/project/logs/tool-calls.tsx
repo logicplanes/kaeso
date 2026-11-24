@@ -38,6 +38,7 @@ import { startedColumn } from "./columns";
 import { ReportedBy } from "../sources/reported-by";
 import { useSourceNames } from "../sources/names";
 import { ToolCallsExportDialog } from "./export-dialog";
+import { NotLogged } from "./not-logged";
 import { useLiveToolCalls } from "./live";
 import {
   FilterBar,
@@ -390,10 +391,7 @@ function CallBody({ org, project, call }: { org: string; project: string; call: 
           </Section>
         </>
       ) : (
-        <Empty
-          title={t("logs.inspector.notLogged", "Content not logged")}
-          description={t("logs.inspector.notLoggedHint", "Logging was off when this request ran, or its content has passed the retention period.")}
-        />
+        <NotLogged observed={!!c.source_id} />
       )}
     </div>
   );

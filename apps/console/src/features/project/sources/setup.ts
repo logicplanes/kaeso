@@ -98,8 +98,12 @@ function antigravity({ ingestUrl, secret, content }: SetupTarget): CodeTab[] {
     "cache_write_tokens",
     "cache_creation_input_tokens",
     "output_tokens",
-    ...(content ? ["content"] : []),
+    ...(content ? ["content", "thinking"] : []),
   ];
+  // A model call's tool calls run as the steps right after it; their names, and with content their
+  // arguments and results, let Kaeso log the MCP calls among them.
+  const calls = content ? "tool_calls: (.tool_calls // [] | map({name, args}))" : "tool_calls: (.tool_calls // [] | map({name}))";
+  const result = `{step_index, type, status, created_at${content ? ", content" : ""}}`;
   // Answers Antigravity at once and sends in the background, so no model call waits for Kaeso;
   // sends only the steps added since the last time, at most 1,000 at a time.
   const script = [
@@ -118,7 +122,7 @@ function antigravity({ ingestUrl, secret, content }: SetupTarget): CodeTab[] {
     '  [ -n "$conversation" ] && [ -f "$full" ] || exit 0',
     '  mkdir -p "$STATE" && mark="$STATE/$conversation"',
     '  sent=$(cat "$mark" 2> /dev/null || echo -1)',
-    `  body=$({ printf '%s\\n' "$hook"; cat "$full"; } | jq -cs --argjson sent "$sent" '.[0] as $hook | {hook: ($hook${content ? "" : " | del(.lastUserInput)"}), steps: ([.[1:][] | select(.type == "PLANNER_RESPONSE" and .step_index > $sent) | {${fields.join(", ")}}] | .[:1000])}')`,
+    `  body=$({ printf '%s\\n' "$hook"; cat "$full"; } | jq -cs --argjson sent "$sent" '.[0] as $hook | [.[1:][] | select(.step_index > $sent)] as $new | [$new[] | select(.type == "PLANNER_RESPONSE") | .step_index + range(1; 1 + (.tool_calls // [] | length))] as $results | {hook: ($hook${content ? "" : " | del(.lastUserInput)"}), steps: ([$new[] | if .type == "PLANNER_RESPONSE" then {${fields.join(", ")}, ${calls}} elif (.step_index as $i | any($results[]; . == $i)) then ${result} else empty end] | .[:1000])}')`,
     "  last=$(printf '%s' \"$body\" | jq '[.steps[].step_index] | max // empty')",
     '  [ -n "$last" ] || exit 0',
     '  printf \'%s\' "$body" | curl -fsS -m 30 "$KAESO_INGEST" -H "Authorization: Bearer $KAESO_SOURCE_KEY" \\',

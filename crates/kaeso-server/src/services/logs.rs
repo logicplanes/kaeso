@@ -1192,6 +1192,7 @@ impl Sink for Recorder {
             crate::services::otel::record(state, &outcome).await;
             let body = outcome.request_body.take();
             record_with(state, &outcome, body).await;
+            crate::services::observed::note_gateway(state, &outcome).await;
         })
     }
 
@@ -1207,6 +1208,7 @@ impl Sink for Recorder {
             crate::services::otel::record(state, &outcome).await;
             let body = outcome.request_body.take();
             record_with(state, &outcome, body).await;
+            crate::services::observed::note_gateway(state, &outcome).await;
         })
     }
 }

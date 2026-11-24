@@ -46,6 +46,7 @@ import { usePartyName } from "../keys/party";
 import { inputTokens, totalTokens } from "~/kaeso/tokens";
 import { cachedShare, isEmbedding, isRerank, sentWithoutBreakpoint } from "./columns";
 import { ReportedBy } from "../sources/reported-by";
+import { NotLogged } from "./not-logged";
 import { mediaCount, mediaLabel } from "./media";
 import { decisionAnswers, decisionView, embeddingsView, isKnownReplyForm, replyView, requestView, type DecisionView } from "./render";
 import { collectMedia, forReading } from "./logged-media";
@@ -260,15 +261,6 @@ function Body({
 function NoRight({ org, project }: { org: string; project: string }) {
   const needs = useNeedsRight(org, project);
   return <Empty title={t("logs.inspector.noContentRight", "You can't see request content")} description={needs("logs.content.view")} />;
-}
-
-function NotLogged() {
-  return (
-    <Empty
-      title={t("logs.inspector.notLogged", "Content not logged")}
-      description={t("logs.inspector.notLoggedHint", "Logging was off when this request ran, or its content has passed the retention period.")}
-    />
-  );
 }
 
 function useModelName(org: string, project: string) {
@@ -821,7 +813,7 @@ function RequestTab({ e, Conversation, Decision }: { e: LogEntryView; Conversati
   const media = useMemo(() => collectMedia(body), [body]);
   const readable = useMemo(() => forReading(body), [body]);
   const curl = useMemo(() => curlCommand(e, window.location.origin), [e]);
-  if (!e.content) return <NotLogged />;
+  if (!e.content) return <NotLogged observed={e.source === "observed"} />;
   const embeddings = embeddingsView(e.ingress_dialect, body);
   const decision = decisionView(e.ingress_dialect, body);
   const mapped = !!(view || embeddings || decision);
@@ -955,7 +947,7 @@ function ReplyTab({ e, Conversation, Answers }: { e: LogEntryView; Conversation:
   const view = useMemo(() => replyView(reply), [reply]);
   const media = useMemo(() => collectMedia(reply), [reply]);
   const readable = useMemo(() => forReading(reply), [reply]);
-  if (!e.content) return <NotLogged />;
+  if (!e.content) return <NotLogged observed={e.source === "observed"} />;
   if (isEmbedding(e)) {
     return (
       <div className="mt-24">

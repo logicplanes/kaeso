@@ -251,6 +251,7 @@ async fn observed_requests_are_logged_priced_and_counted_once_for_the_member_the
         }],
         refused: 1,
         refusal: Some(observed::Refusal::NoModel),
+        ..Batch::default()
     };
     let first = observed::record(&env.app.state, &source, batch.clone())
         .await
@@ -1187,4 +1188,85 @@ async fn a_source_whose_service_account_is_archived_keeps_nothing() {
     .unwrap();
     assert_eq!((after.requests, after.refused), (0, 1));
     assert_eq!(after.refusal, Some(Refusal::Inactive));
+}
+
+#[tokio::test]
+async fn a_request_made_through_the_gateway_and_reported_by_its_client_counts_once() {
+    let env = env().await;
+    // The gateway notes its requests for sources only in a project that has one.
+    let made = add(
+        &env,
+        json!({ "kind": "claude_code", "name": "Claude Code" }),
+    )
+    .await;
+    let source = source_row(&env, made["source"]["id"].as_str().unwrap()).await;
+    let answer = common::v1::call(
+        &env,
+        "/v1/messages",
+        Some(&env.key),
+        true,
+        Some(common::v1::messages("claude-haiku-4-5", "Hi")),
+    )
+    .await;
+    assert_eq!(answer.status, StatusCode::OK);
+    flush(&env).await;
+    let rows = env
+        .app
+        .get(&format!("{}/logs", base(&env)), &env.owner.cookie)
+        .await
+        .body;
+    let row = rows["data"][0].clone();
+    let usage = &row["usage"];
+    let count = |k: &str| usage[k].as_u64().unwrap_or(0);
+    let started = time::OffsetDateTime::parse(
+        row["started_at"].as_str().unwrap(),
+        &time::format_description::well_known::Rfc3339,
+    )
+    .unwrap();
+    // The client's copy: its own id, its own clock a moment later, the same model and tokens.
+    let copy = |id: &str, more_output: u64| ObservedRequest {
+        external_id: id.into(),
+        started_at: Some(started + time::Duration::milliseconds(800)),
+        duration: Duration::from_millis(row["duration_ms"].as_u64().unwrap_or(0)),
+        model: "claude-haiku-4-5".into(),
+        status: 200,
+        tokens: Counted {
+            input: count("input_tokens"),
+            output: count("output_tokens") + more_output,
+            cache_read: count("cache_read_tokens"),
+            cache_write: count("cache_write_tokens"),
+            reasoning: 0,
+            cache_write_1h: 0,
+        },
+        ..ObservedRequest::default()
+    };
+    let done = observed::record(
+        &env.app.state,
+        &source,
+        Batch {
+            requests: vec![
+                copy("req_copy", 0),
+                copy("req_copy_again", 0),
+                copy("req_other", 7),
+            ],
+            ..Batch::default()
+        },
+    )
+    .await
+    .unwrap();
+    assert_eq!(
+        (done.requests, done.duplicates),
+        (2, 1),
+        "the copy is the gateway's request; a second copy and other tokens are requests of their own"
+    );
+    flush(&env).await;
+    let observed_rows = env
+        .app
+        .get(
+            &format!("{}/logs?source=observed", base(&env)),
+            &env.owner.cookie,
+        )
+        .await
+        .body;
+    assert_eq!(observed_rows["data"].as_array().unwrap().len(), 2);
 }

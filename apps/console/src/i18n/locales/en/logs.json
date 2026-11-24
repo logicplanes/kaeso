@@ -155,6 +155,8 @@
   "logs.inspector.noneCounted": "None counted",
   "logs.inspector.notBilled": "Not billed",
   "logs.inspector.notFound": "This request doesn't exist or was removed.",
+  "logs.inspector.notKept": "Content not kept",
+  "logs.inspector.notKeptHint": "The source keeps no content, its client sent none, or its retention has passed.",
   "logs.inspector.notLogged": "Content not logged",
   "logs.inspector.notLoggedHint": "Logging was off when this request ran, or its content has passed the retention period.",
   "logs.inspector.notLoggedNote": "Content not logged: logging was off for the organization or the project, or the content has passed its retention.",

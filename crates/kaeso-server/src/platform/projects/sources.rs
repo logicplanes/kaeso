@@ -149,8 +149,8 @@ pub struct ExternalSourceView {
     #[doc = "Why, as a code: `no_model`, `no_tool` or `no_id` for a record without what its \
         format needs, `too_many_tokens`, `cost_too_high` or `bad_status` for numbers no request \
         has, `too_old` (more than 7 days) or `in_future` for its date, `nobody` when the source \
-        counts for no one, `unreadable` for a body Kaeso can't read, `inactive` for a disabled \
-        source."]
+        counts for no one, `unreadable` for a body Kaeso can't read, `unrecognized` for a batch \
+        with no record Kaeso reads, `inactive` for a disabled source."]
     pub last_error: Option<String>,
     #[doc = "The last 14 days, oldest first; days without events are left out."]
     pub activity: Vec<SourceDay>,
@@ -432,6 +432,7 @@ pub async fn create(
         .write(&mut tx)
         .await?;
     tx.commit().await?;
+    crate::services::observed::sources_changed(project).await;
     Ok((
         StatusCode::CREATED,
         Json(SourceCreated {
@@ -554,6 +555,7 @@ pub async fn update(
         .write(&mut tx)
         .await?;
     tx.commit().await?;
+    crate::services::observed::sources_changed(after.project_id).await;
     let mut list = views(&state, std::slice::from_ref(&after), ctx.now).await?;
     list.pop()
         .map(Json)
@@ -630,6 +632,7 @@ pub async fn archive(
         .write(&mut tx)
         .await?;
     tx.commit().await?;
+    crate::services::observed::sources_changed(row.project_id).await;
     let mut list = views(&state, std::slice::from_ref(&row), ctx.now).await?;
     list.pop()
         .map(Json)

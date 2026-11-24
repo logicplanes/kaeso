@@ -303,6 +303,7 @@
   "project.sources.refusal.tooManyTokens": "An event counted more than 10 million tokens.",
   "project.sources.refusal.tooOld": "An event was more than 7 days old.",
   "project.sources.refusal.unreadable": "A batch wasn't what this kind of source sends.",
+  "project.sources.refusal.unrecognized": "A batch held no records Kaeso reads; check the client and its telemetry settings.",
   "project.sources.refusedCount": "{count, plural, one {# refused} other {# refused}}",
   "project.sources.refusedTitle": "Kaeso refused what it sent",
   "project.sources.renameFirst": "Type a new name first.",

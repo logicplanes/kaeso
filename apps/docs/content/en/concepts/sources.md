@@ -40,7 +40,7 @@ A source belongs to one project and has a kind, which decides how Kaeso reads wh
 
 OTLP goes to `/ingest/otlp/v1/logs`, `/ingest/otlp/v1/traces` and `/ingest/otlp/v1/metrics`, as protobuf or JSON, gzipped or not. JSON goes to `/ingest/v1/events`, `/ingest/v1/litellm` and `/ingest/v1/antigravity`. Every deployment template routes `/ingest` to the gateway.
 
-Kaeso counts requests only from log events and spans. Metrics keep a source's status current but never add requests, so a client that exports both isn't counted twice. Of the tool calls that Claude Code, Codex, Gemini CLI and OpenTelemetry report, only MCP tool calls are kept; a client's own tools, such as a shell, are left out.
+Kaeso counts requests only from log events and spans. Metrics never add requests, so a client that exports both isn't counted twice, and they don't connect a source on their own: a source shows **Connected** once a request or tool call arrives. Of the tool calls clients report, only MCP tool calls are kept; a client's own tools, such as a shell, are left out.
 
 ## Whose requests they are
 
@@ -54,9 +54,16 @@ Clients count tokens differently: Claude Code leaves cached input out of its inp
 
 A request costs what the project's catalogue says the model costs. Without a catalogue entry, Kaeso uses the model's price from [KPMR](../kpmr/index.md). When neither has a price, the request keeps the cost the source reported, such as Claude Code's or LiteLLM's, and its details say so. Cache writes that Anthropic keeps for an hour cost the hour's price.
 
+When a record names no provider, Kaeso looks for the model at the provider the kind of source usually calls, then at the model's maker, or at the one provider that sells it. An Antigravity model named with an effort level at its end, such as `gemini-3.8-flash-low`, is priced as the model without it.
+
 ## Duplicates and refusals
 
-Clients send an event again when an export failed, so Kaeso keeps each request and tool call once. A source that reports the same id within seven days counts it once, and its activity counts the rest as duplicates.
+Clients send an event again when an export failed, so Kaeso keeps each request and tool call once. A source that reports the same id within seven days counts it once, and its activity counts the rest as duplicates. An app that exports a call both as a span and as a log event written in that span counts it once too.
+
+A client that sends its requests through Kaeso's gateway and also reports them to a source would count each one twice. Kaeso matches such a copy to the gateway's request: same project, model and tokens, starting or ending within five seconds of it. The copy then counts as a duplicate.
+
+> [!WARNING]
+> The match misses when the client names the model differently from the request it sent, such as an alias. Point a client at the gateway or at a source, not both.
 
 Kaeso refuses a record that:
 
@@ -66,7 +73,7 @@ Kaeso refuses a record that:
 - has a status that isn't an HTTP status;
 - would count for nobody who can see the project.
 
-A refused record changes nothing, and the source's sheet shows the reason for the last one. A batch that Kaeso can't read is refused whole.
+A refused record changes nothing, and the source's sheet shows the reason for the last one. A batch that Kaeso can't read is refused whole, and so is a batch in which no record is one Kaeso reads, such as the events of a client it has no reader for, until the source has recorded something. After that, the other records a client exports are left alone. An OTLP exporter learns how many records were refused from the answer's `partialSuccess`.
 
 ## Limits and alerts
 
@@ -79,9 +86,11 @@ Observed requests count toward the project's limits and budgets, and toward each
 
 A source keeps the prompts, replies and tool arguments its client sends only when **Keep prompts and replies** is on for it and the project keeps request content. Most clients leave content out of their telemetry unless you turn it on; the guide for each one says how.
 
+When a client sends the whole exchange, as Gemini CLI, LiteLLM and GenAI spans do, Kaeso keeps all of it: the system prompt, the earlier messages, tool calls and their results, and the reasoning. Clients export in batches, so a prompt can arrive a batch before its request; Kaeso holds it for an hour for the request it belongs to.
+
 ## The source key
 
-Each source has a key, `sk-kso-src-…`, which Kaeso shows once and keeps only as a hash. It works only on `/ingest`: it calls no model and reaches neither the Platform API nor the MCP portal. A client sends it as `Authorization: Bearer sk-kso-src-…`, or in the `X-Kaeso-Source-Key` header.
+Each source has a key, `sk-kso-src-…`, which Kaeso shows once and keeps only as a hash. It works only on `/ingest`: it calls no model and reaches neither the Platform API nor the MCP portal. A client sends it as `Authorization: Bearer sk-kso-src-…`, or in the `X-Kaeso-Source-Key` header. Kaeso also takes `Bearer%20sk-kso-src-…`, as some exporters send the value of `OTEL_EXPORTER_OTLP_HEADERS` without decoding it.
 
 A batch holds at most 1,000 records and 8 MiB, 16 MiB once unzipped or 8 MiB for JSON. A source may send 600 batches a minute, three at a time, and 6,000 records (requests and tool calls) a minute and 200,000 a day; past that Kaeso answers 429 with `Retry-After` and keeps nothing of the batch. A batch with more fields or values than Kaeso can read at once is refused with 413. A disabled or archived source, or one in an archived project, has its batches refused. Seeing sources takes the right `sources.view`, which every project role has; adding and changing them takes `sources.manage`, which admins and developers have.
 

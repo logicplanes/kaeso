@@ -78,6 +78,8 @@ export function refusalText(code: string): string {
       return t("project.sources.refusal.unreadable", "A batch wasn't what this kind of source sends.");
     case "inactive":
       return t("project.sources.refusal.inactive", "It sent while disabled, or after the member or service account it counts for left.");
+    case "unrecognized":
+      return t("project.sources.refusal.unrecognized", "A batch held no records Kaeso reads; check the client and its telemetry settings.");
     default:
       return code;
   }

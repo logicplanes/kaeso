@@ -20,9 +20,9 @@ https://kaeso.example.com/ingest/otlp/v1/traces
 
 ## Kaeso 读取的内容
 
-每条链路追踪中的 GenAI Span 都会成为一个请求：模型、OpenRouter 路由到的服务商、Token、OpenRouter 收取的费用和耗时。OpenRouter 以 `provider/model` 命名模型，例如 `anthropic/claude-sonnet-4.5`。Kaeso 认识该模型时，按项目目录或 KPMR 定价；否则保留 OpenRouter 的费用。
+每条链路追踪中的 GenAI Span 都会成为服务商 OpenRouter 的一个请求，带有模型、Token、OpenRouter 收取的费用（`gen_ai.usage.total_cost`）和耗时。OpenRouter 以 `provider/model` 命名模型，例如 `anthropic/claude-sonnet-4.5`。Kaeso 认识该模型时，按项目目录或 KPMR 定价；否则保留 OpenRouter 的费用。
 
-OpenRouter 的链路追踪不指明成员，因此每个请求都计入来源的成员或服务账号。如果希望各团队的请求分开统计，请为每个团队分配单独的 OpenRouter 密钥和来源。
+OpenRouter 的链路追踪会把您随请求发送的 `user` 作为 `user.id` 携带。当它是邮箱地址且来源按邮箱匹配成员时，请求计入该成员；否则计入来源的成员或服务账号。如果希望各团队的请求分开统计，请为每个团队分配单独的 OpenRouter 密钥和来源。
 
 ## 保留提示词
 

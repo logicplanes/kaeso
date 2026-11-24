@@ -31,8 +31,10 @@ Codex lässt Ihre Prompts aus seinen Ereignissen heraus. Um sie zu behalten, sch
 | `codex.sse_event` einer abgeschlossenen Antwort | Eine Anfrage: Modell, Tokens, gecachte und Reasoning-Tokens, die Zeit bis zum Beginn der Antwort |
 | Ein fehlgeschlagenes `codex.api_request` oder eine fehlgeschlagene Antwort | Eine fehlgeschlagene Anfrage mit Status und Meldung |
 | `codex.tool_result` eines MCP-Tools | Ein Tool-Aufruf mit Server, Tool, Dauer und Ergebnis |
+| `codex.conversation_starts` | Der Anbieter, den die Unterhaltung aufruft, aus dem Namen, den Codex ihm gibt |
+| `codex.user_prompt` | Der Prompt, mit der nächsten Anfrage der Unterhaltung |
 
-Codex zählt gecachte Eingabe in seiner Eingabe mit und Reasoning in seiner Ausgabe; Kaeso hält seine eigenen Zählungen getrennt. Aufrufe der eigenen Tools von Codex, etwa seiner Shell, behält Kaeso nicht. Die Antworten von Codex tragen keine Anfrage-ID von OpenAI, deshalb unterscheidet Kaeso sie nach Unterhaltung und Zeit des Ereignisses.
+Codex zählt gecachte Eingabe in seiner Eingabe mit und Reasoning in seiner Ausgabe; Kaeso hält seine eigenen Zählungen getrennt. Aufrufe der eigenen Tools von Codex, etwa seiner Shell, behält Kaeso nicht. Die Antworten von Codex tragen keine Anfrage-ID von OpenAI, deshalb unterscheidet Kaeso sie nach Unterhaltung und Zeit des Ereignisses. Beginn, Prompt und Anbieter einer Anfrage können in einem früheren Export kommen als ihre Nutzung; Kaeso hebt sie für die Anfrage auf.
 
 ## Nächste Schritte
 

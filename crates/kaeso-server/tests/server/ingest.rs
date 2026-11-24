@@ -260,6 +260,26 @@ async fn claude_codes_otlp_export_lands_in_the_log_as_observed_requests_and_tool
     assert_eq!(view["status"], "connected");
     assert_eq!(view["activity"][0]["requests"], 4);
     assert_eq!(view["activity"][0]["tool_calls"], 1);
+
+    let usage = env
+        .app
+        .get(
+            &format!("{}/usage?group_by=day", base(&env)),
+            &env.owner.cookie,
+        )
+        .await;
+    assert_eq!(usage.status, StatusCode::OK, "{:?}", usage.body);
+    let days = usage.body["data"].as_array().unwrap();
+    let total = |k: &str| days.iter().map(|d| d[k].as_u64().unwrap_or(0)).sum::<u64>();
+    assert_eq!(
+        total("tool_calls"),
+        1,
+        "Analytics counts the reported MCP call: {days:?}"
+    );
+    assert!(
+        total("input_tokens") + total("cache_read_tokens") > 0,
+        "and the reported requests' tokens"
+    );
 }
 
 #[tokio::test]
@@ -657,5 +677,170 @@ async fn the_consoles_http_example_is_taken_as_it_is() {
         answer,
         json!({ "requests": 1, "tool_calls": 1, "duplicates": 0, "refused": 0, "refusal": null }),
         "the setup snippet's body must stay one that Kaeso takes"
+    );
+}
+
+fn record_now(env: &Env, offset_ms: i64, attrs: Value) -> Value {
+    let at = env.app.state.clock.now() + time::Duration::milliseconds(offset_ms);
+    let attributes: Vec<Value> = attrs
+        .as_object()
+        .unwrap()
+        .iter()
+        .map(|(k, v)| json!({ "key": k, "value": { "stringValue": v.as_str().unwrap() } }))
+        .collect();
+    json!({ "timeUnixNano": at.unix_timestamp_nanos().to_string(), "attributes": attributes })
+}
+
+fn logs_body(service: &str, records: Vec<Value>) -> Vec<u8> {
+    serde_json::to_vec(&json!({ "resourceLogs": [{
+        "resource": { "attributes": [{ "key": "service.name", "value": { "stringValue": service } }] },
+        "scopeLogs": [{ "scope": { "name": service }, "logRecords": records }]
+    }]}))
+    .unwrap()
+}
+
+async fn view(env: &Env, id: &str) -> Value {
+    env.app
+        .get(&format!("{}/sources/{id}", base(env)), &env.owner.cookie)
+        .await
+        .body
+}
+
+#[tokio::test]
+async fn a_source_says_why_it_records_nothing_and_metrics_alone_dont_connect_it() {
+    let env = env().await;
+    let (id, key) = source(&env, "opentelemetry").await;
+    let (status, _, _) = post(
+        &env,
+        "/ingest/otlp/v1/metrics",
+        Some(&key),
+        "application/json",
+        false,
+        fresh(&env, "claude-code-metrics.json"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(view(&env, &id).await["status"], "waiting");
+
+    let unknown = logs_body(
+        "some-cli",
+        vec![
+            record_now(
+                &env,
+                -2_000,
+                json!({ "event.name": "some_cli.api_call", "model": "m" }),
+            ),
+            record_now(
+                &env,
+                -1_000,
+                json!({ "event.name": "some_cli.session_start" }),
+            ),
+        ],
+    );
+    let (status, _, body) = post(
+        &env,
+        "/ingest/otlp/v1/logs",
+        Some(&key),
+        "application/json",
+        false,
+        unknown,
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    let answer: Value = serde_json::from_slice(&body).unwrap();
+    assert_eq!(answer["partialSuccess"]["rejectedLogRecords"], "2");
+    assert_eq!(answer["partialSuccess"]["errorMessage"], "unrecognized");
+    let v = view(&env, &id).await;
+    assert_eq!(v["status"], "waiting", "{v:#?}");
+    assert_eq!(v["last_error"], "unrecognized");
+    let (status, _, _) = post(
+        &env,
+        "/ingest/otlp/v1/logs",
+        Some(&key),
+        "application/json",
+        false,
+        fresh(&env, "claude-code-logs-1.json"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(view(&env, &id).await["status"], "connected");
+    let again = logs_body(
+        "my-app",
+        vec![record_now(
+            &env,
+            -500,
+            json!({ "event.name": "http.request", "url.path": "/" }),
+        )],
+    );
+    let (_, _, body) = post(
+        &env,
+        "/ingest/otlp/v1/logs",
+        Some(&key),
+        "application/json",
+        false,
+        again,
+    )
+    .await;
+    assert_eq!(
+        serde_json::from_slice::<Value>(&body).unwrap(),
+        json!({}),
+        "once a source records, the other records its client exports are left alone"
+    );
+}
+
+#[tokio::test]
+async fn codex_times_a_request_whose_start_came_in_the_export_before() {
+    let env = env().await;
+    let (_, key) = source(&env, "codex").await;
+    for body in [
+        logs_body(
+            "codex_exec",
+            vec![
+                record_now(
+                    &env,
+                    -5_000,
+                    json!({ "event.name": "codex.user_prompt", "prompt": "Fix the build",
+                    "conversation.id": "c1", "app.version": "0.171.0" }),
+                ),
+                record_now(
+                    &env,
+                    -4_000,
+                    json!({ "event.name": "codex.api_request", "duration_ms": "300",
+                    "http.response.status_code": "200", "model": "gpt-5.4-mini", "conversation.id": "c1" }),
+                ),
+            ],
+        ),
+        logs_body(
+            "codex_exec",
+            vec![record_now(
+                &env,
+                -1_700,
+                json!({ "event.name": "codex.sse_event", "event.kind": "response.completed",
+                "model": "gpt-5.4-mini", "conversation.id": "c1", "input_token_count": "40", "output_token_count": "8" }),
+            )],
+        ),
+    ] {
+        let (status, _, _) = post(
+            &env,
+            "/ingest/otlp/v1/logs",
+            Some(&key),
+            "application/json",
+            false,
+            body,
+        )
+        .await;
+        assert_eq!(status, StatusCode::OK);
+    }
+    flush(&env).await;
+    let rows = logs(&env, "?source=observed").await;
+    assert_eq!(rows.len(), 1, "{rows:#?}");
+    assert_eq!(
+        rows[0]["duration_ms"], 2_600,
+        "from its start in the first export"
+    );
+    assert_eq!(rows[0]["ttfb_ms"], 300);
+    assert!(
+        rows[0]["has_content"].as_bool().unwrap(),
+        "its prompt came along"
     );
 }

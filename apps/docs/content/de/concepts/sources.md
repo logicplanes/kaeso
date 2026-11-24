@@ -40,7 +40,7 @@ Eine Quelle gehört zu einem Projekt und hat eine Art, die bestimmt, wie Kaeso l
 
 OTLP geht an `/ingest/otlp/v1/logs`, `/ingest/otlp/v1/traces` und `/ingest/otlp/v1/metrics`, als Protobuf oder JSON, mit gzip oder ohne. JSON geht an `/ingest/v1/events`, `/ingest/v1/litellm` und `/ingest/v1/antigravity`. Jede Deployment-Vorlage leitet `/ingest` an das Gateway.
 
-Kaeso zählt Anfragen nur aus Log-Ereignissen und Spans. Metriken halten den Status einer Quelle aktuell, fügen aber nie Anfragen hinzu, sodass ein Client, der beides exportiert, nicht doppelt zählt. Von den Tool-Aufrufen, die Claude Code, Codex, Gemini CLI und OpenTelemetry melden, behält Kaeso nur MCP-Tool-Aufrufe; die eigenen Tools eines Clients, etwa eine Shell, bleiben außen vor.
+Kaeso zählt Anfragen nur aus Log-Ereignissen und Spans. Metriken fügen nie Anfragen hinzu, sodass ein Client, der beides exportiert, nicht doppelt zählt. Sie verbinden eine Quelle auch nicht von sich aus: Eine Quelle zeigt **Verbunden**, sobald eine Anfrage oder ein Tool-Aufruf ankommt. Von den Tool-Aufrufen, die Clients melden, behält Kaeso nur MCP-Tool-Aufrufe; die eigenen Tools eines Clients, etwa eine Shell, bleiben außen vor.
 
 ## Wessen Anfragen es sind
 
@@ -54,9 +54,16 @@ Clients zählen Tokens unterschiedlich: Claude Code lässt gecachte Eingabe aus 
 
 Eine Anfrage kostet, was der Katalog des Projekts für das Modell angibt. Ohne Katalogeintrag nutzt Kaeso den Preis des Modells aus [KPMR](../kpmr/index.md). Hat keiner einen Preis, behält die Anfrage die Kosten, die die Quelle gemeldet hat, etwa die von Claude Code oder LiteLLM, und ihre Details sagen das. Cache-Schreibvorgänge, die Anthropic eine Stunde lang behält, kosten den Preis für eine Stunde.
 
+Nennt ein Datensatz keinen Anbieter, sucht Kaeso das Modell beim Anbieter, den diese Art von Quelle üblicherweise aufruft, dann beim Hersteller des Modells oder bei dem einen Anbieter, der es verkauft. Ein Antigravity-Modell, dessen Name auf eine Effort-Stufe endet, etwa `gemini-3.8-flash-low`, kostet so viel wie das Modell ohne sie.
+
 ## Duplikate und Ablehnungen
 
-Clients senden ein Ereignis erneut, wenn ein Export fehlschlug, deshalb behält Kaeso jede Anfrage und jeden Tool-Aufruf einmal. Meldet eine Quelle dieselbe ID innerhalb von sieben Tagen, zählt Kaeso sie einmal, und die Aktivität der Quelle zählt den Rest als Duplikate.
+Clients senden ein Ereignis erneut, wenn ein Export fehlschlug, deshalb behält Kaeso jede Anfrage und jeden Tool-Aufruf einmal. Meldet eine Quelle dieselbe ID innerhalb von sieben Tagen, zählt Kaeso sie einmal, und die Aktivität der Quelle zählt den Rest als Duplikate. Exportiert eine App einen Aufruf als Span und als Log-Ereignis, das in diesem Span geschrieben wurde, zählt er ebenfalls einmal.
+
+Ein Client, der seine Anfragen über das Gateway von Kaeso sendet und sie zusätzlich an eine Quelle meldet, würde jede doppelt zählen. Kaeso ordnet eine solche Kopie der Anfrage des Gateways zu: gleiches Projekt, Modell und gleiche Tokens, Beginn oder Ende innerhalb von fünf Sekunden. Die Kopie zählt dann als Duplikat.
+
+> [!WARNING]
+> Die Zuordnung schlägt fehl, wenn der Client das Modell anders nennt als in der gesendeten Anfrage, etwa mit einem Alias. Verbinden Sie einen Client mit dem Gateway oder mit einer Quelle, nicht mit beiden.
 
 Kaeso lehnt einen Datensatz ab, der:
 
@@ -66,7 +73,7 @@ Kaeso lehnt einen Datensatz ab, der:
 - einen Status hat, der kein HTTP-Status ist;
 - für niemanden zählen würde, der das Projekt sehen kann.
 
-Ein abgelehnter Datensatz ändert nichts, und die Detailansicht der Quelle zeigt den Grund für den letzten. Einen Stapel, den Kaeso nicht lesen kann, lehnt es ganz ab.
+Ein abgelehnter Datensatz ändert nichts, und die Detailansicht der Quelle zeigt den Grund für den letzten. Einen Stapel, den Kaeso nicht lesen kann, lehnt es ganz ab. Das gilt auch für einen Stapel, in dem Kaeso keinen Datensatz liest, etwa die Ereignisse eines Clients, für den es keinen Leser hat, solange die Quelle noch nichts erfasst hat. Danach bleiben die übrigen Datensätze eines Clients unbeachtet. Ein OTLP-Exporter erfährt aus `partialSuccess` in der Antwort, wie viele Datensätze abgelehnt wurden.
 
 ## Limits und Warnungen
 
@@ -79,9 +86,11 @@ Beobachtete Anfragen zählen auf die Limits und Budgets des Projekts und auf die
 
 Eine Quelle behält die Prompts, Antworten und Tool-Argumente, die ihr Client sendet, nur wenn **Prompts und Antworten behalten** für sie an ist und das Projekt Anfrageinhalte behält. Die meisten Clients lassen Inhalte aus ihrer Telemetrie heraus, solange Sie sie nicht einschalten; die Anleitung zu jedem sagt, wie.
 
+Sendet ein Client den ganzen Austausch, wie Gemini CLI, LiteLLM und GenAI-Spans, behält Kaeso alles davon: den System-Prompt, die früheren Nachrichten, Tool-Aufrufe und ihre Ergebnisse sowie das Reasoning. Clients exportieren in Stapeln, deshalb kann ein Prompt einen Stapel vor seiner Anfrage ankommen. Kaeso hält ihn eine Stunde lang für die Anfrage bereit, zu der er gehört.
+
 ## Der Quellenschlüssel
 
-Jede Quelle hat einen Schlüssel, `sk-kso-src-…`, den Kaeso einmal zeigt und nur als Hash behält. Er funktioniert nur an `/ingest`: Er ruft kein Modell auf und erreicht weder die Platform-API noch das MCP-Portal. Ein Client sendet ihn als `Authorization: Bearer sk-kso-src-…` oder im Header `X-Kaeso-Source-Key`.
+Jede Quelle hat einen Schlüssel, `sk-kso-src-…`, den Kaeso einmal zeigt und nur als Hash behält. Er funktioniert nur an `/ingest`: Er ruft kein Modell auf und erreicht weder die Platform-API noch das MCP-Portal. Ein Client sendet ihn als `Authorization: Bearer sk-kso-src-…` oder im Header `X-Kaeso-Source-Key`. Kaeso nimmt auch `Bearer%20sk-kso-src-…` an, weil manche Exporter den Wert von `OTEL_EXPORTER_OTLP_HEADERS` senden, ohne ihn zu dekodieren.
 
 Ein Stapel enthält höchstens 1.000 Datensätze und 8 MiB, entpackt 16 MiB oder 8 MiB bei JSON. Eine Quelle darf 600 Stapel pro Minute senden, drei gleichzeitig, und 6.000 Datensätze (Anfragen und Tool-Aufrufe) pro Minute und 200.000 pro Tag; darüber hinaus antwortet Kaeso mit 429 und `Retry-After` und behält nichts vom Stapel. Ein Stapel mit mehr Feldern oder Werten, als Kaeso auf einmal lesen kann, wird mit 413 abgelehnt. Die Stapel einer deaktivierten oder archivierten Quelle oder einer Quelle in einem archivierten Projekt werden abgelehnt. Quellen zu sehen braucht das Recht `sources.view`, das jede Projektrolle hat; sie hinzuzufügen und zu ändern braucht `sources.manage`, das Admins und Entwickler haben.
 

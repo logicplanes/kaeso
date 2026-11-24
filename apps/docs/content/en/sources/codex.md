@@ -31,8 +31,10 @@ Codex leaves your prompts out of its events. To keep them, turn on **Keep prompt
 | `codex.sse_event` of a completed response | A request: model, tokens, cached and reasoning tokens, the time until the response began |
 | `codex.api_request` that failed, or a failed response | A failed request with its status and message |
 | `codex.tool_result` of an MCP tool | A tool call with its server, tool, duration and outcome |
+| `codex.conversation_starts` | The provider the conversation calls, from Codex's name for it |
+| `codex.user_prompt` | The prompt, with the conversation's next request |
 
-Codex counts cached input inside its input, and reasoning inside its output; Kaeso keeps its own counts apart. Calls to Codex's own tools, such as its shell, aren't kept. Codex's responses carry no request id of OpenAI's, so Kaeso tells them apart by the conversation and the event's time.
+Codex counts cached input inside its input, and reasoning inside its output; Kaeso keeps its own counts apart. Calls to Codex's own tools, such as its shell, aren't kept. Codex's responses carry no request id of OpenAI's, so Kaeso tells them apart by the conversation and the event's time. A request's start, its prompt and its provider can come in an earlier export than its usage; Kaeso keeps them for the request.
 
 ## Next steps
 

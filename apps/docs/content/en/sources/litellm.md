@@ -31,7 +31,7 @@ Each log carries the email address of the LiteLLM key's user when LiteLLM knows 
 
 ## Keep the prompts
 
-LiteLLM's logs always carry the messages and the reply. Kaeso keeps them only when **Keep prompts and replies** is on for the source and the project keeps content.
+LiteLLM's logs always carry the messages and the reply. Kaeso keeps them, with the system prompt, tool calls, tool results and reasoning, only when **Keep prompts and replies** is on for the source and the project keeps content.
 
 ## What Kaeso reads
 
@@ -42,7 +42,7 @@ LiteLLM's logs always carry the messages and the reply. Kaeso keeps them only wh
 | `prompt_tokens`, `completion_tokens` and the provider's usage | Tokens, with cache reads, cache writes and reasoning |
 | `status`, `error_str` | Whether it failed, and why |
 | `startTime`, `endTime`, `completionStartTime` | When it ran, and the time to the first token |
-| `response_cost` | The cost, used when Kaeso has no price for the model |
+| `response_cost` | The cost, used when Kaeso has no price for the model; a 0 that LiteLLM explains in `response_cost_failure_debug_info` is an unknown cost |
 
 LiteLLM's MCP tool calls become tool calls in the project. LiteLLM can also send OpenTelemetry instead: a source of the kind [OpenTelemetry](opentelemetry.md) reads its GenAI spans.
 

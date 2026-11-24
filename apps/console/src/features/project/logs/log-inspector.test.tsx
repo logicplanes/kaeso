@@ -243,6 +243,19 @@ describe("LogInspector", () => {
     expect(await within(await sheet()).findByText("From the audio's length, which Kaeso read from the file")).toBeInTheDocument();
   });
 
+  it("tells why an observed request has no content without blaming logging", async () => {
+    signedIn();
+    projectData({ sources: [externalSource()] });
+    const observed = { source: "observed" as const, source_id: "src_claude", key_id: null, has_content: false, content: null };
+    logsData({ rows: [logRow(observed)], entries: [logEntry(observed)] });
+    const { user } = await renderApp(projectPath("logs?log=req_0001"));
+    await openTab(user, "Request");
+    const panel = await sheet();
+    expect(await within(panel).findByText("Content not kept")).toBeInTheDocument();
+    expect(within(panel).getByText("The source keeps no content, its client sent none, or its retention has passed.")).toBeInTheDocument();
+    expect(within(panel).queryByText(/Logging was off/)).not.toBeInTheDocument();
+  });
+
   it("says a source reported an observed request, names the source and the cost it reported", async () => {
     signedIn();
     projectData({ sources: [externalSource()] });

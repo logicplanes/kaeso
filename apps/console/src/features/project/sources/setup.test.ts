@@ -57,7 +57,10 @@ describe("setup snippets", () => {
     expect(script?.code).toContain("transcript_full.jsonl");
     expect(script?.code).not.toContain("content}");
     expect(script?.code).toContain("del(.lastUserInput)");
-    expect(all(at("antigravity", true))).toContain("output_tokens, content}");
+    expect(script?.code).toContain("map({name})");
+    expect(script?.code).not.toContain("args");
+    expect(all(at("antigravity", true))).toContain("output_tokens, content, thinking, tool_calls: (.tool_calls // [] | map({name, args}))");
+    expect(all(at("antigravity", true))).toContain("{step_index, type, status, created_at, content}");
     expect(all(at("antigravity", true))).not.toContain("del(.lastUserInput)");
     expect(JSON.parse(hooks?.code ?? "{}")).toEqual({
       kaeso: { PostInvocation: [{ type: "command", command: "sh ~/.gemini/config/kaeso-source.sh", timeout: 15 }] },
