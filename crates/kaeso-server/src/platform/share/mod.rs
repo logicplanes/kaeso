@@ -15,8 +15,9 @@ use utoipa::ToSchema;
 use uuid::Uuid;
 
 use self::data::{KINDS, METRICS, Seen, SharedBreakdown, SharedData, SharedLimit, SharedRow};
+use crate::auth::agents::AgentCaller;
 use crate::auth::throttle::Throttle;
-use crate::platform::access::Ctx;
+use crate::platform::access::{Ctx, agent_scope};
 use crate::platform::audit::Action;
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::grants::{org_from_store, project_from_store};
@@ -284,6 +285,30 @@ fn default_title(kind: &str, scope: &str, hide: bool) -> String {
     }
 }
 
+async fn within_grant(
+    state: &AppState,
+    ctx: &Ctx,
+    agent: &AgentCaller,
+    seen: Seen,
+    project: Option<Uuid>,
+) -> ApiResult<Seen> {
+    let org = ctx.org()?;
+    let granted = match project {
+        Some(p) => {
+            match agent_scope(state, agent, org.id(), Some(ProjectId::from_uuid(p)), true).await {
+                Ok((_, scope)) => scope.map(|s| s.rights),
+                Err(ApiError::NotFound(_)) => None,
+                Err(e) => return Err(e),
+            }
+        }
+        None => None,
+    };
+    Ok(Seen {
+        org: seen.org.intersect(org.rights),
+        project: seen.project.zip(granted).map(|(p, g)| p.intersect(g)),
+    })
+}
+
 fn person(ctx: &Ctx) -> ApiResult<Uuid> {
     ctx.acting_user()
         .map(|u| u.uuid())
@@ -457,7 +482,10 @@ pub async fn create(
         views: 0,
         last_opened_at: None,
     };
-    let seen = seen_by(&state, maker, org, project).await?;
+    let seen = match (seen_by(&state, maker, org, project).await?, ctx.agent()) {
+        (Some(seen), Some(agent)) => Some(within_grant(&state, &ctx, agent, seen, project).await?),
+        (seen, _) => seen,
+    };
     let can = seen.as_ref().and_then(|s| s.allows(&link));
     let Some((seen, costs)) = seen.zip(can) else {
         return Err(ApiError::PermissionDenied(
@@ -480,6 +508,11 @@ pub async fn create(
         }
     }
     let names = seen.names(&link);
+    // A link opens with its maker's rights, so what an agent's grant hides is hidden here for good.
+    if ctx.agent().is_some() {
+        link.hide_members |= !names.members;
+        link.hide_keys |= !names.keys;
+    }
     let scope = scope_name(&state, &link, names).await?;
     link.title = title.unwrap_or_else(|| {
         default_title(

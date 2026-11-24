@@ -3008,3 +3008,88 @@ async fn agent_views_and_grants_keep_to_the_sessions_open_orgs_and_areas() {
 
     s.cleanup().await;
 }
+
+#[tokio::test]
+async fn an_agent_shares_only_what_its_grant_lets_it_see() {
+    let (_s, app, owner) = setup().await;
+    app.call(
+        Method::PUT,
+        &format!("/orgs/{}/security/shared-links", owner.org_id),
+        Some(json!({ "allow": "anyone", "max_days": null })),
+        Some(&owner.cookie),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    let a = sign_in(
+        &app,
+        &owner.cookie,
+        grant(&owner.org_id, &["org.view", "usage.share"], &[]),
+    )
+    .await;
+    let usage = tool(
+        &app,
+        &a.access,
+        "get_orgs_org_usage",
+        json!({ "org": owner.org_id }),
+    )
+    .await;
+    assert_eq!(
+        usage["structuredContent"]["error"]["right"], "usage.org.view",
+        "{usage:?}"
+    );
+
+    let share = |token: String, body: Value| {
+        let (app, org) = (&app, owner.org_id.clone());
+        async move {
+            tool(
+                app,
+                &token,
+                "post_orgs_org_shared_links",
+                json!({ "org": org, "body": body }),
+            )
+            .await
+        }
+    };
+    let org_usage = json!({ "kind": "analytics", "audience": "anyone" });
+    let unseen = share(a.access.clone(), org_usage.clone()).await;
+    assert_eq!(
+        unseen["structuredContent"]["error"]["type"], "permission_denied",
+        "{unseen:?}"
+    );
+
+    let b = sign_in(
+        &app,
+        &owner.cookie,
+        grant(
+            &owner.org_id,
+            &["org.view", "usage.share", "usage.org.view"],
+            &[],
+        ),
+    )
+    .await;
+    let costs = share(
+        b.access.clone(),
+        json!({ "kind": "analytics", "audience": "anyone", "show_costs": true }),
+    )
+    .await;
+    assert_eq!(
+        costs["structuredContent"]["error"]["param"], "show_costs",
+        "{costs:?}"
+    );
+    let project = projects_of(&app, &owner).await.remove(0);
+    let of_project = share(
+        b.access.clone(),
+        json!({ "kind": "analytics", "audience": "anyone", "project": project }),
+    )
+    .await;
+    assert_eq!(
+        of_project["structuredContent"]["error"]["type"], "permission_denied",
+        "{of_project:?}"
+    );
+    let seen = share(b.access.clone(), org_usage).await;
+    assert_eq!(seen["isError"], false, "{seen:?}");
+    assert_eq!(
+        seen["structuredContent"]["link"]["hide_members"], true,
+        "the grant has no `members.view`"
+    );
+}
