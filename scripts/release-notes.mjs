@@ -226,6 +226,28 @@ const entrySchema = {
   properties: { text: { type: "string" }, prs: { type: "array", items: { type: "integer" } } },
 };
 
+// A section's entry also carries the security advisories of the curated line it was written from, which reach installs as
+// links after the entry, like its pull requests.
+const sectionEntrySchema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["text", "prs", "advisories"],
+  properties: {
+    text: { type: "string" },
+    prs: { type: "array", items: { type: "integer" } },
+    advisories: { type: "array", items: { type: "string" } },
+  },
+};
+
+const GHSA = "GHSA(?:-[23456789cfghjmpqrvwx]{4}){3}";
+// The advisories a curated line links: this repository's own security advisories, by their GHSA ids. Another repository's
+// advisory isn't one of them, since the notes link every advisory to this repository.
+const advisoriesOf = (markdown, repository) => {
+  const own = repository.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const pattern = new RegExp(`\\[(${GHSA})\\]\\(https://github\\.com/${own}/security/advisories/\\1\\)`, "g");
+  return [...new Set([...markdown.matchAll(pattern)].map(([, id]) => id))];
+};
+
 const highlightSchema = {
   type: "object",
   additionalProperties: false,
@@ -264,7 +286,7 @@ export const SCHEMA = {
               type: "object",
               additionalProperties: false,
               required: ["name", "entries"],
-              properties: { name: { type: "string", enum: ["", ...TOPICS] }, entries: { type: "array", items: entrySchema } },
+              properties: { name: { type: "string", enum: ["", ...TOPICS] }, entries: { type: "array", items: sectionEntrySchema } },
             },
           },
         },
@@ -299,6 +321,7 @@ Answer with the JSON the schema describes:
 - sections: Keep a Changelog sections (Added, Changed, Deprecated, Removed, Fixed, Security). A pull request's type label (added, changed, deprecated, removed, fixed, security) chooses its section when it has one. Within a section, a topic groups entries: Gateway, KPP, Console, UI library, Documentation or Self-hosting, following a pull request's area label when it has exactly one, or "" for entries without a topic.
 - Each entry: one to three sentences in the style of earlier_notes and curated_notes, at most ${ENTRY_LIMIT} characters and usually under 400: present tense, what changed and why it matters to someone who runs or integrates Kaeso, specific, no hype, no exclamation marks, no emojis. Group closely related pull requests into one entry when that reads better.
 - prs: the numbers of the pull requests an entry describes. Every number in must_list appears in exactly one entry of sections, and no other number appears. Never write pull request or issue numbers in the text.
+- advisories: the security advisories a curated line links, as their GHSA ids, on the entry written from that line. Every id in advisories of the release data appears in exactly one entry of sections, no other id appears, and an entry from no such line has none. Never write them in the text.
 - Text is plain: no Markdown links or images, no HTML, no addresses, URLs, host names or domains, no container images outside ghcr.io/logicplanes/, no commands that download, install or run something (curl, wget, docker run or pull, npx, pnpm dlx, npm install, pip install) or pipe into another command, no instructions to set an environment variable, no headings, no @mentions. Write settings, environment variables, fields, endpoints, commands and file names as inline code in backticks.
 - curated_notes, when present, are the maintainer's own lines for this release: keep their meaning and prefer their wording, shorten a line that is longer than an entry may be, attach the pull requests they describe, and keep a line without a matching pull request with empty prs. A curated line and the pull request it describes are one entry, never two.
 - prerelease_notes, when present, are the notes of this version's pre-releases, which this release replaces: carry their entries over, rewritten where that reads better.
@@ -338,6 +361,7 @@ export function factsOf(collected, changelog, version = null) {
     previous_version: known.previous?.version ?? null,
     earlier_notes: known.previous?.markdown ?? "",
     curated_notes: known.curated,
+    advisories: advisoriesOf(known.curated, collected.repository),
     prerelease_notes: known.prereleases,
     must_list: [...new Set([...visible.map(({ number }) => number), ...earlier])].sort(byNumber),
     pull_requests: visible.map(({ url, ...pull }) => ({ ...pull, title: uncommented(pull.title), body: uncommented(pull.body ?? "") })),
@@ -403,8 +427,17 @@ export function check(output, facts) {
     const problem = plain(value, limit, logins);
     if (problem) problems.push(`${where} ${problem}`);
   };
+  const advised = new Set(facts.advisories ?? []);
+  const cited = new Map();
   const entry = (value, where, counted, limit = ENTRY_LIMIT, bare = counted) => {
-    if (!hasKeys(value, ["text", "prs"]) || !Array.isArray(value.prs)) return problems.push(`${where} isn't an entry`);
+    const advisories = counted && isObject(value) && "advisories" in value ? value.advisories : null;
+    if (!hasKeys(value, advisories === null ? ["text", "prs"] : ["text", "prs", "advisories"]) || !Array.isArray(value.prs))
+      return problems.push(`${where} isn't an entry`);
+    if (advisories !== null && !Array.isArray(advisories)) return problems.push(`${where} isn't an entry`);
+    for (const id of advisories ?? []) {
+      if (!advised.has(id)) problems.push(`${where} names ${id}, which no curated line links`);
+      else cited.set(id, (cited.get(id) ?? 0) + 1);
+    }
     text(value.text, limit, where);
     if (!value.prs.length && !(bare && facts.curated_notes)) problems.push(`${where} names no pull request`);
     for (const number of value.prs) {
@@ -430,6 +463,10 @@ export function check(output, facts) {
   for (const number of facts.must_list) {
     const count = seen.get(number) ?? 0;
     if (count !== 1) problems.push(`#${number} appears ${count} times instead of once`);
+  }
+  for (const id of advised) {
+    const count = cited.get(id) ?? 0;
+    if (count !== 1) problems.push(`${id} appears ${count} times instead of once`);
   }
   const expected = new Map(facts.contributors.map(({ login, first_time }) => [login, first_time]));
   const given = Array.isArray(output.contributors) ? output.contributors : [];
@@ -481,8 +518,12 @@ const paragraphs = (blocks) => blocks.filter((block) => block.length).flatMap((b
 
 export function render(output, facts) {
   const link = (number) => `[#${number}](${facts.repository}/pull/${number})`;
-  const refs = (prs) => (prs.length ? ` (${[...new Set(prs)].sort(byNumber).map(link).join(", ")})` : "");
-  const line = ({ text, prs }) => `- ${escaped(text.trim())}${refs(prs)}`;
+  const advisory = (id) => `[${id}](${facts.repository}/security/advisories/${id})`;
+  const refs = (prs, advisories = []) => {
+    const all = [...[...new Set(prs)].sort(byNumber).map(link), ...[...new Set(advisories)].map(advisory)];
+    return all.length ? ` (${all.join(", ")})` : "";
+  };
+  const line = ({ text, prs, advisories }) => `- ${escaped(text.trim())}${refs(prs, advisories)}`;
   const people = [...output.contributors]
     .sort((a, b) => byLogin(a.login, b.login))
     .map(({ login, first_time }) => `@${login}${first_time ? " (first contribution)" : ""}`);
@@ -535,7 +576,7 @@ export async function write({ collected, changelog, version = null, client, mode
   }
 }
 
-const REFS = /\s*\(((?:\[#\d+\]\(https:\/\/[^\s()]+\)(?:, )?)+)\)$/;
+const REFS = new RegExp(`\\s*\\(((?:\\[(?:#\\d+|${GHSA})\\]\\(https://[^\\s()]+\\)(?:, )?)+)\\)$`);
 const BREAKING_LINE = /^- \*\*Breaking:\*\* (.+)$/;
 const CONTRIBUTORS_LINE = /^\*\*Contributors:\*\* (.+)$/;
 

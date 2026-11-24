@@ -406,6 +406,49 @@ test("curated lines go to the model as the maintainer's wording and may keep an 
   assert.match(data, /"curated_notes": "### Fixed\\n\\n- Streams end cleanly, also behind proxies\."/);
 });
 
+const advisory = "GHSA-2x35-h4qp-x2r3";
+const advisoryLink = `[${advisory}](${repo}/security/advisories/${advisory})`;
+const withAdvisory = () => changelog(`### Security\n\n- Keys are checked twice. (${advisoryLink})`);
+const securityEntry = (advisories) => ({ name: "Security", topics: [{ name: "", entries: [{ text: "Keys are checked twice.", prs: [], advisories }] }] });
+
+test("a curated line's security advisory stays linked on the entry written from it", async () => {
+  const output = valid();
+  output.sections.push(securityEntry([advisory]));
+  const { lines, notices, calls } = await run(answer(output), withAdvisory());
+  assert.deepEqual(notices, []);
+  assert.ok(lines.includes(`- Keys are checked twice. (${advisoryLink})`));
+  assert.match(SYSTEM, /advisories: the security advisories a curated line links/);
+  assert.match(calls[0].params.messages[0].content, /"advisories": \[\n\s*"GHSA-2x35-h4qp-x2r3"\n\s*\]/);
+});
+
+test("only this repository's advisories count: one an upstream project published isn't asked for", () => {
+  const upstream = "[GHSA-5h99-c7qh-j7ww](https://github.com/example/library/security/advisories/GHSA-5h99-c7qh-j7ww)";
+  const text = changelog(`### Security\n\n- Keys are checked twice. (${advisoryLink})\n- The library is updated for ${upstream}.`);
+  assert.deepEqual(factsOf(collected, text, "1.1.0").advisories, [advisory]);
+});
+
+test("notes that drop, repeat or invent a curated line's advisory go back to the model", () => {
+  const facts = factsOf(collected, withAdvisory(), "1.1.0");
+  const problems = (advisories, extra = []) => {
+    const output = valid();
+    output.sections.push(securityEntry(advisories), ...extra);
+    return check(output, facts);
+  };
+  assert.deepEqual(problems([advisory]), []);
+  assert.ok(problems([]).includes(`${advisory} appears 0 times instead of once`));
+  assert.ok(problems([advisory], [securityEntry([advisory])]).includes(`${advisory} appears 2 times instead of once`));
+  assert.ok(problems([advisory, "GHSA-xxxx-xxxx-xxxx"]).some((p) => /GHSA-xxxx-xxxx-xxxx, which no curated line links/.test(p)));
+});
+
+test("the GitHub release keeps an advisory link as the entry's reference, after its first sentence too", async () => {
+  const output = valid();
+  output.sections.push(securityEntry([advisory]));
+  const { lines } = await run(answer(output), withAdvisory());
+  const text = release(withAdvisory(), "1.1.0", "2026-10-02", collected.pulls, lines);
+  const shown = body({ changelog: text, version: "1.1.0", brief: output.release });
+  assert.ok(shown.includes(`- Keys are checked twice. ${advisoryLink}`), shown.join("\n"));
+});
+
 test("a stable release after pre-releases hands their notes to the model, which must list their pull requests too", async () => {
   const text = changelog().replace("## [1.0.0]", `## [1.1.0-rc.1] - 2026-09-20\n\n### Added\n\n- Batch results. ([#9](${repo}/pull/9))\n\n## [1.0.0]`);
   const facts = factsOf(collected, text, "1.1.0");
