@@ -40,7 +40,7 @@ Eingebaute Regeln finden Secrets und personenbezogene Daten in einer Anfrage, oh
 | Kartennummern | 13 bis 19 Ziffern, auch mit Leerzeichen oder Bindestrichen, deren Luhn-Prüfung stimmt, als `[CARD_1]` |
 | IP-Adressen | IPv4- und IPv6-Adressen, als `[IP_1]` |
 
-Derselbe Wert erhält innerhalb einer Anfrage immer denselben Platzhalter, sodass das Modell zwei Personen weiterhin unterscheiden kann. Die Regeln lesen den Text des Systemprompts und der Nachrichten, Tool-Ergebnisse und die Argumente von Tool-Aufrufen; Medien und Tool-Definitionen bleiben, wie sie sind.
+Derselbe Wert erhält innerhalb einer Anfrage immer denselben Platzhalter, sodass das Modell zwei Personen weiterhin unterscheiden kann. Überschneiden sich die Werte zweier Detektoren, lehnt einer, der blockiert, die Anfrage trotzdem ab, und einer, der maskiert, maskiert seinen Wert auch in einem Wert, den ein anderer nur zählt. Die Regeln lesen den Text des Systemprompts und der Nachrichten, Tool-Ergebnisse und die Argumente von Tool-Aufrufen; Medien und Tool-Definitionen bleiben, wie sie sind.
 
 Fügen Sie bis zu 20 eigene Muster hinzu: einen Namen aus Kleinbuchstaben, Ziffern und `_` und einen regulären Ausdruck von höchstens 500 Zeichen in der Syntax von Rusts `regex`-Crate, die in linearer Zeit zur Textlänge sucht. Ein Treffer von `order_id` wird zu `[ORDER_ID_1]`.
 

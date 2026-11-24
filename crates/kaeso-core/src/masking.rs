@@ -394,33 +394,48 @@ impl Scanner {
                 }
             }
         }
-        // A stricter rule's find wins an overlap, so a longer flagged or masked value around a
-        // blocked one can't let it through.
-        let rank = |h: &Hit| {
-            self.finders.get(h.finder).map_or(2, |f| match f.action {
-                RuleAction::Block => 0u8,
-                RuleAction::Mask => 1,
-                RuleAction::Flag => 2,
-            })
-        };
         hits.sort_by(|a, b| {
-            rank(a)
-                .cmp(&rank(b))
-                .then(a.start.cmp(&b.start))
+            a.start
+                .cmp(&b.start)
                 .then(b.end.cmp(&a.end))
                 .then(a.finder.cmp(&b.finder))
         });
-        let mut kept: BTreeMap<usize, Hit> = BTreeMap::new();
+        let action = |h: &Hit| self.finders.get(h.finder).map(|f| f.action);
+        let mut kept: Vec<Hit> = Vec::new();
+        let mut dropped: Vec<Hit> = Vec::new();
         for h in hits {
-            let free = kept
-                .range(..h.end)
-                .next_back()
-                .is_none_or(|(_, k)| k.end <= h.start);
-            if free {
-                kept.insert(h.start, h);
+            if kept.last().is_none_or(|k| h.start >= k.end) {
+                kept.push(h);
+            } else if action(&h) != Some(RuleAction::Flag) {
+                dropped.push(h);
             }
         }
-        kept.into_values().collect()
+        // A find that lost an overlap still counts where its rule is the stricter one: a block
+        // always refuses the request, and a mask isn't given up for a value that is only counted.
+        let mut changing: BTreeMap<usize, usize> = kept
+            .iter()
+            .filter(|k| action(k) != Some(RuleAction::Flag))
+            .map(|k| (k.start, k.end))
+            .collect();
+        for h in dropped {
+            let free = changing
+                .range(..h.end)
+                .next_back()
+                .is_none_or(|(_, end)| *end <= h.start);
+            if action(&h) == Some(RuleAction::Block) {
+                kept.push(h);
+            } else if free {
+                changing.insert(h.start, h.end);
+                kept.push(h);
+            }
+        }
+        kept.sort_by(|a, b| {
+            a.start
+                .cmp(&b.start)
+                .then(b.end.cmp(&a.end))
+                .then(a.finder.cmp(&b.finder))
+        });
+        kept
     }
 
     pub fn masker(&self) -> Masker<'_> {
