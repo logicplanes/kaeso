@@ -446,12 +446,15 @@ pub async fn serve_with(
             super::hooks::VideoCall::Create | super::hooks::VideoCall::Remix
         )
     }) || inc.generation == Some(super::hooks::GenerationCall::Create);
+    // The request's work is a large future: kept on the heap, it doesn't add its size to the
+    // stack of every stream it polls.
     if !billed_later {
-        return serve_attached(state, inc, answer).await;
+        return Box::pin(serve_attached(state, inc, answer)).await;
     }
     let ingress = inc.ingress;
     let (done, answered) = tokio::sync::oneshot::channel();
-    let work = crate::http::request_id::within(serve_attached(state.clone(), inc, answer));
+    let work =
+        crate::http::request_id::within(Box::pin(serve_attached(state.clone(), inc, answer)));
     state.in_flight.spawn(async move {
         let _ = done.send(work.await);
     });
