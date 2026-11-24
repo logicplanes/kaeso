@@ -342,7 +342,6 @@
   "errors.roleDescriptionLength": "`description` 最多 200 个字符。",
   "errors.roleHasHolders": "有 {holders} 个成员、服务账号或邀请使用此角色，请先重新分配。",
   "errors.roleHoldsMoreRights": "该角色包含您没有的权限，因此您无法更改。",
-  "errors.roleInSsoGroupRule": "单点登录的一条组规则授予此角色，请先更改该规则。",
   "errors.roleIsSsoDefault": "此角色是 SSO 登录的默认角色，请先另选一个。",
   "errors.roleNameLength": "`name` 必须为 1 到 50 个字符。",
   "errors.roleNameTaken": "已存在同名的自定义角色。",

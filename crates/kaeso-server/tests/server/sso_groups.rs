@@ -438,7 +438,7 @@ async fn rules_need_a_connection() {
 }
 
 #[tokio::test]
-async fn a_custom_role_a_rule_gives_in_a_project_cannot_be_deleted() {
+async fn deleting_a_custom_role_takes_it_out_of_the_rules_that_give_it() {
     let t = setup("add").await;
     let (app, owner, idp) = (&t.app, &t.owner, &t.idp);
     let custom = app
@@ -456,7 +456,10 @@ async fn a_custom_role_a_rule_gives_in_a_project_cannot_be_deleted() {
     let r = rules(
         app,
         owner,
-        json!({ "rules": [{ "group": "readers", "projects": [{ "project": t.mapped, "role": custom }] }] }),
+        json!({ "rules": [{ "group": "readers", "role": "developer", "projects": [
+            { "project": t.mapped, "role": custom },
+            { "project": t.by_hand, "role": "viewer" }
+        ] }] }),
     )
     .await;
     assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
@@ -469,16 +472,26 @@ async fn a_custom_role_a_rule_gives_in_a_project_cannot_be_deleted() {
             Some(&owner.cookie),
         )
         .await;
-    assert_eq!(r.status, StatusCode::CONFLICT, "{:?}", r.body);
+    assert_eq!(r.status, StatusCode::NO_CONTENT, "{:?}", r.body);
+    let saved = app
+        .get(
+            &format!("/orgs/{}/security/sso/groups", owner.org_id),
+            &owner.cookie,
+        )
+        .await;
+    assert_eq!(saved.body["rules"][0]["group"], "readers");
+    assert_eq!(saved.body["rules"][0]["role"], "developer");
     assert_eq!(
-        r.body["error"]["message"],
-        "A group rule of single sign-on gives this role; change the rule first."
+        saved.body["rules"][0]["projects"],
+        json!([{ "project": t.by_hand, "role": "viewer" }])
     );
 
     idp.set_groups("gus@acme.example", Some(&["readers"]));
     let (_, gus) = sign_in(app, idp, "gus@acme.example").await;
+    assert_eq!(role(app, owner, &gus).await, "developer");
+    assert_eq!(in_project(app, owner, &t.mapped, &gus).await, None);
     assert_eq!(
-        in_project(app, owner, &t.mapped, &gus).await.as_deref(),
-        Some(custom.as_str())
+        in_project(app, owner, &t.by_hand, &gus).await.as_deref(),
+        Some("viewer")
     );
 }
