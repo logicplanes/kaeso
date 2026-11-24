@@ -205,6 +205,33 @@ fn parallel_tool_calls_map_chat_indexes_to_blocks() {
 }
 
 #[test]
+fn a_call_keeps_its_index_after_calls_at_other_indexes() {
+    let chunk = |delta: Value, finish: Value| {
+        let chunk = json!({
+            "id": "chatcmpl-1", "object": "chat.completion.chunk", "created": 1, "model": "m",
+            "choices": [{ "index": 0, "delta": delta, "finish_reason": finish }]
+        });
+        format!("data: {chunk}\n\n")
+    };
+    let call = |index: u32, id: &str| {
+        json!({ "tool_calls": [{
+            "index": index, "id": id, "type": "function",
+            "function": { "name": "lookup", "arguments": "{}" }
+        }] })
+    };
+    for indexes in [[5, 1, 2], [1, 0, 3], [2, 3, 0], [0, 1, 2]] {
+        let mut wire = String::new();
+        for (index, id) in indexes.into_iter().zip(["call_a", "call_b", "call_c"]) {
+            wire.push_str(&chunk(call(index, id), Value::Null));
+        }
+        wire.push_str(&chunk(json!({}), json!("tool_calls")));
+        wire.push_str("data: [DONE]\n\n");
+        let out = encode(&decode_whole(wire.as_bytes()), false);
+        assert_sse_eq(&format!("{indexes:?}"), wire.as_bytes(), &out);
+    }
+}
+
+#[test]
 fn text_refusal_and_usage_are_typed() {
     let events = decode_whole(&fixture("stream-include-usage"));
     assert!(

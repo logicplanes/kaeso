@@ -66,7 +66,7 @@ pub(crate) struct ChatStreamEncoder {
     tool_index: HashMap<u32, u32>,
     unknown_tools: HashSet<u32>,
     blank_tools: HashSet<u32>,
-    next_tool: u32,
+    chat_indexes: HashSet<u32>,
     pending: Option<Chunk>,
     start_usage: Option<Usage>,
     usage: Option<Usage>,
@@ -97,7 +97,7 @@ impl ChatStreamEncoder {
             tool_index: HashMap::new(),
             unknown_tools: HashSet::new(),
             blank_tools: HashSet::new(),
-            next_tool: 0,
+            chat_indexes: HashSet::new(),
             pending: None,
             start_usage: None,
             usage: None,
@@ -111,8 +111,16 @@ impl ChatStreamEncoder {
         if let Some(index) = self.tool_index.get(&block) {
             return *index;
         }
-        let index = wanted.unwrap_or(self.next_tool);
-        self.next_tool = self.next_tool.max(index.saturating_add(1));
+        // The decoder records an `index` only where it is not the number of calls before it,
+        // counting the calls it kept whole, so that number is the index a call without one had.
+        let index = wanted.unwrap_or_else(|| {
+            let mut next = u32::try_from(self.chat_indexes.len()).unwrap_or(u32::MAX);
+            while self.chat_indexes.contains(&next) && next < u32::MAX {
+                next += 1;
+            }
+            next
+        });
+        self.chat_indexes.insert(index);
         self.tool_index.insert(block, index);
         index
     }
@@ -181,7 +189,11 @@ impl ChatStreamEncoder {
                     if item.origin.is(DIALECT)
                         && start.extras.form_value(DIALECT, FORM_PART).is_none() =>
                 {
-                    self.unknown_tools.insert(start.index);
+                    if self.unknown_tools.insert(start.index)
+                        && let Ok(kept) = item.raw.parse::<KeptCall>()
+                    {
+                        self.chat_indexes.insert(kept.index);
+                    }
                     chunk.tool_calls.push(Entry {
                         raw: Some(item.raw.clone()),
                         ..Entry::default()
@@ -826,6 +838,11 @@ impl Serialize for J<'_> {
             J::List(list) => list.serialize(serializer),
         }
     }
+}
+
+#[derive(serde::Deserialize)]
+struct KeptCall {
+    index: u32,
 }
 
 fn tc_form(extras: &kaeso_kpp::Extras) -> Map<String, Value> {
