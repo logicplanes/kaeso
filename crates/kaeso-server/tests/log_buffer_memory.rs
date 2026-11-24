@@ -49,11 +49,10 @@ async fn chat(env: &common::v1::Env) {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn log_rows_that_wait_for_clickhouse_hold_no_more_memory_than_the_buffer_allows() {
     let env = common::v1::env(None, Some(&[("KAESO_LOGS_BUFFER_SIZE", "1MiB")])).await;
-    for _ in 0..200 {
-        chat(&env).await;
-    }
-    let rows = env.app.state.logs.len();
-    assert_eq!(rows, 200, "nothing writes the rows in this test");
+    // One request fills the caches every later one reads; its own row is what the buffer
+    // holds before the measurement, about a quarter of a percent of the limit.
+    chat(&env).await;
+    assert_eq!(env.app.state.logs.len(), 1, "nothing writes the rows");
     let before = ALLOC.current_usage();
     // Enough requests to fill the buffer several times over, so it holds as much as it ever will.
     while env.app.state.logs.dropped() < 2000 {
