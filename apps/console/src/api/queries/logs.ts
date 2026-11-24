@@ -176,7 +176,7 @@ async function newestRows<T>(fetchPage: (after: string | undefined) => Promise<P
   return { rows, complete: false };
 }
 
-/** The newest requests, `since` a time in pages of `rows`; a view that shows a few asks for only those. */
+/** The newest requests, those after `since` when given, asked for `rows` at a time; a view that shows a few asks for only those. */
 export const newestLogsQuery = (org: string, project: string, filters: LogFilters, since?: string, rows = 100) =>
   queryOptions({
     queryKey: ["orgs", org, "projects", project, "logs", "newest", filters, since ?? null, rows],
