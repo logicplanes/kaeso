@@ -2601,7 +2601,7 @@ dependencies = [
 
 [[package]]
 name = "kaeso"
-version = "0.7.1-rc.1"
+version = "0.7.1"
 dependencies = [
  "anyhow",
  "clap",
@@ -2617,7 +2617,7 @@ dependencies = [
 
 [[package]]
 name = "kaeso-bench"
-version = "0.7.1-rc.1"
+version = "0.7.1"
 dependencies = [
  "bytes",
  "clap",
@@ -2637,7 +2637,7 @@ dependencies = [
 
 [[package]]
 name = "kaeso-codecs"
-version = "0.7.1-rc.1"
+version = "0.7.1"
 dependencies = [
  "base64 0.23.1",
  "bytes",
@@ -2653,7 +2653,7 @@ dependencies = [
 
 [[package]]
 name = "kaeso-core"
-version = "0.7.1-rc.1"
+version = "0.7.1"
 dependencies = [
  "base64 0.23.1",
  "bytes",
@@ -2681,7 +2681,7 @@ dependencies = [
 
 [[package]]
 name = "kaeso-crypto"
-version = "0.7.1-rc.1"
+version = "0.7.1"
 dependencies = [
  "aes-gcm",
  "argon2",
@@ -2698,7 +2698,7 @@ dependencies = [
 
 [[package]]
 name = "kaeso-kpp"
-version = "0.7.1-rc.1"
+version = "0.7.1"
 dependencies = [
  "base64 0.23.1",
  "bytes",
@@ -2710,7 +2710,7 @@ dependencies = [
 
 [[package]]
 name = "kaeso-mail"
-version = "0.7.1-rc.1"
+version = "0.7.1"
 dependencies = [
  "insta",
  "lettre",
@@ -2729,7 +2729,7 @@ dependencies = [
 
 [[package]]
 name = "kaeso-mcp"
-version = "0.7.1-rc.1"
+version = "0.7.1"
 dependencies = [
  "base64 0.23.1",
  "proptest",
@@ -2740,7 +2740,7 @@ dependencies = [
 
 [[package]]
 name = "kaeso-server"
-version = "0.7.1-rc.1"
+version = "0.7.1"
 dependencies = [
  "axum",
  "base64 0.23.1",
@@ -2803,7 +2803,7 @@ dependencies = [
 
 [[package]]
 name = "kaeso-store"
-version = "0.7.1-rc.1"
+version = "0.7.1"
 dependencies = [
  "base64 0.23.1",
  "clickhouse",
@@ -2831,7 +2831,7 @@ dependencies = [
 
 [[package]]
 name = "kaeso-testkit"
-version = "0.7.1-rc.1"
+version = "0.7.1"
 dependencies = [
  "aws-lc-rs",
  "axum",
@@ -2858,7 +2858,7 @@ dependencies = [
 
 [[package]]
 name = "kaeso-update"
-version = "0.7.1-rc.1"
+version = "0.7.1"
 dependencies = [
  "jiff",
  "proptest",
@@ -2871,7 +2871,7 @@ dependencies = [
 
 [[package]]
 name = "kaeso-updater"
-version = "0.7.1-rc.1"
+version = "0.7.1"
 dependencies = [
  "aws-lc-rs",
  "axum",
@@ -2898,7 +2898,7 @@ dependencies = [
 
 [[package]]
 name = "kaeso-upstream"
-version = "0.7.1-rc.1"
+version = "0.7.1"
 dependencies = [
  "base64 0.23.1",
  "bytes",
@@ -2945,7 +2945,7 @@ checksum = "a4933f3f57a8e9d9da04db23fb153356ecaf00cbd14aee46279c33dc80925c37"
 
 [[package]]
 name = "kpp-conformance"
-version = "0.7.1-rc.1"
+version = "0.7.1"
 dependencies = [
  "axum",
  "kaeso-codecs",
@@ -6745,7 +6745,7 @@ dependencies = [
 
 [[package]]
 name = "xtask"
-version = "0.7.1-rc.1"
+version = "0.7.1"
 dependencies = [
  "base64 0.23.1",
  "clap",
