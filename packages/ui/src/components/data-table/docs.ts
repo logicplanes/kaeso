@@ -35,7 +35,7 @@ export const docs = {
       selection: "The selected rows, when you control them.",
       sorting: "The sort order, when you control it.",
       stickyFirstColumn: "Keeps the first column in view while scrolling sideways.",
-      virtualizeAbove: "Above this many rows, only the visible rows are rendered.",
+      virtualizeAbove: "Above this many rows (50), only the visible rows are rendered.",
     },
   },
 } satisfies ComponentDocs;

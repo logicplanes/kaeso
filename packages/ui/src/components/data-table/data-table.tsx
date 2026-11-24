@@ -187,7 +187,9 @@ function DataTableInner<T>(
     loadingMore,
     onLoadMore,
     stickyFirstColumn,
-    virtualizeAbove = 100,
+    // Below a page of 100 rows, so a full page is drawn by visible rows from the start and the next page loads into the
+    // same rows instead of redrawing every row of the table.
+    virtualizeAbove = 50,
     className,
     activeRowId,
     freshRowIds,
