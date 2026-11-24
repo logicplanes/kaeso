@@ -67,10 +67,13 @@ describe("KeyValue", () => {
   });
 
   it("lets a cut value of any kind, and a cut grid label, be read in full from the keyboard", () => {
+    // Without an observer, cut-off text measures itself as it mounts (text/truncated.test.tsx covers the observer).
+    vi.stubGlobal("ResizeObserver", undefined);
     const spy = vi.spyOn(HTMLElement.prototype, "scrollWidth", "get").mockReturnValue(999);
     render(<KeyValue layout="grid" items={[{ label: "Upstream request identifier", value: <span>req_011Cg1rpXo2L5DAnHsAAaHg2</span> }]} />);
     expect(screen.getByText("Upstream request identifier")).toHaveAttribute("tabindex", "0");
     expect(screen.getByText("req_011Cg1rpXo2L5DAnHsAAaHg2").parentElement).toHaveAttribute("tabindex", "0");
     spy.mockRestore();
+    vi.unstubAllGlobals();
   });
 });

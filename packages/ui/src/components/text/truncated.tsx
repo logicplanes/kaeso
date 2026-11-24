@@ -1,7 +1,7 @@
 import { forwardRef, useLayoutEffect, useRef, useState, type HTMLAttributes, type ReactNode } from "react";
 import { cn } from "../../utils/cn.js";
 import { mergeRefs } from "../../utils/merge-refs.js";
-import { useTruncated } from "../../hooks/use-truncated.js";
+import { useCutOff } from "../../hooks/use-cut-off.js";
 import { Tooltip } from "../tooltip/tooltip.js";
 
 const FOCUSABLE = "a[href], button, input, select, textarea, [tabindex]";
@@ -14,7 +14,7 @@ export interface TruncatedTextProps extends Omit<HTMLAttributes<HTMLSpanElement>
 
 export const TruncatedText = forwardRef<HTMLSpanElement, TruncatedTextProps>(function TruncatedText({ children, className, wrap = false, ...props }, ref) {
   const inner = useRef<HTMLSpanElement | null>(null);
-  const cut = useTruncated(inner, !wrap);
+  const [cut, watch] = useCutOff(!wrap);
   const [full, setFull] = useState("");
   const [nested, setNested] = useState(false);
   useLayoutEffect(() => {
@@ -26,7 +26,7 @@ export const TruncatedText = forwardRef<HTMLSpanElement, TruncatedTextProps>(fun
   const el = (
     <span
       {...props}
-      ref={mergeRefs(ref, inner)}
+      ref={mergeRefs(ref, inner, watch)}
       className={cn(wrap ? "text-pretty" : "truncate", cut && full && !nested && "rounded-code focus-ring", className)}
       {...(cut && full && !nested ? { tabIndex: 0 } : {})}
     >

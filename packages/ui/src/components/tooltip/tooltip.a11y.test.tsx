@@ -75,4 +75,31 @@ describe("Tooltip for a screen reader", () => {
     await settled();
     expect(screen.getByRole("button", { name: "Hard limit" })).not.toHaveAttribute("aria-describedby");
   });
+
+  it("mounts no popup while disabled, and once turned on keeps the same focused trigger and opens on the next focus", async () => {
+    const user = userEvent.setup();
+    const Tip = ({ on }: { on: boolean }) => (
+      <TooltipProvider>
+        <Tooltip content="Requests over a hard limit are refused with 429." disabled={!on}>
+          <button type="button">Hard limit</button>
+        </Tooltip>
+        <button type="button">Elsewhere</button>
+      </TooltipProvider>
+    );
+    const { rerender } = render(<Tip on={false} />);
+    await settled();
+    const trigger = screen.getByRole("button", { name: "Hard limit" });
+    expect(trigger).not.toHaveAttribute("data-trigger-disabled");
+    expect(trigger).not.toHaveAttribute("data-base-ui-tooltip-trigger");
+    await user.tab();
+    rerender(<Tip on />);
+    await settled();
+    expect(screen.getByRole("button", { name: "Hard limit" })).toBe(trigger);
+    expect(trigger).toHaveFocus();
+    expect(trigger).toHaveAttribute("data-base-ui-tooltip-trigger");
+    await user.tab();
+    await user.tab({ shift: true });
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("Requests over a hard limit are refused with 429.");
+    expect(trigger).toHaveAccessibleDescription("Requests over a hard limit are refused with 429.");
+  });
 });
