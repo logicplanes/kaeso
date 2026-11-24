@@ -1506,8 +1506,11 @@ mod tests {
 
     #[test]
     fn a_plain_http_link_to_an_https_provider_is_not_its_own_host() {
-        let base = Url::parse("https://api.x.ai/v1").unwrap();
-        for link in ["http://api.x.ai:443/a.mp4", "http://api.x.ai/a.mp4"] {
+        let base = Url::parse("https://api.example.com/v1").unwrap();
+        for link in [
+            "http://api.example.com:443/a.mp4",
+            "http://api.example.com/a.mp4",
+        ] {
             assert!(!same_origin(&Url::parse(link).unwrap(), &base), "{link}");
         }
         let plain = Url::parse("http://10.0.0.7:8080/v1").unwrap();
