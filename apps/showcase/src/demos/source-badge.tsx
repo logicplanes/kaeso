@@ -9,7 +9,7 @@ export const meta = {
   import: "SourceBadge",
   a11y: [
     "The tile is an image named after the source; beside its name it hides from assistive technology.",
-    "Marks are drawn in the text colour, so they read the same in light and dark.",
+    "Marks keep their makers' colours, in shades that stay legible on the tile in light and dark; black-and-white marks take the text colour.",
   ],
 };
 export const examples = [

@@ -175,7 +175,7 @@ export const docs = {
   },
   SourceBadge: {
     description:
-      "A source's client, such as Claude Code, Codex or LiteLLM, as a tile the size of a provider's with its mark in the text colour, and its name beside it.",
+      "A source's client, such as Claude Code, Codex or LiteLLM, as a tile the size of a provider's with its mark in its maker's colour, and its name beside it.",
     props: {
       kind: "The source's kind, such as `claude_code`; a kind without a mark shows the source icon.",
       name: "The name beside the tile, or the tile's accessible name; the kind's product name by default.",
