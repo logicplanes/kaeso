@@ -29,6 +29,7 @@ describe("source labels", () => {
       "nobody",
       "unreadable",
       "inactive",
+      "unrecognized",
     ];
     const texts = codes.map(refusalText);
     expect(new Set(texts).size).toBe(codes.length);
