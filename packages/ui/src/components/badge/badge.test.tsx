@@ -13,10 +13,13 @@ describe("Badge", () => {
     expect(screen.getByText("Revoked").className).not.toMatch(/before:/);
   });
   it("lets a cut label be read in full: it takes focus and names itself in a tooltip", () => {
+    // Without an observer, cut-off text measures itself as it mounts (text/truncated.test.tsx covers the observer).
+    vi.stubGlobal("ResizeObserver", undefined);
     const spy = vi.spyOn(HTMLElement.prototype, "scrollWidth", "get").mockReturnValue(200);
     render(<Badge>Platform administrator</Badge>);
     expect(screen.getByText("Platform administrator")).toHaveAttribute("tabindex", "0");
     spy.mockRestore();
+    vi.unstubAllGlobals();
   });
   it("keeps an outline in forced colours, where its fill disappears", () => {
     render(<Badge>Owner</Badge>);
