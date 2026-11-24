@@ -21,9 +21,8 @@ fn allowed(c: char) -> bool {
 // long or holds other characters is cut to 56 characters and gets `_` and 7 hex characters of the
 // SHA-256 of `handle__name` as the server wrote it, so two tools never share a name.
 pub fn exposed(handle: &str, tool: &str) -> String {
-    // `a-` and `a--b` would read `a_` and `a__b`, the start of what the server `a` exposes for a
-    // tool it names `_x` or `b__c`; such a handle keeps its dashes, which no other handle's
-    // names can start with.
+    // `a-` and `a--b` would read `a_` and `a__b`, the start of the names of server `a`'s tools
+    // `_x` and `b__c`; such a handle keeps its dashes, which no other handle's names start with.
     let shown = if handle.ends_with('-') || handle.contains("--") {
         handle.to_owned()
     } else {
@@ -74,7 +73,7 @@ mod tests {
         assert_eq!(exposed("a", "_x"), "a___x");
         assert_ne!(exposed("a-", "x"), exposed("a", "_x"));
         assert_ne!(exposed("a--b", "c"), exposed("a", "b__c"));
-        assert_ne!(exposed("a--", "c"), exposed("a", "___c"));
+        assert_ne!(exposed("a--", ""), exposed("a", "__"));
         assert_eq!(exposed("-a", "x"), "_a__x");
     }
 

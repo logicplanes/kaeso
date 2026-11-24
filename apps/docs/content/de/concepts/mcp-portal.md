@@ -19,7 +19,7 @@ flowchart LR
 
 ## Server und Projekte
 
-Eine Organisation fügt MCP-Server unter **MCP-Server** hinzu. Jeder Server hat ein Kürzel wie `x`, das seinen Tools für Clients vorangestellt wird: Aus `create_post` des Servers wird `x__create_post`. Bindestriche eines Kürzels werden zu Unterstrichen, außer in einem Kürzel, das mit einem Bindestrich endet oder zwei hintereinander enthält, und ein Name mit mehr als 64 Zeichen wird gekürzt und bekommt einen kurzen Hash.
+Eine Organisation fügt MCP-Server unter **MCP-Server** hinzu. Jeder Server hat ein Kürzel wie `x`, das seinen Tools für Clients vorangestellt wird: Aus `create_post` des Servers wird `x__create_post`. Bindestriche eines Kürzels werden zu Unterstrichen, außer in einem Kürzel, das mit einem Bindestrich endet oder zwei hintereinander enthält. Ein Name mit mehr als 64 Zeichen wird gekürzt und bekommt einen kurzen Hash.
 
 Ein Projekt wählt, welche Server es nutzt und welche ihrer Tools an sind. Bei einem Server, den ein Projekt neu nutzt, ist jedes Tool aus, sodass nichts einen Client erreicht, bis jemand es einschaltet.
 

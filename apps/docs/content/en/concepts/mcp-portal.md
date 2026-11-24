@@ -19,7 +19,7 @@ flowchart LR
 
 ## Servers and projects
 
-An organization adds MCP servers under **MCP servers**. Each server has a handle, such as `x`, that prefixes its tools for clients: the server's `create_post` becomes `x__create_post`. A handle's hyphens become underscores, except in a handle that ends in a hyphen or has two in a row, and a name longer than 64 characters is cut and gets a short hash.
+An organization adds MCP servers under **MCP servers**. Each server has a handle, such as `x`, that prefixes its tools for clients: the server's `create_post` becomes `x__create_post`. A handle's hyphens become underscores, except in a handle that ends in a hyphen or has two in a row. A name longer than 64 characters is cut and gets a short hash.
 
 A project chooses which servers it uses and which of their tools are on. A server a project starts using has every tool off, so nothing reaches a client until someone turns it on.
 
