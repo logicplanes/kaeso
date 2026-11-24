@@ -1440,7 +1440,7 @@ impl Pump {
         if !self.done {
             let Some(watch) = self.app.tx.clone() else {
                 self.gone = true;
-                self.finalize(pending).await;
+                Box::pin(self.finalize(pending)).await;
                 return;
             };
             let closed = watch.closed();
@@ -1515,7 +1515,7 @@ impl Pump {
                 }
             }
         }
-        self.finalize(pending).await;
+        Box::pin(self.finalize(pending)).await;
     }
 
     async fn finalize(mut self, pending: Option<PendingOut>) {
@@ -1819,7 +1819,7 @@ pub(super) async fn start(parts: Parts, tx: Sender<Bytes>, rec: Recording) {
         && !pump.gone
         && pump.engine.has_final_usage(&pump.tally)
     {
-        pump.finalize(pending).await;
+        Box::pin(pump.finalize(pending)).await;
     } else {
         state.in_flight.spawn(pump.run(pending));
     }
@@ -2144,5 +2144,19 @@ mod tests {
             .await
             .unwrap();
         assert!(matches!(res, Peeked::PutBack));
+    }
+
+    fn future_bytes<A, B, F: Future>(_: impl FnOnce(A, B) -> F) -> usize {
+        std::mem::size_of::<F>()
+    }
+
+    #[test]
+    fn an_open_stream_holds_its_pump_and_not_the_accounting_that_follows() {
+        let open = future_bytes(Pump::run);
+        let accounting = future_bytes(Pump::finalize);
+        assert!(
+            open < accounting && open <= 24 * 1024,
+            "{open} bytes for each open stream, {accounting} for its accounting"
+        );
     }
 }
