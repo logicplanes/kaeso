@@ -29,6 +29,7 @@ const MAX_MESSAGE: usize = MIN_MESSAGE + 128 * 1024 + 24 * 1024 * 1024;
 #[derive(Debug, Default)]
 pub struct Framer {
     buf: Vec<u8>,
+    failed: Option<FrameError>,
 }
 
 impl Framer {
@@ -37,44 +38,67 @@ impl Framer {
     }
 
     /// The whole messages `bytes` completes, in order, or the first malformed one.
+    /// The messages `bytes` complete. A malformed message ends the stream: the messages before it
+    /// are returned first, and the error by the next call.
     pub fn feed(&mut self, bytes: &[u8]) -> Result<Vec<Message>, FrameError> {
+        if let Some(e) = &self.failed {
+            return Err(e.clone());
+        }
         self.buf.extend_from_slice(bytes);
         let mut out = Vec::new();
-        loop {
-            let Some(prelude) = self.buf.get(..PRELUDE) else {
-                return Ok(out);
-            };
-            let total = be32(prelude, 0) as usize;
-            let headers = be32(prelude, 4) as usize;
-            if crc32(prelude.get(..8).unwrap_or_default()) != be32(prelude, 8) {
-                return Err(FrameError(
-                    "a message's prelude checksum doesn't match".into(),
-                ));
+        let mut read = 0;
+        let failed = loop {
+            match next_message(self.buf.get(read..).unwrap_or_default()) {
+                Ok(Some((message, len))) => {
+                    out.push(message);
+                    read += len;
+                }
+                Ok(None) => break None,
+                Err(e) => break Some(e),
             }
-            if !(MIN_MESSAGE..=MAX_MESSAGE).contains(&total) || headers > total - MIN_MESSAGE {
-                return Err(FrameError(format!(
-                    "a message says it is {total} bytes long with {headers} bytes of headers"
-                )));
+        };
+        self.buf.drain(..read);
+        match failed {
+            Some(e) if out.is_empty() => Err(e),
+            failed => {
+                self.failed = failed;
+                Ok(out)
             }
-            let Some(message) = self.buf.get(..total) else {
-                return Ok(out);
-            };
-            let (body, crc) = message.split_at(total - 4);
-            if crc32(body) != be32(crc, 0) {
-                return Err(FrameError("a message's checksum doesn't match".into()));
-            }
-            let header_bytes = body.get(PRELUDE..PRELUDE + headers).unwrap_or_default();
-            let mut m = read_headers(header_bytes)?;
-            m.payload = body.get(PRELUDE + headers..).unwrap_or_default().to_vec();
-            out.push(m);
-            self.buf.drain(..total);
         }
     }
 
-    /// Whether bytes of an unfinished message are left.
     pub fn has_partial(&self) -> bool {
         !self.buf.is_empty()
     }
+}
+
+fn next_message(buf: &[u8]) -> Result<Option<(Message, usize)>, FrameError> {
+    let Some(prelude) = buf.get(..PRELUDE) else {
+        return Ok(None);
+    };
+    let total = be32(prelude, 0) as usize;
+    let headers = be32(prelude, 4) as usize;
+    if crc32(prelude.get(..8).unwrap_or_default()) != be32(prelude, 8) {
+        return Err(FrameError(
+            "a message's prelude checksum doesn't match".into(),
+        ));
+    }
+    if !(MIN_MESSAGE..=MAX_MESSAGE).contains(&total) || headers > total - MIN_MESSAGE {
+        return Err(FrameError(format!(
+            "a message says it is {total} bytes long with {headers} bytes of headers"
+        )));
+    }
+    let Some(message) = buf.get(..total) else {
+        return Ok(None);
+    };
+    let (body, crc) = message.split_at(total - 4);
+    if crc32(body) != be32(crc, 0) {
+        return Err(FrameError("a message's checksum doesn't match".into()));
+    }
+    let header_bytes = body.get(PRELUDE..PRELUDE + headers).unwrap_or_default();
+    let mut m = read_headers(header_bytes)?;
+    m.payload = body.get(PRELUDE + headers..).unwrap_or_default().to_vec();
+    Ok(Some((m, total)))
 }
 
 fn be32(bytes: &[u8], at: usize) -> u32 {
@@ -312,5 +336,18 @@ mod tests {
         let mut f = Framer::new();
         assert!(f.feed(&good[..5]).unwrap().is_empty());
         assert!(f.has_partial());
+    }
+
+    #[test]
+    fn the_messages_before_a_malformed_one_are_read_first() {
+        let mut bytes = event("messageStart", br#"{"role":"assistant"}"#);
+        bytes.extend(event("messageStop", br#"{"stopReason":"end_turn"}"#));
+        bytes.extend_from_slice(&[0; PRELUDE]);
+        let mut f = Framer::new();
+        let got = f.feed(&bytes).unwrap();
+        assert_eq!(got.len(), 2);
+        assert_eq!(got[1].event_type.as_deref(), Some("messageStop"));
+        assert!(f.feed(&[]).unwrap_err().0.contains("prelude"));
+        assert!(f.feed(&bytes).unwrap_err().0.contains("prelude"));
     }
 }

@@ -440,6 +440,29 @@ fn a_binary_stream_adds_up_to_the_reply_in_any_chunks() {
 }
 
 #[test]
+fn what_arrived_before_a_damaged_message_is_kept_in_any_chunks() {
+    let mut bytes = stream_bytes("built-nova-text");
+    let whole = decode_stream(&bytes, bytes.len());
+    let intact = bytes.len();
+    bytes.extend_from_slice(&[0; 16]);
+    let before = |events: &[StreamEvent]| {
+        events
+            .iter()
+            .take_while(|e| !matches!(e, StreamEvent::Error(_)))
+            .cloned()
+            .collect::<Vec<_>>()
+    };
+    for chunk in [1, 13, intact, bytes.len()] {
+        let events = decode_stream(&bytes, chunk);
+        assert_eq!(before(&events), whole, "chunks of {chunk}");
+        let [StreamEvent::Error(e)] = events.get(whole.len()..).unwrap() else {
+            panic!("chunks of {chunk}: {events:?}");
+        };
+        assert!(e.message.contains("prelude checksum"), "{e:?}");
+    }
+}
+
+#[test]
 fn an_exception_frame_ends_the_stream_with_an_error() {
     let events = decode_stream(&stream_bytes("built-throttling-exception"), 7);
     let Some(StreamEvent::Error(e)) = events.last() else {

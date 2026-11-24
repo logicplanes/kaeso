@@ -222,18 +222,28 @@ impl StreamDecoder for Decoder {
         if self.inert {
             return out;
         }
-        match self.framer.feed(bytes) {
-            Ok(messages) => {
-                for m in messages {
-                    if let Err(e) = self.message(m, &mut out) {
-                        self.fail(e, &mut out);
-                        break;
+        let mut bytes = bytes;
+        loop {
+            match self.framer.feed(bytes) {
+                Ok(messages) => {
+                    let read = !messages.is_empty();
+                    for m in messages {
+                        if let Err(e) = self.message(m, &mut out) {
+                            self.fail(e, &mut out);
+                            return out;
+                        }
                     }
+                    if !read {
+                        return out;
+                    }
+                    bytes = &[];
+                }
+                Err(e) => {
+                    self.fail(bad(&e.0), &mut out);
+                    return out;
                 }
             }
-            Err(e) => self.fail(bad(&e.0), &mut out),
         }
-        out
     }
 
     fn finish(&mut self) -> Vec<StreamEvent> {
