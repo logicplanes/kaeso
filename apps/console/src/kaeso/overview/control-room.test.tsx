@@ -98,7 +98,10 @@ describe("the analytics control room", () => {
     on("GET", `${USAGE}/timeline`, () => new Promise(() => {}));
     await renderApp(projectPath(`analytics?${PERIOD}`));
     const chart = cell("Requests per day, UTC");
-    expect(chart.querySelector("span[aria-hidden].inline-block")).toBeInTheDocument();
+    const placeholder = chart.querySelector("span[aria-hidden].inline-block");
+    expect(placeholder).toBeInTheDocument();
+    // Two lines' room on a phone, loading as loaded, so a note that wraps there doesn't push the chart down.
+    expect(placeholder?.parentElement).toHaveClass("line-clamp-2", "min-h-36");
     // The legend's words don't wait for the numbers, so its line is there from the start.
     expect(
       within(chart)
@@ -121,6 +124,7 @@ describe("the analytics control room", () => {
     expect(requests("GET", `${USAGE}/timeline`).map((r) => r.query.get("step"))).toEqual(expect.arrayContaining(["hour"]));
     const chart = cell("Requests per day, UTC");
     expect(chart).toHaveTextContent("3 per day on average; highest 40, 13 Oct");
+    expect(within(chart).getByText("3 per day on average; highest 40, 13 Oct")).toHaveClass("line-clamp-2", "min-h-36");
     expect(
       within(chart)
         .getAllByRole("listitem")

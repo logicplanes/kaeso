@@ -125,6 +125,7 @@
   "Balances the lines of a heading that wraps.": "Gleicht die Zeilen einer umbrechenden Überschrift aus.",
   "Basic": "Einfach",
   "Before everything: AppFrame.MenuButton, which shows while a wide screen's sidebar is collapsed (on a phone the frame's phone bar opens the navigation).": "Vor allem anderen: AppFrame.MenuButton, der sich zeigt, solange die Seitenleiste auf breiten Bildschirmen eingeklappt ist (auf dem Telefon öffnet die Telefonleiste die Navigation).",
+  "Below 1024px, wraps onto at most two lines and always keeps their room, so a line that arrives late, such as a chart's note, moves nothing under it; from 1024px it keeps one.": "Unter 1024px bricht der Text auf höchstens zwei Zeilen um und hält ihren Platz immer frei, damit eine Zeile, die später kommt, etwa der Hinweis eines Diagramms, nichts darunter verschiebt; ab 1024px bleibt er einzeilig.",
   "Blocks the rest of the page while the menu is open.": "Sperrt den Rest der Seite, solange das Menü offen ist.",
   "Budget": "Budget",
   "Busy at once; the spinner shows once the work has taken 300ms, then for at least 400ms, replacing the leading icon or covering the label. The width never changes.": "Sofort beschäftigt; der Spinner erscheint, wenn die Arbeit 300 ms dauert, dann für mindestens 400 ms, anstelle des führenden Symbols oder über der Beschriftung. Die Breite ändert sich nie.",

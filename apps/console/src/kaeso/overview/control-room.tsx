@@ -55,10 +55,10 @@ function ChartCell({ o, metric }: { o: Overview; metric: MetricId }) {
       title={context ? t("kaeso.overview.lastDays", "{metric} per day, the last 14 days, UTC", { metric: what }) : perBucket(o, what)}
     >
       <CellInset grow>
-        {/* One line each, loading or not: the note on its own line, then the legend, side by side from 1024px. The
-            legend's words are known before the numbers, so it stands while they load. */}
+        {/* The note keeps two lines' room on narrow screens, where it wraps to show the peak's day, and one beside the
+            legend from 1024px, loading or not. The legend's words are known before the numbers, so it stands meanwhile. */}
         <div className="flex flex-col items-start gap-y-6 lg:flex-row lg:items-center lg:justify-between lg:gap-x-24">
-          <Text variant="small" tone="tertiary" truncate className="max-w-full">
+          <Text variant="small" tone="tertiary" lines={2} className="max-w-full">
             {note ?? (!context && o.pointsLoading && <Skeleton shape="word" className="w-240" />)}
           </Text>
           {!context && (o.prevRows || (o.compare && o.loading)) && (

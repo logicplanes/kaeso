@@ -44,3 +44,16 @@ describe("SwapText", () => {
     expect(screen.getAllByText("Fertig")[0]!.parentElement).toHaveClass("inline-grid", "whitespace-nowrap");
   });
 });
+
+describe("Text lines", () => {
+  it("keeps two lines' room for a small note below 1024px and one line from there, so a late note moves nothing", () => {
+    render(
+      <Text variant="small" lines={2}>
+        2,060 per day on average; highest 4,223, 12 Nov
+      </Text>,
+    );
+    const note = screen.getByText(/highest 4,223/);
+    expect(note).toHaveClass("line-clamp-2", "min-h-36", "lg:line-clamp-1", "lg:min-h-0");
+    expect(note).not.toHaveClass("truncate");
+  });
+});

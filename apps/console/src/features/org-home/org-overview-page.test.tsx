@@ -103,6 +103,16 @@ describe("the organization overview", () => {
     expect(activity.querySelectorAll("[aria-hidden].h-48")).toHaveLength(5);
   });
 
+  it("keeps the projects cell, with a link to all of them, while the list loads", async () => {
+    signedIn();
+    usage();
+    models(0);
+    on("GET", "orgs/:org/projects", () => new Promise(() => {}));
+    await renderApp(`/orgs/${ORG}`);
+    const cell = (await screen.findByRole("link", { name: /Projects, requests today/ })).closest("section") as HTMLElement;
+    expect(within(cell).getByRole("link", { name: "All projects" })).toHaveAttribute("href", `/orgs/${ORG}/projects`);
+  });
+
   it("lists the projects by today's requests and opens one", async () => {
     signedIn();
     usage();
