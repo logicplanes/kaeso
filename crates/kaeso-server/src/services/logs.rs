@@ -31,11 +31,11 @@ const WRITE_DEADLINE: Duration = Duration::from_secs(60);
 
 struct Entry {
     seq: u64,
-    log: Option<LogRow>,
-    content: Option<ContentRow>,
+    log: Option<Box<LogRow>>,
+    content: Option<Box<ContentRow>>,
     parts: Vec<PartRow>,
-    call: Option<ToolCallRow>,
-    call_content: Option<ToolCallContentRow>,
+    call: Option<Box<ToolCallRow>>,
+    call_content: Option<Box<ToolCallContentRow>>,
     size: u64,
 }
 
@@ -272,12 +272,12 @@ async fn flush_by(state: &AppState, deadline: Option<tokio::time::Instant>) -> F
         let mut written_parts = Vec::new();
         let written = match stage {
             Stage::Logs => {
-                let rows: Vec<&LogRow> = batch.iter().filter_map(|e| e.log.as_ref()).collect();
+                let rows: Vec<&LogRow> = batch.iter().filter_map(|e| e.log.as_deref()).collect();
                 within(deadline, ch::insert_logs(clickhouse, rows)).await
             }
             Stage::Calls => {
                 let rows: Vec<&ToolCallRow> =
-                    batch.iter().filter_map(|e| e.call.as_ref()).collect();
+                    batch.iter().filter_map(|e| e.call.as_deref()).collect();
                 within(deadline, tool_calls::insert_calls(clickhouse, rows)).await
             }
             Stage::Parts => {
@@ -286,13 +286,13 @@ async fn flush_by(state: &AppState, deadline: Option<tokio::time::Instant>) -> F
             }
             Stage::Contents => {
                 let rows: Vec<&ContentRow> =
-                    batch.iter().filter_map(|e| e.content.as_ref()).collect();
+                    batch.iter().filter_map(|e| e.content.as_deref()).collect();
                 within(deadline, ch::insert_contents(clickhouse, rows)).await
             }
             Stage::CallContents => {
                 let rows: Vec<&ToolCallContentRow> = batch
                     .iter()
-                    .filter_map(|e| e.call_content.as_ref())
+                    .filter_map(|e| e.call_content.as_deref())
                     .collect();
                 within(deadline, tool_calls::insert_contents(clickhouse, rows)).await
             }
@@ -864,7 +864,7 @@ async fn record_with(state: &AppState, o: &Outcome, body: Option<Bytes>) {
     } else {
         Keep::nothing()
     };
-    let (request_body, reply) = if content {
+    let (request_body, mut reply) = if content {
         logged_content(o, body, keep).await
     } else {
         Default::default()
@@ -985,8 +985,12 @@ async fn record_with(state: &AppState, o: &Outcome, body: Option<Bytes>) {
     };
     let content_expires = days(o.started_at, cfg.content_days.min(cfg.metadata_days));
     let (content, parts) = if content {
-        let (request_body, placeholders, parts) =
+        let (mut request_body, placeholders, parts) =
             split_history(state, o, request_body, content_expires).await;
+        // A body taken over from the connection keeps its whole read buffer, and a reply the
+        // room it was written into; neither is counted against the buffer's size.
+        request_body.shrink_to_fit();
+        reply.shrink_to_fit();
         let row = ContentRow {
             request_id: log.request_id,
             org_id: log.org_id,
@@ -1001,13 +1005,18 @@ async fn record_with(state: &AppState, o: &Outcome, body: Option<Bytes>) {
     } else {
         (None, Vec::new())
     };
-    let size = 512 + logical + text_bytes(&log);
+    let size = held::<Entry>()
+        + held::<LogRow>()
+        + content.as_ref().map_or(0, |_| held::<ContentRow>())
+        + parts.len() as u64 * held::<PartRow>()
+        + logical
+        + text_bytes(&log);
     let cfg = &state.config.logs;
     state.logs.push(
         Entry {
             seq: 0,
-            log: Some(log),
-            content,
+            log: Some(Box::new(log)),
+            content: content.map(Box::new),
             parts,
             call: None,
             call_content: None,
@@ -1058,7 +1067,11 @@ pub async fn record_tool_call(
         result,
         expires_at: days(row.started_at, cfg.content_days.min(cfg.metadata_days)),
     });
-    let size = 512
+    let size = held::<Entry>()
+        + held::<ToolCallRow>()
+        + call_content
+            .as_ref()
+            .map_or(0, |_| held::<ToolCallContentRow>())
         + (row.tool.len()
             + row.upstream_tool.len()
             + row.error_message.len()
@@ -1073,8 +1086,8 @@ pub async fn record_tool_call(
             log: None,
             content: None,
             parts: Vec::new(),
-            call: Some(row),
-            call_content,
+            call: Some(Box::new(row)),
+            call_content: call_content.map(Box::new),
             size,
         },
         limits.buffer_size.0,
@@ -1161,6 +1174,10 @@ async fn split_history(
         }
     }
     (split.skeleton, split.placeholders, rows)
+}
+
+fn held<T>() -> u64 {
+    std::mem::size_of::<T>() as u64
 }
 
 fn text_bytes(log: &LogRow) -> u64 {
