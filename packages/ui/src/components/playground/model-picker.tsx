@@ -8,7 +8,7 @@ import { PickerPopover, PickerTrigger } from "../command-list/picker-popover.js"
 import { Highlight } from "../combobox/combobox.js";
 import { Switch } from "../switch/switch.js";
 import { KAESO_SELECT_VARIANTS, Select } from "../select/select.js";
-import { commandMatch } from "../command-list/match.js";
+import { itemMatch } from "../command-list/match.js";
 import { useField, useFieldControl, withField, type FieldWrapProps } from "../field/field.js";
 import { CapabilityIcons, ModelLabel, ProviderBadge, providerName, type Capability } from "../kaeso/identity.js";
 
@@ -75,18 +75,43 @@ export type ModelPickerProps = SingleModelPickerProps | MultiModelPickerProps;
 
 const ALL = "";
 const ALL_PROVIDERS = "*";
+// Defaults that keep their identity, so the memoized rows aren't rebuilt on every render.
+const NONE: readonly string[] = [];
+const NO_PROVIDERS: ModelPickerProvider[] = [];
+
+const shows = (o: ModelPickerOption, kept: Set<string>, showDeprecated: boolean, only: string | null) =>
+  (showDeprecated || !o.deprecated || kept.has(o.value)) && (!only || o.provider === only);
 
 function ModelRow({ option, query, providerLabel }: { option: ModelPickerOption; query: string; providerLabel?: string | undefined }) {
   const { formatContext } = useFormatters();
   const model = option.model ?? option.value;
-  const details = [option.context ? formatContext(option.context) : "", option.price ?? ""].filter(Boolean).join(" · ");
-  return (
-    <>
-      {providerLabel !== undefined && (
+  // Rows redraw on every keystroke for their highlights. The mark, the capability tooltips and the details don't
+  // change with the query: keeping their elements lets React skip them, and formatting runs once per row.
+  const { badge, end } = useMemo(() => {
+    const details = option.note ?? [option.context ? formatContext(option.context) : "", option.price ?? ""].filter(Boolean).join(" · ");
+    return {
+      badge: providerLabel !== undefined && (
         <span aria-hidden className="flex">
           <ProviderBadge provider={option.provider} name={providerLabel} model={model} />
         </span>
-      )}
+      ),
+      end: (
+        <>
+          {option.capabilities && option.capabilities.length > 0 && <CapabilityIcons capabilities={option.capabilities} className="hidden sm:flex" />}
+          {details && (
+            <span
+              className={cn("shrink-0 text-caption font-regular", figures(details), option.note ? "text-fg-secondary" : "hidden text-fg-tertiary sm:inline")}
+            >
+              {details}
+            </span>
+          )}
+        </>
+      ),
+    };
+  }, [option, providerLabel, model, formatContext]);
+  return (
+    <>
+      {badge}
       <span className="flex min-w-0 flex-1 items-baseline gap-8">
         <span className="min-w-0 shrink truncate">
           <Highlight text={option.name ?? model} query={query} />
@@ -97,18 +122,7 @@ function ModelRow({ option, query, providerLabel }: { option: ModelPickerOption;
           </span>
         )}
       </span>
-      {option.capabilities && option.capabilities.length > 0 && <CapabilityIcons capabilities={option.capabilities} className="hidden sm:flex" />}
-      {(option.note ?? details) && (
-        <span
-          className={cn(
-            "shrink-0 text-caption font-regular",
-            figures(option.note ?? details),
-            option.note ? "text-fg-secondary" : "hidden text-fg-tertiary sm:inline",
-          )}
-        >
-          {option.note ?? details}
-        </span>
-      )}
+      {end}
     </>
   );
 }
@@ -125,11 +139,23 @@ function modelItem(o: ModelPickerOption, nameOf: (provider: string) => string, w
   };
 }
 
-function modelGroups(options: ModelPickerOption[], providerOrder: string[], grouped: boolean, nameOf: (provider: string) => string): CommandListGroup[] {
-  if (!grouped) return [{ id: "models", items: options.map((o) => modelItem(o, nameOf, true)) }];
+function modelGroups(
+  options: ModelPickerOption[],
+  providerOrder: string[],
+  grouped: boolean,
+  nameOf: (provider: string) => string,
+  itemOf: (o: ModelPickerOption) => CommandListItem = (o) => modelItem(o, nameOf, !grouped),
+): CommandListGroup[] {
+  if (!grouped) return [{ id: "models", items: options.map(itemOf) }];
+  const byProvider = new Map<string, ModelPickerOption[]>();
+  for (const o of options) {
+    const models = byProvider.get(o.provider);
+    if (models) models.push(o);
+    else byProvider.set(o.provider, [o]);
+  }
   return providerOrder.flatMap((id) => {
-    const models = options.filter((o) => o.provider === id);
-    if (!models.length) return [];
+    const models = byProvider.get(id);
+    if (!models) return [];
     return [
       {
         id: `provider:${id}`,
@@ -140,7 +166,7 @@ function modelGroups(options: ModelPickerOption[], providerOrder: string[], grou
           </span>
         ),
         count: models.length,
-        items: models.map((o) => modelItem(o, nameOf, false)),
+        items: models.map(itemOf),
       },
     ];
   });
@@ -162,7 +188,7 @@ function useProviderOrder(options: ModelPickerOption[], providers: ModelPickerPr
 
 export function useModelGroups(
   options: ModelPickerOption[],
-  { providers = [], groupByProvider }: { providers?: ModelPickerProvider[] | undefined; groupByProvider?: boolean | undefined } = {},
+  { providers = NO_PROVIDERS, groupByProvider }: { providers?: ModelPickerProvider[] | undefined; groupByProvider?: boolean | undefined } = {},
 ): CommandListGroup[] {
   const { nameOf, providerOrder } = useProviderOrder(options, providers);
   const grouped = groupByProvider ?? providerOrder.length > 1;
@@ -172,8 +198,8 @@ export function useModelGroups(
 export const ModelPicker = forwardRef<HTMLButtonElement, ModelPickerProps>(function ModelPicker(props, ref) {
   const {
     options,
-    providers = [],
-    recent = [],
+    providers = NO_PROVIDERS,
+    recent = NONE,
     groupByProvider,
     placeholder,
     "aria-label": ariaLabel,
@@ -225,16 +251,32 @@ export const ModelPicker = forwardRef<HTMLButtonElement, ModelPickerProps>(funct
   const hasDeprecated = options.some((o) => o.deprecated && !chosen.includes(o.value));
 
   const chosenKey = chosen.join("\u0000");
-  const groups = useMemo<CommandListGroup[]>(() => {
+  const searching = query.trim() !== "";
+  // Built once while the list is open, not on every keystroke: the list filters these same items, and their
+  // match scores are kept per item, so the provider counts and the list score each model only once.
+  const items = useMemo(() => (open ? new Map(options.map((o) => [o, modelItem(o, nameOf, !grouped)])) : null), [open, options, nameOf, grouped]);
+  const listed = useMemo<CommandListGroup[]>(() => {
+    if (!items) return [];
     const kept = new Set(chosenKey.split("\u0000"));
-    const visible = (o: ModelPickerOption) => (showDeprecated || !o.deprecated || kept.has(o.value)) && (!only || o.provider === only);
+    const shown = options.filter((o) => shows(o, kept, showDeprecated, only));
+    return modelGroups(shown, providerOrder, grouped, nameOf, (o) => items.get(o) ?? modelItem(o, nameOf, !grouped));
+  }, [items, options, providerOrder, grouped, nameOf, showDeprecated, chosenKey, only]);
+  const head = useMemo<CommandListGroup[]>(() => {
+    if (!open) return [];
+    const kept = new Set(chosenKey.split("\u0000"));
     const out: CommandListGroup[] = [];
     if (allLabel && !only) out.push({ id: "all", items: [{ value: ALL, label: allLabel }] });
     const recentItems =
-      query.trim() || only ? [] : recent.flatMap((v) => (byValue.get(v) && visible(byValue.get(v)!) ? [modelItem(byValue.get(v)!, nameOf, true)] : []));
+      searching || only
+        ? []
+        : recent.flatMap((v) => {
+            const o = byValue.get(v);
+            return o && shows(o, kept, showDeprecated, only) ? [modelItem(o, nameOf, true)] : [];
+          });
     if (recentItems.length) out.push({ id: "recent", label: t("modelPicker.recent", "Recent"), items: recentItems });
-    return [...out, ...modelGroups(options.filter(visible), providerOrder, grouped, nameOf)];
-  }, [options, providerOrder, grouped, recent, byValue, query, only, showDeprecated, chosenKey, allLabel, t, nameOf]);
+    return out;
+  }, [open, recent, byValue, searching, only, showDeprecated, chosenKey, allLabel, t, nameOf]);
+  const groups = useMemo(() => (head.length ? [...head, ...listed] : listed), [head, listed]);
 
   const pick = (v: string) => {
     if (props.multiple) {
@@ -249,17 +291,17 @@ export const ModelPicker = forwardRef<HTMLButtonElement, ModelPickerProps>(funct
   };
 
   const shownProviders = useMemo(() => {
+    if (!items) return [];
     const q = query.trim();
     const kept = new Set(chosenKey.split("\u0000"));
     const counts = new Map<string, number>();
-    for (const o of options) {
-      if (o.deprecated && !showDeprecated && !kept.has(o.value)) continue;
-      const model = o.model ?? o.value;
-      if (q && commandMatch(q, [o.name ?? model, model, nameOf(o.provider), o.provider]) <= 0) continue;
+    for (const [o, item] of items) {
+      if (!shows(o, kept, showDeprecated, null)) continue;
+      if (q && itemMatch(item, q) <= 0) continue;
       counts.set(o.provider, (counts.get(o.provider) ?? 0) + 1);
     }
     return providerOrder.filter((id) => counts.has(id) || id === only).map((id) => ({ id, count: counts.get(id) ?? 0 }));
-  }, [options, providerOrder, query, showDeprecated, chosenKey, only, nameOf]);
+  }, [items, providerOrder, query, showDeprecated, chosenKey, only]);
   const providerFilter =
     grouped && providerOrder.length > 1 ? (
       <Select

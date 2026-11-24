@@ -25,34 +25,47 @@ async function openPaletteIn(user: UserEvent, navigation: string) {
   return screen.getByRole("listbox", { name: "Results" });
 }
 
-const option = (list: HTMLElement, id: string) =>
-  waitFor(() => {
-    const found = within(list)
-      .getAllByRole("option")
-      .find((o) => o.id.endsWith(`-${id}`));
-    if (!found) throw new Error(`No option ${id}`);
-    return found;
+const idOf = (o: Element) => o.id.replace(/^.*?-(?=[a-z-]+:)/, "");
+
+// The list draws only the rows in view, but the keyboard reaches every row and the active one is always drawn.
+async function walk(user: UserEvent, until?: string) {
+  const search = screen.getByPlaceholderText(/^Search pages, /);
+  const active = () => document.getElementById(search.getAttribute("aria-activedescendant") ?? "");
+  await user.keyboard("{Home}");
+  const ids: string[] = [];
+  for (let row = active(); row && !ids.includes(idOf(row)); row = active()) {
+    ids.push(idOf(row));
+    if (idOf(row) === until) return { ids, row };
+    await user.keyboard("{ArrowDown}");
+  }
+  return { ids, row: null };
+}
+
+const option = (user: UserEvent, id: string) =>
+  waitFor(async () => {
+    const { row } = await walk(user, id);
+    if (!row) throw new Error(`No option ${id}`);
+    return row;
   });
 
-const optionIds = (list: HTMLElement) =>
-  within(list)
-    .getAllByRole("option")
-    .map((o) => o.id.replace(/^.*?-(?=[a-z-]+:)/, ""));
+const optionIds = async (user: UserEvent) => (await walk(user)).ids;
 
 describe("the command palette", () => {
   it("offers the pages, actions and switches the person may use in a project", async () => {
     signedIn();
     projectData();
     const { user } = await renderApp(LIMITS);
-    const list = await openPalette(user);
-    const ids = optionIds(list);
+    await openPalette(user);
+    const ids = await optionIds(user);
     expect(ids).toEqual(expect.arrayContaining(["page:keys", "org:providers", "org-settings:members", "account:profile", "instance:system"]));
     expect(ids).toEqual(
       expect.arrayContaining(["create:page", "create:key", "create:project", "create:invite", "switch:project", "theme:dark", "help:shortcuts"]),
     );
     expect(ids).not.toContain("create:limit");
     expect(ids).not.toContain("switch:org");
-    expect(within(list).getByRole("option", { name: /Add limit/ })).toHaveTextContent("C");
+    const create = await option(user, "create:page");
+    expect(create).toHaveAccessibleName(/Add limit/);
+    expect(create).toHaveTextContent("C");
   });
 
   it("copies the project's portal address and adds an MCP server", async () => {
@@ -61,12 +74,12 @@ describe("the command palette", () => {
     on("GET", "orgs/:org/mcp-servers", paged([]));
     const { user, router } = await renderApp(LIMITS);
     const writeText = vi.spyOn(navigator.clipboard, "writeText");
-    let list = await openPalette(user);
-    await user.click(await option(list, "copy:portal"));
+    await openPalette(user);
+    await user.click(await option(user, "copy:portal"));
     await waitFor(() => expect(writeText).toHaveBeenCalledWith(`${window.location.origin}/mcp/${PROJECT}`));
     expect(await screen.findByText("Portal address copied")).toBeInTheDocument();
-    list = await openPalette(user);
-    await user.click(await option(list, "create:mcp-server"));
+    await openPalette(user);
+    await user.click(await option(user, "create:mcp-server"));
     await waitFor(() => expect(router.state.location.pathname).toBe(`/orgs/${ORG}/mcp-servers`));
     const dialog = await screen.findByRole("dialog", { name: "Add MCP server" });
     await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
@@ -77,8 +90,8 @@ describe("the command palette", () => {
     signedIn();
     projectData();
     const { user, router } = await renderApp(LIMITS);
-    const list = await openPalette(user);
-    await user.click(await option(list, "page:keys"));
+    await openPalette(user);
+    await user.click(await option(user, "page:keys"));
     await waitFor(() => expect(router.state.location.pathname).toBe(`/orgs/${ORG}/projects/${PROJECT}/keys`));
     expect(screen.queryByPlaceholderText(PLACEHOLDER)).not.toBeInTheDocument();
   });
@@ -92,8 +105,8 @@ describe("the command palette", () => {
     await user.keyboard("api");
     const input = await screen.findByPlaceholderText(PLACEHOLDER);
     await waitFor(() => expect(input).toHaveValue("api"));
-    expect(await option(screen.getByRole("listbox", { name: "Results" }), "page:keys")).toBeInTheDocument();
-    expect(optionIds(screen.getByRole("listbox", { name: "Results" }))).not.toContain("page:limits");
+    expect(await option(user, "page:keys")).toBeInTheDocument();
+    expect(await optionIds(user)).not.toContain("page:limits");
     await user.keyboard("{Meta>}k{/Meta}");
     await waitFor(() => expect(screen.queryByPlaceholderText(PLACEHOLDER)).not.toBeInTheDocument());
   });
@@ -167,9 +180,9 @@ describe("the command palette", () => {
     on("GET", "orgs/:org/platform-keys", paged([platformKey({ id: "opk_lint", name: "linter-ci" })]));
     on("GET", "orgs/:org/credentials", { data: [credential({ id: "cred_lin", name: "Lindy OpenAI" })] });
     const { user, router } = await renderApp(`/orgs/${ORG}`);
-    const list = await openPalette(user);
+    await openPalette(user);
     expect(screen.getByPlaceholderText("Search pages, projects and members")).toBeInTheDocument();
-    const ids = optionIds(list);
+    const ids = await optionIds(user);
     expect(ids).toEqual(expect.arrayContaining(["org:providers", "org-settings:members"]));
     expect(ids.filter((id) => id.startsWith("page:"))).toEqual([]);
     await user.type(screen.getByPlaceholderText("Search pages, projects and members"), "Lin");
@@ -278,8 +291,8 @@ describe("the command palette", () => {
     const globex = { org_id: "org_globex", org_name: "Globex" };
     signedIn({ session: whoAmI({ memberships: [membership(), membership(globex)] }), memberships: [myMembership(), myMembership(globex)] });
     const { user, router } = await renderApp(`/orgs/${ORG}/projects`);
-    const list = await openPalette(user);
-    await user.click(within(list).getByRole("option", { name: /Switch organization/ }));
+    await openPalette(user);
+    await user.click(await option(user, "switch:org"));
     await user.click(await screen.findByRole("option", { name: /Globex/ }));
     await waitFor(() => expect(router.state.location.pathname).toBe("/orgs/org_globex"));
   });
@@ -288,8 +301,8 @@ describe("the command palette", () => {
     signedIn();
     projectData();
     const { user, router } = await renderApp(LIMITS);
-    const list = await openPalette(user);
-    await user.click(within(list).getByRole("option", { name: /Switch project/ }));
+    await openPalette(user);
+    await user.click(await option(user, "switch:project"));
     await user.click(await screen.findByRole("option", { name: /Support triage/ }));
     await waitFor(() => expect(router.state.location.pathname).toBe(`/orgs/${ORG}/projects/${OTHER_PROJECT}`));
   });
@@ -297,9 +310,9 @@ describe("the command palette", () => {
   it("runs the page's own create action", async () => {
     signedIn();
     const { user } = await renderApp(`/orgs/${ORG}/projects`);
-    const list = await openPalette(user);
-    expect(optionIds(list)).not.toContain("create:project");
-    await user.click(within(list).getByRole("option", { name: /Create project/ }));
+    await openPalette(user);
+    expect(await optionIds(user)).not.toContain("create:project");
+    await user.click(await option(user, "create:page"));
     expect(await screen.findByRole("dialog", { name: "Create project" })).toBeInTheDocument();
     await user.keyboard("{Escape}");
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Create project" })).not.toBeInTheDocument());
@@ -308,8 +321,8 @@ describe("the command palette", () => {
   it("invites a member from anywhere in the organization", async () => {
     signedIn();
     const { user, router } = await renderApp(`/orgs/${ORG}/projects`);
-    const list = await openPalette(user);
-    await user.click(within(list).getByRole("option", { name: /Invite member/ }));
+    await openPalette(user);
+    await user.click(await option(user, "create:invite"));
     await waitFor(() => expect(router.state.location.pathname).toBe(`/settings/orgs/${ORG}/members`));
     expect(router.state.location.search).toMatchObject({ tab: "invites", invite: true });
   });
@@ -318,8 +331,8 @@ describe("the command palette", () => {
     signedIn();
     projectData();
     const { user, router } = await renderApp(LIMITS);
-    const list = await openPalette(user);
-    await user.click(within(list).getByRole("option", { name: /Create key/ }));
+    await openPalette(user);
+    await user.click(await option(user, "create:key"));
     await waitFor(() => expect(router.state.location.pathname).toBe(`/orgs/${ORG}/projects/${PROJECT}/keys`));
     expect(router.state.location.search).toMatchObject({ create: true });
   });
@@ -327,38 +340,38 @@ describe("the command palette", () => {
   it("offers no project's actions on an organization's pages before the person opened a project", async () => {
     signedIn();
     const { user } = await renderApp(`/orgs/${ORG}/projects`);
-    const list = await openPalette(user);
-    expect(optionIds(list)).not.toContain("create:key");
-    expect(optionIds(list).filter((id) => id.startsWith("page:"))).toEqual([]);
+    await openPalette(user);
+    expect(await optionIds(user)).not.toContain("create:key");
+    expect((await optionIds(user)).filter((id) => id.startsWith("page:"))).toEqual([]);
   });
 
   it("leaves out the instance for people who don't run it", async () => {
     signedIn({ session: whoAmI({ user: person({ is_instance_admin: false }) }) });
     const { user } = await renderApp(`/orgs/${ORG}/projects`);
-    const list = await openPalette(user);
-    expect(optionIds(list).some((id) => id.startsWith("instance:"))).toBe(false);
-    expect(optionIds(list)).toContain("account:profile");
+    await openPalette(user);
+    expect((await optionIds(user)).some((id) => id.startsWith("instance:"))).toBe(false);
+    expect(await optionIds(user)).toContain("account:profile");
   });
 
   it("changes the theme", async () => {
     signedIn();
     const { user } = await renderApp(`/orgs/${ORG}/projects`);
-    let list = await openPalette(user);
-    await user.click(within(list).getByRole("option", { name: /Use the dark theme/ }));
+    await openPalette(user);
+    await user.click(await option(user, "theme:dark"));
     await waitFor(() => expect(document.documentElement).toHaveAttribute("data-theme", "dark"));
-    list = await openPalette(user);
-    await user.click(within(list).getByRole("option", { name: /Use the light theme/ }));
+    await openPalette(user);
+    await user.click(await option(user, "theme:light"));
     await waitFor(() => expect(document.documentElement).toHaveAttribute("data-theme", "light"));
-    list = await openPalette(user);
-    await user.click(within(list).getByRole("option", { name: /Use the system theme/ }));
+    await openPalette(user);
+    await user.click(await option(user, "theme:system"));
     await waitFor(() => expect(document.documentElement).not.toHaveAttribute("data-theme"));
   });
 
   it("opens the list of keyboard shortcuts", async () => {
     signedIn();
     const { user } = await renderApp(`/orgs/${ORG}/projects`);
-    const list = await openPalette(user);
-    await user.click(within(list).getByRole("option", { name: /Keyboard shortcuts/ }));
+    await openPalette(user);
+    await user.click(await option(user, "help:shortcuts"));
     const sheet = await screen.findByRole("dialog", { name: "Keyboard shortcuts" });
     expect(within(sheet).getByText("Single keys work when no field has focus.")).toBeInTheDocument();
     expect(within(sheet).getByText("Organization audit log")).toBeInTheDocument();
@@ -367,8 +380,8 @@ describe("the command palette", () => {
   it("offers only the account and the theme to someone outside every organization", async () => {
     signedIn({ session: whoAmI({ memberships: [] }), memberships: [] });
     const { user } = await renderApp("/");
-    const list = await openPaletteIn(user, "Console");
-    const ids = optionIds(list);
+    await openPaletteIn(user, "Console");
+    const ids = await optionIds(user);
     expect(ids).toEqual(expect.arrayContaining(["account:profile", "theme:dark", "help:shortcuts"]));
     expect(ids.some((id) => /^(page|org|org-settings|create|switch):/.test(id))).toBe(false);
     expect(requests("GET", "orgs/:org/projects")).toHaveLength(0);
@@ -380,8 +393,8 @@ describe("the command palette", () => {
     on("GET", "me", me());
     window.localStorage.setItem("kaeso:last", JSON.stringify({ org: ORG, project: OTHER_PROJECT }));
     const { user, router } = await renderApp("/settings/account/profile");
-    const list = await openPaletteIn(user, "Settings");
-    await user.click(await option(list, "page:keys"));
+    await openPaletteIn(user, "Settings");
+    await user.click(await option(user, "page:keys"));
     await waitFor(() => expect(router.state.location.pathname).toBe(`/orgs/${ORG}/projects/${OTHER_PROJECT}/keys`));
   });
 
@@ -394,9 +407,9 @@ describe("the command palette", () => {
     projectData();
     on("GET", "me", me());
     const { user, router } = await renderApp("/settings/account/profile");
-    const list = await openPaletteIn(user, "Settings");
-    expect(optionIds(list).filter((id) => id.startsWith("page:"))).toEqual([]);
-    await user.click(await option(list, "org:providers"));
+    await openPaletteIn(user, "Settings");
+    expect((await optionIds(user)).filter((id) => id.startsWith("page:"))).toEqual([]);
+    await user.click(await option(user, "org:providers"));
     await waitFor(() => expect(router.state.location.pathname).toBe(`/orgs/${ORG}/providers`));
   });
 
@@ -410,9 +423,9 @@ describe("the command palette", () => {
     on("GET", "me", me());
     window.localStorage.setItem("kaeso:last", JSON.stringify({ org: "org_globex", project: "proj_globex" }));
     const { user, router } = await renderApp(`/settings/orgs/${ORG}/general`);
-    const list = await openPaletteIn(user, "Settings");
-    expect(optionIds(list).filter((id) => id.startsWith("page:"))).toEqual([]);
-    await user.click(await option(list, "org:providers"));
+    await openPaletteIn(user, "Settings");
+    expect((await optionIds(user)).filter((id) => id.startsWith("page:"))).toEqual([]);
+    await user.click(await option(user, "org:providers"));
     await waitFor(() => expect(router.state.location.pathname).toBe(`/orgs/${ORG}/providers`));
   });
 });

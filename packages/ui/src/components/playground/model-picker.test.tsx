@@ -170,6 +170,27 @@ describe("ModelPicker", () => {
     await user.paste("model-9999");
     expect(screen.getAllByRole("option")[0]).toHaveTextContent("model-9999");
   });
+
+  it("builds no rows while closed and none again for each keystroke", async () => {
+    const user = userEvent.setup();
+    let reads = 0;
+    const counted = Array.from({ length: 1000 }, (_, i) =>
+      Object.defineProperty({ value: `m${i}`, provider: `p${i % 8}`, model: `model-${i}` }, "name", {
+        enumerable: true,
+        get: () => {
+          reads += 1;
+          return `Model ${i}`;
+        },
+      }),
+    );
+    render(<ModelPicker options={counted} />);
+    expect(reads).toBe(0);
+    await open(user);
+    reads = 0;
+    await user.keyboard("model");
+    expect(screen.getAllByRole("option").length).toBeLessThan(80);
+    expect(reads).toBeLessThan(counted.length);
+  });
 });
 
 describe("useModelGroups", () => {

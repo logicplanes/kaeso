@@ -22,7 +22,7 @@ import { Highlight } from "../combobox/combobox.js";
 import { MENU_HINT, MENU_ITEM, MENU_LABEL } from "../menu/styles.js";
 import { OptionCheckbox } from "../select/option-checkbox.js";
 import { useUiText } from "../../i18n/context.js";
-import { commandMatch } from "./match.js";
+import { itemMatch } from "./match.js";
 
 export const KAESO_COMMAND_LIST_VARIANTS = {
   height: {
@@ -122,7 +122,9 @@ const ANNOUNCE_AFTER = 500;
 const SEARCH = { md: 44, lg: 56 } as const;
 const EMPTY = 80;
 const FALLBACK_VIEWPORT = 480;
-const VIRTUALIZE_ABOVE = 200;
+// A popover shows about 14 rows and the virtualizer draws 4 more on each side; past that, drawing every row
+// costs more than virtualizing, and a model row with its logo, highlights and capability marks is costly.
+const VIRTUALIZE_ABOVE = 40;
 
 export const CommandListHeightContext = createContext<CommandListHeight | null>(null);
 
@@ -156,8 +158,6 @@ function rowOffsets(rows: Row[], rowHeight: number) {
   rows.forEach((row, i) => out.push((out[i] ?? EDGE) + sizeOf(row, rowHeight) + gapAfter(rows, i)));
   return out;
 }
-
-const fuzzy = (item: CommandListItem, query: string) => commandMatch(query, [item.label, ...(item.keywords ?? [])]);
 
 function visibleGroups(groups: CommandListGroup[], query: string, match: (item: CommandListItem, query: string) => number) {
   const q = query.trim();
@@ -201,7 +201,7 @@ export const CommandList = forwardRef<HTMLInputElement, CommandListProps>(functi
     autoFocus,
     onEscape,
     escapeClears = true,
-    match = fuzzy,
+    match = itemMatch,
     counts = true,
     inputProps,
     className,
@@ -264,7 +264,7 @@ export const CommandList = forwardRef<HTMLInputElement, CommandListProps>(functi
     getScrollElement: () => scroller.current,
     initialOffset: () => scroller.current?.scrollTop ?? 0,
     estimateSize: (i) => sizeOf(rows[i], rowHeight) + gapAfter(rows, i),
-    overscan: 8,
+    overscan: 4,
     useFlushSync: false,
     paddingStart: EDGE,
     paddingEnd: EDGE,
@@ -312,7 +312,7 @@ export const CommandList = forwardRef<HTMLInputElement, CommandListProps>(functi
     keyboardMove.current = true;
     setActive(to);
   };
-  const page = Math.max(1, Math.floor((scroller.current?.clientHeight || FALLBACK_VIEWPORT) / rowHeight) - 1);
+  const page = () => Math.max(1, Math.floor((scroller.current?.clientHeight || FALLBACK_VIEWPORT) / rowHeight) - 1);
   const choose = (i: number) => {
     const o = options[i];
     if (!o || o.item.disabled) return;
@@ -344,11 +344,11 @@ export const CommandList = forwardRef<HTMLInputElement, CommandListProps>(functi
         break;
       case "PageDown":
         e.preventDefault();
-        move(firstEnabled(Math.min(last, Math.max(active, 0) + page), -1));
+        move(firstEnabled(Math.min(last, Math.max(active, 0) + page()), -1));
         break;
       case "PageUp":
         e.preventDefault();
-        move(firstEnabled(Math.max(0, active - page), 1));
+        move(firstEnabled(Math.max(0, active - page()), 1));
         break;
       case "Enter":
         if (active < 0) return;
@@ -416,8 +416,8 @@ export const CommandList = forwardRef<HTMLInputElement, CommandListProps>(functi
         )}
         {item.meta !== undefined && <span className={cn(MENU_HINT, "pl-8 font-regular", figures(item.meta))}>{item.meta}</span>}
         {checks && (
-          <span aria-hidden className={cn("flex size-16 shrink-0 items-center justify-center text-fg", !isSelected && "opacity-0")}>
-            <Icon icon={icons.check} size="sm" />
+          <span aria-hidden className="flex size-16 shrink-0 items-center justify-center text-fg">
+            {isSelected && <Icon icon={icons.check} size="sm" />}
           </span>
         )}
       </div>
