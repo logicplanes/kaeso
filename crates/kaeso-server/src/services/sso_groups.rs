@@ -196,9 +196,8 @@ pub async fn apply(
             }
         }
     }
-    // A rule keeps its projects' roles as JSON that no foreign key clears, so a custom role
-    // deleted since still stands there; it gives nothing, and still goes before later rules,
-    // so a sync takes away what a later rule gave there.
+    // No foreign key clears a deleted custom role from a rule's projects. Such a project gives
+    // nothing but still goes before later rules, which the role's deletion must not promote.
     if wanted.values().any(|(_, role_id, _)| role_id.is_some()) {
         let roles = roles::list(&mut *tx, org).await?;
         wanted
