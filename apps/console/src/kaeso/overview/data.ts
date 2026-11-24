@@ -3,10 +3,12 @@ import { useQuery, type QueryKey } from "@tanstack/react-query";
 import type { UsageRow } from "~/api/generated/types";
 import { allKeysQuery } from "~/api/queries/keys";
 import { limitsQuery } from "~/api/queries/limits";
+import { mcpServersQuery } from "~/api/queries/mcp-servers";
 import { catalogueQuery } from "~/api/queries/models";
 import { serviceAccountLookupQuery } from "~/api/queries/members";
 import { orgMembersQuery } from "~/api/queries/orgs";
 import { orgProjectsQuery } from "~/api/queries/projects";
+import { projectServersQuery } from "~/api/queries/tools";
 import { orgUsageQuery, projectUsageQuery, timelineQuery, usageSpanQuery, type GroupBy, type TimelineStep } from "~/api/queries/usage";
 import { useProjectRights } from "~/auth/rights";
 import { everyProjectRights, useOrgRights, useRequestLogs, useSession } from "~/auth/session";
@@ -155,6 +157,13 @@ export function useOverview(scope: Scope, search: PeriodSearch) {
   };
   const projectOf = (id: string) => projects.data?.find((p) => p.id === id);
 
+  // Only MCP calls count as tool calls, so their tab shows where there are MCP servers: a list the route loads before
+  // the period's numbers, so the tabs are settled from the first frame. Calls in the period count too, for servers
+  // since removed and for people who can't see the list.
+  const projectServers = useQuery({ ...projectServersQuery(org, project ?? ""), enabled: !!project && can("tools.view") });
+  const orgServers = useQuery({ ...mcpServersQuery(org), enabled: !project && orgRights.has("mcp_servers.view") });
+  const servers = project ? projectServers.data : orgServers.data;
+
   const rows = daily.data ?? [];
   const prevDaily = previous.data;
   const points = fineStep
@@ -186,6 +195,7 @@ export function useOverview(scope: Scope, search: PeriodSearch) {
     prevDays: prevRowsByIndex,
     prevRows: compare && previous.data && prevRows.some((r) => r.requests > 0) ? prevRows : undefined,
     now: totals(rows),
+    toolsTab: (servers?.length ?? 0) > 0 || totals(rows).toolCalls > 0,
     loading: daily.isPending || (!!compare && previous.isLoading),
     refreshing: [daily, previous, byFirst, bySecond, byThird].some((q) => q.isPlaceholderData),
     single,

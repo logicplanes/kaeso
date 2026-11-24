@@ -330,7 +330,7 @@ describe("the organization overview", () => {
     expect(news).toHaveTextContent(/Kaeso 40\.5\.0.*New release/);
     expect(news).not.toHaveTextContent("Added");
     // Notes with headings alone leave no line to show; the banner says so instead of shrinking under the page.
-    expect(news).toHaveTextContent("The notes of this release aren't on this install yet.");
+    expect(news).toHaveTextContent("There's no summary of this release to show here.");
   });
 
   it("calls a pre-release one on its artwork", async () => {

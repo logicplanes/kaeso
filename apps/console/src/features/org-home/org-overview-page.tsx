@@ -34,6 +34,9 @@ export function OrgOverviewPage({ org }: { org: string }) {
           <Suspense fallback={<ReleaseBannerPending />}>
             <ReleaseBanner />
           </Suspense>
+          <Suspense fallback={null}>
+            <RetiringProjects org={org} />
+          </Suspense>
           <div className="mt-48">
             <HomeMetrics
               org={org}
@@ -49,11 +52,6 @@ export function OrgOverviewPage({ org }: { org: string }) {
               }
             />
           </div>
-          {/* Below the activity: whether any project uses retiring models is known only after the page's first frame,
-              and the banner would push the numbers down when it arrived. */}
-          <Suspense fallback={null}>
-            <RetiringProjects org={org} />
-          </Suspense>
           <Suspense fallback={null}>
             <OrgGlance org={org} />
             {first && <NewModels org={org} project={first.id} projectName={first.name} />}

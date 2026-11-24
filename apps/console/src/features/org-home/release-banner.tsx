@@ -35,7 +35,7 @@ export function ReleaseBanner() {
         className="col-span-full"
         eyebrow={isNew ? t("kaeso.home.newRelease", "New release") : t("kaeso.home.running", "Running now")}
         title={t("kaeso.home.releaseTitle", "Kaeso {version}", { version: latest.version })}
-        description={firstSentence(latest.notes) || t("shell.whatsNew.noNotes", "The notes of this release aren't on this install yet.")}
+        description={firstSentence(latest.notes) || t("kaeso.home.noSummary", "There's no summary of this release to show here.")}
         actions={<ReadWhatsNew />}
         art={
           <ReleaseArt

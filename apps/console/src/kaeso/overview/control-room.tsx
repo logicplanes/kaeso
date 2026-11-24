@@ -55,12 +55,13 @@ function ChartCell({ o, metric }: { o: Overview; metric: MetricId }) {
       title={context ? t("kaeso.overview.lastDays", "{metric} per day, the last 14 days, UTC", { metric: what }) : perBucket(o, what)}
     >
       <CellInset grow>
-        <div className="flex flex-wrap items-center justify-between gap-x-24 gap-y-6">
-          <Text variant="small" tone="tertiary">
-            {/* The placeholder keeps the note's line, so the chart doesn't drop when the note arrives. */}
-            {note ?? (o.pointsLoading && <Skeleton shape="word" className="w-240" />)}
+        {/* One line each, loading or not: the note on its own line, then the legend, side by side from 1024px. The
+            legend's words are known before the numbers, so it stands while they load. */}
+        <div className="flex flex-col items-start gap-y-6 lg:flex-row lg:items-center lg:justify-between lg:gap-x-24">
+          <Text variant="small" tone="tertiary" truncate className="max-w-full">
+            {note ?? (!context && o.pointsLoading && <Skeleton shape="word" className="w-240" />)}
           </Text>
-          {o.prevRows && !context && (
+          {!context && (o.prevRows || (o.compare && o.loading)) && (
             <Legend
               items={[
                 { id: "now", label: t("kaeso.overview.thisPeriod", "This period"), color: m.color },
@@ -112,8 +113,7 @@ function TopCell({ o, dim, metric }: { o: Overview; dim: Ranked; metric: MetricI
 
 export function ControlRoom({ o, initial = "requests" }: { o: Overview; initial?: MetricId | undefined }) {
   const [metric, setMetric] = useState<MetricId>(initial);
-  // Tool calls keep their tab at zero too: a tab that appeared with the numbers narrowed every other one under the reader.
-  const ids: MetricId[] = ["requests", "tokens", ...(o.showCost ? (["cost"] as const) : []), "errors", "tools"];
+  const ids: MetricId[] = ["requests", "tokens", ...(o.showCost ? (["cost"] as const) : []), "errors", ...(o.toolsTab ? (["tools"] as const) : [])];
   const top: Ranked[] = o.project ? ["model", "key"] : ["project", "model"];
   return (
     <>

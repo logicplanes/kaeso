@@ -14,7 +14,7 @@ export function RetiringProjects({ org }: { org: string }) {
   return (
     <Banner
       tone="warning"
-      className="mt-48"
+      className="mt-24"
       title={t("orgHome.retiring.title", "{count, plural, one {# project uses retiring models} other {# projects use retiring models}}", {
         count: list.length,
       })}

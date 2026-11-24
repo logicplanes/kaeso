@@ -97,6 +97,7 @@
   "kaeso.home.newModelsHint": "最新的在前，来自 Kaeso 持续更新的模型目录。",
   "kaeso.home.newRelease": "新版本",
   "kaeso.home.news": "动态",
+  "kaeso.home.noSummary": "此处没有此版本的摘要。",
   "kaeso.home.noChanges": "暂无变更",
   "kaeso.home.openModel": "在 {project} 中打开",
   "kaeso.home.perDay": "每天的{metric}",

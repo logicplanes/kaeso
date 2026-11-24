@@ -5,6 +5,7 @@ import { atFixtureTime } from "~/test/clock";
 import { ORG, OTHER_PROJECT, PROJECT, project, signedIn, whoAmI, withRights, without } from "~/test/fixtures";
 import { member, usageRow as orgRow } from "~/test/fixtures/org";
 import { apiKey, catalogueModel, externalSource, limit, listed, projectData, projectPath, serviceAccount, usageRow } from "~/test/fixtures/project";
+import { PROJECT_SERVERS, projectServer } from "~/test/fixtures/mcp";
 import { apiError, on, page, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
 
@@ -63,15 +64,30 @@ const BEFORE: Rows = {
 };
 
 describe("the analytics control room", () => {
-  it("keeps the tool calls tab at zero, so the tabs don't narrow when a period's numbers arrive", async () => {
+  it("shows tool calls where the project has MCP servers, at zero too, from the first frame", async () => {
     signedIn();
     projectData({});
     on("GET", "orgs/:org/projects/:project/logs", listed([]));
+    on("GET", PROJECT_SERVERS, { data: [projectServer()] });
+    on("GET", USAGE, () => new Promise(() => {}));
+    on("GET", `${USAGE}/timeline`, () => new Promise(() => {}));
+    await renderApp(projectPath(`analytics?${PERIOD}`));
+    // The numbers never come, so the tab is decided by the servers alone, before them.
+    expect(within(screen.getByRole("tablist", { name: "Metric to chart" })).getAllByRole("tab")).toHaveLength(5);
+    expect(tab(/^Tool calls/)).toBeInTheDocument();
+  });
+
+  it("leaves tool calls out of a project without MCP servers or calls, instead of a lasting zero", async () => {
+    signedIn();
+    projectData({});
+    on("GET", "orgs/:org/projects/:project/logs", listed([]));
+    on("GET", PROJECT_SERVERS, { data: [] });
     usage(USAGE, { day: [usageRow({ key: "2026-10-13", requests: 40 })] });
     on("GET", `${USAGE}/timeline`, { data: [] });
     await renderApp(projectPath(`analytics?${PERIOD}`));
-    await waitFor(() => expect(tab(/^Tool calls/)).toHaveTextContent(/^Tool calls0/));
-    expect(within(screen.getByRole("tablist", { name: "Metric to chart" })).getAllByRole("tab")).toHaveLength(5);
+    await waitFor(() => expect(tab(/^Requests/)).toHaveTextContent(/40/));
+    expect(within(screen.getByRole("tablist", { name: "Metric to chart" })).getAllByRole("tab")).toHaveLength(4);
+    expect(screen.queryByRole("tab", { name: /^Tool calls/ })).not.toBeInTheDocument();
   });
 
   it("keeps the line of the chart's note while its numbers load, so the chart doesn't drop when the note arrives", async () => {
@@ -83,6 +99,12 @@ describe("the analytics control room", () => {
     await renderApp(projectPath(`analytics?${PERIOD}`));
     const chart = cell("Requests per day, UTC");
     expect(chart.querySelector("span[aria-hidden].inline-block")).toBeInTheDocument();
+    // The legend's words don't wait for the numbers, so its line is there from the start.
+    expect(
+      within(chart)
+        .getAllByRole("listitem")
+        .map((i) => i.textContent),
+    ).toEqual(["This period", "vs. prior 14 days"]);
   });
 
   it("leads with the totals and their change, charts the chosen one by the day and ranks what drives it", async () => {
