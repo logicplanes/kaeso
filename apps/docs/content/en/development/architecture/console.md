@@ -60,7 +60,7 @@ What the first paint doesn't need loads when it is used:
 - Tooltips
 - The date picker's calendar
 
-The sidebar's menus and the calendar also load once the page is idle, so the first press opens them at once. The breakdown, cost share and period picker of the project and organization overviews, and the sign-in steps after the email address, load alongside the data they wait for. A request log, a project's audit log and a project's overview start their data in the route's loader, from a module of their own (`src/api/queries/route-prefetch.ts`) that only those routes load.
+The sidebar's menus and the calendar also load once the page is idle, so the first press opens them at once. The breakdown, cost share and period picker of the project and organization overviews, and the sign-in steps after the email address, load alongside the data they wait for. A page starts its data in its route's loader, which the router runs as soon as someone points at, focuses or touches a link to it, so the data is usually there when the page opens. A loader asks only for what the page itself asks for with the person's rights, and doesn't wait for it, so it never holds up the change of page. The request logs, audit logs and analytics read their filters and periods in a module of their own (`src/api/queries/route-prefetch.ts`) that only those routes load. The account, organization and instance settings each start their pages' data in their layout's loader (`src/api/queries/settings-prefetch.ts`), and the settings sidebar starts it as soon as a pointer or finger reaches a link.
 
 `pnpm build` fails when a route's first paint grows past its ceiling in `scripts/budget.mjs`, or when page code from `src/features` reaches the entry. To get back under it:
 

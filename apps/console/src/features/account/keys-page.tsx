@@ -6,6 +6,7 @@ import { ScopeTabs, type Scope } from "~/kaeso/scope-tabs";
 import { toast } from "~/shell/toast";
 import { api, data } from "~/api/client";
 import type { KeyView } from "~/api/generated/types";
+import { myKeysQuery } from "~/api/queries/me";
 import { useApiMutation } from "~/auth/mutation";
 import { useMemberships } from "~/auth/session";
 import { LoadFailed } from "~/features/org/load-failed";
@@ -14,17 +15,8 @@ import { expiryText } from "~/features/project/keys/expiry";
 import { projectPath } from "~/shell/pages";
 import { SettingsPage } from "~/shell/settings-page";
 import { t } from "~/i18n";
-import { allPages } from "~/api/paging";
 import { LastUsed } from "~/kaeso/last-used";
 import { findKeys, isKeySort, keySortOptions, type KeySort } from "~/kaeso/key-list";
-
-const myKeysQuery = (includeArchived: boolean) => ({
-  queryKey: ["me", "keys", { includeArchived }],
-  queryFn: (): Promise<KeyView[]> =>
-    allPages(async (after) =>
-      data(await api.GET("/platform/v1/me/keys", { params: { query: { limit: 100, include_archived: includeArchived, ...(after ? { after } : {}) } } })),
-    ),
-});
 
 const keyQueries = (key: KeyView, org: string | undefined) => [["me", "keys"], ...(org ? [["orgs", org, "projects", key.project_id, "keys"]] : [])];
 

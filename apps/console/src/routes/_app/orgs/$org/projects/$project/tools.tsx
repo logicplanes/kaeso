@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { portalGrantsQuery, projectServersQuery, projectToolsQuery } from "~/api/queries/tools";
 import { ToolsPage, type ToolsSearch } from "~/features/project/tools/tools-page";
 
 const one = <T extends string>(v: unknown, allowed: readonly T[]): T | undefined => allowed.find((a) => a === v);
@@ -21,7 +22,16 @@ const toolsSearch = (s: Record<string, unknown>): ToolsSearch => {
   return out;
 };
 
-export const Route = createFileRoute("/_app/orgs/$org/projects/$project/tools")({ validateSearch: toolsSearch, component: Tools });
+export const Route = createFileRoute("/_app/orgs/$org/projects/$project/tools")({
+  validateSearch: toolsSearch,
+  // Every tab's count is in the header, so the page asks for all three lists whichever tab is open.
+  loader: ({ context: { queryClient }, params: { org, project } }) => {
+    void queryClient.prefetchQuery(projectToolsQuery(org, project));
+    void queryClient.prefetchQuery(projectServersQuery(org, project));
+    void queryClient.prefetchQuery(portalGrantsQuery(org, project));
+  },
+  component: Tools,
+});
 
 function Tools() {
   const { org, project } = Route.useParams();

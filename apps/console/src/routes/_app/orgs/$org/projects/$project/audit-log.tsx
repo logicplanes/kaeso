@@ -9,7 +9,7 @@ export const Route = createFileRoute("/_app/orgs/$org/projects/$project/audit-lo
     return filters;
   },
   loader: ({ context, params, deps }) => {
-    void import("~/api/queries/route-prefetch").then((m) => m.prefetchProjectAuditLog(context.queryClient, params.org, params.project, deps));
+    void import("~/api/queries/route-prefetch").then((m) => m.prefetchAuditLog(context.queryClient, params, deps));
   },
   component: AuditLog,
 });

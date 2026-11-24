@@ -26,6 +26,7 @@ import { formatDate } from "@logicplanes/kaeso-ui/format";
 import { api, data } from "~/api/client";
 import type { WebhookDeliveryView, WebhookFormat, WebhookView } from "~/api/generated/types";
 import { orgProjectsQuery } from "~/api/queries/projects";
+import { webhooksKey, webhooksQuery } from "~/api/queries/webhooks";
 import { useApiMutation } from "~/auth/mutation";
 import { useNeedsRight } from "~/auth/needs-right";
 import { useOrgRights } from "~/auth/session";
@@ -50,15 +51,8 @@ export const WEBHOOK_KINDS = [
   "model_changes",
 ] as const;
 
-const WEBHOOKS = (org: string) => ["orgs", org, "webhooks"];
-
-const webhooksQuery = (org: string) => ({
-  queryKey: WEBHOOKS(org),
-  queryFn: async (): Promise<WebhookView[]> => data(await api.GET("/platform/v1/orgs/{org}/webhooks", { params: { path: { org } } })).data,
-});
-
 const deliveriesQuery = (org: string, webhook: string) => ({
-  queryKey: [...WEBHOOKS(org), webhook, "deliveries"],
+  queryKey: [...webhooksKey(org), webhook, "deliveries"],
   queryFn: async (): Promise<WebhookDeliveryView[]> =>
     data(await api.GET("/platform/v1/orgs/{org}/webhooks/{webhook}/deliveries", { params: { path: { org, webhook } } })).data,
 });
@@ -94,7 +88,7 @@ export function WebhooksPage({ org }: { org: string }) {
   const toggle = useApiMutation({
     mutationFn: async (w: WebhookView) =>
       data(await api.PATCH("/platform/v1/orgs/{org}/webhooks/{webhook}", { params: { path: { org, webhook: w.id } }, body: { enabled: !w.enabled } })),
-    invalidates: [WEBHOOKS(org)],
+    invalidates: [webhooksKey(org)],
     onSuccess: (w) =>
       toast(
         w.enabled ? t("org.webhooks.turnedOn", "{name} turned on", { name: w.name }) : t("org.webhooks.turnedOffToast", "{name} turned off", { name: w.name }),
@@ -197,7 +191,7 @@ export function WebhooksPage({ org }: { org: string }) {
 function useTest(org: string) {
   return useApiMutation({
     mutationFn: async (w: WebhookView) => data(await api.POST("/platform/v1/orgs/{org}/webhooks/{webhook}/test", { params: { path: { org, webhook: w.id } } })),
-    invalidates: [WEBHOOKS(org)],
+    invalidates: [webhooksKey(org)],
     onSuccess: (d) =>
       d.status === "delivered"
         ? toast.success(t("org.webhooks.testDelivered", "Test delivered"))
@@ -292,7 +286,7 @@ function CreateWebhookDialog({ org, onClose }: { org: string; onClose: () => voi
           body: { name: name.trim(), url: url.trim(), format, kinds, ...(project ? { project } : {}) },
         }),
       ),
-    invalidates: [WEBHOOKS(org)],
+    invalidates: [webhooksKey(org)],
     onSuccess: (w) => setSecret({ name: w.name, secret: w.secret }),
   });
   const result: StepDialogResult | undefined = secret
@@ -390,7 +384,7 @@ function RotateDialog({ org, webhook, onClose }: { org: string; webhook: Webhook
   const [secret, setSecret] = useState<string | null>(null);
   const rotate = useApiMutation({
     mutationFn: async () => data(await api.POST("/platform/v1/orgs/{org}/webhooks/{webhook}/secret", { params: { path: { org, webhook: webhook.id } } })),
-    invalidates: [WEBHOOKS(org)],
+    invalidates: [webhooksKey(org)],
     onSuccess: (r) => setSecret(r.secret),
   });
   return (
@@ -427,7 +421,7 @@ function RotateDialog({ org, webhook, onClose }: { org: string; webhook: Webhook
 function DeleteDialog({ org, webhook, onClose }: { org: string; webhook: WebhookView; onClose: () => void }) {
   const remove = useApiMutation({
     mutationFn: async () => data(await api.DELETE("/platform/v1/orgs/{org}/webhooks/{webhook}", { params: { path: { org, webhook: webhook.id } } })),
-    invalidates: [WEBHOOKS(org)],
+    invalidates: [webhooksKey(org)],
     onSuccess: () => {
       onClose();
       toast(t("org.webhooks.deleted", "{name} deleted", { name: webhook.name }));

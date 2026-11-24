@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation, useNavigate, useParams } from "@tanstack/react-router";
 import { Badge, Input, Sidebar, Text } from "@logicplanes/kaeso-ui";
 import { updatesQuery } from "~/api/queries/instance";
-import { prefetchSettingsPath } from "~/api/queries/settings-prefetch";
+import { prefetchSettingsLink } from "~/api/queries/settings-prefetch";
 import { useMemberships, useOrgRights, useSession } from "~/auth/session";
 import { t } from "~/i18n";
 import { readLast } from "./last";
@@ -30,7 +30,7 @@ export function SettingsSidebar() {
   const queryClient = useQueryClient();
   const prefetch = (e: SyntheticEvent) => {
     const href = (e.target as Element).closest("a")?.getAttribute("href");
-    if (href) prefetchSettingsPath(queryClient, href);
+    if (href) prefetchSettingsLink(queryClient, href);
   };
   const matches = [
     ...ACCOUNT_PAGES.filter(match).map((p) => `/settings/account/${p.path}`),

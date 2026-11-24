@@ -91,6 +91,15 @@ describe("instance audit log", () => {
     expect(requests("GET", "instance/audit-log").map((r) => Object.fromEntries(r.query))).toContainEqual({ actor: "usr_grace", limit: "1" });
   });
 
+  it("says when the log and the user list couldn't load", async () => {
+    signedIn();
+    on("GET", "instance/users", apiError(400, "invalid_request", "The user list is locked."));
+    on("GET", "instance/audit-log", apiError(400, "invalid_request", "The audit log is locked."));
+    await renderApp(PATH);
+    expect((await notifications().findAllByText("The audit log is locked.")).length).toBeGreaterThan(0);
+    expect(requests("GET", "instance/users/:user")).toHaveLength(0);
+  });
+
   it("looks up only the people and organizations the user list doesn't already name", async () => {
     signedIn();
     instanceAudit();

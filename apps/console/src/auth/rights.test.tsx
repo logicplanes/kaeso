@@ -5,14 +5,15 @@ import userEvent from "@testing-library/user-event";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "@tanstack/react-router";
 import { LinkProvider, ThemeProvider } from "@logicplanes/kaeso-ui";
-import { ORG, signedIn, whoAmI } from "~/test/fixtures";
+import { ORG, PROJECT, membership, signedIn, whoAmI } from "~/test/fixtures";
 import { apply, load } from "~/i18n";
 import { I18nProvider } from "~/i18n/provider";
 import { queryClient } from "~/query";
 import { createAppRouter } from "~/router";
 import { RouterLink } from "~/shell/router-link";
 import { AppToaster } from "~/shell/toaster";
-import { sessionQuery, useOrgRights } from "./session";
+import { loadedProjectRights } from "./rights";
+import { loadedOrgRights, projectRightsQuery, sessionQuery, useOrgRights } from "./session";
 
 const notifications = async () => within(await screen.findByRole("region", { name: "Notifications" }));
 
@@ -59,5 +60,20 @@ describe("an organization's rights", () => {
     rerender();
     expect(result.current).toBe(first);
     expect(first.has("org.view")).toBe(true);
+  });
+});
+
+describe("the rights a route's loader reads", () => {
+  it("are none before the session is loaded", () => {
+    expect(loadedOrgRights(queryClient, ORG).size).toBe(0);
+    expect(loadedProjectRights(queryClient, ORG, PROJECT).size).toBe(0);
+  });
+
+  it("keep only what a read-only organization leaves in a project", () => {
+    const session = whoAmI({ memberships: [membership({ org_state: "scheduled_for_deletion" })] });
+    queryClient.setQueryData(sessionQuery.queryKey, session);
+    queryClient.setQueryData(projectRightsQuery(session, ORG, PROJECT).queryKey, { rights: new Set(["models.view", "models.manage"]), member: true });
+    expect([...loadedProjectRights(queryClient, ORG, PROJECT)]).toEqual(["models.view"]);
+    expect(loadedOrgRights(queryClient, ORG).has("org.view")).toBe(true);
   });
 });

@@ -19,7 +19,8 @@ describe("data that fails to load", () => {
     expect((await notifications().findAllByText("Sessions are being rotated; try again.")).length).toBeGreaterThan(0);
     refused = false;
     await user.click(await notifications().findByRole("button", { name: "Try again", hidden: true }));
-    await waitFor(() => expect(requests("GET", "me/sessions")).toHaveLength(2));
+    // The route's loader asked quietly first, then the page as it opened, then Try again.
+    await waitFor(() => expect(requests("GET", "me/sessions")).toHaveLength(3));
   });
 
   it("names the missing right and who can give it", async () => {
@@ -35,7 +36,7 @@ describe("data that fails to load", () => {
     signedIn();
     on("GET", "me/sessions", apiError(404, "not_found", "No sessions here."));
     await renderApp("/settings/account/sessions");
-    await waitFor(() => expect(requests("GET", "me/sessions")).toHaveLength(1));
+    await waitFor(() => expect(requests("GET", "me/sessions")).toHaveLength(2));
     await screen.findByRole("heading", { name: "Sessions", level: 1 });
     expect(notifications().queryByText("No sessions here.")).not.toBeInTheDocument();
   });

@@ -21,7 +21,7 @@ import { toast } from "~/shell/toast";
 import { formatDate } from "@logicplanes/kaeso-ui/format";
 import { api, data } from "~/api/client";
 import { fieldError } from "~/api/field-error";
-import type { ProjectLogSettings } from "~/api/generated/types";
+import { projectLogSettingsQuery } from "~/api/queries/project-settings";
 import { orgQuery } from "~/api/queries/orgs";
 import { projectListKey, projectQuery, projectViewKey } from "~/api/queries/projects";
 import { useApiMutation } from "~/auth/mutation";
@@ -37,12 +37,6 @@ import { useRequestLogs } from "~/auth/session";
 import { useNeedsRight } from "~/auth/needs-right";
 import { t } from "~/i18n";
 import { common } from "~/i18n/common";
-
-const logSettingsQuery = (org: string, project: string) => ({
-  queryKey: ["orgs", org, "projects", project, "logs", "settings"] as const,
-  queryFn: async (): Promise<ProjectLogSettings> =>
-    data(await api.GET("/platform/v1/orgs/{org}/projects/{project}/logs/settings", { params: { path: { org, project } } })),
-});
 
 export function ProjectSettingsPage({ org, project }: { org: string; project: string }) {
   const rights = useProjectRights(org, project);
@@ -303,11 +297,11 @@ function KeyLifetime({ org, project, days, archived }: { org: string; project: s
 
 function ContentLogging({ org, project, canChange, archived }: { org: string; project: string; canChange: boolean; archived: boolean }) {
   const needs = useNeedsRight(org, project);
-  const settings = useQuery(logSettingsQuery(org, project));
+  const settings = useQuery(projectLogSettingsQuery(org, project));
   const toggle = useApiMutation({
     mutationFn: async (on: boolean) =>
       data(await api.PATCH("/platform/v1/orgs/{org}/projects/{project}/logs/settings", { params: { path: { org, project } }, body: { content_logging: on } })),
-    invalidates: [projectViewKey(org, project), logSettingsQuery(org, project).queryKey],
+    invalidates: [projectViewKey(org, project), projectLogSettingsQuery(org, project).queryKey],
     onSuccess: (s) =>
       toast.success(
         s.content_logging ? t("project.settings.loggingOn", "Content logging turned on") : t("project.settings.loggingOff", "Content logging turned off"),
@@ -316,7 +310,7 @@ function ContentLogging({ org, project, canChange, archived }: { org: string; pr
   const media = useApiMutation({
     mutationFn: async (on: boolean) =>
       data(await api.PATCH("/platform/v1/orgs/{org}/projects/{project}/logs/settings", { params: { path: { org, project } }, body: { keep_media: on } })),
-    invalidates: [logSettingsQuery(org, project).queryKey],
+    invalidates: [projectLogSettingsQuery(org, project).queryKey],
     onSuccess: (s) =>
       toast.success(s.keep_media ? t("project.settings.mediaOn", "Media is kept from now on") : t("project.settings.mediaOff", "Media is no longer kept")),
   });
