@@ -37,6 +37,17 @@ describe("setup snippets", () => {
     expect(all(at("claude_code", true))).toContain("OTEL_LOG_USER_PROMPTS");
   });
 
+  it("turn on Grok Build's external stream for its logs, with tool names, and its prompts and tool bodies only with content", () => {
+    const [shell, ...rest] = setupSnippets(at("grok"));
+    expect(rest).toEqual([]);
+    expect(shell?.code).toContain("export GROK_EXTERNAL_OTEL=1");
+    expect(shell?.code).toContain("export OTEL_LOGS_EXPORTER=otlp");
+    expect(shell?.code).toContain("export OTEL_EXPORTER_OTLP_ENDPOINT=https://kaeso.example.com/ingest/otlp");
+    expect(shell?.code).toContain("export OTEL_LOG_TOOL_DETAILS=1");
+    expect(shell?.code).not.toContain("OTEL_LOG_USER_PROMPTS");
+    expect(all(at("grok", true))).toContain("export OTEL_LOG_USER_PROMPTS=1\nexport OTEL_LOG_TOOL_CONTENT=1");
+  });
+
   it("send Codex's logs to their full path and keep its prompts only with content", () => {
     expect(all(at("codex"))).toContain('endpoint = "https://kaeso.example.com/ingest/otlp/v1/logs", protocol = "binary"');
     expect(all(at("codex"))).toContain("log_user_prompt = false");

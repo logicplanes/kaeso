@@ -268,6 +268,7 @@
   "project.sources.kind.claudeCode": "Its OpenTelemetry events: every request, its tokens and its MCP tool calls.",
   "project.sources.kind.codex": "Its OpenTelemetry log events, set in ~/.codex/config.toml.",
   "project.sources.kind.geminiCli": "Its OpenTelemetry events over HTTP, set in settings.json.",
+  "project.sources.kind.grok": "Its OpenTelemetry log events: every request, its tokens, cost and MCP tool calls.",
   "project.sources.kind.http": "Batches of requests and tool calls as JSON, from your own scripts.",
   "project.sources.kind.litellm": "The proxy's generic API logger, with costs as LiteLLM priced them.",
   "project.sources.kind.openrouter": "Broadcast to an OpenTelemetry collector: its traces with tokens and cost.",

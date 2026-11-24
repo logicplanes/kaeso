@@ -48,6 +48,7 @@ Kaeso 只显示一次来源密钥，并附上连接其客户端的具体配置�
 - [Codex](codex.md)：统计 Codex CLI 的请求和 MCP 工具调用。
 - [Gemini CLI](gemini-cli.md)：统计 Gemini CLI 的请求和 MCP 工具调用。
 - [Antigravity](antigravity.md)：用钩子脚本统计 Antigravity 的模型调用。
+- [Grok Build](grok.md)：统计 Grok Build 的请求及其费用，以及它的 MCP 工具调用。
 - [LiteLLM](litellm.md)：统计 LiteLLM 代理处理的请求。
 - [OpenRouter](openrouter.md)：通过 Broadcast 统计您的 OpenRouter 请求。
 - [OpenTelemetry](opentelemetry.md)：统计任何导出 GenAI 遥测数据的应用的请求。

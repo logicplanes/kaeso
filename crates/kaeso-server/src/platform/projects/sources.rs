@@ -38,6 +38,7 @@ pub enum SourceKindView {
     Codex,
     GeminiCli,
     Antigravity,
+    Grok,
     #[serde(rename = "opentelemetry")]
     OpenTelemetry,
     Http,
@@ -52,6 +53,7 @@ impl From<SourceKind> for SourceKindView {
             SourceKind::Codex => SourceKindView::Codex,
             SourceKind::GeminiCli => SourceKindView::GeminiCli,
             SourceKind::Antigravity => SourceKindView::Antigravity,
+            SourceKind::Grok => SourceKindView::Grok,
             SourceKind::OpenTelemetry => SourceKindView::OpenTelemetry,
             SourceKind::Http => SourceKindView::Http,
             SourceKind::Litellm => SourceKindView::Litellm,
@@ -67,6 +69,7 @@ impl From<SourceKindView> for SourceKind {
             SourceKindView::Codex => SourceKind::Codex,
             SourceKindView::GeminiCli => SourceKind::GeminiCli,
             SourceKindView::Antigravity => SourceKind::Antigravity,
+            SourceKindView::Grok => SourceKind::Grok,
             SourceKindView::OpenTelemetry => SourceKind::OpenTelemetry,
             SourceKindView::Http => SourceKind::Http,
             SourceKindView::Litellm => SourceKind::Litellm,

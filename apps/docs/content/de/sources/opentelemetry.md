@@ -1,7 +1,7 @@
 ---
 title: OpenTelemetry
 description: Zählen Sie die Anfragen und MCP-Tool-Aufrufe jeder App und jedes Collectors, die GenAI-Spans oder -Ereignisse von OpenTelemetry exportieren.
-order: 7
+order: 8
 ---
 
 Viele KI-SDKs und Agent-Frameworks beschreiben jeden Modellaufruf als OpenTelemetry-Span nach den semantischen GenAI-Konventionen. An eine Kaeso-Quelle exportiert, wird jeder Aufruf eine beobachtete Anfrage im Projekt und jeder MCP-Tool-Aufruf ein Tool-Aufruf.

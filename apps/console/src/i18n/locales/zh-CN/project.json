@@ -227,6 +227,7 @@
   "project.sources.kind.claudeCode": "它的 OpenTelemetry 事件：每个请求、其 Token 和 MCP 工具调用。",
   "project.sources.kind.codex": "它的 OpenTelemetry 日志事件，在 ~/.codex/config.toml 中设置。",
   "project.sources.kind.geminiCli": "它通过 HTTP 发送的 OpenTelemetry 事件，在 settings.json 中设置。",
+  "project.sources.kind.grok": "它的 OpenTelemetry 日志事件：每个请求、其 Token、费用和 MCP 工具调用。",
   "project.sources.kind.http": "来自您自己脚本的 JSON 批量请求和工具调用。",
   "project.sources.kind.litellm": "代理的通用 API 日志记录器，费用按 LiteLLM 的计价。",
   "project.sources.kind.openrouter": "广播到 OpenTelemetry Collector：带 Token 和费用的链路追踪。",

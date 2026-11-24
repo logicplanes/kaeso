@@ -1,7 +1,7 @@
 ---
 title: OpenRouter
 description: Zählen Sie die Anfragen, die Sie an OpenRouter senden, mit Tokens und Kosten, über seinen Broadcast an einen OpenTelemetry-Collector.
-order: 6
+order: 7
 ---
 
 Der Broadcast von OpenRouter sendet einen Trace jeder Anfrage, die Sie an OpenRouter stellen, an ein Ziel Ihrer Wahl. Mit einer Kaeso-Quelle als Ziel vom Typ OpenTelemetry-Collector wird jede Anfrage eine beobachtete Anfrage im Projekt, mit Modell, Tokens und Kosten.

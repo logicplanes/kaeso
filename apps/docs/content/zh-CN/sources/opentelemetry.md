@@ -1,7 +1,7 @@
 ---
 title: OpenTelemetry
 description: 统计任何导出 OpenTelemetry GenAI Span 或事件的应用或 Collector 的请求和 MCP 工具调用。
-order: 7
+order: 8
 ---
 
 许多 AI SDK 和代理框架会按照 GenAI 语义约定，把每次模型调用描述为一个 OpenTelemetry Span。导出到 Kaeso 来源后，每次调用都会成为项目中的已观测请求，每次 MCP 工具调用都会成为工具调用。

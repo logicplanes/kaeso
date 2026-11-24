@@ -44,6 +44,25 @@ function claudeCode({ ingestUrl, secret, content }: SetupTarget): CodeTab[] {
   ];
 }
 
+// Grok Build takes its collector's headers only from the environment, never from its config file.
+function grok({ ingestUrl, secret, content }: SetupTarget): CodeTab[] {
+  const env: [string, string][] = [
+    ["GROK_EXTERNAL_OTEL", "1"],
+    ["OTEL_LOGS_EXPORTER", "otlp"],
+    ["OTEL_EXPORTER_OTLP_PROTOCOL", "http/protobuf"],
+    ["OTEL_EXPORTER_OTLP_ENDPOINT", `${ingestUrl}/otlp`],
+    ["OTEL_EXPORTER_OTLP_HEADERS", `"Authorization=Bearer ${secret}"`],
+    ["OTEL_LOG_TOOL_DETAILS", "1"],
+    ...(content
+      ? ([
+          ["OTEL_LOG_USER_PROMPTS", "1"],
+          ["OTEL_LOG_TOOL_CONTENT", "1"],
+        ] as [string, string][])
+      : []),
+  ];
+  return [{ label: shellLabel(), lang: "bash", code: shell(env) }];
+}
+
 function codex({ ingestUrl, secret, content }: SetupTarget): CodeTab[] {
   return [
     {
@@ -241,6 +260,7 @@ const SNIPPETS: Record<SourceKindView, (t: SetupTarget) => CodeTab[]> = {
   codex,
   gemini_cli: geminiCli,
   antigravity,
+  grok,
   opentelemetry,
   http,
   litellm,

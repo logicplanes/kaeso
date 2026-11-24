@@ -1,7 +1,7 @@
 ---
 title: OpenRouter
 description: 通过 OpenRouter 向 OpenTelemetry Collector 的 Broadcast，统计您发往 OpenRouter 的请求及其 Token 和费用。
-order: 6
+order: 7
 ---
 
 OpenRouter 的 Broadcast 会把您发往 OpenRouter 的每个请求的链路追踪发送到您选择的目标。把 Kaeso 来源设为 OpenTelemetry Collector 目标后，每个请求都会成为项目中的已观测请求，带有模型、Token 和费用。

@@ -33,6 +33,7 @@ A source belongs to one project and has a kind, which decides how Kaeso reads wh
 | Codex | OpenTelemetry log events over OTLP/HTTP |
 | Gemini CLI | OpenTelemetry log events over OTLP/HTTP |
 | Antigravity | The model calls of its transcript, from a hook script, as JSON |
+| Grok Build | OpenTelemetry log events over OTLP/HTTP |
 | LiteLLM | The proxy's generic API logs, as JSON |
 | OpenRouter | Broadcast traces over OTLP/HTTP |
 | OpenTelemetry | GenAI spans or log events from any app or collector, over OTLP/HTTP |

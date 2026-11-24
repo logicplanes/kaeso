@@ -48,6 +48,7 @@ In a source's sheet you can:
 - [Codex](codex.md): Count the requests and MCP tool calls of the Codex CLI.
 - [Gemini CLI](gemini-cli.md): Count Gemini CLI's requests and MCP tool calls.
 - [Antigravity](antigravity.md): Count Antigravity's model calls with a hook script.
+- [Grok Build](grok.md): Count Grok Build's requests, their cost and its MCP tool calls.
 - [LiteLLM](litellm.md): Count the requests a LiteLLM proxy serves.
 - [OpenRouter](openrouter.md): Count your OpenRouter requests with Broadcast.
 - [OpenTelemetry](opentelemetry.md): Count the requests of any app that exports GenAI telemetry.
