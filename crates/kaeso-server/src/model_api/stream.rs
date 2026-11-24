@@ -1440,7 +1440,7 @@ impl Pump {
         if !self.done {
             let Some(watch) = self.app.tx.clone() else {
                 self.gone = true;
-                self.finalize(pending).await;
+                Box::pin(self.finalize(pending)).await;
                 return;
             };
             let closed = watch.closed();
@@ -1515,7 +1515,9 @@ impl Pump {
                 }
             }
         }
-        self.finalize(pending).await;
+        // Boxed so an open stream's task holds a pointer, not the state of the work that ends
+        // it: that state is several times the size of everything the stream needs while open.
+        Box::pin(self.finalize(pending)).await;
     }
 
     async fn finalize(mut self, pending: Option<PendingOut>) {
@@ -1819,7 +1821,7 @@ pub(super) async fn start(parts: Parts, tx: Sender<Bytes>, rec: Recording) {
         && !pump.gone
         && pump.engine.has_final_usage(&pump.tally)
     {
-        pump.finalize(pending).await;
+        Box::pin(pump.finalize(pending)).await;
     } else {
         state.in_flight.spawn(pump.run(pending));
     }
@@ -2144,5 +2146,21 @@ mod tests {
             .await
             .unwrap();
         assert!(matches!(res, Peeked::PutBack));
+    }
+
+    fn future_of_2<A, B, F: Future>(_: impl FnOnce(A, B) -> F) -> usize {
+        std::mem::size_of::<F>()
+    }
+
+    fn future_of_3<A, B, C, F: Future>(_: impl FnOnce(A, B, C) -> F) -> usize {
+        std::mem::size_of::<F>()
+    }
+
+    #[test]
+    fn an_open_stream_does_not_hold_the_memory_of_the_work_that_ends_it() {
+        const OPEN_STREAM: usize = 32 << 10;
+        assert!(future_of_2(Pump::run) < OPEN_STREAM);
+        assert!(future_of_3(pump) < OPEN_STREAM);
+        assert!(future_of_3(start) < OPEN_STREAM);
     }
 }
