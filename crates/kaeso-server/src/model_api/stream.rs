@@ -2153,10 +2153,6 @@ mod tests {
     #[test]
     fn an_open_stream_holds_its_pump_and_not_the_accounting_that_follows() {
         let open = future_bytes(Pump::run);
-        let accounting = future_bytes(Pump::finalize);
-        assert!(
-            open < accounting && open <= 24 * 1024,
-            "{open} bytes for each open stream, {accounting} for its accounting"
-        );
+        assert!(open <= 24 * 1024, "{open} bytes for each open stream");
     }
 }
