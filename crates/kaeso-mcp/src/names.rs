@@ -21,7 +21,15 @@ fn allowed(c: char) -> bool {
 // long or holds other characters is cut to 56 characters and gets `_` and 7 hex characters of the
 // SHA-256 of `handle__name` as the server wrote it, so two tools never share a name.
 pub fn exposed(handle: &str, tool: &str) -> String {
-    let full = format!("{}{SEPARATOR}{tool}", handle.replace('-', "_"));
+    // `a-` and `a--b` would read `a_` and `a__b`, the start of what the server `a` exposes for a
+    // tool it names `_x` or `b__c`; such a handle keeps its dashes, which no other handle's
+    // names can start with.
+    let shown = if handle.ends_with('-') || handle.contains("--") {
+        handle.to_owned()
+    } else {
+        handle.replace('-', "_")
+    };
+    let full = format!("{shown}{SEPARATOR}{tool}");
     if full.len() <= MAX_NAME && full.chars().all(allowed) {
         return full;
     }
@@ -59,6 +67,15 @@ mod tests {
     #[test]
     fn dashes_in_handles_become_underscores() {
         assert_eq!(exposed("my-crm", "find"), "my_crm__find");
+    }
+
+    #[test]
+    fn handles_that_end_in_or_double_a_dash_cannot_take_another_servers_name() {
+        assert_eq!(exposed("a", "_x"), "a___x");
+        assert_ne!(exposed("a-", "x"), exposed("a", "_x"));
+        assert_ne!(exposed("a--b", "c"), exposed("a", "b__c"));
+        assert_ne!(exposed("a--", "c"), exposed("a", "___c"));
+        assert_eq!(exposed("-a", "x"), "_a__x");
     }
 
     #[test]
@@ -114,6 +131,18 @@ mod tests {
     }
 
     proptest! {
+        #[test]
+        fn two_servers_never_share_a_name(
+            one in "[a-]{1,4}",
+            other in "[a-]{1,4}",
+            tool in "[a_-]{0,8}",
+            other_tool in "[a_-]{0,8}",
+        ) {
+            if one != other {
+                prop_assert_ne!(exposed(&one, &tool), exposed(&other, &other_tool));
+            }
+        }
+
         #[test]
         fn every_exposed_name_is_valid(handle in "[a-z0-9-]{1,24}", tool in "\\PC{0,200}") {
             let name = exposed(&handle, &tool);
