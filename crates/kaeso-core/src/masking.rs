@@ -405,21 +405,15 @@ fn passing(check: Check, text: &str) -> Option<(usize, usize)> {
             .then_some((from, to))
     };
     if check == Check::Iban {
-        // Only words are left off the end: a shorter run of the number's own groups passes by
-        // chance once in 97 times.
-        let mut len = groups.len();
-        while len > 1
-            && groups
-                .get(len - 1)
+        // The number ends before a word: a shorter run of its own groups would pass by chance
+        // once in 97 times.
+        return (1..groups.len()).rev().find_map(|len| {
+            groups
+                .get(len)
                 .and_then(|g| text.get(g.0..g.1))
                 .is_some_and(|g| g.bytes().all(|b| b.is_ascii_uppercase()))
-        {
-            len -= 1;
-            if let Some(found) = run(0, len) {
-                return Some(found);
-            }
-        }
-        return None;
+                .then(|| run(0, len))?
+        });
     }
     let sizes: Vec<usize> = groups.iter().map(|g| g.1 - g.0).collect();
     for len in (1..groups.len()).rev() {

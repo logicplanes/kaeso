@@ -183,6 +183,10 @@ fn a_card_or_iban_next_to_other_groups_is_still_found() {
         ("id 7 4111 1111 1111 1111", "id 7 [CARD_1]"),
         ("ES91 2100 0418 4502 0005 1332 PAID", "[IBAN_1] PAID"),
         ("ES91 2100 0418 4502 0005 1332 PAID OK", "[IBAN_1] PAID OK"),
+        (
+            "ES91 2100 0418 4502 0005 1332 PAID 2026",
+            "[IBAN_1] PAID 2026",
+        ),
         ("ref 501 4111 1111 1111 1111", "ref 501 [CARD_1]"),
     ] {
         assert_eq!(scanner.masker().text(text).as_deref(), Some(masked));
