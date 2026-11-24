@@ -1687,6 +1687,13 @@ mod tests {
             validate(&huge, &euros()).unwrap_err().message,
             "The amount must be positive and worth at most 1,000,000,000 USD."
         );
+        let mut beyond = limit(p, Kind::SpendBudget, Period::Total, Decimal::MAX);
+        beyond.currency = Some("EUR".into());
+        assert_eq!(
+            validate(&beyond, &euros()).unwrap_err().message,
+            "The amount must be positive and worth at most 1,000,000,000 USD."
+        );
+        assert_eq!(beyond.units(&euros()), 0);
     }
 
     #[test]
