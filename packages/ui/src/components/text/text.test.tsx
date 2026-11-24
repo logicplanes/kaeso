@@ -3,12 +3,17 @@ import { render, screen } from "@testing-library/react";
 import { Text } from "./text.js";
 import { SwapText } from "../swap-text/swap-text.js";
 
+// Without an observer, cut-off text measures itself once as it mounts; truncated.test.tsx covers the observer.
 function overflowing() {
+  vi.stubGlobal("ResizeObserver", undefined);
   vi.spyOn(HTMLElement.prototype, "scrollWidth", "get").mockReturnValue(400);
   vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(120);
 }
 
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+});
 
 describe("Text truncate", () => {
   it("becomes a focus stop with the house focus ring only when its full text has a tooltip", () => {

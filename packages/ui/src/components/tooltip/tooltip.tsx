@@ -87,7 +87,10 @@ function useDescription(content: ReactNode, store: TriggerPropsStore, off: boole
   const plain = typeof content === "string" || typeof content === "number" ? String(content) : null;
   // aria-describedby overrides aria-description, so only a trigger without its own describedby can take plain text as an attribute.
   const asAttribute = plain !== null && !own["aria-describedby"];
-  useEffect(() => setMounted(true), []);
+  // A disabled tooltip describes nothing, so it skips the render this would cost; table cells hold hundreds of them.
+  useEffect(() => {
+    if (!off) setMounted(true);
+  }, [off]);
   const { "aria-describedby": describedBy, "aria-description": description } = own;
   useLayoutEffect(() => {
     const trigger = store.element();
@@ -142,7 +145,9 @@ export function Tooltip(props: TooltipProps) {
         {props.children}
       </HandedTrigger>
       {description.node}
-      {mod && <mod.TooltipRoot {...props} triggerProps={store} />}
+      {/* A disabled tooltip never opens, so it mounts none of the popup machinery: text that might be cut off (every table cell) and every
+          pill button keep one here until they need it. The trigger stays the same element when it turns on or off, as it does when the code loads. */}
+      {mod && !props.disabled && <mod.TooltipRoot {...props} triggerProps={store} />}
     </>
   );
 }
