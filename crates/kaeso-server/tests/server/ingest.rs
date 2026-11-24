@@ -260,6 +260,26 @@ async fn claude_codes_otlp_export_lands_in_the_log_as_observed_requests_and_tool
     assert_eq!(view["status"], "connected");
     assert_eq!(view["activity"][0]["requests"], 4);
     assert_eq!(view["activity"][0]["tool_calls"], 1);
+
+    let usage = env
+        .app
+        .get(
+            &format!("{}/usage?group_by=day", base(&env)),
+            &env.owner.cookie,
+        )
+        .await;
+    assert_eq!(usage.status, StatusCode::OK, "{:?}", usage.body);
+    let days = usage.body["data"].as_array().unwrap();
+    let total = |k: &str| days.iter().map(|d| d[k].as_u64().unwrap_or(0)).sum::<u64>();
+    assert_eq!(
+        total("tool_calls"),
+        1,
+        "Analytics counts the reported MCP call: {days:?}"
+    );
+    assert!(
+        total("input_tokens") + total("cache_read_tokens") > 0,
+        "and the reported requests' tokens"
+    );
 }
 
 #[tokio::test]

@@ -432,6 +432,7 @@ pub async fn create(
         .write(&mut tx)
         .await?;
     tx.commit().await?;
+    crate::services::observed::sources_changed(project).await;
     Ok((
         StatusCode::CREATED,
         Json(SourceCreated {
@@ -554,6 +555,7 @@ pub async fn update(
         .write(&mut tx)
         .await?;
     tx.commit().await?;
+    crate::services::observed::sources_changed(after.project_id).await;
     let mut list = views(&state, std::slice::from_ref(&after), ctx.now).await?;
     list.pop()
         .map(Json)

@@ -480,15 +480,22 @@ async fn has_sources(state: &AppState, project: Uuid) -> bool {
     if let Some(known) = WITH_SOURCES.get(&project).await {
         return known;
     }
+    // While PostgreSQL is away, the answer is kept too, so the requests don't all ask again.
     let active = match kaeso_store::pg::sources::list(&state.pg, project, false, None, 100).await {
         Ok(sources) => sources.iter().any(|s| s.disabled_at.is_none()),
         Err(e) => {
             tracing::debug!(error = %e, "cannot tell whether a project has sources");
-            return false;
+            false
         }
     };
     WITH_SOURCES.insert(project, active).await;
     active
+}
+
+/// Forgets this instance's answer for the project once a source is added or changed, so its
+/// gateway requests are noted from then on.
+pub async fn sources_changed(project: Uuid) {
+    WITH_SOURCES.invalidate(&project).await;
 }
 
 /// Notes a request the gateway answered, so a source reporting the same request doesn't count it
@@ -820,7 +827,7 @@ fn content(r: &ObservedRequest, dialect: DialectId, model: &str) -> Option<(Stri
         // Parts the dialect can't carry, such as a tool call without an id, leave the prompt.
         .or_else(|| {
             let mut asked = GenerateRequest::new(model);
-            asked.messages = vec![Message::user(prompt.unwrap_or_default())];
+            asked.messages = vec![Message::user(prompt?)];
             encoded(dialect, &asked)
         })
         .unwrap_or_default();
@@ -947,6 +954,7 @@ pub async fn record(
         out.refusal = Some(Refusal::Inactive);
         batch.requests.clear();
         batch.tool_calls.clear();
+        batch.carried.clear();
     }
     let taken = carry(state, source, &mut batch).await?;
     let emails: Vec<String> = batch
@@ -1223,6 +1231,15 @@ async fn record_call(
             .map(|s| cut(s, MAX_NAME))
             .unwrap_or_default(),
     };
+    // Counted where Analytics reads tool calls, as the MCP portal counts its own; reported calls
+    // belong to no server of Kaeso's.
+    state.tool_usage.add(
+        row.started_at,
+        source.org_id,
+        source.project_id,
+        Uuid::nil(),
+        !c.ok,
+    );
     let content = if source.content && (c.arguments.is_some() || c.result.is_some()) {
         Some((
             c.arguments.unwrap_or_default(),
