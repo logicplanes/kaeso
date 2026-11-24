@@ -862,6 +862,8 @@ describe("a custom provider's models", () => {
     const { user } = await renderApp(projectPath("models?add=true"));
     const dialog = await screen.findByRole("dialog", { name: /Add models/ });
     await user.click(within(dialog).getByRole("button", { description: "Provider" }));
+    expect((await screen.findAllByRole("option"))[0]).toHaveAttribute("aria-posinset", "1");
+    await user.keyboard("Research vLLM");
     await user.click(await screen.findByRole("option", { name: /^Research vLLM/ }));
 
     expect(await within(dialog).findByText("meta-llama/Llama-3.3-70B")).toBeInTheDocument();
@@ -936,6 +938,8 @@ describe("a custom provider's models", () => {
     const { user } = await renderApp(projectPath("models?add=true"));
     const dialog = await screen.findByRole("dialog", { name: /Add models/ });
     await user.click(within(dialog).getByRole("button", { description: "Provider" }));
+    expect((await screen.findAllByRole("option"))[0]).toHaveAttribute("aria-posinset", "1");
+    await user.keyboard("Research vLLM");
     await user.click(await screen.findByRole("option", { name: /^Research vLLM/ }));
     expect(
       await within(dialog).findByText("Kaeso fills in the limits and capabilities it can find for Research vLLM's models; you set their prices next."),
@@ -995,6 +999,8 @@ describe("a custom provider's models", () => {
     const { user } = await renderApp(projectPath("models?add=true"));
     const dialog = await screen.findByRole("dialog", { name: /Add models/ });
     await user.click(within(dialog).getByRole("button", { description: "Provider" }));
+    expect((await screen.findAllByRole("option"))[0]).toHaveAttribute("aria-posinset", "1");
+    await user.keyboard("Research vLLM");
     await user.click(await screen.findByRole("option", { name: /^Research vLLM/ }));
 
     expect(await within(dialog).findByText("The custom provider `research-vllm` has no model listing; type the model id instead.")).toBeInTheDocument();
@@ -1013,6 +1019,8 @@ describe("a custom provider's models", () => {
     const { user } = await renderApp(projectPath("models?add=true"));
     const dialog = await screen.findByRole("dialog", { name: /Add models/ });
     await user.click(within(dialog).getByRole("button", { description: "Provider" }));
+    expect((await screen.findAllByRole("option"))[0]).toHaveAttribute("aria-posinset", "1");
+    await user.keyboard("Research vLLM");
     await user.click(await screen.findByRole("option", { name: /^Research vLLM/ }));
     expect(await within(dialog).findByText("meta-llama/Llama-3.3-70B")).toBeInTheDocument();
 
@@ -1036,6 +1044,8 @@ describe("a custom provider's models", () => {
     const { user } = await renderApp(projectPath("models?add=true"));
     const dialog = await screen.findByRole("dialog", { name: /Add models/ });
     await user.click(within(dialog).getByRole("button", { description: "Provider" }));
+    expect((await screen.findAllByRole("option"))[0]).toHaveAttribute("aria-posinset", "1");
+    await user.keyboard("Research vLLM");
     await user.click(await screen.findByRole("option", { name: /^Research vLLM/ }));
     expect(await within(dialog).findByText("Every model Research vLLM lists is in the catalogue already.")).toBeInTheDocument();
     await user.click(within(dialog).getByRole("button", { name: "Type a model id" }));

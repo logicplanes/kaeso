@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useEffectEvent, useMemo, useState, type ReactNode, type RefObject } from "react";
+import { Fragment, useCallback, useEffect, useEffectEvent, useMemo, useState, type ReactNode, type RefObject } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button, DateRangePicker, FilterChip, type FilterChipChoice, type FilterChipProps, Input, Menu, Select, Text, icons } from "@logicplanes/kaeso-ui";
 import type { LogRange } from "~/api/queries/logs";
@@ -69,6 +69,8 @@ export interface FilterDef {
   valueLabel?: (value: string) => ReactNode;
   values?: FilterChipChoice[];
   groups?: FilterChipProps["groups"];
+  /** Builds the groups only while the chip is shown, for choices too costly to build on every render of the page. */
+  withGroups?: (chip: (groups: FilterChipProps["groups"]) => ReactNode) => ReactNode;
   width?: FilterChipProps["width"];
   searchable?: boolean;
   /** How the value compares, such as “contains”; “is” when left out. */
@@ -110,13 +112,13 @@ export function FilterBar({
             />
           );
         const picked = { current: false };
-        return (
+        const chip = (groups = f.groups) => (
           <FilterChip
             key={id}
             property={f.label}
             operator={f.operator ?? t("logs.filter.is", "is")}
             value={f.value ? (f.valueLabel?.(f.value) ?? f.values?.find((c) => c.value === f.value)?.label ?? f.value) : t("logs.filter.any", "any")}
-            {...(f.groups ? { groups: f.groups, width: f.width } : { values: f.values, searchable: !!f.searchable, width: f.width })}
+            {...(groups ? { groups, width: f.width } : { values: f.values, searchable: !!f.searchable, width: f.width })}
             {...(f.freeText ? { freeText: f.freeText } : {})}
             selected={f.value ? [f.value] : []}
             defaultValuesOpen={adding === id}
@@ -134,6 +136,7 @@ export function FilterBar({
             }}
           />
         );
+        return f.withGroups ? <Fragment key={id}>{f.withGroups(chip)}</Fragment> : chip();
       })}
       <Menu>
         <Menu.Trigger>

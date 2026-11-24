@@ -30,6 +30,8 @@ const open = async () => {
 
 async function pickProvider(user: Awaited<ReturnType<typeof open>>["user"], dialog: HTMLElement, name: string) {
   await user.click(within(dialog).getByRole("button", { description: "Provider" }));
+  expect((await screen.findAllByRole("option"))[0]).toHaveAttribute("aria-posinset", "1");
+  await user.keyboard(name);
   await user.click(await screen.findByRole("option", { name: new RegExp(`^${name}`) }));
 }
 

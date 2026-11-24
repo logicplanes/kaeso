@@ -4,7 +4,7 @@ import { act, fireEvent, render, screen, waitFor, within } from "@testing-librar
 import userEvent from "@testing-library/user-event";
 import { CommandList, type CommandListGroup } from "./command-list.js";
 import { PickerPopover, PickerTrigger } from "./picker-popover.js";
-import { commandMatch } from "./match.js";
+import { commandMatch, itemMatch } from "./match.js";
 import { Dialog } from "../dialog/dialog.js";
 import { renderToString } from "react-dom/server";
 
@@ -66,6 +66,28 @@ describe("commandMatch", () => {
     expect(commandMatch("sonnet openai", ["Claude Sonnet 4.5", "Anthropic"])).toBe(0);
     expect(commandMatch("zq", ["gpt-5"])).toBe(0);
     expect(commandMatch("  ", ["gpt-5"])).toBe(1);
+  });
+
+  it("scores an item as its label and keywords, and again when the query changes", () => {
+    const item = { value: "gpt-5-mini", label: "GPT-5 mini", keywords: ["gpt-5-mini", "OpenAI"] };
+    for (const q of ["mini", "openai", "gpt5mini", "mni", "zq", "", "mini"]) {
+      expect(itemMatch(item, q)).toBe(commandMatch(q, [item.label, ...item.keywords]));
+    }
+  });
+
+  it("scores items as they are typed letter by letter, also once earlier letters matched none", () => {
+    const items = [
+      { value: "a", label: "Claude Sonnet 4.5", keywords: ["claude-sonnet-4-5", "Anthropic", "anthropic"] },
+      { value: "b", label: "GPT-5 mini", keywords: ["gpt-5-mini", "OpenAI", "openai"] },
+      { value: "c", label: "Gemini 2.5 Pro", keywords: ["gemini-2.5-pro", "Google", "google"] },
+      { value: "d", label: "o3", keywords: ["o3", "OpenAI", "openai"] },
+    ];
+    for (const typed of ["claude sonnet", "gpt-5-mini", "gp5mini", "snt", "o3 openai", "gemini pro x", "--x"]) {
+      for (let i = 1; i <= typed.length; i++) {
+        const q = typed.slice(0, i).trim();
+        for (const item of items) expect(itemMatch(item, q)).toBe(commandMatch(q, [item.label, ...item.keywords]));
+      }
+    }
   });
 });
 
@@ -163,6 +185,22 @@ describe("CommandList", () => {
     expect(active()).toHaveTextContent("Model 9-499");
     expect(active()).toHaveAttribute("aria-posinset", "5000");
     expect(screen.getAllByRole("option").length).toBeLessThan(80);
+  });
+
+  it("draws only the rows in view once there are more than a popover shows, and a check mark only on the chosen one", async () => {
+    const user = userEvent.setup();
+    render(<CommandList groups={many(120)} aria-label="Models" value="p9-m11" onSelect={() => {}} autoFocus />);
+    const rendered = screen.getAllByRole("option");
+    expect(rendered.length).toBeLessThan(60);
+    expect(rendered[0]).toHaveAttribute("aria-setsize", "120");
+    expect(active()).toHaveTextContent("Model 9-11");
+    expect(within(screen.getByRole("group", { name: "Provider 9" })).getByRole("option", { name: "Model 9-11" })).toHaveAttribute("aria-selected", "true");
+    expect(rendered.filter((o) => o.querySelector("svg"))).toEqual([screen.getByRole("option", { name: "Model 9-11" })]);
+    await user.keyboard("{Home}");
+    expect(active()).toHaveTextContent("Model 0-0");
+    expect(within(screen.getByRole("group", { name: "Provider 0" })).getByRole("option", { name: "Model 0-0" })).toBe(active());
+    await user.keyboard("{ArrowUp}");
+    expect(active()).toHaveTextContent("Model 9-11");
   });
 
   it("starts on the chosen row and calls onEscape once the search is empty", async () => {

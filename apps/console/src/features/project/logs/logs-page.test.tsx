@@ -303,13 +303,14 @@ describe("LogsPage", () => {
     expect(within(await screen.findByRole("group", { name: "Connected" })).getByRole("option")).toHaveAccessibleName("DeepSeek");
     expect(screen.getByRole("group", { name: "Other providers" })).toContainElement(screen.getByRole("option", { name: "Anthropic" }));
     expect(screen.getByRole("combobox", { name: "Search provider values" })).toBeInTheDocument();
-    const providers = screen.getAllByRole("option");
-    expect(providers[0]).toHaveAccessibleName("DeepSeek");
+    const [first, ...rest] = screen.getAllByRole("option");
+    expect(first).toHaveAccessibleName("DeepSeek");
     const others = providerList
       .filter((p) => p.id !== "deepseek")
       .map((p) => p.name)
       .sort((a, b) => a.localeCompare(b, "en", { sensitivity: "base" }));
-    others.forEach((name, i) => expect(providers[i + 1]).toHaveAccessibleName(name));
+    expect(rest.length).toBeGreaterThan(10);
+    rest.forEach((option, i) => expect(option).toHaveAccessibleName(others[i] ?? ""));
     await user.keyboard("{Escape}");
 
     await user.click(screen.getByRole("button", { name: "Add filter" }));
@@ -337,6 +338,8 @@ describe("LogsPage", () => {
     const menu = await screen.findByRole("menu", { name: "Add filter" });
     expect(within(menu).queryByRole("menuitem", { name: "Outcome" })).not.toBeInTheDocument();
     await user.click(within(menu).getByRole("menuitem", { name: "Provider" }));
+    expect((await screen.findAllByRole("option"))[0]).toHaveAttribute("aria-posinset", "1");
+    await user.type(await screen.findByRole("combobox", { name: "Search provider values" }), "openai");
     await user.click(await screen.findByRole("option", { name: "OpenAI" }));
     await waitFor(() => expect(router.state.location.search).toEqual({ failed: true, provider: "openai" }));
     await waitFor(() => expect(lastQuery()).toMatchObject({ provider: "openai", failed: "true" }));

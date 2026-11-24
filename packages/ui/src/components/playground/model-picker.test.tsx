@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
-import { render, renderHook, screen, within } from "@testing-library/react";
+import { render, renderHook, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ModelPicker, useModelGroups, type ModelPickerOption } from "./model-picker.js";
 
@@ -169,6 +169,59 @@ describe("ModelPicker", () => {
     expect(screen.getAllByRole("option").length).toBeLessThan(80);
     await user.paste("model-9999");
     expect(screen.getAllByRole("option")[0]).toHaveTextContent("model-9999");
+  });
+
+  it("keeps its rows while it closes, after a choice and after Escape", async () => {
+    const user = userEvent.setup();
+    let finishClosing = () => undefined as void;
+    let closing = {} as Animation;
+    const hold = () => {
+      closing = { finished: new Promise<void>((resolve) => (finishClosing = resolve)) } as unknown as Animation;
+    };
+    const animations = vi.spyOn(Element.prototype, "getAnimations").mockImplementation(function (this: Element) {
+      return this.closest("[data-ending-style]") ? [closing] : [];
+    });
+    const closingList = async () => {
+      await waitFor(() => expect(document.querySelector("[data-ending-style]")).not.toBeNull());
+      return screen.getByRole("listbox", { name: "Model", hidden: true });
+    };
+    try {
+      render(<ModelPicker options={options} providers={providers} />);
+      for (const close of ["mini{Enter}", "{Escape}"]) {
+        hold();
+        await open(user);
+        await user.keyboard(close);
+        const list = await closingList();
+        expect(within(list).getAllByRole("option", { hidden: true }).length).toBeGreaterThan(0);
+        expect(list).not.toHaveTextContent("No models match");
+        finishClosing();
+        await waitFor(() => expect(screen.queryByRole("listbox", { hidden: true })).not.toBeInTheDocument());
+      }
+    } finally {
+      finishClosing();
+      animations.mockRestore();
+    }
+  });
+
+  it("builds no rows while closed and none again for each keystroke", async () => {
+    const user = userEvent.setup();
+    let reads = 0;
+    const counted = Array.from({ length: 1000 }, (_, i) =>
+      Object.defineProperty({ value: `m${i}`, provider: `p${i % 8}`, model: `model-${i}` }, "name", {
+        enumerable: true,
+        get: () => {
+          reads += 1;
+          return `Model ${i}`;
+        },
+      }),
+    );
+    render(<ModelPicker options={counted} />);
+    expect(reads).toBe(0);
+    await open(user);
+    reads = 0;
+    await user.keyboard("model");
+    expect(screen.getAllByRole("option").length).toBeLessThan(80);
+    expect(reads).toBeLessThan(counted.length);
   });
 });
 

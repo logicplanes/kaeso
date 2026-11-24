@@ -1,11 +1,22 @@
 import { useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { AppFrame, Button, DataTable, DisplayOptions, Empty, type FilterChipChoice, useProviderGroups, Toolbar, icons } from "@logicplanes/kaeso-ui";
+import {
+  AppFrame,
+  Button,
+  DataTable,
+  DisplayOptions,
+  Empty,
+  type FilterChipChoice,
+  type FilterChipProps,
+  useProviderGroups,
+  Toolbar,
+  icons,
+} from "@logicplanes/kaeso-ui";
 import { useModelGroups } from "@logicplanes/kaeso-ui/playground";
 import { isApiError } from "~/api/errors";
 import { ENDPOINTS, logErrorsQuery, logsInfiniteQuery, type LogFilters } from "~/api/queries/logs";
-import type { ErrorGroupView } from "~/api/generated/types";
+import type { CatalogueModelView, ErrorGroupView } from "~/api/generated/types";
 import { CommonErrors, filtersOf, messagePrefix } from "./common-errors";
 import { CLIENT_IDS, clientLabel } from "~/format/clients";
 import { guardrailActionLabel } from "~/format/guardrails";
@@ -190,13 +201,42 @@ function requestedNames(models: { provider: string; model_id: string }[], aliase
   return names.map((n) => ({ value: n, label: n }));
 }
 
+// A catalogue can hold thousands of models: the Model filter's choices are built only while its chip is shown.
+function ModelChoices({
+  org,
+  models,
+  provider,
+  chip,
+}: {
+  org: string;
+  models: CatalogueModelView[] | undefined;
+  provider: string | undefined;
+  chip: (groups: FilterChipProps["groups"]) => ReactNode;
+}) {
+  const prices = useOrgPrices(org);
+  const options = useMemo(
+    () =>
+      (models ?? [])
+        .filter((m) => !provider || m.provider === provider)
+        .map((m) => {
+          const { deprecated: _, ...option } = catalogueModelOption(m, prices);
+          return { ...option, value: m.model_id };
+        }),
+    [models, provider, prices],
+  );
+  const providers = useModelPickerProviders(
+    org,
+    useMemo(() => [...new Set((models ?? []).map((m) => m.provider))], [models]),
+  );
+  return chip(useModelGroups(options, { providers }));
+}
+
 export function LogsPage({ org, project, search }: { org: string; project: string; search: LogsSearch }) {
   const navigate = useNavigate();
   const rights = useProjectRights(org, project);
   const needs = useNeedsRight(org, project);
   const { log, live, kind: _kind, call: _call, call_status: _status, call_tool: _tool, call_server: _server, call_error: _error, ...filters } = search;
   const money = useOrgMoney(org);
-  const prices = useOrgPrices(org);
   const logs = useInfiniteQuery(logsInfiniteQuery(org, project, filters));
   const { keyName, keyOptions, memberOptions } = usePartyFilters(org, project);
   const catalogue = useQuery(catalogueQuery(org, project));
@@ -238,24 +278,7 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
     return COLUMNS.filter((c) => columns.includes(c) && !(withProvider && c === "provider")).map((c) => all[c]);
   }, [spansDays, layout, withProvider, keyName, partyName, catalog.name, sources.source, errors, columns, timeZone]);
 
-  const modelGroups = useModelGroups(
-    useMemo(
-      () =>
-        (catalogue.data ?? [])
-          .filter((m) => !filters.provider || m.provider === filters.provider)
-          .map((m) => {
-            const { deprecated: _, ...option } = catalogueModelOption(m, prices);
-            return { ...option, value: m.model_id };
-          }),
-      [catalogue.data, filters.provider, prices],
-    ),
-    {
-      providers: useModelPickerProviders(
-        org,
-        useMemo(() => [...new Set((catalogue.data ?? []).map((m) => m.provider))], [catalogue.data]),
-      ),
-    },
-  );
+  const requested = useMemo(() => requestedNames(catalogue.data ?? [], aliases.data ?? []), [catalogue.data, aliases.data]);
   const modelLabel = (id: string) => {
     const m = catalogue.data?.find((c) => c.model_id === id);
     return m?.effective.display_name && m.effective.display_name !== id ? m.effective.display_name : id;
@@ -275,7 +298,7 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
               : id === "alias"
                 ? (aliases.data ?? []).map((a) => ({ value: a.name, label: a.name }))
                 : id === "requested_model"
-                  ? requestedNames(catalogue.data ?? [], aliases.data ?? [])
+                  ? requested
                   : id === "tag"
                     ? tagChoices(rows, filters.tag)
                     : id === "error_message"
@@ -335,7 +358,12 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
           value: current(id),
           valueLabel: (v) => valueLabel(id, v),
           ...(id === "model"
-            ? { groups: modelGroups, width: "lg" as const }
+            ? {
+                withGroups: (chip: (groups: FilterChipProps["groups"]) => ReactNode) => (
+                  <ModelChoices org={org} models={catalogue.data} provider={filters.provider} chip={chip} />
+                ),
+                width: "lg" as const,
+              }
             : id === "provider"
               ? { groups: providerGroups, width: "sm" as const }
               : {
