@@ -338,6 +338,7 @@ describe("LogsPage", () => {
     const menu = await screen.findByRole("menu", { name: "Add filter" });
     expect(within(menu).queryByRole("menuitem", { name: "Outcome" })).not.toBeInTheDocument();
     await user.click(within(menu).getByRole("menuitem", { name: "Provider" }));
+    expect((await screen.findAllByRole("option"))[0]).toHaveAttribute("aria-posinset", "1");
     await user.type(await screen.findByRole("combobox", { name: "Search provider values" }), "openai");
     await user.click(await screen.findByRole("option", { name: "OpenAI" }));
     await waitFor(() => expect(router.state.location.search).toEqual({ failed: true, provider: "openai" }));

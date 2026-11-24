@@ -237,11 +237,15 @@ export const ModelPicker = forwardRef<HTMLButtonElement, ModelPickerProps>(funct
   const [only, setOnly] = useState<string | null>(null);
   const [showDeprecated, setShowDeprecated] = useState(false);
   const [wasOpen, setWasOpen] = useState(open);
+  // Turns on at the first opening and stays on: the rows are built only once someone opens the picker, and
+  // kept while it closes, so the fading popover never shows an empty list.
+  const [opened, setOpened] = useState(open);
   if (open !== wasOpen) {
     setWasOpen(open);
     if (open) {
       setQuery("");
       setOnly(null);
+      setOpened(true);
     }
   }
 
@@ -252,9 +256,9 @@ export const ModelPicker = forwardRef<HTMLButtonElement, ModelPickerProps>(funct
 
   const chosenKey = chosen.join("\u0000");
   const searching = query.trim() !== "";
-  // Built once while the list is open, not on every keystroke: the list filters these same items, and their
-  // match scores are kept per item, so the provider counts and the list score each model only once.
-  const items = useMemo(() => (open ? new Map(options.map((o) => [o, modelItem(o, nameOf, !grouped)])) : null), [open, options, nameOf, grouped]);
+  // Built once, not on every keystroke: the list filters these same items, and their match scores are kept per
+  // item, so the provider counts and the list score each model only once.
+  const items = useMemo(() => (opened ? new Map(options.map((o) => [o, modelItem(o, nameOf, !grouped)])) : null), [opened, options, nameOf, grouped]);
   const listed = useMemo<CommandListGroup[]>(() => {
     if (!items) return [];
     const kept = new Set(chosenKey.split("\u0000"));
@@ -262,7 +266,7 @@ export const ModelPicker = forwardRef<HTMLButtonElement, ModelPickerProps>(funct
     return modelGroups(shown, providerOrder, grouped, nameOf, (o) => items.get(o) ?? modelItem(o, nameOf, !grouped));
   }, [items, options, providerOrder, grouped, nameOf, showDeprecated, chosenKey, only]);
   const head = useMemo<CommandListGroup[]>(() => {
-    if (!open) return [];
+    if (!opened) return [];
     const kept = new Set(chosenKey.split("\u0000"));
     const out: CommandListGroup[] = [];
     if (allLabel && !only) out.push({ id: "all", items: [{ value: ALL, label: allLabel }] });
@@ -275,7 +279,7 @@ export const ModelPicker = forwardRef<HTMLButtonElement, ModelPickerProps>(funct
           });
     if (recentItems.length) out.push({ id: "recent", label: t("modelPicker.recent", "Recent"), items: recentItems });
     return out;
-  }, [open, recent, byValue, searching, only, showDeprecated, chosenKey, allLabel, t, nameOf]);
+  }, [opened, recent, byValue, searching, only, showDeprecated, chosenKey, allLabel, t, nameOf]);
   const groups = useMemo(() => (head.length ? [...head, ...listed] : listed), [head, listed]);
 
   const pick = (v: string) => {
