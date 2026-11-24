@@ -49,5 +49,6 @@
 | `unknown-event-stream.json` | plain streaming request | schema: CreateResponse (openapi.yaml@e95c0fe615f4) |
 | `unknown-item-type.json` | MADE-UP input item type `future_item` (must become an Unknown block) | schema: constructed; item type and field invented on purpose (unknown-* rule) |
 | `unknown-top-level-field.json` | MADE-UP top-level request field `x_future_field` (must land in Extras) | schema: constructed; field invented on purpose (unknown-* rule) |
+| `unknown-key-spellings.json` | MADE-UP request fields whose names a key path can't spell (a dot, a leading `header:`, `@` or `~`, a `%`, an empty name) at the top level, on a message and on a function call, next to `store: false` and `prompt_cache_key` (every one must come back at its own place, and none may be sent as a header) | schema: constructed; field names invented on purpose (unknown-* rule) |
 | `web-search-stream.json` | web search request with `stream: true` | schema: CreateResponse (openapi.yaml@e95c0fe615f4) |
 | `web-search.json` | built-in `web_search` tool (Unknown/Extras carrier), `include` sources, `max_tool_calls` | schema: WebSearchTool, IncludeEnum, ResponseProperties.max_tool_calls (openapi.yaml@e95c0fe615f4) |

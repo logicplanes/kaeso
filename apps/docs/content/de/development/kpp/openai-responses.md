@@ -39,8 +39,6 @@ Ein Schlüssel, der leer ist, `.` oder `%` enthält oder mit `header:`, `@` oder
 
 Die maskierte Form schreibt `.` als `%2E` und `%` als `%25`, ein führendes `@` als `%40`, ein führendes `~` als `%7E`, das `h` eines führenden `header:` als `%68` und einen leeren Schlüssel als `%`. Ein Schlüssel `a.b` ist damit das Extras-Feld `a%2Eb`, an seinem eigenen Pfad wie jeder andere Schlüssel. Solche Schlüssel bleiben im Body: Sie werden nie als Header gesendet, und andere Dialekte lehnen sie wie jedes Extras-Feld ab.
 
-Wie jeder Override gilt das Feld nur, solange der kanonische Wert an seinem Pfad unverändert ist. Ändert sich ein typisiertes Feld in diesem Objekt, wird das Objekt kanonisch geschrieben und diese Schlüssel fallen weg. Bei einem Schlüssel auf oberster Ebene ist das jedes typisierte Feld der Anfrage, etwa das `model`.
-
 Eingabe-Items einer Anfrage werden stattdessen an ihren Schlüsseln verglichen. Eine Nachricht, ihre Text- und Refusal-Teile, ein Funktionsaufruf, seine Ausgabe und ein Reasoning-Item enthalten in jedem Schlüssel, den der Codec dekodiert hat, das, was die kanonische Kodierung dort schreibt. Overrides werden also nur die übrigen Schlüssel, ein `type` oder `role`, den die kanonische Kodierung anders schreibt, und fehlende `annotations`: dieselben, die der Vergleich festhält, ohne die kanonische Kodierung zu bauen oder die Werte erneut zu lesen. Ein Item, das sich an seinen Schlüsseln nicht entscheiden lässt, etwa mit `prompt_cache_breakpoint`, einem Bild- oder Dateiteil, Zusammenfassungsteilen mit weiteren Schlüsseln oder einem Schlüssel, den ein Schlüsselpfad nicht fassen kann, wird wie oben beschrieben verglichen.
 
 ## Anfrage: `CreateResponse` / `TokenCountsBody`

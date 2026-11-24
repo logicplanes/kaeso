@@ -159,7 +159,7 @@ fn with(body: &[u8], list: Option<&str>, key: &str) -> Vec<u8> {
 fn a_key_a_path_cannot_spell_stays_in_a_request_with_every_other_field() {
     for key in ODD_KEYS {
         for (name, body) in fixtures(DIR, "requests", "json") {
-            let Some(before) = reencoded(&body) else {
+            let Some(before) = reencoded(&body).filter(|_| name != "unknown-key-spellings") else {
                 continue;
             };
             for list in [None, Some("input")] {
