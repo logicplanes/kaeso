@@ -991,3 +991,97 @@ async fn a_reached_plan_limit_keeps_every_model_of_the_account_out_of_routes() {
     );
     p.services.cleanup().await;
 }
+
+#[tokio::test]
+async fn limits_count_a_request_that_moved_on_from_the_plan_to_an_api_key_of_the_pool() {
+    let p = plan().await;
+    let base = p.base();
+    let org = &p.owner.org_id;
+    let api_key = p
+        .app
+        .post(
+            &format!("/orgs/{org}/credentials"),
+            json!({ "provider": "openai", "name": "API key", "secret": "sk-test-pool-api-key-000011112222" }),
+            Some(&p.owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::CREATED)
+        .body["id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    for credential in [&p.credential, &api_key] {
+        p.app
+            .call(
+                Method::PUT,
+                &format!("/orgs/{org}/credentials/{credential}/projects"),
+                Some(json!({ "projects": [p.project] })),
+                Some(&p.owner.cookie),
+            )
+            .await
+            .expect_status(StatusCode::OK);
+    }
+    p.app
+        .post(
+            &format!("{base}/models"),
+            json!({ "provider": "openai", "model_id": "gpt-image-2" }),
+            Some(&p.owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::CREATED);
+    p.app
+        .post(
+            &format!("{base}/limits"),
+            json!({ "level": "project", "kind": "request_rate", "period": "minute", "amount": 1 }),
+            Some(&p.owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::CREATED);
+
+    let pool = [&p.credential, &api_key].map(|id| kaeso_store::pg::credentials::PoolMember {
+        credential_id: common::uuid(id),
+        weight: 1,
+    });
+    let plan_first = |key: &str| {
+        let seed = format!("{}:openai", common::uuid(key));
+        kaeso_server::services::key_pool::order(&pool, &seed).first()
+            == Some(&common::uuid(&p.credential))
+    };
+    let mut secret = None;
+    for n in 0..64 {
+        let key = p
+            .app
+            .post(
+                &format!("{base}/keys"),
+                json!({ "name": format!("app {n}") }),
+                Some(&p.owner.cookie),
+            )
+            .await
+            .expect_status(StatusCode::CREATED);
+        if plan_first(key.body["id"].as_str().unwrap()) {
+            secret = key.body["secret"].as_str().map(str::to_owned);
+            break;
+        }
+    }
+    let secret = secret.expect("a key that draws the plan first");
+    let picture = || {
+        call_app(
+            &p.app,
+            "/v1/images/generations",
+            Some(&secret),
+            false,
+            Some(json!({ "model": "gpt-image-2", "prompt": "A sea otter" })),
+        )
+    };
+    let first = picture().await;
+    assert_eq!(first.status, StatusCode::OK, "{}", first.text());
+    let second = picture().await;
+    assert_eq!(
+        second.status,
+        StatusCode::TOO_MANY_REQUESTS,
+        "{}",
+        second.text()
+    );
+    assert_eq!(p.api.received().len(), 1, "only the first reached OpenAI");
+    p.services.cleanup().await;
+}

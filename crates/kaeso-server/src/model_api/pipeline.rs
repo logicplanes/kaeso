@@ -98,6 +98,9 @@ pub(super) struct Recording {
     // Kaeso's overhead leaves it out (`own_time`).
     waited: Duration,
     reservation: Reservation,
+    // A key of a pool can give way before its limits are asked, so a later try can't take a
+    // reservation for granted.
+    admitted: bool,
     sent_input: Option<u64>,
     held: Option<super::memory::Held>,
     keep_in_cache: Option<response_cache::Slot>,
@@ -497,6 +500,7 @@ async fn serve_attached(
         sent_at: None,
         waited: Duration::ZERO,
         reservation: Reservation::default(),
+        admitted: false,
         sent_input: None,
         held: None,
         keep_in_cache: None,
@@ -2378,7 +2382,7 @@ async fn attempt(
             _ => false,
         },
     };
-    if again.is_none() {
+    if !rec.admitted {
         rec.reservation = match state.limits.admit(state, &admission).await {
             Ok(held) => held,
             Err(refusal) => {
@@ -2386,6 +2390,7 @@ async fn attempt(
                 return Err(fail(Stage::Limits)(limited(refusal)));
             }
         };
+        rec.admitted = true;
         let left = std::mem::take(&mut rec.reservation.left);
         rec.found_limits(&left);
     }
@@ -2973,6 +2978,7 @@ async fn attempt(
                 sent_at: rec.sent_at,
                 waited: rec.waited,
                 reservation: std::mem::take(&mut rec.reservation),
+                admitted: rec.admitted,
                 sent_input: None,
                 held: rec.held.take(),
                 keep_in_cache: None,
@@ -3568,6 +3574,7 @@ async fn route(
             retried: false,
         });
         let held = std::mem::take(&mut rec.reservation);
+        rec.admitted = false;
         state.limits.release(state, &held, &request_id).await;
         last = Some(failure);
     }
