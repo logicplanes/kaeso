@@ -452,7 +452,7 @@ function History() {
   const rows = useMemo(() => jobs.data?.pages.flatMap((p) => p.data) ?? [], [jobs.data]);
   const columns = [
     col.custom(
-      { id: "when", header: t("instance.updates.when", "When"), size: 160, priority: 1 },
+      { id: "when", header: t("instance.updates.when", "When"), size: 192, priority: 1 },
       (j: UpdateJobView) => j.started_at,
       (at: string) => <Text tabular>{formatDate(at, { time: true })}</Text>,
     ),
