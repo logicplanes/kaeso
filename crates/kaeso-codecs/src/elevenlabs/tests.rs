@@ -499,4 +499,8 @@ fn timed_speech_lines_read_the_same_in_any_chunks() {
     for chunk in [1, 7, 4096] {
         assert_eq!(read(chunk), whole, "chunks of {chunk}");
     }
+
+    let mut dec = ElevenLabs::stream_decoder(&ctx);
+    assert_eq!(dec.feed(b"{\"audio_base64\":\"AAAA\"}").len(), 0);
+    assert_eq!(dec.feed(b"\n{\"audio_base64\":\"AAAA\"}\n{").len(), 2);
 }
