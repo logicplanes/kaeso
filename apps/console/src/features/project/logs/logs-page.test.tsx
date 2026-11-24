@@ -6,6 +6,13 @@ import { alias, apiKey, catalogueModel, externalSource, projectData, projectMemb
 import { errorGroup, listPage, logEntry, logRow, logsData } from "~/test/fixtures/project-logs";
 import { apiError, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
+import { logColumns } from "./columns";
+
+// Counts how often the page builds its columns; a new set makes the table draw every row again.
+vi.mock("./columns", async (original) => {
+  const columns = await original<typeof import("./columns")>();
+  return { ...columns, logColumns: vi.fn(columns.logColumns) };
+});
 
 const LOGS = "orgs/:org/projects/:project/logs";
 const listQueries = () => requests("GET", LOGS).map((r) => Object.fromEntries(r.query));
@@ -746,6 +753,26 @@ describe("LogsPage", () => {
     expect(router.state.location.search).toEqual({ log: "req_0001" });
     await user.keyboard("{Escape}");
     await waitFor(() => expect(router.state.location.search).toEqual({}));
+  });
+
+  it("opens a request without building the table's columns again, so the rows aren't drawn again", async () => {
+    signedIn();
+    projectData({ keys: [apiKey()], members: [projectMember()], accounts: [serviceAccount()], sources: [externalSource()] });
+    logsData({
+      rows: [logRow(), logRow({ id: "req_0002", endpoint: "/v1/messages" })],
+      entries: [logEntry(), logEntry({ id: "req_0002", endpoint: "/v1/messages" })],
+    });
+    const { user, router } = await renderApp(projectPath("logs"));
+    const row = await screen.findByRole("row", { name: /\/v1\/messages/ });
+    await waitFor(() => expect(row).toHaveTextContent("Ada Okafor (you)"));
+    const built = vi.mocked(logColumns).mock.calls.length;
+
+    await user.click(row);
+    await waitFor(() => expect(router.state.location.search).toEqual({ log: "req_0002" }));
+    await screen.findByRole("dialog", { name: /^\d{3}/ });
+    await user.keyboard("k");
+    await waitFor(() => expect(router.state.location.search).toEqual({ log: "req_0001" }));
+    expect(vi.mocked(logColumns).mock.calls.length).toBe(built);
   });
 
   it("opens a request by its id", async () => {

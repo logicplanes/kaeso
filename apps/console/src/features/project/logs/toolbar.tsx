@@ -1,4 +1,4 @@
-import { useEffect, useEffectEvent, useState, type ReactNode, type RefObject } from "react";
+import { useCallback, useEffect, useEffectEvent, useMemo, useState, type ReactNode, type RefObject } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button, DateRangePicker, FilterChip, type FilterChipChoice, type FilterChipProps, Input, Menu, Select, Text, icons } from "@logicplanes/kaeso-ui";
 import type { LogRange } from "~/api/queries/logs";
@@ -208,15 +208,22 @@ export function usePartyFilters(org: string, project: string) {
   const keys = useQuery({ ...allKeysQuery(org, project, { include_archived: true }), enabled: rights.has("keys.all.view") });
   const members = useQuery({ ...projectMembersQuery(org, project), enabled: rights.has("project.members.view") });
   const accounts = useQuery({ ...serviceAccountsQuery(org, project, true), enabled: rights.has("service_accounts.view") });
-  const keyName = (id: string) => {
-    const key = keys.data?.find((k) => k.id === id);
-    return key ? keyLabel(key) : id;
-  };
-  const keyOptions: FilterChipChoice[] = (keys.data ?? []).map((k) => ({ value: k.id, label: keyLabel(k) }));
-  const memberOptions = [
-    ...(members.data ?? []).map((m) => ({ value: `user:${m.user.id}`, label: m.user.name })),
-    ...(accounts.data ?? []).map((a) => ({ value: `sa:${a.id}`, label: t("logs.filter.serviceAccount", "{name} (service account)", { name: a.name }) })),
-  ];
+  // The tables' columns name keys with this, so it changes only with the keys: a new function draws every row again.
+  const keyName = useCallback(
+    (id: string) => {
+      const key = keys.data?.find((k) => k.id === id);
+      return key ? keyLabel(key) : id;
+    },
+    [keys.data],
+  );
+  const keyOptions: FilterChipChoice[] = useMemo(() => (keys.data ?? []).map((k) => ({ value: k.id, label: keyLabel(k) })), [keys.data]);
+  const memberOptions = useMemo(
+    () => [
+      ...(members.data ?? []).map((m) => ({ value: `user:${m.user.id}`, label: m.user.name })),
+      ...(accounts.data ?? []).map((a) => ({ value: `sa:${a.id}`, label: t("logs.filter.serviceAccount", "{name} (service account)", { name: a.name }) })),
+    ],
+    [members.data, accounts.data],
+  );
   return { keyName, keyOptions, memberOptions };
 }
 

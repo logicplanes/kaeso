@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useInfiniteQuery, useQuery, type UseQueryResult } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import {
@@ -19,7 +19,7 @@ import {
   col,
   icons,
 } from "@logicplanes/kaeso-ui";
-import { formatBytes, formatDuration } from "@logicplanes/kaeso-ui/format";
+import { formatBytes, formatDuration, formatTimeZone } from "@logicplanes/kaeso-ui/format";
 import { isApiError } from "~/api/errors";
 import type { ToolCallEntryView, ToolCallView } from "~/api/generated/types";
 import { toolCallQuery, toolCallsInfiniteQuery, type ToolCallFilters } from "~/api/queries/logs";
@@ -135,7 +135,7 @@ export function ToolCallsPage({ org, project, search }: { org: string; project: 
   useRowStepping(rows, search.call, (id) => setSearch({ call: id }));
 
   const spansDays = search.from && search.to ? search.from !== search.to : search.range !== "1h";
-  const serverName = (id: string) => servers.data?.find((s) => s.id === id)?.name ?? id;
+  const serverName = useCallback((id: string) => servers.data?.find((s) => s.id === id)?.name ?? id, [servers.data]);
   const reported = sources.sources.length > 0 || !!search.source_id;
   const filterDefs: FilterDef[] = TOOL_FILTER_IDS.filter((id) => id !== "source" || reported).map((id): FilterDef => {
     const value = search[SEARCH_OF[id]] as string | undefined;
@@ -185,33 +185,41 @@ export function ToolCallsPage({ org, project, search }: { org: string; project: 
   };
   const filtered = filterDefs.some((f) => f.value !== undefined);
 
-  const columns = [
-    startedColumn<ToolCallView>(spansDays, phone ? "phone" : "wide"),
-    col.mono({ id: "tool", header: t("logs.tools.tool", "Tool"), size: 240, minWidth: 112, grow: phone, priority: 1 }, (r: ToolCallView) => r.tool),
-    col.status({ id: "status", header: common.status(), size: phone ? 96 : 120, priority: 1 }, (r: ToolCallView) => statusOf(r.status)),
-    col.text({ id: "caller", header: t("logs.tools.caller", "Caller"), size: 180, priority: 2 }, (r: ToolCallView) => partyName(r.caller)),
-    col.text({ id: "client", header: t("logs.tools.client", "Client"), size: 160, priority: 3 }, (r: ToolCallView) => r.client || "—"),
-    // A call a source reported names its server as the client wrote it, with no server of Kaeso's.
-    col.text({ id: "mcp_server", header: t("logs.tools.server", "MCP server"), size: 160, priority: 3 }, (r: ToolCallView) =>
-      r.server ? serverName(r.server) : (r.server_name ?? "—"),
-    ),
-    ...(reported || rows.some((r) => r.source_id)
-      ? [
-          col.custom(
-            { id: "source", header: t("logs.filter.reportedBy", "Reported by"), size: 184, priority: 4 },
-            (r: ToolCallView) => r.source_id ?? null,
-            (v) => (v ? <ReportedBy source={sources.source(v)} /> : "—"),
-          ),
-        ]
-      : []),
-    col.duration({ id: "duration", header: t("logs.column.duration", "Duration"), size: 112, priority: 2 }, (r: ToolCallView) => r.duration_ms),
-    col.custom(
-      { id: "server", header: t("logs.tools.serverTime", "Server time"), size: 120, priority: 3 },
-      (r: ToolCallView) => r.upstream_ms ?? null,
-      (v) => (v === null ? "—" : formatDuration(v)),
-      { align: "end" },
-    ),
-  ];
+  const anyReported = reported || rows.some((r) => r.source_id);
+  // Built again only when what they show changes: opening a call or a live row arriving keeps the columns, so the table
+  // hands back the rows it drew instead of drawing every one again. The time zone is in the time column's header.
+  const timeZone = formatTimeZone();
+  const sourceOf = sources.source;
+  const columns = useMemo(
+    () => [
+      startedColumn<ToolCallView>(spansDays, phone ? "phone" : "wide", timeZone),
+      col.mono({ id: "tool", header: t("logs.tools.tool", "Tool"), size: 240, minWidth: 112, grow: phone, priority: 1 }, (r: ToolCallView) => r.tool),
+      col.status({ id: "status", header: common.status(), size: phone ? 96 : 120, priority: 1 }, (r: ToolCallView) => statusOf(r.status)),
+      col.text({ id: "caller", header: t("logs.tools.caller", "Caller"), size: 180, priority: 2 }, (r: ToolCallView) => partyName(r.caller)),
+      col.text({ id: "client", header: t("logs.tools.client", "Client"), size: 160, priority: 3 }, (r: ToolCallView) => r.client || "—"),
+      // A call a source reported names its server as the client wrote it, with no server of Kaeso's.
+      col.text({ id: "mcp_server", header: t("logs.tools.server", "MCP server"), size: 160, priority: 3 }, (r: ToolCallView) =>
+        r.server ? serverName(r.server) : (r.server_name ?? "—"),
+      ),
+      ...(anyReported
+        ? [
+            col.custom(
+              { id: "source", header: t("logs.filter.reportedBy", "Reported by"), size: 184, priority: 4 },
+              (r: ToolCallView) => r.source_id ?? null,
+              (v) => (v ? <ReportedBy source={sourceOf(v)} /> : "—"),
+            ),
+          ]
+        : []),
+      col.duration({ id: "duration", header: t("logs.column.duration", "Duration"), size: 112, priority: 2 }, (r: ToolCallView) => r.duration_ms),
+      col.custom(
+        { id: "server", header: t("logs.tools.serverTime", "Server time"), size: 120, priority: 3 },
+        (r: ToolCallView) => r.upstream_ms ?? null,
+        (v) => (v === null ? "—" : formatDuration(v)),
+        { align: "end" },
+      ),
+    ],
+    [spansDays, phone, partyName, serverName, anyReported, sourceOf, timeZone],
+  );
   const unavailable = calls.error && isApiError(calls.error) && calls.error.type === "unavailable";
   const canExport = rights.has("logs.export");
   const nothingToExport = calls.isSuccess && rows.length === 0;

@@ -79,6 +79,19 @@ describe("live updates", () => {
   const live = (base: LogView[], max?: number) =>
     renderHook(() => useLiveLogs({ org: ORG, project: PROJECT, filters: {}, live: true, base, scroller, ...(max ? { max } : {}) }), { wrapper });
 
+  it("hands back the same rows when nothing changed, so the table keeps the rows it drew", () => {
+    const base = [row(2), row(1, 58)];
+    const view = renderHook(({ live }) => useLiveLogs({ org: ORG, project: PROJECT, filters: {}, live, base, scroller }), {
+      wrapper,
+      initialProps: { live: false },
+    });
+    const first = view.result.current.rows;
+    view.rerender({ live: false });
+    expect(view.result.current.rows).toBe(first);
+    view.rerender({ live: true });
+    expect(view.result.current.rows).toBe(first);
+  });
+
   it("doesn't ask while the tab is in the background, and catches up from the newest request when it's back", async () => {
     const base = [row(1, 58)];
     on("GET", LOGS, page([row(2), ...base]));

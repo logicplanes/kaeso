@@ -7,6 +7,13 @@ import { listPage, logsData } from "~/test/fixtures/project-logs";
 import { apiError, on, page, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
 import { hoverReason, notifications } from "~/test/fixtures/org";
+import { startedColumn } from "./columns";
+
+// Counts how often the page builds its columns; a new set makes the table draw every row again.
+vi.mock("./columns", async (original) => {
+  const columns = await original<typeof import("./columns")>();
+  return { ...columns, startedColumn: vi.fn(columns.startedColumn) };
+});
 
 const CALLS = "orgs/:org/projects/:project/logs/tool-calls";
 
@@ -83,6 +90,24 @@ describe("Tool calls in the request logs", () => {
     await user.click(screen.getByRole("radio", { name: "Models" }));
     expect(await screen.findByRole("grid", { name: "Requests" })).toBeInTheDocument();
     expect(window.location.search).not.toContain("kind=tools");
+  });
+
+  it("opens a call without building the table's columns again, so the rows aren't drawn again", async () => {
+    signedIn();
+    projectData({ members: [projectMember()], sources: [externalSource()] });
+    logsData();
+    const second = toolCall({ id: "call_0002", tool: "x__get_me", upstream_tool: "get_me" });
+    calls([toolCall(), second], [{ ...second, content: null }]);
+    const { user, router } = await renderApp(projectPath("logs?kind=tools"));
+    const table = await screen.findByRole("grid", { name: "Tool calls" });
+    const row = await within(table).findByRole("row", { name: /x__get_me/ });
+    await waitFor(() => expect(within(table).getByRole("row", { name: /x__create_post/ })).toHaveTextContent("X"));
+    const built = vi.mocked(startedColumn).mock.calls.length;
+
+    await user.click(row);
+    await waitFor(() => expect(router.state.location.search).toMatchObject({ call: "call_0002" }));
+    await screen.findByRole("dialog", { name: /x__get_me/ });
+    expect(vi.mocked(startedColumn).mock.calls.length).toBe(built);
   });
 
   it("shows the MCP calls a source reported, with the server it named, and filters by the source", async () => {
