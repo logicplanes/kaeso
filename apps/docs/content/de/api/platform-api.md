@@ -123,7 +123,7 @@ Diese Aktionen verlangen eine kürzliche Anmeldung:
 | Löschen | `DELETE` entfernt etwas, etwa einen Anbieter-Schlüssel, ein Mitglied, ein Bild oder Ihr Konto. `DELETE orgs/{org}` merkt die Organisation dagegen nur zur Löschung vor. |
 | Audit | Jede Änderung wird in derselben Transaktion in das Audit-Log ihrer Ebene geschrieben. |
 | Anfrage-IDs | Jede Antwort trägt `kaeso-request-id`. |
-| Kompression | Ein Lesezugriff (`GET`) kommt gzip-komprimiert zurück, wenn der Client `accept-encoding: gzip` sendet, außer Streams, Medien und Bereichsanfragen. Antworten auf Änderungen werden nicht komprimiert: Sie können ein neues Geheimnis, etwa einen API-Schlüssel, neben Text enthalten, den die Anfrage gewählt hat. |
+| Kompression | Die Antwort auf einen Lesezugriff (`GET`) kommt gzip-komprimiert zurück, wenn der Client `accept-encoding: gzip` sendet: JSON sowie Downloads als JSON Lines und CSV, aber keine Server-Sent Events, Medien oder Bereichsanfragen. Ein Browser bekommt sie nur für Anfragen vom eigenen Ursprung der Konsole (`sec-fetch-site: same-origin`), ein Client ohne Cookie, etwa mit einem Plattformschlüssel, immer. Antworten auf Änderungen werden nicht komprimiert. So kann niemand, der nur verschlüsselte Größen sieht, Geheimnisse in einer Antwort erraten (BREACH). |
 
 ### Listen
 

@@ -18,6 +18,18 @@ async fn send(
     body: Option<Value>,
     gzip: bool,
 ) -> (StatusCode, HeaderMap, Vec<u8>) {
+    send_from(app, method, path, cookie, body, gzip, Some("same-origin")).await
+}
+
+async fn send_from(
+    app: &App,
+    method: Method,
+    path: &str,
+    cookie: &str,
+    body: Option<Value>,
+    gzip: bool,
+    site: Option<&str>,
+) -> (StatusCode, HeaderMap, Vec<u8>) {
     let mut req = Request::builder()
         .method(method)
         .uri(path)
@@ -25,6 +37,9 @@ async fn send(
         .header(header::ORIGIN, ORIGIN);
     if gzip {
         req = req.header(header::ACCEPT_ENCODING, "gzip, deflate, br, zstd");
+    }
+    if let Some(site) = site {
+        req = req.header("sec-fetch-site", site);
     }
     let req = match body {
         Some(b) => req
@@ -45,7 +60,7 @@ fn gunzip(bytes: &[u8]) -> Vec<u8> {
 }
 
 #[tokio::test]
-async fn platform_api_reads_come_compressed_to_a_client_that_takes_gzip() {
+async fn platform_api_reads_come_compressed_to_the_console_and_to_platform_keys() {
     let s = TestServices::start().await;
     let app = App::start(&s).await;
     let owner = app.setup().await;
@@ -82,12 +97,33 @@ async fn platform_api_reads_come_compressed_to_a_client_that_takes_gzip() {
         serde_json::from_slice::<Value>(&gunzip(&packed)).unwrap(),
         serde_json::from_slice::<Value>(&plain).unwrap()
     );
+    // A platform key goes without a cookie, which no browser sends by itself.
+    let key = app
+        .post(
+            &format!("/orgs/{}/platform-keys", owner.org_id),
+            json!({ "name": "CI", "expires_in_days": 30 }),
+            Some(&owner.cookie),
+        )
+        .await;
+    assert_eq!(key.status, StatusCode::CREATED, "{:?}", key.body);
+    let secret = key.body["secret"].as_str().unwrap();
+    let req = Request::builder()
+        .uri(format!("/platform/v1/orgs/{}/projects", owner.org_id))
+        .header(header::AUTHORIZATION, format!("Bearer {secret}"))
+        .header(header::ACCEPT_ENCODING, "gzip")
+        .body(Body::empty())
+        .unwrap();
+    let (status, headers, packed) = app.raw_bytes(req).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(headers[header::CONTENT_ENCODING], "gzip");
+    let projects: Value = serde_json::from_slice(&gunzip(&packed)).unwrap();
+    assert_eq!(projects["data"].as_array().unwrap().len(), 1);
 }
 
-// A change can answer with a new secret beside text the request chose, which is what
-// compression-length attacks (BREACH) measure; only reads are compressed.
+// Compression-length attacks (BREACH) load a page from another site again and again with the
+// victim's cookie; only the console's own reads, and changes never, are compressed.
 #[tokio::test]
-async fn platform_api_changes_and_the_model_api_stay_uncompressed() {
+async fn reads_from_another_site_changes_and_the_model_api_stay_uncompressed() {
     let s = TestServices::start().await;
     let app = App::start(&s).await;
     let owner = app.setup().await;
@@ -111,6 +147,14 @@ async fn platform_api_changes_and_the_model_api_stay_uncompressed() {
     assert!(headers.get(header::CONTENT_ENCODING).is_none());
     let created: Value = serde_json::from_slice(&body).unwrap();
     assert!(created["secret"].as_str().unwrap().starts_with("sk-kso-"));
+
+    let rights = format!("/platform/v1/orgs/{}/rights", owner.org_id);
+    for site in [Some("cross-site"), Some("same-site"), Some("none"), None] {
+        let (status, headers, _) =
+            send_from(&app, Method::GET, &rights, &owner.cookie, None, true, site).await;
+        assert_eq!(status, StatusCode::OK);
+        assert!(headers.get(header::CONTENT_ENCODING).is_none(), "{site:?}");
+    }
 
     let (_, headers, _) = send(&app, Method::GET, "/v1/models", &owner.cookie, None, true).await;
     assert!(headers.get(header::CONTENT_ENCODING).is_none());
