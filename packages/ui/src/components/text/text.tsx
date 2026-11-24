@@ -1,6 +1,6 @@
-import { forwardRef, useRef, type ElementType, type HTMLAttributes, type ReactNode, type Ref } from "react";
+import { forwardRef, type ElementType, type HTMLAttributes, type ReactNode, type Ref } from "react";
 import { cn } from "../../utils/cn.js";
-import { useTruncated } from "../../hooks/use-truncated.js";
+import { useCutOff } from "../../hooks/use-cut-off.js";
 import { Tooltip } from "../tooltip/tooltip.js";
 
 export const KAESO_TEXT_VARIANTS = {
@@ -63,12 +63,11 @@ export const Text = forwardRef<HTMLElement, TextProps>(function Text(
   ref,
 ) {
   const Comp = (as ?? "span") as ElementType;
-  const inner = useRef<HTMLElement>(null);
-  const isTruncated = useTruncated(inner, !!truncate);
+  const [isTruncated, watch] = useCutOff(!!truncate);
   const tip = !!truncate && isTruncated && typeof children === "string";
   const el = (
     <Comp
-      ref={mergeRefs(ref, inner)}
+      ref={mergeRefs(ref, watch)}
       className={cn(
         KAESO_TEXT_VARIANTS.variant[variant].classes,
         KAESO_TEXT_VARIANTS.tone[tone].classes,
