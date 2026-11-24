@@ -240,10 +240,13 @@ const sectionEntrySchema = {
 };
 
 const GHSA = "GHSA(?:-[23456789cfghjmpqrvwx]{4}){3}";
-// The advisories a curated line links: this repository's own security advisories, by their GHSA ids.
-const advisoriesOf = (markdown) => [
-  ...new Set([...markdown.matchAll(new RegExp(`\\[(${GHSA})\\]\\(https://github\\.com/[^\\s()]+/security/advisories/\\1\\)`, "g"))].map(([, id]) => id)),
-];
+// The advisories a curated line links: this repository's own security advisories, by their GHSA ids. Another repository's
+// advisory isn't one of them, since the notes link every advisory to this repository.
+const advisoriesOf = (markdown, repository) => {
+  const own = repository.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const pattern = new RegExp(`\\[(${GHSA})\\]\\(https://github\\.com/${own}/security/advisories/\\1\\)`, "g");
+  return [...new Set([...markdown.matchAll(pattern)].map(([, id]) => id))];
+};
 
 const highlightSchema = {
   type: "object",
@@ -358,7 +361,7 @@ export function factsOf(collected, changelog, version = null) {
     previous_version: known.previous?.version ?? null,
     earlier_notes: known.previous?.markdown ?? "",
     curated_notes: known.curated,
-    advisories: advisoriesOf(known.curated),
+    advisories: advisoriesOf(known.curated, collected.repository),
     prerelease_notes: known.prereleases,
     must_list: [...new Set([...visible.map(({ number }) => number), ...earlier])].sort(byNumber),
     pull_requests: visible.map(({ url, ...pull }) => ({ ...pull, title: uncommented(pull.title), body: uncommented(pull.body ?? "") })),

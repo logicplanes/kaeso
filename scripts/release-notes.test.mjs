@@ -418,7 +418,13 @@ test("a curated line's security advisory stays linked on the entry written from 
   assert.deepEqual(notices, []);
   assert.ok(lines.includes(`- Keys are checked twice. (${advisoryLink})`));
   assert.match(SYSTEM, /advisories: the security advisories a curated line links/);
-  assert.match(calls[0].params.messages[0].content, /GHSA-2x35-h4qp-x2r3/);
+  assert.match(calls[0].params.messages[0].content, /"advisories": \[\n\s*"GHSA-2x35-h4qp-x2r3"\n\s*\]/);
+});
+
+test("only this repository's advisories count: one an upstream project published isn't asked for", () => {
+  const upstream = "[GHSA-5h99-c7qh-j7ww](https://github.com/example/library/security/advisories/GHSA-5h99-c7qh-j7ww)";
+  const text = changelog(`### Security\n\n- Keys are checked twice. (${advisoryLink})\n- The library is updated for ${upstream}.`);
+  assert.deepEqual(factsOf(collected, text, "1.1.0").advisories, [advisory]);
 });
 
 test("notes that drop, repeat or invent a curated line's advisory go back to the model", () => {

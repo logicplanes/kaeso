@@ -38,7 +38,7 @@ The title as merged is the subject of the pull request's squash commit on `prod`
 
 Pull requests labelled `internal` are left out. Dependabot's updates become one line, "Dependencies updated". A pull request labelled `breaking` is also named at the top of the section.
 
-To write the notes yourself, put lines under `[Unreleased]` in `CHANGELOG.md` on `dev`. The release puts those lines first, then a line for each pull request that none of them links as `[#42](…/pull/42)`. This suits a release whose notes need more than titles, and a hotfix, whose commits have no pull request.
+To write the notes yourself, put lines under `[Unreleased]` in `CHANGELOG.md` on `dev`. The release puts those lines first, then a line for each pull request that none of them links as `[#42](…/pull/42)`. This suits a release whose notes need more than titles, and a hotfix, whose commits have no pull request. A line that links one of this repository's security advisories, as `[GHSA-…](…/security/advisories/GHSA-…)`, keeps the link on the entry written from it, like a pull request's.
 
 When the repository's `release` environment has the secrets `LOG_AI_KEY` and `RELEASE_NOTES_API_URL`, a model drafts the section from the merged pull requests. The workflow calls it through the maintainer's Kaeso install at that URL. The model reads each pull request as merged: the squash commit's subject and body, or the commits of a pull request merged another way, without their HTML comments. It sees a linked issue's title only when the issue's author can write to the repository.
 
@@ -50,7 +50,7 @@ pnpm release:notes --dry-run --since v{{version}} --head origin/dev
 
 A stable release after pre-releases of its version folds their sections into one, so its notes cover everything since the last stable release.
 
-The GitHub release opens with one sentence, two or three highlights and the breaking changes. It then lists every entry of the section under its own heading, such as **Added**, **Changed**, **Removed** or **Fixed**. Each entry is one line with its topic and pull requests. The contributors and links to the full changelog and the compare view close it.
+The GitHub release opens with one sentence, two or three highlights and the breaking changes. It then lists every entry of the section under its own heading, such as **Added**, **Changed**, **Removed** or **Fixed**. Each entry is one line with its topic, pull requests and security advisories. The contributors and links to the full changelog and the compare view close it.
 
 The model writes the opening with the section; without the model, the release has no highlights, and its breaking changes are cut to their first sentence. The preview above prints the GitHub release after the notes.
 

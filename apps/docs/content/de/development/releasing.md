@@ -38,7 +38,7 @@ Dieser Titel ist der Betreff des Squash-Commits des Pull Requests auf `prod`, da
 
 Pull Requests mit dem Label `internal` werden ausgelassen. Die Updates von Dependabot werden zu einer Zeile, „Dependencies updated“. Ein Pull Request mit dem Label `breaking` wird zusätzlich oben im Abschnitt genannt.
 
-Um die Notizen selbst zu schreiben, setzen Sie Zeilen unter `[Unreleased]` in die `CHANGELOG.md` auf `dev`. Das Release stellt diese Zeilen an den Anfang und ergänzt eine Zeile für jeden Pull Request, den keine von ihnen als `[#42](…/pull/42)` verlinkt. Das eignet sich für ein Release, dessen Notizen mehr als Titel brauchen, und für einen Hotfix, dessen Commits keinen Pull Request haben.
+Um die Notizen selbst zu schreiben, setzen Sie Zeilen unter `[Unreleased]` in die `CHANGELOG.md` auf `dev`. Das Release stellt diese Zeilen an den Anfang und ergänzt eine Zeile für jeden Pull Request, den keine von ihnen als `[#42](…/pull/42)` verlinkt. Das eignet sich für ein Release, dessen Notizen mehr als Titel brauchen, und für einen Hotfix, dessen Commits keinen Pull Request haben. Eine Zeile, die eine Sicherheitsmeldung dieses Repositorys als `[GHSA-…](…/security/advisories/GHSA-…)` verlinkt, behält den Link an dem Eintrag, der aus ihr entsteht, wie den eines Pull Requests.
 
 Hat die Umgebung `release` des Repositorys die Secrets `LOG_AI_KEY` und `RELEASE_NOTES_API_URL`, entwirft ein Modell den Abschnitt aus den gemergten Pull Requests. Der Workflow ruft es über die Kaeso-Installation des Maintainers unter dieser URL auf. Das Modell liest jeden Pull Request so, wie er gemergt wurde: Betreff und Text des Squash-Commits oder die Commits eines auf andere Weise gemergten Pull Requests, jeweils ohne HTML-Kommentare. Den Titel eines verknüpften Issues sieht es nur, wenn dessen Autor Schreibrechte im Repository hat.
 
@@ -50,7 +50,7 @@ pnpm release:notes --dry-run --since v{{version}} --head origin/dev
 
 Ein stabiles Release nach Vorabversionen seiner Version fasst deren Abschnitte zu einem zusammen, sodass seine Notizen alles seit dem letzten stabilen Release abdecken.
 
-Das GitHub-Release beginnt mit einem Satz, zwei oder drei Highlights und den Breaking Changes. Danach listet es jeden Eintrag des Abschnitts unter seiner Überschrift, etwa **Added**, **Changed**, **Removed** oder **Fixed**. Jeder Eintrag ist eine Zeile mit seinem Thema und seinen Pull Requests. Am Ende stehen die Mitwirkenden und Links zum vollständigen Changelog und zum Vergleich.
+Das GitHub-Release beginnt mit einem Satz, zwei oder drei Highlights und den Breaking Changes. Danach listet es jeden Eintrag des Abschnitts unter seiner Überschrift, etwa **Added**, **Changed**, **Removed** oder **Fixed**. Jeder Eintrag ist eine Zeile mit seinem Thema, seinen Pull Requests und Sicherheitsmeldungen. Am Ende stehen die Mitwirkenden und Links zum vollständigen Changelog und zum Vergleich.
 
 Den Anfang schreibt das Modell zusammen mit dem Abschnitt; ohne Modell hat das Release keine Highlights, und seine Breaking Changes sind auf ihren ersten Satz gekürzt. Die Vorschau oben gibt nach den Notizen auch das GitHub-Release aus.
 
