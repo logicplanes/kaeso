@@ -5,6 +5,7 @@ import { execFileSync } from "node:child_process";
 import ts from "typescript";
 import { translationProblem } from "./translation-problems.mjs";
 import { commitOf } from "./source-ref.mjs";
+import { sourcePathOf, missingSources } from "./source-path.mjs";
 import { buildSearchIndex, HIDDEN_PROPS } from "./search-index.mjs";
 import { pagesWithoutVariants } from "../../../packages/ui/scripts/variant-exports.mjs";
 
@@ -113,12 +114,20 @@ for (const [slug, page] of Object.entries(out)) {
   const main = names.split(",")[0].trim();
   const own = registryJson.components.find((c) => c.entry === entry)?.components.find((c) => c.name === main);
   docPages[slug] = {
+    source: sourcePathOf(slug, page, registryJson),
     importLine: `import { ${names} } from "${from}";`,
     props: (own?.props ?? [])
       .filter((p) => !HIDDEN_PROPS.has(p.name) && !p.deprecated)
       .map((p) => ({ name: p.name, type: typeOf(p.type), default: p.default, description: norm(p.description) }))
       .sort((a, b) => a.name.localeCompare(b.name)),
   };
+}
+const unsourced = missingSources(Object.fromEntries(Object.entries(docPages).map(([slug, d]) => [slug, d.source])), (path) =>
+  existsSync(join(root, "../..", path)),
+);
+if (unsourced.length) {
+  writeSync(2, `docs: ${unsourced.length} pages' View source names nothing in the checkout:\n  ${unsourced.join("\n  ")}\n`);
+  process.exit(1);
 }
 writeFileSync(join(genDir, "doc-pages.json"), `${JSON.stringify(docPages, null, 2)}\n`);
 const commit = commitOf(root);
