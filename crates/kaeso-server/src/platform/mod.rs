@@ -185,8 +185,43 @@ pub fn router(state: &AppState) -> (Router<AppState>, OpenApiDoc) {
         ))
         .layer(axum::middleware::from_fn(move |req, next| {
             security_headers(req, next, hsts)
-        }));
+        }))
+        .layer(compression())
+        .layer(axum::middleware::from_fn(reads_only_compressed));
     (router, doc)
+}
+
+// The console's lists, logs and charts are JSON that shrinks to about a tenth with gzip, which is
+// most of a page's load time on a slow connection. Streams (server-sent events), images, video,
+// audio and ranges go out as they are: they're already compressed or need their exact bytes.
+fn compression()
+-> tower_http::compression::CompressionLayer<impl tower_http::compression::Predicate> {
+    use tower_http::compression::predicate::{DefaultPredicate, NotForContentType, Predicate};
+    tower_http::compression::CompressionLayer::new()
+        .gzip(true)
+        .compress_when(
+            DefaultPredicate::new()
+                .and(NotForContentType::const_new("video/"))
+                .and(NotForContentType::const_new("audio/"))
+                .and(NotForContentType::const_new("application/octet-stream")),
+        )
+}
+
+// A change can answer with a new secret, such as an API key, beside text the request chose, which
+// is what compression-length attacks (BREACH) measure. Only reads, which never carry a secret, are
+// compressed: anything else goes on as if the client took no compressed answers.
+async fn reads_only_compressed(
+    mut req: axum::extract::Request,
+    next: axum::middleware::Next,
+) -> axum::response::Response {
+    if !matches!(
+        *req.method(),
+        axum::http::Method::GET | axum::http::Method::HEAD
+    ) {
+        req.headers_mut()
+            .remove(axum::http::header::ACCEPT_ENCODING);
+    }
+    next.run(req).await
 }
 
 // Handlers write audit events inside their transactions; emails about them go out only once the

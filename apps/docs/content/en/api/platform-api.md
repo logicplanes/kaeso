@@ -123,6 +123,7 @@ These actions need a recent sign-in:
 | Delete | `DELETE` removes something, such as a provider key, a member, a picture or your account. `DELETE orgs/{org}` schedules the organization for deletion instead. |
 | Audit | Every change is written to the audit log of its level, in the same transaction. |
 | Request ids | Every answer carries `kaeso-request-id`. |
+| Compression | A read (`GET`) comes back gzip-compressed to a client that sends `accept-encoding: gzip`, except streams, media and ranges. Answers to changes aren't compressed: they can carry a new secret, such as an API key, beside text the request chose. |
 
 ### Lists
 

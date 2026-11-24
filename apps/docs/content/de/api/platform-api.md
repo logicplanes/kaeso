@@ -123,6 +123,7 @@ Diese Aktionen verlangen eine kürzliche Anmeldung:
 | Löschen | `DELETE` entfernt etwas, etwa einen Anbieter-Schlüssel, ein Mitglied, ein Bild oder Ihr Konto. `DELETE orgs/{org}` merkt die Organisation dagegen nur zur Löschung vor. |
 | Audit | Jede Änderung wird in derselben Transaktion in das Audit-Log ihrer Ebene geschrieben. |
 | Anfrage-IDs | Jede Antwort trägt `kaeso-request-id`. |
+| Kompression | Ein Lesezugriff (`GET`) kommt gzip-komprimiert zurück, wenn der Client `accept-encoding: gzip` sendet, außer Streams, Medien und Bereichsanfragen. Antworten auf Änderungen werden nicht komprimiert: Sie können ein neues Geheimnis, etwa einen API-Schlüssel, neben Text enthalten, den die Anfrage gewählt hat. |
 
 ### Listen
 
