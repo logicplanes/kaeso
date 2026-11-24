@@ -2,7 +2,7 @@ import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { UsageRow } from "~/api/generated/types";
-import { exchangeRates, myMembership, signedIn, without } from "~/test/fixtures";
+import { exchangeRates, myMembership, signedIn, whoAmI, without } from "~/test/fixtures";
 import { apiKey, catalogueModel, externalSource, listed, projectData, projectMember, projectPath, serviceAccount, usageRow } from "~/test/fixtures/project";
 import { apiError, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
@@ -698,6 +698,16 @@ describe("AnalyticsPage", () => {
 
   it("says which days use the latest rate when the period starts before the oldest rates", async () => {
     signedIn({ memberships: [myMembership({ org_currency: "GBP" })] });
+    on("GET", "me/exchange-rates", exchangeRates({ first_day: "2026-10-05" }));
+    projectData();
+    usage({ day: [usageRow({ converted_cost: "0.94", currency: "GBP" })] });
+    await renderApp(projectPath(`analytics?${PERIOD}`));
+
+    expect(await screen.findByText("In GBP at each day's ECB rate; before 5 Oct 2026 at the rate of 13 Nov 2026.")).toBeInTheDocument();
+  });
+
+  it("names the rates' days as the gateway has them, west of UTC too", async () => {
+    signedIn({ session: whoAmI({ timezone: "America/Los_Angeles" }), memberships: [myMembership({ org_currency: "GBP" })] });
     on("GET", "me/exchange-rates", exchangeRates({ first_day: "2026-10-05" }));
     projectData();
     usage({ day: [usageRow({ converted_cost: "0.94", currency: "GBP" })] });

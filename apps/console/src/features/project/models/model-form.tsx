@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { Checkbox, CheckboxGroup, Field, Input, NumberInput, Select, Switch, Text } from "@logicplanes/kaeso-ui";
-import { formatDate } from "@logicplanes/kaeso-ui/format";
 import type { DecisionFields, ExchangeRates, Fields } from "~/api/generated/types";
 import { moneyIn, USD } from "~/format/currency";
+import { fullDayLabel } from "~/format/period";
 import { currencyName, currencySymbol } from "~/format/prices";
 import { dialectLabel } from "~/format/labels";
 import { t } from "~/i18n";
@@ -375,7 +375,7 @@ export function inOrgCurrency(amount: string, code: string, orgCode: string, rat
     return t("models.noRate", "No exchange rate for this currency yet; requests at these prices show an unknown cost.");
   if (!/^\d+(\.\d+)?$/.test(amount.trim())) return undefined;
   const converted = ((Number(amount) / per(code)) * per(orgCode)).toFixed(9).replace(/0+$/, "").replace(/\.$/, "");
-  return t("models.inCurrency", "≈ {price} at the ECB rate of {day}", { price: moneyIn(orgCode).price(converted), day: formatDate(rates.day) });
+  return t("models.inCurrency", "≈ {price} at the ECB rate of {day}", { price: moneyIn(orgCode).price(converted), day: fullDayLabel(rates.day) });
 }
 
 function CurrencyField({ value, rates, onChange }: { value: string; rates: ExchangeRates | undefined; onChange: (code: string) => void }) {

@@ -1,4 +1,4 @@
-import { setFormatLocale } from "@logicplanes/kaeso-ui/format";
+import { setFormatLocale, setFormatTimeZone } from "@logicplanes/kaeso-ui/format";
 import { afterEach, describe, expect, it } from "vitest";
 import { contextLabel, decisionLabels, dialectPill, tierLabels, unitPriceLabels } from "./model-fields";
 import { changedFields, decisionsOf, draftFrom, draftProblem, editBase, inCurrency, inOrgCurrency, startDraft } from "./model-form";
@@ -200,6 +200,8 @@ describe("prices in another currency", () => {
 
   it("shows a price entered in another currency in the organization's, or that the currency has no rate", () => {
     expect(inOrgCurrency("2.5", "EUR", "USD", rates)).toBe("≈ $2.777778 at the ECB rate of 13 Nov 2026");
+    expect(inOrgCurrency("3", "GBP", "EUR", rates)).toBe("≈ €3.60 at the ECB rate of 13 Nov 2026");
+    setFormatTimeZone("America/Los_Angeles");
     expect(inOrgCurrency("3", "GBP", "EUR", rates)).toBe("≈ €3.60 at the ECB rate of 13 Nov 2026");
     expect(inOrgCurrency("2.5", "EUR", "EUR", rates)).toBeUndefined();
     expect(inOrgCurrency("", "GBP", "EUR", rates)).toBeUndefined();

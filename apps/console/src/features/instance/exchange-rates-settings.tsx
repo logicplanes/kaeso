@@ -1,9 +1,9 @@
 import { SettingsGroup, SettingsRow, Section, Status, Switch } from "@logicplanes/kaeso-ui";
-import { formatDate } from "@logicplanes/kaeso-ui/format";
 import { api, data } from "~/api/client";
 import type { SettingsView } from "~/api/generated/types";
 import { useApiMutation } from "~/auth/mutation";
 import { toast } from "~/shell/toast";
+import { fullDayLabel } from "~/format/period";
 import { t } from "~/i18n";
 
 export function ExchangeRatesSettings({ settings }: { settings: SettingsView }) {
@@ -43,7 +43,7 @@ export function ExchangeRatesSettings({ settings }: { settings: SettingsView }) 
           {...(rates.error ? { description: t("instance.ratesFailed", "The last fetch failed: {error}", { error: rates.error }) } : {})}
           control={
             <Status tone={rates.error ? "warning" : rates.day ? "success" : "neutral"}>
-              {rates.day ? formatDate(rates.day) : t("instance.noRates", "None yet")}
+              {rates.day ? fullDayLabel(rates.day) : t("instance.noRates", "None yet")}
             </Status>
           }
         />
