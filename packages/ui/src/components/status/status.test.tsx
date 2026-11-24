@@ -19,4 +19,9 @@ describe("Status", () => {
     expect(screen.getByText("Archived")).toHaveClass("text-small");
     expect(container.querySelector("svg")).toBeNull();
   });
+
+  it("keeps a Chinese or Japanese word whole when its row is narrow, and breaks only between words as in English", () => {
+    render(<Status tone="success">已连接</Status>);
+    expect(screen.getByText("已连接")).toHaveClass("break-keep");
+  });
 });
