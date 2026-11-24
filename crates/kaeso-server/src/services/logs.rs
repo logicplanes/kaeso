@@ -49,8 +49,6 @@ impl Entry {
     }
 }
 
-const ENTRY_BYTES: u64 = size_of::<Entry>() as u64;
-
 impl Entry {
     // A logged text keeps the buffer it was read into, which is many times a short text's
     // length; a waiting row would hold that memory uncounted.
@@ -1022,7 +1020,7 @@ async fn record_with(state: &AppState, o: &Outcome, body: Option<Bytes>) {
     } else {
         (None, Vec::new())
     };
-    let size = ENTRY_BYTES + logical + text_bytes(&log);
+    let size = 512 + logical + text_bytes(&log);
     let cfg = &state.config.logs;
     state.logs.push(
         Entry {
@@ -1079,7 +1077,7 @@ pub async fn record_tool_call(
         result,
         expires_at: days(row.started_at, cfg.content_days.min(cfg.metadata_days)),
     });
-    let size = ENTRY_BYTES
+    let size = 512
         + (row.tool.len()
             + row.upstream_tool.len()
             + row.error_message.len()
