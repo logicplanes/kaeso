@@ -16,6 +16,7 @@ pub enum SourceKind {
     Codex,
     GeminiCli,
     Antigravity,
+    Grok,
     OpenTelemetry,
     Http,
     Litellm,
@@ -23,11 +24,12 @@ pub enum SourceKind {
 }
 
 impl SourceKind {
-    pub const ALL: [SourceKind; 8] = [
+    pub const ALL: [SourceKind; 9] = [
         SourceKind::ClaudeCode,
         SourceKind::Codex,
         SourceKind::GeminiCli,
         SourceKind::Antigravity,
+        SourceKind::Grok,
         SourceKind::OpenTelemetry,
         SourceKind::Http,
         SourceKind::Litellm,
@@ -40,6 +42,7 @@ impl SourceKind {
             SourceKind::Codex => "codex",
             SourceKind::GeminiCli => "gemini_cli",
             SourceKind::Antigravity => "antigravity",
+            SourceKind::Grok => "grok",
             SourceKind::OpenTelemetry => "opentelemetry",
             SourceKind::Http => "http",
             SourceKind::Litellm => "litellm",
@@ -54,6 +57,7 @@ impl SourceKind {
             SourceKind::Codex => "Codex",
             SourceKind::GeminiCli => "Gemini CLI",
             SourceKind::Antigravity => "Antigravity",
+            SourceKind::Grok => "Grok Build",
             SourceKind::OpenTelemetry => "OpenTelemetry",
             SourceKind::Http => "HTTP",
             SourceKind::Litellm => "LiteLLM",
@@ -67,6 +71,7 @@ impl SourceKind {
             SourceKind::ClaudeCode => Some("anthropic"),
             SourceKind::Codex => Some("openai"),
             SourceKind::GeminiCli | SourceKind::Antigravity => Some("google"),
+            SourceKind::Grok => Some("xai"),
             SourceKind::Openrouter => Some("openrouter"),
             SourceKind::OpenTelemetry | SourceKind::Http | SourceKind::Litellm => None,
         }

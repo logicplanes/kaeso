@@ -227,6 +227,7 @@
   "project.sources.kind.claudeCode": "Seine OpenTelemetry-Ereignisse: jede Anfrage, ihre Tokens und ihre MCP-Tool-Aufrufe.",
   "project.sources.kind.codex": "Seine OpenTelemetry-Log-Ereignisse, eingestellt in ~/.codex/config.toml.",
   "project.sources.kind.geminiCli": "Seine OpenTelemetry-Ereignisse über HTTP, eingestellt in settings.json.",
+  "project.sources.kind.grok": "Seine OpenTelemetry-Log-Ereignisse: jede Anfrage, ihre Tokens, Kosten und MCP-Tool-Aufrufe.",
   "project.sources.kind.http": "Stapel von Anfragen und Tool-Aufrufen als JSON, aus eigenen Skripten.",
   "project.sources.kind.litellm": "Der generische API-Logger des Proxys, mit den Kosten, wie LiteLLM sie berechnet.",
   "project.sources.kind.openrouter": "Broadcast an einen OpenTelemetry-Collector: seine Traces mit Tokens und Kosten.",

@@ -1,7 +1,7 @@
 ---
 title: LiteLLM
 description: Count the requests a LiteLLM proxy serves, with their tokens and cost, from its generic API logger.
-order: 5
+order: 6
 ---
 
 A LiteLLM proxy can send a log of every request it serves to any HTTP endpoint. Sent to a Kaeso source, each becomes an observed request in the project, with its model, provider, tokens and cost.

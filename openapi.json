@@ -49036,6 +49036,7 @@
           "codex",
           "gemini_cli",
           "antigravity",
+          "grok",
           "opentelemetry",
           "http",
           "litellm",

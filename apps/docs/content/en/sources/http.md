@@ -1,7 +1,7 @@
 ---
 title: HTTP
 description: Send the requests and tool calls of your own scripts and services to a source, as JSON over HTTP.
-order: 8
+order: 9
 ---
 
 A source of the kind **HTTP** takes batches of requests and tool calls in Kaeso's own JSON. Use it for a script, a job or a service that calls providers without Kaeso and can't export OpenTelemetry.

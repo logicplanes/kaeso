@@ -1,7 +1,7 @@
 ---
 title: OpenRouter
 description: Count the requests you send to OpenRouter, with their tokens and cost, through its Broadcast to an OpenTelemetry collector.
-order: 6
+order: 7
 ---
 
 OpenRouter's Broadcast sends a trace of every request you make to OpenRouter to a destination of your choice. With a Kaeso source as an OpenTelemetry collector destination, each request becomes an observed request in the project, with its model, tokens and cost.

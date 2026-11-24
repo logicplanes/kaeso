@@ -1,7 +1,7 @@
 ---
 title: OpenTelemetry
 description: Count the requests and MCP tool calls of any app or collector that exports OpenTelemetry GenAI spans or events.
-order: 7
+order: 8
 ---
 
 Many AI SDKs and agent frameworks describe each model call as an OpenTelemetry span that follows the GenAI semantic conventions. Exported to a Kaeso source, each call becomes an observed request in the project, and each MCP tool call a tool call.

@@ -3,7 +3,17 @@ import type { ExternalSourceView, SourceKindView, SourceStatus } from "~/api/gen
 import { t } from "~/i18n";
 
 /** Every kind of source, in the order the add dialog offers them. */
-export const SOURCE_KINDS: readonly SourceKindView[] = ["claude_code", "codex", "gemini_cli", "antigravity", "litellm", "openrouter", "opentelemetry", "http"];
+export const SOURCE_KINDS: readonly SourceKindView[] = [
+  "claude_code",
+  "codex",
+  "gemini_cli",
+  "antigravity",
+  "grok",
+  "litellm",
+  "openrouter",
+  "opentelemetry",
+  "http",
+];
 
 /** A kind's product name. */
 export const kindName = (kind: string): string => SOURCE_NAMES[kind] ?? kind;
@@ -19,6 +29,8 @@ export function kindHint(kind: SourceKindView): string {
       return t("project.sources.kind.geminiCli", "Its OpenTelemetry events over HTTP, set in settings.json.");
     case "antigravity":
       return t("project.sources.kind.antigravity", "A hook script that sends each invocation's model calls.");
+    case "grok":
+      return t("project.sources.kind.grok", "Its OpenTelemetry log events: every request, its tokens, cost and MCP tool calls.");
     case "litellm":
       return t("project.sources.kind.litellm", "The proxy's generic API logger, with costs as LiteLLM priced them.");
     case "openrouter":

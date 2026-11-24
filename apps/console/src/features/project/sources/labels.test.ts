@@ -5,7 +5,17 @@ const day = (d: string, requests: number, tool_calls = 0, refused = 0, duplicate
 
 describe("source labels", () => {
   it("name and describe every kind", () => {
-    expect(SOURCE_KINDS.map(kindName)).toEqual(["Claude Code", "Codex", "Gemini CLI", "Antigravity", "LiteLLM", "OpenRouter", "OpenTelemetry", "HTTP"]);
+    expect(SOURCE_KINDS.map(kindName)).toEqual([
+      "Claude Code",
+      "Codex",
+      "Gemini CLI",
+      "Antigravity",
+      "Grok Build",
+      "LiteLLM",
+      "OpenRouter",
+      "OpenTelemetry",
+      "HTTP",
+    ]);
     expect(new Set(SOURCE_KINDS.map(kindHint)).size).toBe(SOURCE_KINDS.length);
     expect(kindName("carrier_pigeon")).toBe("carrier_pigeon");
   });

@@ -48,6 +48,7 @@ In der Detailansicht einer Quelle können Sie:
 - [Codex](codex.md): Zählen Sie die Anfragen und MCP-Tool-Aufrufe der Codex-CLI.
 - [Gemini CLI](gemini-cli.md): Zählen Sie die Anfragen und MCP-Tool-Aufrufe von Gemini CLI.
 - [Antigravity](antigravity.md): Zählen Sie die Modellaufrufe von Antigravity mit einem Hook-Skript.
+- [Grok Build](grok.md): Zählen Sie die Anfragen von Grok Build, ihre Kosten und seine MCP-Tool-Aufrufe.
 - [LiteLLM](litellm.md): Zählen Sie die Anfragen, die ein LiteLLM-Proxy bedient.
 - [OpenRouter](openrouter.md): Zählen Sie Ihre OpenRouter-Anfragen mit Broadcast.
 - [OpenTelemetry](opentelemetry.md): Zählen Sie die Anfragen jeder App, die GenAI-Telemetrie exportiert.

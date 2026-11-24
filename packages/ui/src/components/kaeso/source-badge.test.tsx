@@ -25,6 +25,7 @@ describe("SourceBadge", () => {
     expect(colours("opentelemetry")).toEqual(["text-mark-opentelemetry-orange", "text-mark-opentelemetry-blue"]);
     expect(colours("openrouter")).toEqual(["text-mark-openrouter"]);
     expect(colours("codex")).toEqual(["text-fg"]);
+    expect(colours("grok")).toEqual(["text-mark-xai"]);
   });
 
   it("colours the published marks without changing them, and splits OpenTelemetry's into its two colours shape for shape", () => {
@@ -71,6 +72,7 @@ describe("SourceBadge", () => {
     expect(marks.every((d) => d.length > 20)).toBe(true);
     expect(new Set(marks).size).toBe(marks.length);
     expect(SOURCE_MARKS.openrouter).toBe(PROVIDER_MARKS.openrouter?.d);
+    expect(SOURCE_MARKS.grok).toBe(PROVIDER_MARKS.xai?.d);
     expect(Object.keys(SOURCE_NAMES).filter((k) => !SOURCE_MARKS[k])).toEqual(["http", "litellm"]);
   });
 });

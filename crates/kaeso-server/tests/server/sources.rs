@@ -133,6 +133,8 @@ async fn a_source_is_added_with_its_key_shown_once_and_listed_without_it() {
         )
         .await;
     assert_eq!(bad.status, StatusCode::BAD_REQUEST);
+    let grok = add(&env, json!({ "kind": "grok", "name": "Grok Build" })).await;
+    assert_eq!(grok["source"]["kind"], "grok");
 }
 
 #[tokio::test]

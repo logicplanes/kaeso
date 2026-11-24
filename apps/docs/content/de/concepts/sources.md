@@ -33,6 +33,7 @@ Eine Quelle gehört zu einem Projekt und hat eine Art, die bestimmt, wie Kaeso l
 | Codex | OpenTelemetry-Log-Ereignisse über OTLP/HTTP |
 | Gemini CLI | OpenTelemetry-Log-Ereignisse über OTLP/HTTP |
 | Antigravity | Die Modellaufrufe seines Transkripts, aus einem Hook-Skript, als JSON |
+| Grok Build | OpenTelemetry-Log-Ereignisse über OTLP/HTTP |
 | LiteLLM | Die generischen API-Logs des Proxys als JSON |
 | OpenRouter | Broadcast-Traces über OTLP/HTTP |
 | OpenTelemetry | GenAI-Spans oder -Log-Ereignisse aus jeder App oder jedem Collector, über OTLP/HTTP |

@@ -18,7 +18,7 @@ export const KAESO_SOURCE_BADGE_DEFAULT_VARIANTS = { size: "md" } as const;
 
 /**
  * The marks of the clients and gateways that report to Kaeso as sources, on a 24px grid. OpenRouter's
- * is its provider mark; LiteLLM publishes no vector mark and HTTP is no product, so both show an icon.
+ * is its provider mark, Grok Build's xAI's; LiteLLM publishes no vector mark and HTTP is no product, so both show an icon.
  */
 export const SOURCE_MARKS: Readonly<Record<string, string>> = {
   claude_code:
@@ -33,6 +33,7 @@ export const SOURCE_MARKS: Readonly<Record<string, string>> = {
     "M12.6974 13.1173c-1.0224 1.0224-1.0224 2.68 0 3.7024 1.0224 1.0224 2.68 1.0224 3.7024 0 1.0224-1.0223 1.0224-2.68 0-3.7024-1.0223-1.0223-2.68-1.0223-3.7024 0zm2.7677 2.7701c-.5063.5063-1.3267.5063-1.833 0s-.5063-1.3266 0-1.833c.5063-.5062 1.3267-.5062 1.833 0 .5063.504.5063 1.3267 0 1.833zM16.356.2355l-1.6041 1.6042c-.314.314-.314.83 0 1.144L21.015 9.247c.314.314.83.314 1.144 0l1.6042-1.6041c.314-.314.314-.83 0-1.144L17.4976.2354c-.314-.314-.8276-.314-1.1416 0zM5.1173 20.734c.2848-.2848.2848-.7497 0-1.0345l-.8155-.8155c-.2848-.2848-.7497-.2848-1.0345 0l-1.6845 1.6845-.0024.0024-.4625-.4625c-.2556-.2556-.6718-.2556-.925 0-.2556.2556-.2556.6718 0 .925l2.775 2.775c.2556.2556.6718.2556.925 0 .2532-.2556.2556-.6718 0-.925l-.4625-.4625.0024-.0024zm8.4856-15.893-3.5637 3.5637c-.3164.3164-.3164.8374 0 1.1538l2.2006 2.2005c1.5554-1.1197 3.7365-.981 5.1361.4187l1.7819-1.7818c.3164-.3165.3164-.8374 0-1.1538l-4.401-4.401c-.3165-.319-.8374-.319-1.1539 0zm-2.2881 7.8455-1.2999-1.2999c-.3043-.3043-.8033-.3043-1.1076 0l-4.5836 4.586c-.3042.3043-.3042.8033 0 1.1076l2.5973 2.5973c.3043.3043.8033.3043 1.1076 0l2.9478-2.9527c-.6231-1.2877-.5112-2.8431.3384-4.0383z",
   openrouter:
     "M18.376 3.806c2.693 0 4.876 2.201 4.876 4.917s-2.183 4.916-4.876 4.916l4.836 4.876c.615.62.18 1.679-.689 1.679H8.626C4.138 20.194.5 16.525.5 12s3.638-8.194 8.126-8.194zm-9.75 3.278c-2.693 0-4.876 2.2-4.876 4.916 0 2.715 2.183 4.916 4.876 4.916 2.692 0 4.875-2.2 4.875-4.916 0-2.715-2.183-4.916-4.875-4.916",
+  grok: "M7.168 12.02.391 7.035h5.766l4.182 3.01q-1.677.964-3.17 1.975m9.512 7.1-5.077-3.745q1.7-1.287 2.872-2.114l7.995 5.859Zm-10.844 0H0l.69-.644q3.17-3.101 8.741-6.812Q14.622 8.207 24 4.88v1.931q-1.085.482-2.196 1.005-8.846 4.158-15.968 11.304",
 };
 
 // OpenTelemetry's mark split by colour, as the CNCF's colour icon draws it: the ring, the eyepiece and the handle in orange, the two tubes in blue.
@@ -93,6 +94,7 @@ export const SOURCE_MARK_LOOKS: Readonly<Record<string, ProviderMark>> = {
     ],
   },
   openrouter: { d: SOURCE_MARKS.openrouter!, color: "text-mark-openrouter" },
+  grok: { d: SOURCE_MARKS.grok!, color: "text-mark-xai" },
 };
 
 const SOURCE_ICONS: Readonly<Record<string, IconData>> = {
@@ -110,6 +112,7 @@ export const SOURCE_NAMES: Readonly<Record<string, string>> = {
   http: "HTTP",
   litellm: "LiteLLM",
   openrouter: "OpenRouter",
+  grok: "Grok Build",
 };
 
 const MARK_SIZE = { sm: "size-10", md: "size-12", lg: "size-16", xl: "size-24" } as const;

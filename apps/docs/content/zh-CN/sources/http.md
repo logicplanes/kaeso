@@ -1,7 +1,7 @@
 ---
 title: HTTP
 description: 以 JSON 通过 HTTP，把您自己的脚本和服务的请求和工具调用发送到来源。
-order: 8
+order: 9
 ---
 
 类型为 **HTTP** 的来源接受采用 Kaeso 自有 JSON 格式的请求和工具调用批次。它适用于绕过 Kaeso 调用服务商、且无法导出 OpenTelemetry 的脚本、任务或服务。

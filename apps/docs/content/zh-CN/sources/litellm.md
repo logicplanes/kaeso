@@ -1,7 +1,7 @@
 ---
 title: LiteLLM
 description: 根据 LiteLLM 代理的通用 API 日志记录器，统计它处理的请求及其 Token 和费用。
-order: 5
+order: 6
 ---
 
 LiteLLM 代理可以把它处理的每个请求的日志发送到任意 HTTP 端点。发送到 Kaeso 来源后，每条日志都会成为项目中的已观测请求，带有模型、服务商、Token 和费用。

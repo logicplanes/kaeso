@@ -33,6 +33,7 @@ Kaeso 观测来源的请求，但不路由它们。客户端保留自己的服�
 | Codex | 通过 OTLP/HTTP 发送的 OpenTelemetry 日志事件 |
 | Gemini CLI | 通过 OTLP/HTTP 发送的 OpenTelemetry 日志事件 |
 | Antigravity | 由钩子脚本以 JSON 发送的转录中的模型调用 |
+| Grok Build | 通过 OTLP/HTTP 发送的 OpenTelemetry 日志事件 |
 | LiteLLM | 代理的通用 API 日志，JSON 格式 |
 | OpenRouter | 通过 OTLP/HTTP 发送的 Broadcast 链路追踪 |
 | OpenTelemetry | 任何应用或 Collector 通过 OTLP/HTTP 发送的 GenAI Span 或日志事件 |
