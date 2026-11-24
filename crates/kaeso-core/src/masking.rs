@@ -370,6 +370,47 @@ fn passes(check: Check, text: &str) -> bool {
     }
 }
 
+// A card number or an IBAN next to other digits or words, such as a card's security code,
+// matches together with them and fails its checksum: the longest run of whole groups that
+// passes is the value.
+fn passing(check: Check, text: &str) -> Option<(usize, usize)> {
+    if text.is_empty() {
+        return None;
+    }
+    if passes(check, text) {
+        return Some((0, text.len()));
+    }
+    let (separators, from_the_start): (&[char], bool) = match check {
+        Check::Luhn => (&[' ', '-'], false),
+        Check::Iban => (&[' '], true),
+        Check::None | Check::Ipv6 => return None,
+    };
+    let mut groups = Vec::new();
+    let mut start = 0;
+    for (i, c) in text.char_indices() {
+        if separators.contains(&c) {
+            groups.push((start, i));
+            start = i + c.len_utf8();
+        }
+    }
+    groups.push((start, text.len()));
+    for len in (1..groups.len()).rev() {
+        let firsts = if from_the_start {
+            1
+        } else {
+            groups.len() - len + 1
+        };
+        for first in 0..firsts {
+            let from = groups.get(first).map(|g| g.0)?;
+            let to = groups.get(first + len - 1).map(|g| g.1)?;
+            if text.get(from..to).is_some_and(|t| passes(check, t)) {
+                return Some((from, to));
+            }
+        }
+    }
+    None
+}
+
 #[derive(Clone, Copy, Debug)]
 struct Hit {
     start: usize,
@@ -385,10 +426,10 @@ impl Scanner {
                 let Some(m) = caps.get(f.group) else {
                     continue;
                 };
-                if m.start() < m.end() && passes(f.check, m.as_str()) {
+                if let Some((from, to)) = passing(f.check, m.as_str()) {
                     hits.push(Hit {
-                        start: m.start(),
-                        end: m.end(),
+                        start: m.start() + from,
+                        end: m.start() + to,
                         finder: i,
                     });
                 }
