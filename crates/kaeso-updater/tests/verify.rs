@@ -285,3 +285,20 @@ async fn attestations_are_fetched_from_the_repository_by_digest() {
         Err(VerifyError::Missing(_))
     ));
 }
+
+#[tokio::test]
+async fn the_logs_first_entry_reaches_the_check_of_the_logs_signature() {
+    let s = sigstore(RELEASE_WORKFLOW);
+    let first = tampered(|b| {
+        b["verificationMaterial"]["tlogEntries"][0]["logIndex"] = "0".into();
+    });
+    let err = s
+        .check(&first, subject(GATEWAY, GATEWAY_INDEX, COMMIT))
+        .await
+        .unwrap_err();
+    assert!(
+        err.to_string()
+            .ends_with("the transparency log's signature does not match"),
+        "{err}"
+    );
+}
