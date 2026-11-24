@@ -183,6 +183,41 @@ fn overlapping_finds_keep_the_earliest_and_longest() {
 }
 
 #[test]
+fn a_stricter_rule_wins_an_overlap_with_a_longer_find() {
+    let text = "sk-ant-api03-abcdefghijklmnopqrstuvwxyz@example.com";
+    let blocking = rules(&[
+        (Detector::Secrets, RuleAction::Block),
+        (Detector::Email, RuleAction::Flag),
+    ])
+    .compile()
+    .unwrap();
+    let mut m = blocking.masker();
+    m.text(text);
+    assert_eq!(m.blocked.as_deref(), Some("api_key"));
+
+    let blocking = rules(&[
+        (Detector::Secrets, RuleAction::Block),
+        (Detector::Email, RuleAction::Mask),
+    ])
+    .compile()
+    .unwrap();
+    let mut m = blocking.masker();
+    m.text(text);
+    assert_eq!(m.blocked.as_deref(), Some("api_key"));
+
+    let masking = rules(&[
+        (Detector::Secrets, RuleAction::Mask),
+        (Detector::Email, RuleAction::Flag),
+    ])
+    .compile()
+    .unwrap();
+    assert_eq!(
+        masking.masker().text(text).unwrap(),
+        "[API_KEY_1]@example.com"
+    );
+}
+
+#[test]
 fn custom_patterns_are_checked_and_named() {
     let custom = |name: &str, pattern: &str| Rules {
         custom: vec![CustomRule {

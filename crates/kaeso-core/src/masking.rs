@@ -394,19 +394,33 @@ impl Scanner {
                 }
             }
         }
+        // A stricter rule's find wins an overlap, so a longer flagged or masked value around a
+        // blocked one can't let it through.
+        let rank = |h: &Hit| {
+            self.finders.get(h.finder).map_or(2, |f| match f.action {
+                RuleAction::Block => 0u8,
+                RuleAction::Mask => 1,
+                RuleAction::Flag => 2,
+            })
+        };
         hits.sort_by(|a, b| {
-            a.start
-                .cmp(&b.start)
+            rank(a)
+                .cmp(&rank(b))
+                .then(a.start.cmp(&b.start))
                 .then(b.end.cmp(&a.end))
                 .then(a.finder.cmp(&b.finder))
         });
-        let mut kept: Vec<Hit> = Vec::new();
+        let mut kept: BTreeMap<usize, Hit> = BTreeMap::new();
         for h in hits {
-            if kept.last().is_none_or(|k| h.start >= k.end) {
-                kept.push(h);
+            let free = kept
+                .range(..h.end)
+                .next_back()
+                .is_none_or(|(_, k)| k.end <= h.start);
+            if free {
+                kept.insert(h.start, h);
             }
         }
-        kept
+        kept.into_values().collect()
     }
 
     pub fn masker(&self) -> Masker<'_> {
