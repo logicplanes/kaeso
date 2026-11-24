@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Banner, Link } from "@logicplanes/kaeso-ui";
-import { orgRetirementsQuery } from "~/api/queries/retirements";
+import { orgRetirementsQuery } from "~/api/queries/projects";
 import { fullDayLabel } from "~/format/period";
 import { t } from "~/i18n";
 

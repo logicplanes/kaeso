@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { orgRetirementsQuery } from "~/api/queries/retirements";
-import { orgProjectsQuery } from "~/api/queries/projects";
+import { orgProjectsQuery, orgRetirementsQuery } from "~/api/queries/projects";
 import { monthByProjectQuery } from "~/api/queries/usage";
 import { whatsNewQuery } from "~/api/queries/whats-new";
 import { orgRights, sessionQuery } from "~/auth/session";
