@@ -125,6 +125,43 @@ async fn a_tampered_signature_statement_or_log_entry_is_untrusted() {
 }
 
 #[tokio::test]
+async fn a_log_entry_field_the_log_did_not_sign_is_untrusted_under_either_name() {
+    use base64::Engine;
+    use base64::engine::general_purpose::STANDARD;
+
+    let s = sigstore(RELEASE_WORKFLOW);
+    let cases = [
+        tampered(|b| {
+            let entry = &mut b["verificationMaterial"]["tlogEntries"][0];
+            let signed: i64 = entry["integratedTime"].as_str().unwrap().parse().unwrap();
+            entry["integrated_time"] = (signed + 60).to_string().into();
+        }),
+        tampered(|b| {
+            let entry = &mut b["verificationMaterial"]["tlogEntries"][0];
+            let signed = STANDARD
+                .decode(entry["canonicalizedBody"].as_str().unwrap())
+                .unwrap();
+            let mut body: serde_json::Value = serde_json::from_slice(&signed).unwrap();
+            body["never"] = "logged".into();
+            entry["canonicalized_body"] = STANDARD.encode(body.to_string()).into();
+        }),
+        tampered(|b| {
+            let mut entry = b["verificationMaterial"]["tlogEntries"][0].clone();
+            let signed: i64 = entry["integratedTime"].as_str().unwrap().parse().unwrap();
+            entry["integratedTime"] = (signed + 60).to_string().into();
+            b["verificationMaterial"]["tlog_entries"] = serde_json::json!([entry]);
+        }),
+    ];
+    for doc in cases {
+        let err = s
+            .check(&doc, subject(GATEWAY, GATEWAY_INDEX, COMMIT))
+            .await
+            .unwrap_err();
+        assert!(matches!(err, VerifyError::Untrusted { .. }), "{err}");
+    }
+}
+
+#[tokio::test]
 async fn no_attestation_at_all_is_its_own_refusal() {
     let s = sigstore(RELEASE_WORKFLOW);
     let err = s

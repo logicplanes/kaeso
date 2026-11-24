@@ -372,10 +372,14 @@ impl Sigstore {
     }
 
     async fn check_bundle(&self, bundle: &Value, subject: &Subject<'_>) -> Result<(), String> {
-        check_statement(bundle, subject)?;
-        let signed_at = self.trust.check_promise(bundle)?;
         let parsed: Bundle = serde_json::from_value(bundle.clone())
             .map_err(|e| format!("the bundle does not parse: {e}"))?;
+        // A bundle may name a field twice, as `integratedTime` and `integrated_time`, and the
+        // signature check reads one of them: every other check reads the bundle as it was parsed.
+        let read =
+            serde_json::to_value(&parsed).map_err(|e| format!("the bundle does not parse: {e}"))?;
+        check_statement(&read, subject)?;
+        let signed_at = self.trust.check_promise(&read)?;
         let verifier = self.trust.verifier(signed_at)?;
         let policy = Identity::new(&self.identity, GITHUB_ISSUER);
         verifier
