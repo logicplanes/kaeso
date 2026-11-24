@@ -1139,6 +1139,31 @@ mod tests {
     }
 
     #[test]
+    fn a_header_written_wrongly_is_refused_without_repeating_its_token() {
+        let otel = |h: &str| OtelConfig {
+            endpoint: None,
+            headers: Some(h.to_owned().into()),
+            service_name: "kaeso-gateway".into(),
+            content: false,
+            sample_ratio: 1.0,
+            buffer_size: 1,
+            flush_interval: Duration::from_secs(5),
+        };
+        for written in [
+            "Authorization: Basic c2VjcmV0LXRva2Vu==",
+            "x-tenant=one, Authorization: Bearer secret-token=",
+        ] {
+            let reason = otel(written).header_map().unwrap_err();
+            assert!(!reason.contains("c2VjcmV0"), "{reason}");
+            assert!(!reason.contains("secret-token"), "{reason}");
+        }
+        assert_eq!(
+            otel("x-tenant=one, bad name=1").header_map().unwrap_err(),
+            "has a pair, number 2, whose name is not a header name"
+        );
+    }
+
+    #[test]
     fn content_uses_the_conventions_parts_and_leaves_media_out() {
         let body = Bytes::from_static(
             br#"{"model":"claude-haiku-4-5","max_tokens":10,"system":"Be brief.","messages":[
