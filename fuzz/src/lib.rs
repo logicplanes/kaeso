@@ -207,7 +207,12 @@ pub fn decoders(dialect: DialectId, data: &[u8]) {
         if let Some(task) = dispatch::pending_task(dialect, RequestKind::Image, data) {
             let poll = dispatch::encode_task_poll(dialect, &task, &ctx)
                 .unwrap_or_else(|e| panic!("a path fal returned is asked: {e:?}"));
-            assert!(poll.path.starts_with('/') && !poll.path.contains(".."));
+            let segments = poll.path.strip_prefix('/').map(|rest| rest.split('/'));
+            assert!(
+                segments.is_some_and(|mut all| all.all(|s| !matches!(s, "" | "." | ".."))),
+                "{}",
+                poll.path
+            );
         }
         let _ = dispatch::decode_video_file(dialect, 200, &headers, data);
     }
@@ -609,5 +614,11 @@ mod tests {
     fn an_event_just_under_the_limit_round_trips_although_writing_it_adds_a_colon_to_every_line() {
         let data = "{\n".repeat((SSE_LIMIT - 2) / 2);
         sse(data.as_bytes());
+    }
+
+    #[test]
+    fn a_fal_request_id_with_dots_in_it_is_a_path_fal_returned() {
+        let body = br#"{"status":"COMPLETED","response_url":"https://queue.fal.run/fal-ai/flux/requests/12...ab"}"#;
+        decoders(DialectId::Fal, body);
     }
 }
