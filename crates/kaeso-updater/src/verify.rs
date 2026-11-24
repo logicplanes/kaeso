@@ -290,7 +290,11 @@ impl Trust {
             body,
             integrated_time,
             log_id: hex(&id),
-            log_index: number(entry.get("logIndex")).ok_or("no log index")?,
+            // The parsed bundle leaves out a zero, protobuf's default: the log's first entry.
+            log_index: match entry.get("logIndex") {
+                None => 0,
+                index => number(index).ok_or("no log index")?,
+            },
         };
         let payload = serde_json::to_vec(&signed).map_err(|e| e.to_string())?;
         UnparsedPublicKey::new(&ECDSA_P256_SHA256_ASN1, &key.point)
