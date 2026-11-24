@@ -135,6 +135,19 @@ describe("target names in snapshots", () => {
     expect(snapshotName({ target_kind: "project", after: { email: "grace@example.com" } })).toBeNull();
     expect(snapshotName({ target_kind: "key", after: null, before: null })).toBeNull();
   });
+
+  it("name an MCP tool by its definition, so an approved or auto-approved change doesn't read as an id", () => {
+    const definition = (description: string) => ({ name: "search_runbooks", description, inputSchema: { type: "object" } });
+    expect(
+      snapshotName({ target_kind: "tool", before: { hash: "aa", definition: definition("v1") }, after: { hash: "bb", definition: definition("v2") } }),
+    ).toBe("search_runbooks");
+    // A tool approved for the first time has no approved definition before.
+    expect(snapshotName({ target_kind: "tool", before: { hash: null, definition: null }, after: { hash: "bb", definition: definition("v1") } })).toBe(
+      "search_runbooks",
+    );
+    // A rejection keeps only the hash.
+    expect(snapshotName({ target_kind: "tool", after: { hash: "bb", switched_off_in: [] } })).toBeNull();
+  });
 });
 
 describe("target kinds", () => {
