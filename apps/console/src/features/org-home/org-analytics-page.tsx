@@ -12,11 +12,11 @@ import type { Dimension } from "~/kaeso/overview/metrics";
 import { ORG_VIEWS, type OrgAnalyticsSearch, type OrgView } from "~/kaeso/overview/views";
 import { DimensionView, dimensionTitle } from "~/kaeso/overview/dimension";
 import { OrgHeader } from "~/shell/org-header";
+import { PeriodPicker } from "~/kaeso/period-picker";
 import { Share } from "~/kaeso/share";
 import { t } from "~/i18n";
 
 const OrgUsageBreakdown = lazy(() => import("./org-usage-breakdown").then((m) => ({ default: m.OrgUsageBreakdown })));
-const PeriodPicker = lazy(() => import("~/kaeso/period-picker").then((m) => ({ default: m.PeriodPicker })));
 
 const DIM: Record<OrgView, Dimension> = { projects: "project", models: "model", members: "member" };
 
@@ -60,9 +60,7 @@ export function OrgAnalyticsPage({ org, search, view }: { org: string; search: O
         {...(tabs ? { tabs } : {})}
         actions={
           <>
-            <Suspense fallback={null}>
-              <PeriodPicker from={o.from} to={o.to} period={o.period} days={(id) => presetDays(id, new Date(), span.data?.first_day)} onChange={setSearch} />
-            </Suspense>
+            <PeriodPicker from={o.from} to={o.to} period={o.period} days={(id) => presetDays(id, new Date(), span.data?.first_day)} onChange={setSearch} />
             <Share compact org={org} target={{ kind: "analytics", from: o.from, to: o.to, costs: o.showCost }} />
           </>
         }

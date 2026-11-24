@@ -45,6 +45,14 @@ describe("MetricTabs", () => {
     expect(all[0]).toHaveAttribute("aria-busy", "true");
     expect(all[0]).not.toHaveTextContent("59,415");
   });
+  it("keeps two lines' room for a total's change and note, loading or not, so the tab is as tall either way", () => {
+    const { rerender } = render(<MetricTabs aria-label="Metric to chart" items={tabs} value="requests" onValueChange={() => {}} loading />);
+    const room = () => screen.getByRole("tab", { name: /Requests/ }).children[2];
+    expect(room()).toHaveClass("h-36", "line-clamp-2");
+    rerender(<MetricTabs aria-label="Metric to chart" items={tabs} value="requests" onValueChange={() => {}} />);
+    expect(room()).toHaveClass("h-36", "line-clamp-2");
+    expect(room()).toHaveTextContent("↑17% bettervs. prior 30 days");
+  });
 });
 
 describe("MetricTabs, stacked", () => {
@@ -277,11 +285,11 @@ describe("Legend and Delta", () => {
     expect(delta).toHaveClass("text-fg-secondary");
     expect(delta).toHaveTextContent(/^↑18%$/);
   });
-  it("lets a total's change and its note wrap instead of cutting the note short", () => {
+  it("lets a total's change and its note wrap onto a second line instead of cutting the note short", () => {
     render(<MetricTabs aria-label="Metric to chart" items={tabs} value="requests" onValueChange={() => {}} />);
     const note = screen.getByText("vs. prior 30 days");
     expect(note).not.toHaveClass("truncate");
-    expect(note.parentElement).toHaveClass("flex-wrap", "min-h-20");
+    expect(note.parentElement).toHaveClass("line-clamp-2");
   });
   it("writes no change in the secondary color and says nothing about better or worse", () => {
     render(<Delta value={0} />);

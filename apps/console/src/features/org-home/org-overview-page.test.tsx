@@ -71,6 +71,48 @@ describe("the organization overview", () => {
     expect(await screen.findByRole("dialog")).toHaveTextContent("40.4.2");
   });
 
+  it("keeps the release banner's place while what's new loads, so the activity below doesn't drop when it arrives", async () => {
+    signedIn();
+    usage();
+    models(0);
+    on("GET", "me/whats-new", () => new Promise(() => {}));
+    await renderApp(`/orgs/${ORG}`);
+    const news = await screen.findByRole("group", { name: "News" });
+    expect(news).toHaveAttribute("aria-busy", "true");
+    expect(within(news).getByRole("button", { name: "Read what's new" })).toBeInTheDocument();
+  });
+
+  it("leaves the release banner out when what's new can't load, and shows the activity", async () => {
+    signedIn();
+    usage();
+    models(0);
+    on("GET", "me/whats-new", () => apiError(503, "unavailable", "Try again in a minute."));
+    await renderApp(`/orgs/${ORG}`);
+    expect(await screen.findByRole("group", { name: "Activity" })).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole("group", { name: "News" })).not.toBeInTheDocument());
+  });
+
+  it("holds each trend's place while the activity loads, so the cells don't grow when the lines draw", async () => {
+    signedIn();
+    on("GET", "orgs/:org/usage", () => new Promise(() => {}));
+    on("GET", "orgs/:org/usage/timeline", () => new Promise(() => {}));
+    models(0);
+    await renderApp(`/orgs/${ORG}`);
+    const activity = await screen.findByRole("group", { name: "Activity" });
+    // Requests, tokens, cache hits, cost and failed requests: a plate each, as tall as the line that replaces it.
+    expect(activity.querySelectorAll("[aria-hidden].h-48")).toHaveLength(5);
+  });
+
+  it("keeps the projects cell, with a link to all of them, while the list loads", async () => {
+    signedIn();
+    usage();
+    models(0);
+    on("GET", "orgs/:org/projects", () => new Promise(() => {}));
+    await renderApp(`/orgs/${ORG}`);
+    const cell = (await screen.findByRole("link", { name: /Projects, requests today/ })).closest("section") as HTMLElement;
+    expect(within(cell).getByRole("link", { name: "All projects" })).toHaveAttribute("href", `/orgs/${ORG}/projects`);
+  });
+
   it("lists the projects by today's requests and opens one", async () => {
     signedIn();
     usage();
@@ -297,6 +339,31 @@ describe("the organization overview", () => {
     const news = await screen.findByRole("group", { name: "News", hidden: true });
     expect(news).toHaveTextContent(/Kaeso 40\.5\.0.*New release/);
     expect(news).not.toHaveTextContent("Added");
+    // Notes with headings alone leave no line to show; the banner says so instead of shrinking under the page.
+    expect(news).toHaveTextContent("There's no summary of this release to show here.");
+  });
+
+  it("calls a pre-release one on its artwork", async () => {
+    signedIn();
+    usage();
+    models(0);
+    on("GET", "me/whats-new", {
+      current: "40.5.0-rc.1",
+      seen: "40.5.0-rc.1",
+      releases: [],
+      running: {
+        version: "40.5.0-rc.1",
+        published_at: "2026-10-14T12:00:00Z",
+        prerelease: true,
+        notes: "Faster lists.",
+        url: "https://github.com/logicplanes/kaeso/releases/tag/v40.5.0-rc.1",
+        art: null,
+      },
+    });
+    await renderApp(`/orgs/${ORG}`);
+    const news = await screen.findByRole("group", { name: "News" });
+    await waitFor(() => expect(news).toHaveTextContent("Kaeso pre-release"));
+    expect(news).toHaveTextContent("Faster lists.");
   });
 
   it("cards models without a date, a context or prices, and opens the catalogue from the list and the dialog", async () => {

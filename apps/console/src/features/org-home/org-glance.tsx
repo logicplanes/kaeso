@@ -1,20 +1,6 @@
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import {
-  Avatar,
-  Button,
-  Dashboard,
-  DashboardCell,
-  Empty,
-  ProviderBadge,
-  RankList,
-  ShareBar,
-  Sparkline,
-  Status,
-  Text,
-  icons,
-  type RankItem,
-} from "@logicplanes/kaeso-ui";
+import { Avatar, Button, Dashboard, DashboardCell, Empty, ProviderBadge, RankList, Sparkline, Status, Text, icons, type RankItem } from "@logicplanes/kaeso-ui";
 import { formatNumber, formatRelative } from "@logicplanes/kaeso-ui/format";
 import { orgCredentialsQuery } from "~/api/queries/credentials";
 import { mcpServersQuery } from "~/api/queries/mcp-servers";
@@ -28,7 +14,6 @@ import { grantLabel } from "~/kaeso/grant";
 import { statusWord } from "~/kaeso/mcp-servers";
 import { RecentChanges } from "~/kaeso/overview/recent-changes";
 import { useProviders } from "~/kaeso/providers";
-import { useOrgMoney } from "~/kaeso/org-money";
 import { byBucket } from "~/kaeso/usage-panels";
 import { orgPath, projectPath } from "~/shell/pages";
 import { usePhone } from "~/shell/use-phone";
@@ -48,21 +33,6 @@ export function OrgGlance({ org }: { org: string }) {
       </Dashboard>
     </div>
   );
-}
-
-export function CostByProject({ org }: { org: string }) {
-  const today = utcDay(new Date());
-  const monthStart = `${today.slice(0, 8)}01`;
-  const byProject = useQuery({ ...orgUsageQuery(org, monthStart, today, "project"), refetchInterval: REFRESH });
-  const projects = useQuery(orgProjectsQuery(org, true));
-  const money = useOrgMoney(org);
-  const slices = [...(byProject.data ?? [])]
-    .filter((r) => Number(r.converted_cost ?? 0) > 0)
-    .sort((a, b) => Number(b.converted_cost) - Number(a.converted_cost))
-    .slice(0, 4)
-    .map((r) => ({ id: r.key, label: projects.data?.find((p) => p.id === r.key)?.name ?? r.key, value: Number(r.converted_cost) }));
-  if (!slices.length) return null;
-  return <ShareBar aria-label={t("kaeso.overview.costByProject", "Cost by project")} slices={slices} formatValue={(v) => money.period(v.toFixed(6))} />;
 }
 
 function ProjectsCell({ org }: { org: string }) {

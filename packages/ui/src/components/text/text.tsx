@@ -45,6 +45,7 @@ export interface TextProps extends HTMLAttributes<HTMLElement> {
   mono?: boolean | undefined;
   tabular?: boolean | undefined;
   truncate?: boolean | undefined;
+  lines?: 2 | undefined;
   as?: ElementType | undefined;
   children?: ReactNode | undefined;
 }
@@ -58,8 +59,21 @@ function mergeRefs<T>(...refs: (Ref<T> | undefined)[]) {
   };
 }
 
+// Two lines of each type style, from its line height: the room `lines` keeps below 1024px.
+const TWO_LINES: Partial<Record<TextVariant, string>> = {
+  micro: "min-h-28",
+  caption: "min-h-32",
+  small: "min-h-36",
+  body: "min-h-40",
+  "body-lg": "min-h-44",
+  "title-sm": "min-h-48",
+  title: "min-h-52",
+  "title-lg": "min-h-64",
+  metric: "min-h-64",
+};
+
 export const Text = forwardRef<HTMLElement, TextProps>(function Text(
-  { variant = "body", tone = "default", weight, mono, tabular, truncate, as, className, children, ...props },
+  { variant = "body", tone = "default", weight, mono, tabular, truncate, lines, as, className, children, ...props },
   ref,
 ) {
   const Comp = (as ?? "span") as ElementType;
@@ -76,6 +90,7 @@ export const Text = forwardRef<HTMLElement, TextProps>(function Text(
         mono && variant === "body" && "text-small",
         tabular && "tabular",
         truncate && "block min-w-0 truncate",
+        lines === 2 && cn("block min-w-0 line-clamp-2 lg:line-clamp-1 lg:min-h-0", TWO_LINES[variant]),
         tip && "rounded-code focus-ring",
         className,
       )}

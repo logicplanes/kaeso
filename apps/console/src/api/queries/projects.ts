@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { api, data } from "../client";
-import type { ProjectView } from "../generated/types";
+import type { OrgRetirements, ProjectView } from "../generated/types";
 import { allPages, unarchived } from "../paging";
 
 export const projectListKey = (org: string) => ["orgs", org, "project-list"] as const;
@@ -27,4 +27,11 @@ export const orgProjectsQuery = (org: string, includeArchived = false) =>
         ),
       ),
     ...(includeArchived ? {} : { select: unarchived<ProjectView> }),
+  });
+
+export const orgRetirementsQuery = (org: string) =>
+  queryOptions({
+    queryKey: ["orgs", org, "deprecations"],
+    queryFn: async (): Promise<OrgRetirements> => data(await api.GET("/platform/v1/orgs/{org}/deprecations", { params: { path: { org } } })),
+    staleTime: 300_000,
   });

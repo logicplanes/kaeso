@@ -11,7 +11,8 @@ export const BUDGETS = [
   { name: "sign-in", route: "src/routes/sign-in.tsx", target: 120, ceiling: 144 },
   // The project overview names the sources that report observed requests among its keys, and loads the routes' loaders' names.
   { name: "project overview", route: "src/routes/_app/orgs/$org/projects/$project/index.tsx", also: ["src/auth/route-gates.ts"], target: 180, ceiling: 216 },
-  { name: "org overview", route: "src/routes/_app/orgs/$org/index.tsx", target: 185, ceiling: 216 },
+  // The org overview holds placeholders of its late parts and starts those parts with the route, so it doesn't jump.
+  { name: "org overview", route: "src/routes/_app/orgs/$org/index.tsx", target: 185, ceiling: 217 },
 ];
 
 export function checkBudgets({ root = ROOT, dist = join(root, "dist"), budgets = BUDGETS } = {}) {

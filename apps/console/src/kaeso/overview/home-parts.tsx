@@ -1,6 +1,6 @@
 import { lazy, Suspense, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { CellInset, Dashboard, DashboardCell, Readout, Segmented, Text, type Change } from "@logicplanes/kaeso-ui";
+import { CellInset, Dashboard, DashboardCell, Readout, Segmented, Skeleton, Text, type Change } from "@logicplanes/kaeso-ui";
 import { formatNumber, formatPercent } from "@logicplanes/kaeso-ui/format";
 import type { UsageRow } from "~/api/generated/types";
 import { orgUsageQuery, projectUsageQuery, timelineQuery } from "~/api/queries/usage";
@@ -47,11 +47,15 @@ function TrendCell({
   return (
     <DashboardCell className="lg:col-span-1" title={title} href={href}>
       <Readout value={value} {...(change ? { change } : {})} {...(detail ? { detail } : {})} loading={loading} />
-      <CellInset grow>
-        <div className="mt-auto flex flex-col">
-          <div className="mt-16">
-            {!loading && trend.length > 1 && (
-              <Suspense fallback={null}>
+      {/* The line sits under its number rather than at the cell's foot: the month cell's extra often comes after the first
+          frame and grows the row, which would slide every line in it down. The plate keeps the line's height meanwhile. */}
+      <CellInset>
+        <div className="mt-16">
+          {loading ? (
+            <Skeleton shape="trend" />
+          ) : (
+            trend.length > 1 && (
+              <Suspense fallback={<Skeleton shape="trend" />}>
                 <Sparkline
                   values={trend}
                   fluid
@@ -63,8 +67,8 @@ function TrendCell({
                   aria-label={t("kaeso.home.perDay", "{metric} per day", { metric: title })}
                 />
               </Suspense>
-            )}
-          </div>
+            )
+          )}
         </div>
       </CellInset>
     </DashboardCell>
@@ -188,10 +192,8 @@ export function HomeMetrics({
               loading={month.isPending}
             />
             {monthExtra && (
-              <CellInset grow>
-                <div className="mt-auto flex flex-col">
-                  <div className="mt-16">{monthExtra}</div>
-                </div>
+              <CellInset>
+                <div className="mt-16">{monthExtra}</div>
               </CellInset>
             )}
           </DashboardCell>
