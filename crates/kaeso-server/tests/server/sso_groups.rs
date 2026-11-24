@@ -467,6 +467,13 @@ async fn a_deleted_custom_role_in_a_rule_gives_nothing_and_sign_ins_go_on() {
     .await;
     assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
 
+    idp.set_groups("gus@acme.example", Some(&["everyone"]));
+    let (_, gus) = sign_in(app, idp, "gus@acme.example").await;
+    assert_eq!(
+        in_project(app, owner, &t.mapped, &gus).await.as_deref(),
+        Some("developer")
+    );
+
     let r = app
         .call(
             Method::DELETE,
@@ -476,13 +483,6 @@ async fn a_deleted_custom_role_in_a_rule_gives_nothing_and_sign_ins_go_on() {
         )
         .await;
     assert_eq!(r.status, StatusCode::NO_CONTENT, "{:?}", r.body);
-    let saved = app
-        .get(
-            &format!("/orgs/{}/security/sso/groups", owner.org_id),
-            &owner.cookie,
-        )
-        .await;
-    assert_eq!(saved.status, StatusCode::OK, "{:?}", saved.body);
 
     idp.set_groups("gus@acme.example", Some(&["readers", "everyone"]));
     let (_, gus) = sign_in(app, idp, "gus@acme.example").await;

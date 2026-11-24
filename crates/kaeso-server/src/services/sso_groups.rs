@@ -196,18 +196,16 @@ pub async fn apply(
             }
         }
     }
-    let current = store::project_memberships(&mut *tx, org, user).await?;
     // A rule keeps its projects' roles as JSON that no foreign key clears, so a custom role
-    // deleted since still stands there; it gives nothing, and still goes before later rules.
-    let roles = if wanted.values().any(|(_, role_id, _)| role_id.is_some()) {
-        roles::list(&mut *tx, org).await?
-    } else {
-        Vec::new()
-    };
+    // deleted since still stands there; it gives nothing, and still goes before later rules,
+    // so a sync takes away what a later rule gave there.
+    if wanted.values().any(|(_, role_id, _)| role_id.is_some()) {
+        let roles = roles::list(&mut *tx, org).await?;
+        wanted
+            .retain(|_, (_, role_id, _)| role_id.is_none_or(|id| roles.iter().any(|r| r.id == id)));
+    }
+    let current = store::project_memberships(&mut *tx, org, user).await?;
     for (project, (preset, role_id, value)) in &wanted {
-        if role_id.is_some_and(|id| !roles.iter().any(|r| r.id == id)) {
-            continue;
-        }
         let had = current.iter().find(|m| m.project_id == *project);
         let after = grant(preset, *role_id);
         let action = match had {
