@@ -86,7 +86,7 @@ pub fn all() -> Vec<Job> {
         Job {
             name: "batches",
             every: Duration::from_secs(300),
-            lock: 10,
+            lock: 15,
             run: |s| Box::pin(async move { Ok(crate::model_api::batches::settle_open(&s).await?) }),
         },
         Job {
@@ -291,5 +291,20 @@ pub fn spawn_all(state: &AppState, shutdown: &CancellationToken) {
                 }
             }
         });
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashMap;
+
+    #[test]
+    fn no_two_jobs_wait_for_the_same_lock() {
+        let mut held: HashMap<i64, &str> = HashMap::new();
+        for job in super::all() {
+            if let Some(other) = held.insert(job.lock, job.name) {
+                panic!("{} and {other} share lock {}", job.name, job.lock);
+            }
+        }
     }
 }
