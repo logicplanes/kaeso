@@ -305,7 +305,9 @@ export function snapshotName(e: { target_kind?: string | null; before?: unknown;
             ? text(side["description"])
             : e.target_kind === "org"
               ? (text(obj(side["org"])?.["name"]) ?? text(side["name"]))
-              : (text(side["name"]) ?? (e.target_kind === "user" ? text(side["email"]) : null));
+              : e.target_kind === "tool"
+                ? text(obj(side["definition"])?.["name"])
+                : (text(side["name"]) ?? (e.target_kind === "user" ? text(side["email"]) : null));
     if (name) return name;
   }
   return null;
