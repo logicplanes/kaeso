@@ -55,6 +55,7 @@ fn fastest_decode(body: &[u8]) -> Duration {
 }
 
 #[test]
+#[ignore = "timing, run with --release --ignored"]
 fn decoding_grows_linearly_with_the_function_calls_of_a_conversation() {
     let small = fastest_decode(&answered_newest_first(5_000));
     let large = fastest_decode(&answered_newest_first(40_000));
