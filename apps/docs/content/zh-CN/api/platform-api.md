@@ -123,6 +123,7 @@ docker compose exec gateway kaeso openapi > openapi.json
 | 删除 | `DELETE` 用于移除内容，例如服务商密钥、成员、图片或您的账户。`DELETE orgs/{org}` 则只是计划删除组织。 |
 | 审计 | 每项更改都会在同一事务中写入其所在层级的审计日志。 |
 | 请求 ID | 每个响应都带有 `kaeso-request-id`。 |
+| 压缩 | 客户端发送 `accept-encoding: gzip` 时，读取请求（`GET`）的响应以 gzip 压缩返回：JSON，以及 JSON Lines 和 CSV 下载，但服务器发送事件、媒体和范围请求除外。浏览器只有在请求来自控制台自身的源（`sec-fetch-site: same-origin`）时才会收到压缩响应；不带 Cookie 的客户端（例如使用平台密钥的客户端）总是会收到。对更改的响应不压缩。这样，只能看到加密后大小的攻击者无法猜出响应中的密钥（BREACH）。 |
 
 ### 列表
 

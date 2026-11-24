@@ -12,6 +12,7 @@ mod batches;
 mod caches;
 mod catalogue;
 mod common;
+mod compression;
 mod concurrent_changes;
 mod configuration_reference;
 mod continuity;
