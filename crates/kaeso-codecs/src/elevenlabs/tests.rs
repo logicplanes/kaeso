@@ -476,3 +476,27 @@ fn listings_keep_elevenlabs_shapes() {
         ErrorKind::Authentication
     );
 }
+
+#[test]
+fn timed_speech_lines_read_the_same_in_any_chunks() {
+    let (_, mut lines) = fixtures(DIR, "streams", "ndjson").remove(0);
+    lines.extend_from_slice(b"\n\n{\"audio_base64\":\"AAAA\"}");
+    let mut r = SpeechRequest::new("eleven_flash_v2_5", SpeechOperation::Speech)
+        .with_input("Hi.")
+        .with_voice(Voice::Id(VOICE.into()));
+    r.timestamps = true;
+    r.stream = StreamMode::on(false);
+    let (_, ctx) = encode(&Request::Speech(r));
+    let read = |chunk: usize| {
+        let mut dec = ElevenLabs::stream_decoder(&ctx);
+        let mut events: Vec<StreamEvent> = lines.chunks(chunk).flat_map(|c| dec.feed(c)).collect();
+        events.extend(dec.finish());
+        events
+    };
+    let whole = read(lines.len());
+    let pieces = lines.split(|b| *b == b'\n').filter(|l| !l.is_empty());
+    assert_eq!(whole.len(), pieces.count() + 1, "{whole:?}");
+    for chunk in [1, 7, 4096] {
+        assert_eq!(read(chunk), whole, "chunks of {chunk}");
+    }
+}
