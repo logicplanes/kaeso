@@ -28,14 +28,15 @@ const nextOf = () => new URLSearchParams(window.location.search).get("next");
 
 describe("a session that ends while the console is open", () => {
   it("sends the person to sign in, and back to the page, when a page can't load", async () => {
-    const { user } = await openProfile();
+    const { router } = await openProfile();
     window.localStorage.setItem("kaeso:recent", RECENT);
     on("GET", "me/notifications", () => {
       signedOut();
       return apiError(401, "authentication", "Sign in to continue.");
     });
 
-    await user.click(within(screen.getByRole("navigation", { name: "Settings" })).getByRole("link", { name: "Notifications" }));
+    // Opened without pointing at its link first, so the page itself finds the session ended.
+    void router.navigate({ to: NOTIFICATIONS });
     await waitFor(() => expect(window.location.pathname).toBe("/sign-in"));
     expect(nextOf()).toBe(NOTIFICATIONS);
     expect(window.localStorage.getItem("kaeso:recent")).toBeNull();
@@ -70,6 +71,19 @@ describe("a session that ends while the console is open", () => {
     signedOut();
     queryClient.getQueryCache().find({ queryKey: sessionQuery.queryKey })?.setState(ended);
     await user.click(within(screen.getByRole("navigation", { name: "Settings" })).getByRole("link", { name: "Profile" }));
+    await waitFor(() => expect(window.location.pathname).toBe("/sign-in"));
+    expect(nextOf()).toBe(PROFILE);
+  });
+});
+
+describe("a session that ended, found by pointing at a link", () => {
+  it("sends the person to sign in and back to the page they are on", async () => {
+    const { user } = await openProfile();
+    on("GET", "me/notifications", () => {
+      signedOut();
+      return apiError(401, "authentication", "Sign in to continue.");
+    });
+    await user.hover(within(screen.getByRole("navigation", { name: "Settings" })).getByRole("link", { name: "Notifications" }));
     await waitFor(() => expect(window.location.pathname).toBe("/sign-in"));
     expect(nextOf()).toBe(PROFILE);
   });

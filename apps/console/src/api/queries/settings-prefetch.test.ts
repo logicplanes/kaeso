@@ -2,7 +2,15 @@ import { describe, expect, it, vi } from "vitest";
 import { QueryClient } from "@tanstack/react-query";
 import type { WhoAmI } from "~/api/generated/types";
 import { sessionQuery } from "~/auth/session";
-import { prefetchInstanceSettings, prefetchOrgSettings, prefetchSettingsPath } from "./settings-prefetch";
+import {
+  prefetchAccountSettings,
+  prefetchInstanceSettings,
+  prefetchInstanceSettingsPage,
+  prefetchOrgSettings,
+  prefetchAccountSettingsPage,
+  prefetchOrgSettingsPage,
+  prefetchSettingsLink,
+} from "./settings-prefetch";
 
 const ORG = "org_1";
 
@@ -32,14 +40,34 @@ describe("settings prefetch", () => {
 
   it("never asks for what the person's rights don't let the page ask for", () => {
     const { c, asked } = client(["org.view"]);
-    prefetchOrgSettings(c, ORG, "members");
-    prefetchOrgSettings(c, ORG, "storage");
-    prefetchOrgSettings(c, ORG, "platform-keys");
-    prefetchOrgSettings(c, ORG, "general");
+    for (const page of ["members", "invites", "roles", "storage", "platform-keys", "guardrails", "webhooks", "shared-links", "general"] as const)
+      prefetchOrgSettings(c, ORG, page);
+    expect(asked).toEqual([["orgs", ORG, "view"]]);
+  });
+
+  it("starts the tab of the members page the address opens", () => {
+    const { c, asked } = client(["org.view", "members.view"]);
+    prefetchOrgSettings(c, ORG, "invites");
+    prefetchOrgSettings(c, ORG, "roles");
     expect(asked).toEqual([
+      ["orgs", ORG, "invites", { pendingOnly: true }],
+      ["orgs", ORG, "members"],
+      ["orgs", ORG, "project-list"],
       ["orgs", ORG, "roles"],
       ["orgs", ORG, "rights-catalogue"],
-      ["orgs", ORG, "view"],
+    ]);
+  });
+
+  it("starts the guardrails, webhooks and shared links for whoever may see them", () => {
+    const { c, asked } = client(["guardrails.view", "webhooks.view", "usage.share"]);
+    prefetchOrgSettings(c, ORG, "guardrails");
+    prefetchOrgSettings(c, ORG, "webhooks");
+    prefetchOrgSettings(c, ORG, "shared-links");
+    expect(asked).toEqual([
+      ["orgs", ORG, "guardrails"],
+      ["orgs", ORG, "webhooks"],
+      ["orgs", ORG, "shared-links"],
+      ["orgs", ORG, "project-list"],
     ]);
   });
 
@@ -57,6 +85,8 @@ describe("settings prefetch", () => {
       ["orgs", ORG, "security"],
       ["orgs", ORG, "platform-keys", { includeArchived: false }],
       ["orgs", ORG, "logs", "settings"],
+      ["orgs", ORG, "response-cache"],
+      ["orgs", ORG, "stored-responses"],
       ["orgs", ORG, "logs", "storage"],
       ["orgs", ORG, "project-list"],
       ["orgs", ORG, "logs", "deletions"],
@@ -88,67 +118,128 @@ describe("settings prefetch", () => {
   });
 });
 
-describe("settings prefetch by link", () => {
-  it("reads the page from a settings sidebar link", () => {
-    const { c, asked } = client(["org.view", "members.view"], true);
-    prefetchSettingsPath(c, `/settings/orgs/${ORG}/members`);
-    prefetchSettingsPath(c, `/settings/orgs/${ORG}/logging`);
-    prefetchSettingsPath(c, "/settings/instance/system");
-    prefetchSettingsPath(c, "/settings/account/appearance");
-    prefetchSettingsPath(c, `/settings/orgs/${ORG}/audit-log`);
+describe("account and instance settings prefetch", () => {
+  it("starts each account page's data", () => {
+    const { c, asked } = client([]);
+    for (const page of ["profile", "security", "sessions", "keys", "connections", "notifications", "agents"] as const) prefetchAccountSettings(c, page);
+    prefetchAccountSettings(c, { agent: "agt_1" });
     expect(asked).toEqual([
-      ["orgs", ORG, "members"],
-      ["orgs", ORG, "roles"],
-      ["orgs", ORG, "rights-catalogue"],
-      ["orgs", ORG, "logs", "settings"],
-      ["instance", "system"],
-      ["instance", "settings"],
+      ["me"],
+      ["me"],
+      ["me", "sso-links"],
+      ["me", "sessions"],
+      ["me", "keys", { includeArchived: false }],
+      ["me", "mcp-connections"],
+      ["me", "notifications"],
+      ["me", "agents"],
+      ["agent-catalogue"],
+      ["me", "agents", "grantable"],
+      ["me", "agents", "agt_1"],
+      ["agent-catalogue"],
+      ["me", "agents", "grantable"],
     ]);
   });
 
-  it("reads the logging tab a link opens", () => {
-    const { c, asked } = client(["org.view", "logs.storage.view"]);
-    prefetchSettingsPath(c, `/settings/orgs/${ORG}/logging?tab=storage`);
-    prefetchSettingsPath(c, `/settings/orgs/${ORG}/logging?tab=deletions#top`);
-    prefetchSettingsPath(c, `/settings/orgs/${ORG}/logging?tab=other`);
-    expect(asked).toEqual([
-      ["orgs", ORG, "logs", "storage"],
-      ["orgs", ORG, "project-list"],
-      ["orgs", ORG, "logs", "deletions"],
-      ["orgs", ORG, "project-list"],
-      ["orgs", ORG, "logs", "settings"],
-    ]);
-  });
-
-  it("reads account and instance pages from their links", () => {
+  it("starts the instance pages with the address's search", () => {
     const { c, asked } = client([], true);
-    prefetchSettingsPath(c, "/settings/account/profile");
-    prefetchSettingsPath(c, "/settings/account/security");
-    prefetchSettingsPath(c, "/settings/instance/users?state=active");
-    prefetchSettingsPath(c, "/settings/instance/orgs");
-    prefetchSettingsPath(c, "/settings/instance/general");
-    prefetchSettingsPath(c, "/settings/instance/updates");
-    prefetchSettingsPath(c, "/settings/instance/logging");
-    prefetchSettingsPath(c, "/settings/instance/catalogue");
-    prefetchSettingsPath(c, "/settings/instance");
-    prefetchSettingsPath(c, "/settings/orgs");
+    prefetchInstanceSettings(c, { page: "orgs", search: "north", sort: "deletion", sso: true });
+    prefetchInstanceSettings(c, { page: "org", org: ORG });
+    prefetchInstanceSettings(c, { page: "updates" });
     expect(asked).toEqual([
-      ["me"],
-      ["me"],
-      ["instance", "users", { search: "", state: undefined }],
-      ["instance", "orgs", { search: "", sort: "created" }],
-      ["instance", "settings"],
+      ["instance", "orgs", { search: "north", sort: "deletion", sso: true }],
+      ["instance", "orgs", "one", ORG],
+      ["instance", "orgs", "one", ORG, "usage"],
+      ["instance", "orgs", "one", ORG, "members"],
+      ["instance", "orgs", "one", ORG, "projects"],
       ["instance", "updates"],
-      ["instance", "settings"],
+      ["instance", "updates", "jobs"],
     ]);
   });
 
   it("asks for no logging data on an install without request logs", () => {
-    const { c, asked } = client(["org.view", "logs.storage.view"]);
+    const { c, asked } = client(["org.view", "logs.storage.view"], true);
     c.setQueryData(sessionQuery.queryKey, (session) => ({ ...(session as WhoAmI), request_logs: false }));
-    prefetchSettingsPath(c, `/settings/orgs/${ORG}/logging`);
-    prefetchSettingsPath(c, `/settings/orgs/${ORG}/logging?tab=storage`);
-    prefetchSettingsPath(c, `/settings/orgs/${ORG}/logging?tab=deletions`);
+    prefetchOrgSettings(c, ORG, "storage");
+    prefetchOrgSettings(c, ORG, "deletions");
+    prefetchInstanceSettings(c, { page: "logging" });
+    prefetchOrgSettings(c, ORG, "settings");
+    expect(asked).toEqual([
+      ["orgs", ORG, "response-cache"],
+      ["orgs", ORG, "stored-responses"],
+    ]);
+  });
+});
+
+describe("settings prefetch by address", () => {
+  it("reads the organization settings page and its tab from the address", () => {
+    const { c, asked } = client(["org.view", "members.view", "logs.storage.view", "audit_log.view"]);
+    prefetchOrgSettingsPage(c, ORG, `/settings/orgs/${ORG}/members`, { tab: "roles" });
+    prefetchOrgSettingsPage(c, ORG, `/settings/orgs/${ORG}/logging`, { tab: "storage" });
+    prefetchOrgSettingsPage(c, ORG, `/settings/orgs/${ORG}/logging`, { tab: "other" });
+    prefetchOrgSettingsPage(c, ORG, `/settings/orgs/${ORG}/audit-log`, { actor: " usr_ada ", event: "evt_1" });
+    prefetchOrgSettingsPage(c, ORG, `/settings/orgs/${ORG}/elsewhere`, {});
+    expect(asked).toEqual([
+      ["orgs", ORG, "roles"],
+      ["orgs", ORG, "rights-catalogue"],
+      ["orgs", ORG, "logs", "storage"],
+      ["orgs", ORG, "project-list"],
+      ["orgs", ORG, "logs", "settings"],
+      ["orgs", ORG, "response-cache"],
+      ["orgs", ORG, "stored-responses"],
+      ["audit-log", "org", ORG, { actor: "usr_ada" }],
+    ]);
+  });
+
+  it("starts the instance lists only as the sidebar links to them, unfiltered", () => {
+    const { c, asked } = client([], true);
+    prefetchInstanceSettingsPage(c, "/settings/instance/users", {});
+    prefetchInstanceSettingsPage(c, "/settings/instance/users", { q: "ada" });
+    prefetchInstanceSettingsPage(c, "/settings/instance/orgs", {});
+    prefetchInstanceSettingsPage(c, "/settings/instance/orgs", { sort: "deletion" });
+    prefetchInstanceSettingsPage(c, `/settings/instance/orgs/${ORG}`, {});
+    prefetchInstanceSettingsPage(c, "/settings/instance/system", {});
+    prefetchInstanceSettingsPage(c, "/settings/instance/audit-log", {});
+    expect(asked).toEqual([
+      ["instance", "users", { search: "", state: undefined }],
+      ["instance", "orgs", { search: "", sort: "created", sso: undefined }],
+      ["instance", "orgs", "one", ORG],
+      ["instance", "orgs", "one", ORG, "usage"],
+      ["instance", "orgs", "one", ORG, "members"],
+      ["instance", "orgs", "one", ORG, "projects"],
+      ["instance", "system"],
+      ["instance", "settings"],
+      ["instance", "users", { search: "", state: undefined }],
+      ["audit-log", "instance", {}],
+    ]);
+  });
+
+  it("asks for no audit log without the right to see it", () => {
+    const { c, asked } = client(["org.view"]);
+    prefetchOrgSettingsPage(c, ORG, `/settings/orgs/${ORG}/audit-log`, {});
+    prefetchInstanceSettingsPage(c, "/settings/instance/audit-log", {});
     expect(asked).toEqual([]);
+  });
+});
+
+describe("settings prefetch by sidebar link", () => {
+  it("reads the page from the link", () => {
+    const { c, asked } = client(["org.view", "members.view"], true);
+    prefetchSettingsLink(c, `/settings/orgs/${ORG}/members`);
+    prefetchSettingsLink(c, "/settings/instance/system");
+    prefetchSettingsLink(c, "/settings/account/sessions#top");
+    prefetchSettingsLink(c, "/settings/account/appearance");
+    prefetchSettingsLink(c, "/settings/elsewhere");
+    prefetchAccountSettingsPage(c, "/settings/account/agents/agt_1");
+    expect(asked).toEqual([
+      ["orgs", ORG, "members"],
+      ["orgs", ORG, "roles"],
+      ["orgs", ORG, "rights-catalogue"],
+      ["instance", "system"],
+      ["instance", "settings"],
+      ["me", "sessions"],
+      ["me", "agents", "agt_1"],
+      ["agent-catalogue"],
+      ["me", "agents", "grantable"],
+    ]);
   });
 });

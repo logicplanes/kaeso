@@ -116,7 +116,8 @@ describe("organization providers", () => {
     keys([production]);
     await user.click(within(await table()).getByRole("button", { name: "Try again" }));
     expect(await row("OpenAI production")).toBeInTheDocument();
-    expect(requests("GET", CREDENTIALS)).toHaveLength(2);
+    // The route's loader, the page as it opens, and Try again.
+    expect(requests("GET", CREDENTIALS)).toHaveLength(3);
   });
 
   it("shows the keys without actions to people who can only view them", async () => {

@@ -23,8 +23,10 @@ function users(list: InstanceUserView[] = [ADA, GRACE, LINUS]) {
 const userQueries = () => requests("GET", "instance/users").map((r) => Object.fromEntries(r.query));
 const table = () => screen.getByRole("grid", { name: "Users" });
 
+// The list fills in each user's details, and the route's loader asks for it before the sheet opens, so the list holds
+// the same user the sheet shows.
 async function openUser(u: InstanceUserView) {
-  users();
+  users([...[ADA, GRACE, LINUS].filter((x) => x.id !== u.id), u]);
   on("GET", `instance/users/${u.id}`, u);
   const rendered = await renderApp(`${PATH}?user=${u.id}`);
   const sheet = await screen.findByRole("dialog", { name: u.name });
@@ -493,7 +495,7 @@ describe("a user's sheet", () => {
 
   it("says when the user can't be shown", async () => {
     signedIn();
-    users();
+    users([ADA, LINUS]);
     on("GET", "instance/users/usr_grace", apiError(403, "permission_denied", "Not allowed."));
     await renderApp(`${PATH}?user=usr_grace`);
     expect(await screen.findByText("This user can't be shown right now.")).toBeInTheDocument();

@@ -70,8 +70,12 @@ export const Route = createFileRoute("/_app/orgs/$org/projects/$project/logs")({
     return filters;
   },
   loader: ({ context, params, deps }) => {
-    if (context.queryClient.getQueryData(sessionQuery.queryKey)?.request_logs === false || deps.kind === "tools") return;
-    void import("~/api/queries/route-prefetch").then((m) => m.prefetchLogs(context.queryClient, params.org, params.project, deps));
+    if (context.queryClient.getQueryData(sessionQuery.queryKey)?.request_logs === false) return;
+    void import("~/api/queries/route-prefetch").then((m) =>
+      deps.kind === "tools"
+        ? m.prefetchToolCalls(context.queryClient, params.org, params.project, deps)
+        : m.prefetchLogs(context.queryClient, params.org, params.project, deps),
+    );
   },
   component: Logs,
 });

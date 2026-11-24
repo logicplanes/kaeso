@@ -1,17 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { SettingsGroup, SettingsRow, Section, Switch } from "@logicplanes/kaeso-ui";
 import { api, data } from "~/api/client";
-import type { OrgStoredResponses } from "~/api/generated/types";
+import { orgStoredResponsesQuery } from "~/api/queries/orgs";
 import { useApiMutation } from "~/auth/mutation";
 import { useNeedsRight } from "~/auth/needs-right";
 import { useOrgRights } from "~/auth/session";
 import { t } from "~/i18n";
 import { toast } from "~/shell/toast";
-
-const orgStoredResponsesQuery = (org: string) => ({
-  queryKey: ["orgs", org, "stored-responses"] as const,
-  queryFn: async (): Promise<OrgStoredResponses> => data(await api.GET("/platform/v1/orgs/{org}/stored-responses", { params: { path: { org } } })),
-});
 
 export function OrgStoredResponsesSection({ org }: { org: string }) {
   const needs = useNeedsRight(org);

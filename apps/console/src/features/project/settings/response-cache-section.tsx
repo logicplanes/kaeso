@@ -1,17 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { Button, Select, SettingsGroup, SettingsRow, Section, Switch } from "@logicplanes/kaeso-ui";
 import { api, data } from "~/api/client";
-import type { ProjectResponseCache } from "~/api/generated/types";
+import { projectResponseCacheQuery } from "~/api/queries/project-settings";
 import { useApiMutation } from "~/auth/mutation";
 import { useNeedsRight } from "~/auth/needs-right";
 import { t } from "~/i18n";
 import { toast } from "~/shell/toast";
-
-const projectResponseCacheQuery = (org: string, project: string) => ({
-  queryKey: ["orgs", org, "projects", project, "response-cache"] as const,
-  queryFn: async (): Promise<ProjectResponseCache> =>
-    data(await api.GET("/platform/v1/orgs/{org}/projects/{project}/response-cache", { params: { path: { org, project } } })),
-});
 
 const TTLS = [300, 900, 3600, 21600, 86400, 604800] as const;
 

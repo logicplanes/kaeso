@@ -351,7 +351,8 @@ describe("AuditLog", () => {
     const { user } = await renderApp(PATH);
     expect((await notifications().findAllByText("You can't read the audit log.")).length).toBeGreaterThan(0);
     await user.click(within(await table()).getByRole("button", { name: "Try again" }));
-    await waitFor(() => expect(logQuery()).toHaveLength(2));
+    // The route's loader asked quietly first, then the page as it opened, then Try again.
+    await waitFor(() => expect(logQuery()).toHaveLength(3));
   });
 
   it("opens an event with its details, rights change and diff", async () => {

@@ -7,7 +7,7 @@ export const Route = createFileRoute("/_app/orgs/$org/projects/$project/analytic
   validateSearch: analyticsSearch,
   loaderDeps: ({ search }) => periodSearch(search),
   loader: ({ context, params, deps }) => {
-    void import("~/api/queries/route-prefetch").then((m) => m.prefetchProjectAnalytics(context.queryClient, params.org, params.project, deps));
+    void import("~/api/queries/route-prefetch").then((m) => m.prefetchAnalytics(context.queryClient, params, deps));
   },
   component: Analytics,
 });

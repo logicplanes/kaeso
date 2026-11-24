@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { queryOptions, useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { queryOptions, useQuery, useSuspenseQuery, type QueryClient } from "@tanstack/react-query";
 import { api, data } from "~/api/client";
 import { isApiError } from "~/api/errors";
 import type { Membership, MyMembership, WhoAmI } from "~/api/generated/types";
@@ -62,6 +62,15 @@ export function projectRightsQuery(session: WhoAmI, org: string, project: string
 }
 
 const NONE: ReadonlySet<string> = new Set();
+
+/**
+ * The organization rights a route loader can rely on: the session the app's route loaded first. Without it, none, so a
+ * loader never asks for something the page itself wouldn't.
+ */
+export function loadedOrgRights(client: QueryClient, org: string): ReadonlySet<string> {
+  const session = client.getQueryData(sessionQuery.queryKey);
+  return session ? orgRights(session, org) : NONE;
+}
 
 export function useProjectRights(org: string, project: string): ReadonlySet<string> {
   const session = useSession();

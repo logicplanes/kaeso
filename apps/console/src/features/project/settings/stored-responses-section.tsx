@@ -1,17 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { SettingsGroup, SettingsRow, Section, Switch } from "@logicplanes/kaeso-ui";
 import { api, data } from "~/api/client";
-import type { ProjectStoredResponses } from "~/api/generated/types";
+import { projectStoredResponsesQuery } from "~/api/queries/project-settings";
 import { useApiMutation } from "~/auth/mutation";
 import { useNeedsRight } from "~/auth/needs-right";
 import { t } from "~/i18n";
 import { toast } from "~/shell/toast";
-
-const projectStoredResponsesQuery = (org: string, project: string) => ({
-  queryKey: ["orgs", org, "projects", project, "stored-responses"] as const,
-  queryFn: async (): Promise<ProjectStoredResponses> =>
-    data(await api.GET("/platform/v1/orgs/{org}/projects/{project}/stored-responses", { params: { path: { org, project } } })),
-});
 
 export function StoredResponsesSection({ org, project, canChange, archived }: { org: string; project: string; canChange: boolean; archived: boolean }) {
   const needs = useNeedsRight(org, project);
