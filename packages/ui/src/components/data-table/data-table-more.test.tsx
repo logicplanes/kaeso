@@ -129,6 +129,20 @@ describe("DataTable selection and rows", () => {
     expect(screen.getAllByRole("row").length).toBeLessThan(300);
   });
 
+  it("draws only the visible rows of a full 100-row page by default, so the next page doesn't redraw the table", () => {
+    const page = Array.from({ length: 100 }, (_, i) => ({ id: String(i), key: `key-${i}`, requests: i }));
+    render(<DataTable aria-label="Keys" data={page} columns={columns} getRowId={(r) => r.id} />);
+    expect(screen.getAllByRole("row").length).toBeLessThan(100);
+  });
+
+  it("draws every row of a table of up to 50 rows, and only the visible ones above that", () => {
+    const many = (n: number) => Array.from({ length: n }, (_, i) => ({ id: String(i), key: `key-${i}`, requests: i }));
+    const { rerender } = render(<DataTable aria-label="Keys" data={many(50)} columns={columns} getRowId={(r) => r.id} />);
+    expect(screen.getAllByRole("row")).toHaveLength(51);
+    rerender(<DataTable aria-label="Keys" data={many(51)} columns={columns} getRowId={(r) => r.id} />);
+    expect(screen.getAllByRole("row").length).toBeLessThan(51);
+  });
+
   it("shows the rows in view of a long table that sits below other content", () => {
     const page = (document.scrollingElement ?? document.documentElement) as HTMLElement;
     const above = 3000;
