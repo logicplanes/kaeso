@@ -17,7 +17,7 @@ export OTEL_EXPORTER_OTLP_HEADERS="Authorization=Bearer sk-kso-src-…"
 export OTEL_LOG_TOOL_DETAILS=1
 ```
 
-Run `grok` and send it a prompt. The source shows **Connected** within a few seconds, and the request appears in the project's request logs.
+Run `grok` and send it a prompt. The source shows **Connected** within a few seconds, or up to 30 seconds when Grok Build can't reach xAI as it starts, and the request appears in the project's request logs.
 
 ## Where the settings go
 
@@ -34,7 +34,7 @@ export OTEL_LOG_USER_PROMPTS=1
 export OTEL_LOG_TOOL_CONTENT=1
 ```
 
-The first sends your prompts and Grok Build's replies, the second each tool call's input and output. Kaeso drops content a source sends while the source doesn't keep content.
+The first sends your prompts and Grok Build's replies, the second each tool call's input and output. Replies stay out when `OTEL_LOG_ASSISTANT_RESPONSES=0` is set, or a managed configuration turns them off. Kaeso drops content a source sends while the source doesn't keep content.
 
 ## What Kaeso reads
 

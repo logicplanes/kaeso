@@ -17,7 +17,7 @@ export OTEL_EXPORTER_OTLP_HEADERS="Authorization=Bearer sk-kso-src-…"
 export OTEL_LOG_TOOL_DETAILS=1
 ```
 
-运行 `grok` 并发送一个提示词。几秒钟内，来源会显示**已连接**，请求也会出现在项目的请求日志中。
+运行 `grok` 并发送一个提示词。几秒钟内（如果 Grok Build 启动时无法连接 xAI，则最多 30 秒），来源会显示**已连接**，请求也会出现在项目的请求日志中。
 
 ## 设置放在哪里
 
@@ -34,7 +34,7 @@ export OTEL_LOG_USER_PROMPTS=1
 export OTEL_LOG_TOOL_CONTENT=1
 ```
 
-第一个变量发送您的提示词和 Grok Build 的回复，第二个发送每个工具调用的输入和输出。来源不保留内容时，Kaeso 会丢弃它发送的内容。
+第一个变量发送您的提示词和 Grok Build 的回复，第二个发送每个工具调用的输入和输出。如果设置了 `OTEL_LOG_ASSISTANT_RESPONSES=0`，或托管配置将其关闭，则不会发送回复。来源不保留内容时，Kaeso 会丢弃它发送的内容。
 
 ## Kaeso 读取的内容
 
