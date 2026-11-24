@@ -4,6 +4,25 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
+### Security
+
+- A started video or image generation holds its highest possible cost against hard budgets until it is billed, and a video nobody asks about again is billed when it ends, so jobs started one after another no longer run past a hard budget. ([GHSA-7vfp-ggg2-hhwm](https://github.com/logicplanes/kaeso/security/advisories/GHSA-7vfp-ggg2-hhwm))
+- Transcriptions, translations and voice changes hold the longest their uploaded audio can last against hard budgets while they run, so uploads sent side by side no longer run past a hard budget. ([GHSA-g48f-v4f7-4m95](https://github.com/logicplanes/kaeso/security/advisories/GHSA-g48f-v4f7-4m95))
+- Batches check and hold hard token and spend budgets before they start, and refuse features that have no price. ([GHSA-5hx3-cg7v-33c7](https://github.com/logicplanes/kaeso/security/advisories/GHSA-5hx3-cg7v-33c7))
+- kaeso-edge takes the client address from the nearest untrusted hop of `X-Forwarded-For`, and on Railway from `X-Real-IP`. ([GHSA-rwrp-468m-3jv3](https://github.com/logicplanes/kaeso/security/advisories/GHSA-rwrp-468m-3jv3))
+- Replacing or removing an organization's single sign-on connection, unlinking an account from it, requiring single sign-on or removing a member through SCIM also ends the agents and portal clients approved in the sessions that end. ([GHSA-v89c-fm8p-fh9j](https://github.com/logicplanes/kaeso/security/advisories/GHSA-v89c-fm8p-fh9j))
+- Account › Agents and agent grants follow the session's open organizations and sign-in rules. ([GHSA-qgxw-mmg2-92qp](https://github.com/logicplanes/kaeso/security/advisories/GHSA-qgxw-mmg2-92qp))
+- Account › Connections and muting an organization's emails follow the organization's sign-in rules, and an MCP sign-in finishes only while the person still belongs to the organization. ([GHSA-gwf4-xf89-jr57](https://github.com/logicplanes/kaeso/security/advisories/GHSA-gwf4-xf89-jr57))
+- MCP server sign-ins accept only `https` sign-in addresses, or `http` ones for an `http` server, and the console opens only web pages for them. ([GHSA-25wg-9wmh-9rcg](https://github.com/logicplanes/kaeso/security/advisories/GHSA-25wg-9wmh-9rcg))
+- Turning automatic updates on, or changing their channel, window or time zone while they are on, needs `instance.updates.apply` and a recent sign-in. ([GHSA-c92c-rh4f-h5hm](https://github.com/logicplanes/kaeso/security/advisories/GHSA-c92c-rh4f-h5hm))
+- Members with `webhooks.view` alone see only each webhook address's origin, and the audit log masks webhook addresses. ([GHSA-rw8m-ggwj-8mmc](https://github.com/logicplanes/kaeso/security/advisories/GHSA-rw8m-ggwj-8mmc))
+- The weekly summary email shows a project's cost only to members who may see costs. ([GHSA-3mc2-72rx-4792](https://github.com/logicplanes/kaeso/security/advisories/GHSA-3mc2-72rx-4792))
+- Provider errors on batches, media jobs and realtime sockets no longer carry key or account tokens. ([GHSA-wx5j-mvf7-crwx](https://github.com/logicplanes/kaeso/security/advisories/GHSA-wx5j-mvf7-crwx))
+- Responses requests refuse `item_reference` items, send `store: false` when Kaeso keeps no stored responses, and batch lines are checked the same way. ([GHSA-2x35-h4qp-x2r3](https://github.com/logicplanes/kaeso/security/advisories/GHSA-2x35-h4qp-x2r3))
+- Batch uploads hold the translation memory budget, and request bodies are checked for depth before their fields are read. ([GHSA-469r-9qrh-476q](https://github.com/logicplanes/kaeso/security/advisories/GHSA-469r-9qrh-476q))
+- Realtime speech-to-text checks `audio_format` before it connects, defaults to `pcm_16000`, and bills the audio by that format. ([GHSA-w6r4-vxjx-5g7r](https://github.com/logicplanes/kaeso/security/advisories/GHSA-w6r4-vxjx-5g7r))
+- The AWS managed stack passes the PostgreSQL and Valkey addresses to ECS through Secrets Manager instead of the task definition's environment. ([GHSA-x9fh-c3x2-88fh](https://github.com/logicplanes/kaeso/security/advisories/GHSA-x9fh-c3x2-88fh))
+
 ## [0.7.1-rc.1] - 2026-11-23
 
 Kaeso 0.7.1-rc.1 adds sources: keys that let clients such as Claude Code, Codex and Gemini CLI report the calls they make straight to their provider, which Kaeso logs and counts as observed, with a console page, usage views and docs. MCP servers, existing ones included, now auto-approve detected tool changes by default, and streaming latency and per-chunk CPU are cut. Fixes cover Gemini apps on Google's Go SDK, OpenRouter-style `reasoning` requests, provider logos and the installer's settings check. No change in this release is marked as breaking.
