@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, CellInset, Dashboard, DashboardCell, Legend, MetricTabs, RankList, Section, Text } from "@logicplanes/kaeso-ui";
+import { Button, CellInset, Dashboard, DashboardCell, Legend, MetricTabs, RankList, Section, Skeleton, Text } from "@logicplanes/kaeso-ui";
 import { formatLocale } from "@logicplanes/kaeso-ui/format";
 import { bucketLabel, spansYears } from "~/format/buckets";
 import { utcDay } from "~/format/period";
@@ -57,7 +57,8 @@ function ChartCell({ o, metric }: { o: Overview; metric: MetricId }) {
       <CellInset grow>
         <div className="flex flex-wrap items-center justify-between gap-x-24 gap-y-6">
           <Text variant="small" tone="tertiary">
-            {note}
+            {/* The placeholder keeps the note's line, so the chart doesn't drop when the note arrives. */}
+            {note ?? (o.pointsLoading && <Skeleton shape="word" className="w-240" />)}
           </Text>
           {o.prevRows && !context && (
             <Legend
@@ -111,7 +112,8 @@ function TopCell({ o, dim, metric }: { o: Overview; dim: Ranked; metric: MetricI
 
 export function ControlRoom({ o, initial = "requests" }: { o: Overview; initial?: MetricId | undefined }) {
   const [metric, setMetric] = useState<MetricId>(initial);
-  const ids: MetricId[] = ["requests", "tokens", ...(o.showCost ? (["cost"] as const) : []), "errors", ...(o.now.toolCalls > 0 ? (["tools"] as const) : [])];
+  // Tool calls keep their tab at zero too: a tab that appeared with the numbers narrowed every other one under the reader.
+  const ids: MetricId[] = ["requests", "tokens", ...(o.showCost ? (["cost"] as const) : []), "errors", "tools"];
   const top: Ranked[] = o.project ? ["model", "key"] : ["project", "model"];
   return (
     <>

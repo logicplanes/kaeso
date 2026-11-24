@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { AppFrame, Button } from "@logicplanes/kaeso-ui";
 import { orgProjectsQuery } from "~/api/queries/projects";
@@ -7,15 +7,8 @@ import { t } from "~/i18n";
 import { HomeMetrics } from "~/kaeso/overview/home-parts";
 import { OrgHeader } from "~/shell/org-header";
 import { orgPath } from "~/shell/pages";
-
-// Split from the page so the overview's first load stays within its bundle budget (scripts/budget.mjs); the route preloads them.
-const glance = () => import("./org-glance");
-const news = () => import("./home-news");
-const OrgGlance = lazy(() => glance().then((m) => ({ default: m.OrgGlance })));
-const CostByProject = lazy(() => glance().then((m) => ({ default: m.CostByProject })));
-const ReleaseBanner = lazy(() => news().then((m) => ({ default: m.ReleaseBanner })));
-const NewModels = lazy(() => news().then((m) => ({ default: m.NewModels })));
-const RetiringProjects = lazy(() => import("./retiring-projects").then((m) => ({ default: m.RetiringProjects })));
+import { CostByProject, NewModels, OrgGlance, ReleaseBanner, RetiringProjects } from "./org-overview-parts";
+import { ReleaseBannerPending } from "./release-banner-pending";
 
 export function OrgOverviewPage({ org }: { org: string }) {
   const rights = useOrgRights(org);
@@ -38,11 +31,8 @@ export function OrgOverviewPage({ org }: { org: string }) {
       />
       <AppFrame.Body padding="page">
         <div className="flex flex-col">
-          <Suspense fallback={null}>
+          <Suspense fallback={<ReleaseBannerPending />}>
             <ReleaseBanner />
-          </Suspense>
-          <Suspense fallback={null}>
-            <RetiringProjects org={org} />
           </Suspense>
           <div className="mt-48">
             <HomeMetrics
@@ -59,6 +49,11 @@ export function OrgOverviewPage({ org }: { org: string }) {
               }
             />
           </div>
+          {/* Below the activity: whether any project uses retiring models is known only after the page's first frame,
+              and the banner would push the numbers down when it arrived. */}
+          <Suspense fallback={null}>
+            <RetiringProjects org={org} />
+          </Suspense>
           <Suspense fallback={null}>
             <OrgGlance org={org} />
             {first && <NewModels org={org} project={first.id} projectName={first.name} />}

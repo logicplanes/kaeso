@@ -63,6 +63,28 @@ const BEFORE: Rows = {
 };
 
 describe("the analytics control room", () => {
+  it("keeps the tool calls tab at zero, so the tabs don't narrow when a period's numbers arrive", async () => {
+    signedIn();
+    projectData({});
+    on("GET", "orgs/:org/projects/:project/logs", listed([]));
+    usage(USAGE, { day: [usageRow({ key: "2026-10-13", requests: 40 })] });
+    on("GET", `${USAGE}/timeline`, { data: [] });
+    await renderApp(projectPath(`analytics?${PERIOD}`));
+    await waitFor(() => expect(tab(/^Tool calls/)).toHaveTextContent(/^Tool calls0/));
+    expect(within(screen.getByRole("tablist", { name: "Metric to chart" })).getAllByRole("tab")).toHaveLength(5);
+  });
+
+  it("keeps the line of the chart's note while its numbers load, so the chart doesn't drop when the note arrives", async () => {
+    signedIn();
+    projectData({});
+    on("GET", "orgs/:org/projects/:project/logs", listed([]));
+    on("GET", USAGE, () => new Promise(() => {}));
+    on("GET", `${USAGE}/timeline`, () => new Promise(() => {}));
+    await renderApp(projectPath(`analytics?${PERIOD}`));
+    const chart = cell("Requests per day, UTC");
+    expect(chart.querySelector("span[aria-hidden].inline-block")).toBeInTheDocument();
+  });
+
   it("leads with the totals and their change, charts the chosen one by the day and ranks what drives it", async () => {
     signedIn();
     projectData({ models: [catalogueModel()], keys: [apiKey()] });

@@ -1,7 +1,7 @@
-import { screen, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { ORG, signedIn } from "~/test/fixtures";
-import { on } from "~/test/network";
+import { apiError, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
 
 describe("the overview's retiring models", () => {
@@ -40,6 +40,15 @@ describe("the overview's retiring models", () => {
     signedIn();
     await renderApp(`/orgs/${ORG}`);
     expect(await screen.findByRole("heading", { name: "Overview" })).toBeInTheDocument();
+    expect(screen.queryByText(/use retiring models/)).not.toBeInTheDocument();
+  });
+
+  it("stays away while they can't load", async () => {
+    signedIn();
+    on("GET", "orgs/:org/deprecations", () => apiError(503, "unavailable", "Try again in a minute."));
+    await renderApp(`/orgs/${ORG}`);
+    expect(await screen.findByRole("heading", { name: "Overview" })).toBeInTheDocument();
+    await waitFor(() => expect(requests("GET", "orgs/:org/deprecations").length).toBeGreaterThan(0));
     expect(screen.queryByText(/use retiring models/)).not.toBeInTheDocument();
   });
 });

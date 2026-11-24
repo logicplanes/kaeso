@@ -19,18 +19,10 @@ import { RecentChanges } from "~/kaeso/overview/recent-changes";
 import { useProviders } from "~/kaeso/providers";
 import { projectPath } from "~/shell/pages";
 import { usePhone } from "~/shell/use-phone";
-import { lastDays } from "~/kaeso/share";
-import { ShareButton } from "~/kaeso/share-button";
 import { keyLabel, usePartyName } from "./keys/party";
 
 const LIVE_EVERY = 5_000;
 const FEED_ROWS = 7;
-
-/** Shares the project's last 30 days as a read-only summary; here so the overview's first load keeps its budget. */
-export function ShareCard({ org, project }: { org: string; project: string }) {
-  const rights = useProjectRights(org, project);
-  return <ShareButton org={org} target={{ kind: "project_card", project, ...lastDays(30), costs: rights.has("costs.view") }} />;
-}
 
 export function ProjectGlance({ org, project }: { org: string; project: string }) {
   const rights = useProjectRights(org, project);

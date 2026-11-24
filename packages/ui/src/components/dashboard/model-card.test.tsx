@@ -57,6 +57,11 @@ describe("Announcement", () => {
     expect(screen.getByRole("img", { name: "Kaeso 40.5.0 artwork" })).toBeInTheDocument();
   });
 
+  it("keeps two lines' room for a one-line summary, so it is as tall as its loading state and as a longer summary", () => {
+    render(<Announcement title="Kaeso 40.5.0" description="Search on every list." />);
+    expect(screen.getByText("Search on every list.")).toHaveClass("line-clamp-2", "min-h-40");
+  });
+
   it("shows only its title when that's all it has", () => {
     render(<Announcement title="Kaeso 40.5.0" />);
     expect((screen.getByRole("heading", { name: "Kaeso 40.5.0" }).closest("section") as HTMLElement).textContent).toBe("Kaeso 40.5.0");

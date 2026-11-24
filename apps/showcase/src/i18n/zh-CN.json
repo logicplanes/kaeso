@@ -677,7 +677,7 @@
   "The selected tab on first render.": "首次渲染时选中的标签页。",
   "The selected tab, when you control it.": "受控时选中的标签页。",
   "The series, each with an `id`, a `label`, `points` of `t` (a time) and `v`, and an optional `color`.": "系列，每个包含 `id`、`label`、由 `t`（时间）和 `v` 组成的 `points`，以及可选的 `color`。",
-  "The shape it stands in for: a line of text, a control, a circle or a block.": "它所代替的形状：一行文字、一个控件、一个圆形或一个方块。",
+  "The shape it stands in for: a line of text, a few words inside a line of text, a control, a circle, a 48px trend line or a block.": "它所代替的形状：一行文字、一行文字中的几个词、一个控件、一个圆形、一条 48px 高的趋势线或一个方块。",
   "The shape of each step: a pill or a box.": "每个步骤的形状：胶囊或方框。",
   "The sheet's content.": "侧滑面板的内容。",
   "The side it opens on.": "打开的方向。",
