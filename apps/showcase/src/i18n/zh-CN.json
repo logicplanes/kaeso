@@ -82,7 +82,7 @@
   "A video job": "一个视频任务",
   "A video job's progress from 0 to 100, when its provider says; the bar pulses quietly while it doesn't.": "视频任务的进度，从 0 到 100，前提是服务商提供；不提供时进度条会轻微闪动。",
   "Above a sent prompt": "在已发送的提示词上方",
-  "Above this many rows, only the visible rows are rendered.": "行数超过此值时，只渲染可见行。",
+  "Above this many rows (50), only the visible rows are rendered.": "行数超过此值（50）时，只渲染可见行。",
   "Accessible name when the region is focusable.": "区域可获得焦点时的无障碍名称。",
   "Accordion": "手风琴",
   "Account menu": "账户菜单",

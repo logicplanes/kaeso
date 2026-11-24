@@ -82,7 +82,7 @@
   "A video job": "Ein Video-Job",
   "A video job's progress from 0 to 100, when its provider says; the bar pulses quietly while it doesn't.": "Der Fortschritt eines Video-Jobs von 0 bis 100, wenn sein Anbieter ihn nennt; solange nicht, pulsiert der Balken dezent.",
   "Above a sent prompt": "Über einem gesendeten Prompt",
-  "Above this many rows, only the visible rows are rendered.": "Ab dieser Zeilenzahl werden nur die sichtbaren Zeilen gerendert.",
+  "Above this many rows (50), only the visible rows are rendered.": "Über dieser Zeilenzahl (50) werden nur die sichtbaren Zeilen gerendert.",
   "Accessible name when the region is focusable.": "Zugänglicher Name, wenn der Bereich fokussierbar ist.",
   "Accordion": "Accordion",
   "Account menu": "Kontomenü",
