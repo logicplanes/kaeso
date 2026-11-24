@@ -40,6 +40,8 @@ export interface DocProp {
 }
 
 export interface DocPageData {
+  /** Relative to the repository: the file the page's main component is written in, or its folder. */
+  source: string;
   importLine: string;
   props: DocProp[];
 }

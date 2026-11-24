@@ -24,10 +24,12 @@ function builtFiles(dir: string): string[] {
 
 test.describe("links to the source", () => {
   for (const lang of LANGS) {
-    test(`View source opens the component at the build's commit in ${lang}`, async ({ request }) => {
-      const html = await (await request.get(at(lang, "/components/select"))).text();
-      const links = [...html.matchAll(/href="(https:\/\/github\.com\/[^"]+)"/g)].map((m) => m[1]);
-      expect(links, REBUILT).toContain(`https://github.com/logicplanes/kaeso/tree/${COMMIT}/packages/ui/src/components/select`);
+    test(`View source opens the component's file at the build's commit in ${lang}`, async ({ request }) => {
+      const links = async (slug: string) =>
+        [...(await (await request.get(at(lang, `/components/${slug}`))).text()).matchAll(/href="(https:\/\/github\.com\/[^"]+)"/g)].map((m) => m[1]);
+      expect(await links("select"), REBUILT).toContain(`https://github.com/logicplanes/kaeso/blob/${COMMIT}/packages/ui/src/components/select/select.tsx`);
+      // A component written beside others opens their shared file, not a folder named after its page.
+      expect(await links("alert-dialog"), REBUILT).toContain(`https://github.com/logicplanes/kaeso/blob/${COMMIT}/packages/ui/src/components/dialog/dialog.tsx`);
     });
   }
 

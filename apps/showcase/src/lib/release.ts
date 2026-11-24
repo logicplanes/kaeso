@@ -9,6 +9,8 @@ import { GITHUB } from "./nav";
 const commit: string | null = source.commit;
 export const SOURCE_REF = commit ?? `v${repository.version}`;
 
+/** A file opens as a file (blob), a folder as a folder (tree): GitHub answers 404 to the other. */
 export function sourceUrl(path: string): string {
-  return `${GITHUB}/tree/${SOURCE_REF}/${path.replace(/^\/+/, "")}`;
+  const clean = path.replace(/^\/+/, "");
+  return `${GITHUB}/${/\.[a-z]+$/i.test(clean) ? "blob" : "tree"}/${SOURCE_REF}/${clean}`;
 }

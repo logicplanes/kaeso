@@ -35,7 +35,7 @@ const markdown = [
       <div class="mt-4 flex flex-wrap items-center gap-8">
         <CopyPage client:idle markdown={markdown} />
         <a
-          href={sourceUrl(`packages/ui/src/${page.source ?? `components/${page.slug}`}`)}
+          href={sourceUrl(doc.source)}
           target="_blank"
           rel="noopener noreferrer"
           class="inline-flex h-32 items-center gap-6 rounded-pill px-12 text-body font-medium material-ghost transition-control focus-ring"
