@@ -951,6 +951,73 @@ fn a_root_union_that_combines_into_too_many_variants_is_refused() {
     );
 }
 
+// Definitions that each refer to the next one 20 times: expanding every reference again would take
+// about 20^15 steps.
+fn chained_definitions(links: usize) -> Value {
+    let mut defs = serde_json::Map::new();
+    for i in 0..links {
+        let next = json!({"$ref": format!("#/$defs/d{}", i + 1)});
+        defs.insert(format!("d{i}"), json!({"allOf": vec![next; 20]}));
+    }
+    defs.insert(
+        format!("d{links}"),
+        json!({"type": "object", "properties": {"path": {"type": "string"}}}),
+    );
+    json!({
+        "type": "object",
+        "$defs": defs,
+        "anyOf": [
+            {"$ref": "#/$defs/d0"},
+            {"type": "object", "properties": {"mode": {"type": "string"}}},
+        ],
+    })
+}
+
+#[test]
+fn definitions_that_refer_to_each_other_many_times_merge_at_once() {
+    let req = decode(C, &chat_tool("deep", chained_definitions(15)));
+    let started = std::time::Instant::now();
+    let (body, _) = sent(A, &req, anthropic(&req));
+    assert!(
+        started.elapsed() < std::time::Duration::from_millis(200),
+        "{:?}",
+        started.elapsed()
+    );
+    let input = &tool(A, &body, "deep")["input_schema"];
+    assert!(input["properties"].get("path").is_some(), "{input}");
+    assert!(input["properties"].get("mode").is_some(), "{input}");
+}
+
+#[test]
+fn a_merge_that_would_expand_too_many_schemas_is_refused_at_once() {
+    let started = std::time::Instant::now();
+    // Shallow, so neither the depth nor the variants run out first: one definition that names
+    // the same leaf 5000 times.
+    let leaf = json!({"$ref": "#/$defs/leaf"});
+    let wide = json!({
+        "type": "object",
+        "$defs": {
+            "wide": {"allOf": vec![leaf; 5000]},
+            "leaf": {"type": "object", "properties": {"path": {"type": "string"}}},
+        },
+        "anyOf": [
+            {"$ref": "#/$defs/wide"},
+            {"type": "object", "properties": {"mode": {"type": "string"}}},
+        ],
+    });
+    let err = refusal(A, wide);
+    assert!(
+        started.elapsed() < std::time::Duration::from_millis(500),
+        "{:?}",
+        started.elapsed()
+    );
+    assert!(
+        err.message.contains("refer to their definitions too often"),
+        "{}",
+        err.message
+    );
+}
+
 #[test]
 fn token_counts_for_claude_see_the_merged_tool() {
     let req = match decode(R, &codex_desktop()) {
