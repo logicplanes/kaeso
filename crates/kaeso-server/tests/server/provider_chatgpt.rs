@@ -1064,6 +1064,36 @@ async fn a_reached_plan_limit_keeps_every_model_of_the_account_out_of_routes() {
         2,
         "a stream that failed before output holds it too"
     );
+
+    // The plan names no reset, so each hit in a row holds three times as long: 15 minutes now.
+    p.app.clock.advance(time::Duration::minutes(13));
+    p.call("/v1/chat/completions", false, chat("plan", "Hi"))
+        .await;
+    assert_eq!(p.sent().len(), 2, "the second hold lasts 15 minutes");
+    p.app.clock.advance(time::Duration::minutes(2));
+    p.call("/v1/chat/completions", false, chat("plan", "Hi"))
+        .await;
+    assert_eq!(p.sent().len(), 3);
+    p.app.clock.advance(time::Duration::minutes(44));
+    p.call("/v1/chat/completions", false, chat("plan", "Hi"))
+        .await;
+    assert_eq!(p.sent().len(), 3, "the third hold lasts 45 minutes");
+
+    // An answer from the plan ends the backoff, and the next limit holds 5 minutes again.
+    p.app.clock.advance(time::Duration::minutes(2));
+    p.oauth.reply_with(Reply::Text);
+    let r = p
+        .call("/v1/chat/completions", false, chat("plan", "Hi"))
+        .await;
+    assert_eq!(r.header("kaeso-model"), Some("gpt-5"), "{}", r.text());
+    p.oauth.reply_with(Reply::UsageLimit);
+    p.call("/v1/chat/completions", false, chat("plan", "Hi"))
+        .await;
+    assert_eq!(p.sent().len(), 5);
+    p.app.clock.advance(time::Duration::minutes(6));
+    p.call("/v1/chat/completions", false, chat("plan", "Hi"))
+        .await;
+    assert_eq!(p.sent().len(), 6, "held 5 minutes after the plan answered");
     p.services.cleanup().await;
 }
 

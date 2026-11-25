@@ -2085,6 +2085,7 @@ async fn hold_pool_key(
             status: f.err.status.unwrap_or(500),
             error_kind: said.kind.as_str().to_owned(),
             error_message: said.message.clone(),
+            backoff_ms: None,
         };
         state
             .cooldowns
@@ -3310,12 +3311,22 @@ async fn hold(
     };
     let said = failure.logged();
     let now = state.clock.now();
+    let (length, backoff_ms) = match cause {
+        cooldowns::Cause::PlanLimit(err) => {
+            state
+                .cooldowns
+                .plan_limit(&state.valkey, at, err, now)
+                .await
+        }
+        _ => (length, None),
+    };
     let held = cooldowns::Held {
         until: now + length,
         reason,
         status,
         error_kind: said.kind.as_str().to_owned(),
         error_message: said.message.clone(),
+        backoff_ms,
     };
     state
         .cooldowns
