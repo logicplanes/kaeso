@@ -613,6 +613,27 @@ pub(crate) fn base_url<'a>(state: &'a AppState, provider: &'a ProviderRef) -> Op
     }
 }
 
+/// The app's own dialect, when the provider serves the model natively in it and the request can
+/// go there as it came instead of being translated: a generation, or a token count where the
+/// dialect counts them, of a model whose catalogue entry names no egress dialect. An entry that
+/// names one, KPMR's or the organization's **Sends as**, always wins, so a model is kept on the
+/// provider's `generation` API by sending it as that.
+pub(super) fn native_egress(
+    eff: &kaeso_core::catalogue::Effective,
+    ingress: DialectId,
+    kind: RequestKind,
+) -> Option<DialectId> {
+    if ingress == eff.dialect || eff.fields.egress_dialect.is_some() {
+        return None;
+    }
+    let native = eff.provider.native(ingress, eff.sent_model())?;
+    match kind {
+        RequestKind::Generate => Some(ingress),
+        RequestKind::CountTokens => native.counts_tokens.then_some(ingress),
+        _ => None,
+    }
+}
+
 pub(super) fn transport_kind(e: &UpstreamError) -> &'static str {
     match e {
         UpstreamError::Timeout(_) => "timeout",
@@ -654,8 +675,10 @@ pub(super) fn count_upstream_error(kind: &'static str, provider: &'static str) {
 }
 
 pub(super) fn limited(refusal: super::hooks::Refusal) -> KppError {
+    // A 503 is Kaeso's own: its limit counters can't be read. It reaches apps and the request
+    // log as Kaeso being busy, like its other busy refusals, never as the provider's error.
     let kind = match refusal.status {
-        503 => ErrorKind::ProviderError,
+        503 => ErrorKind::Overloaded,
         403 => ErrorKind::PermissionDenied,
         _ => ErrorKind::RateLimited,
     };
@@ -2124,7 +2147,7 @@ async fn attempt(
     } = *sh;
     let retained = |copies: u64| sh.retained(copies);
     begin_attempt(rec);
-    let eff = crate::services::catalogue::effective(state, entry, &models.providers).ok_or_else(|| {
+    let mut eff = crate::services::catalogue::effective(state, entry, &models.providers).ok_or_else(|| {
         let turned_off = models
             .providers
             .get(&entry.provider)
@@ -2151,6 +2174,9 @@ async fn attempt(
             Stage::Setup,
         )
     })?;
+    if let Some(native) = native_egress(&eff, ingress, kind) {
+        eff.dialect = native;
+    }
     let served = Served {
         model: Some(eff.model_id.clone()),
         provider: Some(eff.provider.id().to_owned()),
@@ -2455,6 +2481,7 @@ async fn attempt(
     let mut ectx = egress_ctx(
         &app_req,
         &eff.provider,
+        plan.dialect,
         &eff.model_id,
         ModelFlags::of(&plan),
     );
@@ -2646,6 +2673,10 @@ async fn attempt(
             rooted = super::media::host_root(base);
             &rooted
         }
+        _ if eff.provider.from_host_root(plan.dialect) => {
+            rooted = super::media::host_root(base);
+            &rooted
+        }
         _ => base,
     };
     let provider = eff.provider.metric_label();
@@ -2664,7 +2695,7 @@ async fn attempt(
         (Some(p), _, _) => Some(p.auth),
         (None, Some(r), _) => Some(r.auth),
         (None, None, Some(auth)) => Some(auth),
-        (None, None, None) => eff.provider.auth(),
+        (None, None, None) => eff.provider.auth_for(plan.dialect),
     };
     // An Entra ID token goes as a bearer in place of the resource key's `api-key`.
     let auth = if entra.is_some() {
@@ -3950,6 +3981,7 @@ impl ModelFlags {
 pub(super) fn egress_ctx(
     app_req: &Request,
     provider: &ProviderRef,
+    dialect: DialectId,
     model: &str,
     flags: ModelFlags,
 ) -> EgressCtx {
@@ -3961,7 +3993,7 @@ pub(super) fn egress_ctx(
         .with_gemini_profile(provider.gemini())
         .with_embeddings_profile(provider.embeddings_profile());
     // A key's account scope, applied later, takes the place of this root.
-    if let Some(root) = provider.api_root() {
+    if let Some(root) = provider.api_root_for(dialect) {
         ctx = ctx.with_api_root(root);
     }
     if let Some(images) = provider.images(model) {
@@ -4049,7 +4081,7 @@ mod tests {
                 thinking_binding: Some(false),
                 reasoning: Some(false),
             };
-            let ctx = egress_ctx(&req, &p, "m", flags);
+            let ctx = egress_ctx(&req, &p, p.generation(), "m", flags);
             assert_eq!(ctx.provider.as_deref(), Some(id));
             assert_eq!(ctx.chat_profile, p.chat(), "{id}");
             assert_eq!(ctx.responses_profile, p.responses(), "{id}");
@@ -4062,7 +4094,7 @@ mod tests {
         }
         let xai = ProviderRef::from(kaeso_core::provider::provider("xai").unwrap());
         assert_eq!(
-            egress_ctx(&req, &xai, "m", ModelFlags::default())
+            egress_ctx(&req, &xai, xai.generation(), "m", ModelFlags::default())
                 .responses_profile
                 .web_search,
             kaeso_codecs::openai_responses::WebSearchTool::Xai
@@ -4099,7 +4131,13 @@ mod tests {
             "d1",
             kaeso_kpp::DecisionInput::Text("a cat".into()),
         ));
-        let ctx = egress_ctx(&decide, &custom, "d1", ModelFlags::default());
+        let ctx = egress_ctx(
+            &decide,
+            &custom,
+            custom.generation(),
+            "d1",
+            ModelFlags::default(),
+        );
         assert_eq!(ctx.base_path.as_deref(), Some("/decisions/v1/systemone"));
         assert_eq!(
             ctx.system_one_profile.media,
@@ -4107,14 +4145,54 @@ mod tests {
         );
         let chat = Request::Generate(kaeso_kpp::GenerateRequest::new("d1"));
         assert_eq!(
-            egress_ctx(&chat, &custom, "d1", ModelFlags::default()).base_path,
+            egress_ctx(
+                &chat,
+                &custom,
+                custom.generation(),
+                "d1",
+                ModelFlags::default()
+            )
+            .base_path,
             None
         );
         let openai = ProviderRef::from(kaeso_core::provider::provider("openai").unwrap());
         assert_eq!(
-            egress_ctx(&decide, &openai, "gpt-6-luna", ModelFlags::default()).base_path,
+            egress_ctx(
+                &decide,
+                &openai,
+                openai.generation(),
+                "gpt-6-luna",
+                ModelFlags::default()
+            )
+            .base_path,
             None
         );
+    }
+
+    #[test]
+    fn kaesos_own_limit_refusals_never_read_as_the_providers_error() {
+        let refusal = |status: u16| super::super::hooks::Refusal {
+            status,
+            message: "m".into(),
+            retry_after: Some(Duration::from_secs(5)),
+            param: None,
+            left: None,
+        };
+        let down = limited(refusal(503));
+        assert_eq!(
+            (down.kind.clone(), down.status, down.retry_after),
+            (
+                ErrorKind::Overloaded,
+                Some(503),
+                Some(Duration::from_secs(5))
+            )
+        );
+        assert_eq!(
+            dispatch::encode_error(DialectId::OpenAiChat, &down).status,
+            503
+        );
+        assert_eq!(limited(refusal(403)).kind, ErrorKind::PermissionDenied);
+        assert_eq!(limited(refusal(429)).kind, ErrorKind::RateLimited);
     }
 
     #[test]

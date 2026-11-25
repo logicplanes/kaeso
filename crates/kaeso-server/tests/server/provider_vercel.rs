@@ -40,8 +40,10 @@ async fn env_sending_as(sends_as: Option<&str>) -> Env {
     env
 }
 
+// The model is sent as Chat Completions, so an Anthropic app's request is translated;
+// `native_dialects.rs` covers the Messages API it reaches as it came.
 async fn env() -> Env {
-    env_sending_as(None).await
+    env_sending_as(Some("openai_chat")).await
 }
 
 fn sent(env: &Env) -> (String, Option<String>, Value) {

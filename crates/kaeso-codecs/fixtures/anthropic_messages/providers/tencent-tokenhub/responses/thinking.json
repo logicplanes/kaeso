@@ -1,0 +1,25 @@
+{
+  "id": "msg_000000000000000000000000",
+  "type": "message",
+  "role": "assistant",
+  "model": "hy3",
+  "content": [
+    {
+      "type": "thinking",
+      "thinking": "用户想了解递归的概念，给出定义和一个简单例子。"
+    },
+    {
+      "type": "text",
+      "text": "递归是函数在定义中调用自身来解决问题的方法。"
+    }
+  ],
+  "stop_reason": "end_turn",
+  "stop_sequence": null,
+  "usage": {
+    "input_tokens": 12,
+    "output_tokens": 46,
+    "cache_creation_input_tokens": 0,
+    "cache_read_input_tokens": 0,
+    "service_tier": "standard"
+  }
+}

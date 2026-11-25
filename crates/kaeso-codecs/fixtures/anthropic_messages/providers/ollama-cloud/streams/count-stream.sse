@@ -1,0 +1,24 @@
+event: message_start
+data: {"type":"message_start","message":{"id":"msg_000000000000000000000000","type":"message","role":"assistant","content":[],"model":"gemma4:31b","stop_reason":null,"stop_sequence":null,"usage":{"input_tokens":14,"output_tokens":0}}}
+
+event: content_block_start
+data: {"type":"content_block_start","index":0,"content_block":{"type":"text","text":""}}
+
+event: ping
+data: {"type":"ping"}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"1, 2, 3, 4, 5, "}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"6, 7, 8, 9, 10"}}
+
+event: content_block_stop
+data: {"type":"content_block_stop","index":0}
+
+event: message_delta
+data: {"type":"message_delta","delta":{"stop_reason":"end_turn","stop_sequence":null},"usage":{"input_tokens":14,"output_tokens":29}}
+
+event: message_stop
+data: {"type":"message_stop"}
+

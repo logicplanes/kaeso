@@ -1,0 +1,11 @@
+{
+  "model": "qwen3.7-plus",
+  "max_tokens": 1024,
+  "system": "You are a helpful assistant",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Who are you?"
+    }
+  ]
+}

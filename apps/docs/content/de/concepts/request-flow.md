@@ -18,7 +18,7 @@ sequenceDiagram
   Note over Gateway: Anfrage lesen<br>400, 413, 415, 503 oder 529
   Note over Gateway: Modell auflösen<br>400, 404 oder 410
   Note over Gateway: Guardrails fragen<br>400, 429 oder 503
-  Note over Gateway: Limits prüfen<br>403, 429 oder 503
+  Note over Gateway: Limits prüfen<br>403, 429, 503 oder 529
   Note over Gateway: Anbieter-Schlüssel wählen<br>502
   Gateway->>Provider: Übersetzte Anfrage
   Note over Gateway,Provider: Zeitüberschreitung 504<br>Nicht erreichbar 502
@@ -86,7 +86,7 @@ Kaeso prüft jedes zutreffende Limit in einem Schritt: die Raten und Budgets des
 | Über einem harten Budget | 429. Die Meldung sagt, wann das Budget zurückgesetzt wird |
 | Unter einem Ausgabenbudget, mit einer Funktion, die es nicht bepreisen kann | 403, mit dem Namen der Funktion ([Funktionen, die ein Ausgabenbudget nicht bepreisen kann](../console/limits-and-budgets.md#funktionen-die-ein-ausgabenbudget-nicht-bepreisen-kann)) |
 | Über einem weichen Budget | Die Anfrage geht durch. Weiche Budgets warnen nur |
-| Valkey nicht erreichbar | 503 für eine Anfrage unter einem harten Budget. Jede andere Anfrage geht ungeprüft durch |
+| Valkey nicht erreichbar | 503 mit `Retry-After: 5` (529 im Anthropic-Format) für eine Anfrage unter einem harten Budget, protokolliert als `overloaded`. Jede andere Anfrage geht ungeprüft durch |
 | Die Limits des Projekts lassen sich nicht laden | 503 für jede Anfrage, weil Kaeso nicht erkennen kann, welche Limits gelten |
 
 Apps in den OpenAI-Formaten erhalten diese 503-Antworten als 500, die ihre SDKs wiederholen. [Limits und Budgets](../console/limits-and-budgets.md) erklärt, wie Sie Limits setzen.

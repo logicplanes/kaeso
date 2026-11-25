@@ -177,6 +177,13 @@ impl Decoder {
             if let Some(name) = ev.event.as_deref().filter(|n| KNOWN_EVENTS.contains(n)) {
                 return Err(bad(&format!("the data of a `{name}` event has no `type`")));
             }
+            // DeepSeek ends a stream whose generation didn't start in time with an unnamed frame
+            // that holds only `{"error": {"message": …}}`, then closes the connection
+            // (https://api-docs.deepseek.com/guides/anthropic_api, read 2026-11-25).
+            if ev.event.is_none() && is_bare_error(&data) {
+                self.error(&ev.data, out);
+                return Ok(());
+            }
             return self.extra(&ev, out);
         };
         self.check_order(&ty)?;
@@ -581,4 +588,16 @@ impl StreamDecoder for Decoder {
         self.inert = true;
         out
     }
+}
+
+// A frame whose data is an object with nothing but an `error` object that carries a message.
+fn is_bare_error(data: &RawValue) -> bool {
+    let Ok(Value::Object(frame)) = serde_json::from_str::<Value>(data.get()) else {
+        return false;
+    };
+    frame.len() == 1
+        && frame
+            .get("error")
+            .and_then(|e| e.get("message"))
+            .is_some_and(Value::is_string)
 }

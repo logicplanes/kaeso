@@ -118,7 +118,12 @@ pub(super) fn accumulate(sse: &[u8]) -> Value {
 
 // An error event whose data is not an Anthropic error reaches Anthropic apps as one, as HTTP
 // errors in another shape do (`providers/vercel/errors/*.meta.json`), so it isn't replayed as sent.
-const REWRITTEN_ERRORS: [&str; 2] = ["error-event-not-json", "error-event-openai-shape"];
+const REWRITTEN_ERRORS: [&str; 4] = [
+    "error-event-not-json",
+    "error-event-openai-shape",
+    "providers/deepseek/error-timeout-before-start",
+    "providers/deepseek/error-timeout-after-start",
+];
 
 #[test]
 fn every_stream_fixture_round_trips_under_every_chunking() {
@@ -137,7 +142,7 @@ fn every_stream_fixture_round_trips_under_every_chunking() {
             .iter()
             .filter(|e| matches!(e, StreamEvent::Error(_)))
             .count();
-        let expect_error = name.starts_with("error-");
+        let expect_error = name.rsplit('/').next().unwrap().starts_with("error-");
         assert_eq!(errors, usize::from(expect_error), "{name}: {whole:?}");
         if !REWRITTEN_ERRORS.contains(&name.as_str()) {
             assert_sse_eq(&name, &bytes, &encode_stream(&whole));
@@ -145,6 +150,26 @@ fn every_stream_fixture_round_trips_under_every_chunking() {
         n += 1;
     }
     assert!(n >= 14, "{n}");
+}
+
+#[test]
+fn deepseeks_bare_timeout_frame_is_its_error_with_its_message() {
+    for name in ["error-timeout-before-start", "error-timeout-after-start"] {
+        let bytes = std::fs::read(
+            crate::test_support::fixtures_dir()
+                .join(DIALECT)
+                .join(format!("providers/deepseek/streams/{name}.sse")),
+        )
+        .unwrap();
+        let events = decode_stream_chunked(&bytes, 0, &stream_ctx());
+        let Some(StreamEvent::Error(e)) = events.last() else {
+            panic!("{name}: {events:?}")
+        };
+        assert_eq!(
+            e.message, "Timed out waiting for generation to start.",
+            "{name}"
+        );
+    }
 }
 
 #[test]

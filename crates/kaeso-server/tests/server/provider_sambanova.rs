@@ -33,6 +33,8 @@ async fn add_model(env: &Env, model: &str, overrides: Value) {
     assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
 }
 
+// GPT-OSS and Gemma are sent as Chat Completions, so an Anthropic app's request is translated;
+// `native_dialects.rs` covers the Messages API it reaches as it came.
 async fn env() -> Env {
     let env = common::v1::env(Some(Arc::new(Capture::default())), None).await;
     let r = env
@@ -44,8 +46,13 @@ async fn env() -> Env {
         )
         .await;
     assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
-    add_model(&env, GPT_OSS, json!({})).await;
-    add_model(&env, GEMMA, json!({ "tool_call": true })).await;
+    add_model(&env, GPT_OSS, json!({ "egress_dialect": "openai_chat" })).await;
+    add_model(
+        &env,
+        GEMMA,
+        json!({ "tool_call": true, "egress_dialect": "openai_chat" }),
+    )
+    .await;
     add_model(
         &env,
         GLM_AS_MESSAGES,

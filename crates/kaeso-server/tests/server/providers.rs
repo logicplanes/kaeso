@@ -147,7 +147,7 @@ async fn every_member_reads_each_provider_with_its_name_key_page_and_formats() {
     assert_eq!(alibaba["name"], "QwenCloud");
     assert_eq!(
         alibaba["dialects"],
-        json!(["openai_chat", "openai_embeddings"])
+        json!(["openai_chat", "anthropic_messages", "openai_embeddings"])
     );
     assert_eq!(alibaba["embeddings"], "openai_embeddings");
     assert_eq!(alibaba["key_prefix"], "sk-");
@@ -220,7 +220,10 @@ async fn every_member_reads_each_provider_with_its_name_key_page_and_formats() {
     );
     let hugging_face = listed.iter().find(|p| p["id"] == "huggingface").unwrap();
     assert_eq!(hugging_face["name"], "Hugging Face");
-    assert_eq!(hugging_face["dialects"], json!(["openai_chat"]));
+    assert_eq!(
+        hugging_face["dialects"],
+        json!(["openai_chat", "anthropic_messages"])
+    );
     assert_eq!(hugging_face["count_tokens"], Value::Null);
     assert_eq!(hugging_face["embeddings"], Value::Null);
     assert_eq!(hugging_face["key_prefix"], "hf_");
@@ -371,7 +374,7 @@ async fn every_member_reads_each_provider_with_its_name_key_page_and_formats() {
     assert_eq!(deepinfra["name"], "DeepInfra");
     assert_eq!(
         deepinfra["dialects"],
-        json!(["openai_chat", "openai_embeddings"])
+        json!(["openai_chat", "anthropic_messages", "openai_embeddings"])
     );
     assert_eq!(
         (
@@ -530,7 +533,7 @@ async fn every_member_reads_each_provider_with_its_name_key_page_and_formats() {
     assert_eq!(qianfan["name"], "Baidu Qianfan");
     assert_eq!(
         qianfan["dialects"],
-        json!(["openai_chat", "openai_embeddings"])
+        json!(["openai_chat", "anthropic_messages", "openai_embeddings"])
     );
     assert_eq!(
         (&qianfan["embeddings"], &qianfan["key_prefix"]),
@@ -590,7 +593,7 @@ async fn every_member_reads_each_provider_with_its_name_key_page_and_formats() {
     assert_eq!(tokenhub["name"], "Tencent TokenHub");
     assert_eq!(
         tokenhub["dialects"],
-        json!(["openai_chat", "openai_embeddings"])
+        json!(["openai_chat", "anthropic_messages", "openai_embeddings"])
     );
     assert_eq!(
         (

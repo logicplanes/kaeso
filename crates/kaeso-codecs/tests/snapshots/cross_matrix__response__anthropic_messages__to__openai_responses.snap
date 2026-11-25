@@ -669,6 +669,288 @@ expression: outcomes
     },
     "user": null
   },
+  "providers/alibaba/who-are-you": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_00000000-0000-0000-0000-000000000000",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "qwen3.7-plus",
+    "object": "response",
+    "output": [
+      {
+        "encrypted_content": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6ImFudGhyb3BpY19tZXNzYWdlcyJ9LCJ0ZXh0IjpbIkxldCBtZSBhbmFseXplIHRoaXMgcXVlc3Rpb24uLi4iXX0",
+        "id": "rs_kaeso_msg00000000000000000000000000000000_0",
+        "summary": [
+          {
+            "text": "Let me analyze this question...",
+            "type": "summary_text"
+          }
+        ],
+        "type": "reasoning"
+      },
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "Hello! I am Qwen...",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_msg00000000000000000000000000000000_1",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 22,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 223,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 245
+    },
+    "user": null
+  },
+  "providers/deepinfra/hello": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_000000000000000000000000",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "zai-org/GLM-5.2",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "Hello! How can I help you today?",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_msg000000000000000000000000_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 6,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 10,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 16
+    },
+    "user": null
+  },
+  "providers/deepseek/say-hello": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "00000000-0000-0000-0000-000000000000",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "deepseek-flash",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "Hello!",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_00000000000000000000000000000000_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 12,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 3,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 15
+    },
+    "user": null
+  },
+  "providers/deepseek/thinking-cache-hit": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "00000000-0000-0000-0000-000000000000",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "deepseek-v4-pro",
+    "object": "response",
+    "output": [
+      {
+        "encrypted_content": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6ImFudGhyb3BpY19tZXNzYWdlcyJ9LCJ0ZXh0IjpbIlRoZSB1c2VyIGdyZWV0cyBtZSBhbmQgYXNrcyBob3cgSSBhbS4gSSdsbCBhbnN3ZXIgYnJpZWZseS4iXSwib3BhcXVlIjpbeyJvcmlnaW4iOnsiZGlhbGVjdCI6ImFudGhyb3BpY19tZXNzYWdlcyJ9LCJraW5kIjoiYW50aHJvcGljX3RoaW5raW5nX3NpZ25hdHVyZSIsImRhdGEiOiJjMmxuYm1GMGRYSmxMV1Y0WVcxd2JHVXRNREF3TVE9PSJ9XX0",
+        "id": "rs_kaeso_00000000000000000000000000000000_0",
+        "summary": [
+          {
+            "text": "The user greets me and asks how I am. I'll answer briefly.",
+            "type": "summary_text"
+          }
+        ],
+        "type": "reasoning"
+      },
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "I'm doing well, thanks! How can I help you today?",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_00000000000000000000000000000000_1",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 137,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 128
+      },
+      "output_tokens": 31,
+      "output_tokens_details": {
+        "reasoning_tokens": 18
+      },
+      "total_tokens": 168
+    },
+    "user": null
+  },
   "providers/fireworks-ai/thinking-effort": {
     "background": false,
     "completed_at": 1760000000,
@@ -738,6 +1020,82 @@ expression: outcomes
         "cached_tokens": 0
       },
       "output_tokens": 27,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 49
+    },
+    "user": null
+  },
+  "providers/huggingface/sky": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_000000000000000000000000",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "deepseek-ai/DeepSeek-V4.1-Flash",
+    "object": "response",
+    "output": [
+      {
+        "encrypted_content": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6ImFudGhyb3BpY19tZXNzYWdlcyJ9LCJ0ZXh0IjpbIlJheWxlaWdoIHNjYXR0ZXJpbmc7IGFuc3dlciBpbiBvbmUgc2VudGVuY2UuIl19",
+        "id": "rs_kaeso_msg000000000000000000000000_0",
+        "summary": [
+          {
+            "text": "Rayleigh scattering; answer in one sentence.",
+            "type": "summary_text"
+          }
+        ],
+        "type": "reasoning"
+      },
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "The sky looks blue because air molecules scatter short blue wavelengths of sunlight far more than longer red ones.",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_msg000000000000000000000000_1",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 14,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 35,
       "output_tokens_details": {
         "reasoning_tokens": 0
       },
@@ -1057,6 +1415,336 @@ expression: outcomes
     },
     "user": null
   },
+  "providers/moonshotai/thinking-effort-cache": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_000000000000000000000000",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "kimi-k3",
+    "object": "response",
+    "output": [
+      {
+        "encrypted_content": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6ImFudGhyb3BpY19tZXNzYWdlcyJ9LCJ0ZXh0IjpbIlRoZSB1c2VyIHNheXMgaGVsbG8uIEdyZWV0IHRoZW0gYmFjay4iXSwib3BhcXVlIjpbeyJvcmlnaW4iOnsiZGlhbGVjdCI6ImFudGhyb3BpY19tZXNzYWdlcyJ9LCJraW5kIjoiYW50aHJvcGljX3RoaW5raW5nX3NpZ25hdHVyZSIsImRhdGEiOiJjMmxuYm1GMGRYSmxMV1Y0WVcxd2JHVXRNREF3TVE9PSJ9XX0",
+        "id": "rs_kaeso_msg000000000000000000000000_0",
+        "summary": [
+          {
+            "text": "The user says hello. Greet them back.",
+            "type": "summary_text"
+          }
+        ],
+        "type": "reasoning"
+      },
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "Hello! How can I help you today?",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_msg000000000000000000000000_1",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 16,
+      "input_tokens_details": {
+        "cache_write_tokens": 12,
+        "cached_tokens": 0
+      },
+      "output_tokens": 21,
+      "output_tokens_details": {
+        "reasoning_tokens": 11
+      },
+      "total_tokens": 37
+    },
+    "user": null
+  },
+  "providers/ollama-cloud/hello": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_000000000000000000000000",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "gemma4:31b",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "Hello, it's nice to meet you!",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_msg000000000000000000000000_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 15,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 9,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 24
+    },
+    "user": null
+  },
+  "providers/ollama-cloud/tools": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_000000000000000000000000",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "gemma4:31b",
+    "object": "response",
+    "output": [
+      {
+        "arguments": "{\n        \"location\": \"San Francisco, CA\"\n      }",
+        "call_id": "call_000000000000000000000000",
+        "id": "fc_kaeso_msg000000000000000000000000_0",
+        "name": "get_weather",
+        "status": "completed",
+        "type": "function_call"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 71,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 20,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 91
+    },
+    "user": null
+  },
+  "providers/openrouter/hello": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_abc123",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "anthropic/claude-sonnet-4",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "I'm doing well, thank you for asking! How can I help you today?",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_msgabc123_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 12,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 18,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 30
+    },
+    "user": null
+  },
+  "providers/qianfan/hello": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_000000000000000000000000",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "deepseek-v3.2",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "Hello! How can I help you today?",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_msg000000000000000000000000_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 5,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 10,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 15
+    },
+    "user": null
+  },
   "providers/sambanova/thinking": {
     "background": false,
     "completed_at": 1760000000,
@@ -1130,6 +1818,82 @@ expression: outcomes
         "reasoning_tokens": 0
       },
       "total_tokens": 124
+    },
+    "user": null
+  },
+  "providers/tencent-tokenhub/thinking": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_000000000000000000000000",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "hy3",
+    "object": "response",
+    "output": [
+      {
+        "encrypted_content": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6ImFudGhyb3BpY19tZXNzYWdlcyJ9LCJ0ZXh0IjpbIueUqOaIt-aDs-S6huino-mAkuW9kueahOamguW_te-8jOe7meWHuuWumuS5ieWSjOS4gOS4queugOWNleS-i-WtkOOAgiJdfQ",
+        "id": "rs_kaeso_msg000000000000000000000000_0",
+        "summary": [
+          {
+            "text": "用户想了解递归的概念，给出定义和一个简单例子。",
+            "type": "summary_text"
+          }
+        ],
+        "type": "reasoning"
+      },
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "递归是函数在定义中调用自身来解决问题的方法。",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_msg000000000000000000000000_1",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 12,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 46,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 58
     },
     "user": null
   },
