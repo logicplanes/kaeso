@@ -3232,12 +3232,37 @@ async fn the_identity_provider_owns_a_managed_accounts_address() {
         (StatusCode::FORBIDDEN, MANAGED_ADDRESS)
     );
 
+    let mut links = Vec::new();
+    for (request, verify) in [
+        ("/auth/magic-link", "/auth/magic-link/lookup"),
+        ("/auth/password-reset", "/auth/password-reset/lookup"),
+    ] {
+        let sent = app.mail.to("ada@acme.example").len();
+        app.post(request, json!({ "email": "ada@acme.example" }), None)
+            .await
+            .expect_status(StatusCode::OK);
+        app.wait_for_mail("ada@acme.example", sent + 1).await;
+        let token = app.last_token("ada@acme.example");
+        app.post(verify, json!({ "token": token }), None)
+            .await
+            .expect_status(StatusCode::OK);
+        links.push((verify, token));
+    }
+
     common::manage_domain(&app, &owner.org_id, "eu.acme.example").await;
     let renamed = sso_as(&app, &idp, "sub-ada", "Ada.Lovelace@eu.acme.example")
         .await
         .cookie()
         .expect("signed in through the identity");
     assert_eq!(email_of(renamed).await, "Ada.Lovelace@eu.acme.example");
+    for (verify, token) in links {
+        let r = app.post(verify, json!({ "token": token }), None).await;
+        assert_eq!(
+            r.status,
+            StatusCode::UNAUTHORIZED,
+            "{verify}: a link sent to the address the account no longer has"
+        );
+    }
     let audited = app
         .get(
             &format!("/orgs/{}/audit-log?action=user.email_change", owner.org_id),
