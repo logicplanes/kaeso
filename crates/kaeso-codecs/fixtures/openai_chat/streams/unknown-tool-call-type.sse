@@ -1,0 +1,14 @@
+data: {"id":"chatcmpl-x9future4","object":"chat.completion.chunk","created":1791650300,"model":"gpt-5.6-sol","choices":[{"index":0,"delta":{"role":"assistant","content":null,"tool_calls":[{"index":0,"id":"call_1","type":"x_future_call","x_future_call":{"name":"search","input":""}}],"refusal":null},"logprobs":null,"finish_reason":null}]}
+
+data: {"id":"chatcmpl-x9future4","object":"chat.completion.chunk","created":1791650300,"model":"gpt-5.6-sol","choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"x_future_call":{"input":"report changes"}}]},"logprobs":null,"finish_reason":null}]}
+
+data: {"id":"chatcmpl-x9future4","object":"chat.completion.chunk","created":1791650300,"model":"gpt-5.6-sol","choices":[{"index":0,"delta":{"tool_calls":[{"index":1,"id":"call_2","type":"function","function":{"name":"lookup","arguments":""}}]},"logprobs":null,"finish_reason":null}]}
+
+data: {"id":"chatcmpl-x9future4","object":"chat.completion.chunk","created":1791650300,"model":"gpt-5.6-sol","choices":[{"index":0,"delta":{"tool_calls":[{"index":1,"function":{"arguments":"{\"q\":"}}]},"logprobs":null,"finish_reason":null}]}
+
+data: {"id":"chatcmpl-x9future4","object":"chat.completion.chunk","created":1791650300,"model":"gpt-5.6-sol","choices":[{"index":0,"delta":{"tool_calls":[{"index":1,"function":{"arguments":"\"report\"}"}}]},"logprobs":null,"finish_reason":null}]}
+
+data: {"id":"chatcmpl-x9future4","object":"chat.completion.chunk","created":1791650300,"model":"gpt-5.6-sol","choices":[{"index":0,"delta":{},"logprobs":null,"finish_reason":"tool_calls"}]}
+
+data: [DONE]
+
