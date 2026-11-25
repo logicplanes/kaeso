@@ -3073,6 +3073,11 @@ expression: outcomes
     "param": "messages[1].blocks[0]",
     "unsupported": "future_item content block"
   },
+  "unknown-key-spellings": {
+    "message": "`x_future%2Efield` comes from an OpenAI Responses request and has no equivalent in OpenAI Chat Completions. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "x_future%2Efield"
+  },
   "unknown-top-level-field": {
     "message": "`x_future_field` comes from an OpenAI Responses request and has no equivalent in OpenAI Chat Completions. Remove it, or send the request to a model served through its original format.",
     "param": null,

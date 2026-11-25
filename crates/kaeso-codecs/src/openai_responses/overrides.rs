@@ -338,13 +338,16 @@ fn diff_children_of<'a>(
         Some(n) => matches!(n.as_ref(), Node::Obj(_)).then_some(n.as_ref()),
     };
     if let (Some(Node::Obj(centries)), Some(aentries)) = (canon_obj, entries) {
-        let simple_keys = aentries.iter().all(|(k, _)| plain_key(k))
-            && centries.iter().all(|(k, _)| !k.contains('.'));
+        let simple_keys = centries.iter().all(|(k, _)| plain_key(k));
         if simple_keys {
             let before = out.set.len() + out.unset.len();
             for (k, v) in &aentries {
                 let child = centries.get(k.as_ref());
-                path.push(k.clone());
+                path.push(if plain_key(k) {
+                    k.clone()
+                } else {
+                    Cow::Owned(segment(k))
+                });
                 let recurse = v.trim_start().starts_with('{')
                     && keys.recurse.contains(&k.as_ref())
                     && !(child.is_none() && typed_object(v));
@@ -461,9 +464,63 @@ fn raw_json(text: &str) -> RawJson {
 
 fn plain_key(key: &str) -> bool {
     !key.is_empty()
-        && !key.contains('.')
+        && !key.contains(['.', '%'])
         && !key.starts_with(['@', '~'])
         && !key.starts_with(HEADER_PREFIX)
+}
+
+const EMPTY_KEY: &str = "%";
+const ESCAPES: [(&str, char); 5] = [
+    ("%2E", '.'),
+    ("%25", '%'),
+    ("%40", '@'),
+    ("%7E", '~'),
+    ("%68", 'h'),
+];
+
+// A key as one segment of a key path. `.` splits a path, a leading `@` or `~` names a scope or
+// a record of Kaeso's own and `header:` a forwarded header, so a key spelled that way is
+// escaped: it stays a body key at its own path.
+fn segment(key: &str) -> String {
+    if key.is_empty() {
+        return EMPTY_KEY.to_owned();
+    }
+    let header = key.starts_with(HEADER_PREFIX);
+    let mut out = String::with_capacity(key.len() + 8);
+    for (i, c) in key.char_indices() {
+        match c {
+            '.' => out.push_str("%2E"),
+            '%' => out.push_str("%25"),
+            '@' if i == 0 => out.push_str("%40"),
+            '~' if i == 0 => out.push_str("%7E"),
+            'h' if i == 0 && header => out.push_str("%68"),
+            c => out.push(c),
+        }
+    }
+    out
+}
+
+fn key_of(segment: &str) -> Cow<'_, str> {
+    if segment == EMPTY_KEY {
+        return Cow::Borrowed("");
+    }
+    if !segment.contains('%') {
+        return Cow::Borrowed(segment);
+    }
+    let mut out = String::with_capacity(segment.len());
+    let mut rest = segment;
+    while let Some(at) = rest.find('%') {
+        let (before, tail) = rest.split_at(at);
+        out.push_str(before);
+        let (skip, c) = ESCAPES
+            .iter()
+            .find(|(code, _)| tail.starts_with(code))
+            .map_or((1, '%'), |(code, c)| (code.len(), *c));
+        out.push(c);
+        rest = tail.get(skip..).unwrap_or_default();
+    }
+    out.push_str(rest);
+    Cow::Owned(out)
 }
 
 fn typed_object(raw: &str) -> bool {
@@ -549,20 +606,20 @@ pub(crate) fn apply<'e>(
         Some(Value::Object(m)) => Some(m),
         _ => None,
     };
-    let segs_of = |rel: &'e str| -> Vec<&'e str> {
+    let segs_of = |rel: &'e str| -> Vec<Cow<'e, str>> {
         if rel.is_empty() {
             Vec::new()
         } else {
-            rel.split('.').collect()
+            rel.split('.').map(key_of).collect()
         }
     };
-    let fresh = |node: &Node, key: &str, segs: &[&str]| -> bool {
+    let fresh = |node: &Node, key: &str, segs: &[Cow<'_, str>]| -> bool {
         // Decoding records no path deeper than MAX_DEPTH, and the Node walks recurse once
         // per segment: a deeper key, only ever built by hand, would overflow the stack.
         if segs.len() > MAX_DEPTH {
             return false;
         }
-        let now = node.value_at(segs);
+        let now = node.value_at(&keys_of(segs));
         match (canon.and_then(|m| m.get(key)), now) {
             (None, None) => true,
             (Some(then), Some(now)) => values_equal(then, &now),
@@ -584,26 +641,30 @@ pub(crate) fn apply<'e>(
     };
     // Every record is checked against the node as the canonical form built it, before any is
     // applied, so the checks need no copy of the node.
-    let unset: Vec<Vec<&str>> = unset.into_iter().filter_map(change).collect();
-    let fields: Vec<(Vec<&str>, &RawJson)> = extras
+    let unset: Vec<Vec<Cow<'_, str>>> = unset.into_iter().filter_map(change).collect();
+    let fields: Vec<(Vec<Cow<'_, str>>, &RawJson)> = extras
         .fields
         .iter()
         .filter(|(key, _)| !key.starts_with(HEADER_PREFIX))
         .filter_map(|(key, raw)| change(key).map(|segs| (segs, raw)))
         .collect();
-    let set: Vec<(Vec<&str>, &Value)> = set
+    let set: Vec<(Vec<Cow<'_, str>>, &Value)> = set
         .into_iter()
         .filter_map(|(key, value)| change(key).map(|segs| (segs, value)))
         .collect();
     for segs in &unset {
-        node.unset_path(segs);
+        node.unset_path(&keys_of(segs));
     }
     for (segs, raw) in fields {
-        node.set_path(&segs, Node::raw(raw));
+        node.set_path(&keys_of(&segs), Node::raw(raw));
     }
     for (segs, value) in set {
-        node.set_path(&segs, Node::Val(value.clone()));
+        node.set_path(&keys_of(&segs), Node::Val(value.clone()));
     }
+}
+
+fn keys_of<'s>(segs: &'s [Cow<'_, str>]) -> Vec<&'s str> {
+    segs.iter().map(AsRef::as_ref).collect()
 }
 
 #[cfg(test)]
@@ -633,6 +694,33 @@ mod tests {
             "{out}"
         );
         e
+    }
+
+    #[test]
+    fn a_key_a_path_cannot_spell_is_one_escaped_segment() {
+        for key in [
+            "",
+            "%",
+            "%%",
+            "a.b",
+            ".",
+            "@a",
+            "a@",
+            "~a",
+            "header:x",
+            "%2E",
+            "%68eader:x",
+            "a%",
+            "é.%",
+        ] {
+            let escaped = segment(key);
+            assert!(!escaped.is_empty() && !escaped.contains('.'), "{key:?}");
+            assert!(!escaped.starts_with(['@', '~']), "{key:?}");
+            assert!(!escaped.starts_with(HEADER_PREFIX), "{key:?}");
+            assert_eq!(key_of(&escaped), key);
+        }
+        assert_eq!(segment("a.b"), "a%2Eb");
+        assert_eq!(key_of("plain_key"), "plain_key");
     }
 
     #[test]

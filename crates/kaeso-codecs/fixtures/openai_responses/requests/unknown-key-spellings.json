@@ -1,0 +1,48 @@
+{
+  "model": "gpt-5.5",
+  "input": [
+    {
+      "type": "message",
+      "role": "user",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "What is in the report?",
+          "x_future.part": true
+        },
+        {
+          "type": "input_file",
+          "file_id": "file-6F2ksmvXxt4VdoqmHRw6kL"
+        }
+      ],
+      "x_future.item": {
+        "level": 3
+      },
+      "@x_future_item": 1
+    },
+    {
+      "type": "function_call",
+      "call_id": "call_1",
+      "name": "lookup",
+      "arguments": "{\"q\":\"report\"}",
+      "~x_future_call": "kept"
+    },
+    {
+      "type": "function_call_output",
+      "call_id": "call_1",
+      "output": "report.pdf",
+      "": "kept"
+    }
+  ],
+  "store": false,
+  "prompt_cache_key": "report-1",
+  "x_future.field": {
+    "enabled": true,
+    "level": 1.50
+  },
+  "header:x-future-field": "kept",
+  "@x_future_field": 1,
+  "~x_future_field": 2,
+  "x_future%2Efield": 3,
+  "": 4
+}
