@@ -1,0 +1,32 @@
+{
+  "id": "msg_000000000000000000000000",
+  "type": "message",
+  "role": "assistant",
+  "model": "kimi-k3",
+  "content": [
+    {
+      "type": "thinking",
+      "thinking": "The user says hello. Greet them back.",
+      "signature": "c2lnbmF0dXJlLWV4YW1wbGUtMDAwMQ=="
+    },
+    {
+      "type": "text",
+      "text": "Hello! How can I help you today?"
+    }
+  ],
+  "stop_reason": "end_turn",
+  "stop_sequence": null,
+  "usage": {
+    "input_tokens": 4,
+    "output_tokens": 21,
+    "cache_read_input_tokens": 0,
+    "cache_creation_input_tokens": 12,
+    "cache_creation": {
+      "ephemeral_5m_input_tokens": 0,
+      "ephemeral_1h_input_tokens": 12
+    },
+    "output_tokens_details": {
+      "thinking_tokens": 11
+    }
+  }
+}

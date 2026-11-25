@@ -22,12 +22,22 @@ fn error(name: &str) -> String {
     format!("[mock:error=../providers/fireworks-ai/errors/{name}]")
 }
 
+// Generation models are sent as Chat Completions, so an Anthropic app's request is translated;
+// `native_dialects.rs` covers the Messages API it reaches as it came.
+fn sent_as(model: &str) -> Value {
+    if model == EMBED {
+        json!({})
+    } else {
+        json!({ "egress_dialect": "openai_chat" })
+    }
+}
+
 async fn add_catalogue_model(env: &Env, model: &str) {
     let r = env
         .app
         .post(
             &format!("/orgs/{}/projects/{}/models", env.owner.org_id, env.project),
-            json!({ "provider": "fireworks-ai", "model_id": model }),
+            json!({ "provider": "fireworks-ai", "model_id": model, "overrides": sent_as(model) }),
             Some(&env.owner.cookie),
         )
         .await;

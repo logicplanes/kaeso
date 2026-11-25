@@ -1,0 +1,10 @@
+{
+  "max_tokens": 1024,
+  "messages": [
+    {
+      "content": "Hello, how are you?",
+      "role": "user"
+    }
+  ],
+  "model": "anthropic/claude-sonnet-4"
+}

@@ -10,6 +10,12 @@ const OPENROUTER_SECRET: &str = "sk-or-v1-test-openrouter-credential-0004";
 
 const MODEL: &str = "nvidia/nemotron-3.5-lightning:free";
 
+// Generation models are sent as Chat Completions, so an Anthropic app's request is translated;
+// `native_dialects.rs` covers the Messages API it reaches as it came.
+fn sent_as(_model: &str) -> Value {
+    json!({ "egress_dialect": "openai_chat" })
+}
+
 async fn env() -> Env {
     let env = common::v1::env(Some(std::sync::Arc::new(Capture::default())), None).await;
     let org = &env.owner.org_id;
@@ -26,7 +32,7 @@ async fn env() -> Env {
         .app
         .post(
             &format!("/orgs/{org}/projects/{}/models", env.project),
-            json!({ "provider": "openrouter", "model_id": MODEL }),
+            json!({ "provider": "openrouter", "model_id": MODEL, "overrides": sent_as(MODEL) }),
             Some(&env.owner.cookie),
         )
         .await;

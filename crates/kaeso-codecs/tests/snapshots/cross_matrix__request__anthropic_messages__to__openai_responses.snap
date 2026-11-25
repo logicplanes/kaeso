@@ -738,6 +738,43 @@ expression: outcomes
     },
     "path": "/v1/responses"
   },
+  "providers/alibaba/thinking-stream": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "Analyze the future prospects of quantum computing.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 2048,
+      "model": "qwen3.7-plus",
+      "reasoning": {
+        "effort": "low",
+        "summary": "auto"
+      },
+      "store": false,
+      "stream": true
+    },
+    "path": "/v1/responses"
+  },
+  "providers/alibaba/who-are-you": {
+    "body": {
+      "input": [
+        {
+          "content": "Who are you?",
+          "role": "user"
+        }
+      ],
+      "instructions": "You are a helpful assistant",
+      "max_output_tokens": 1024,
+      "model": "qwen3.7-plus",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
   "providers/amazon-bedrock/explain-doc": {
     "body": {
       "input": [
@@ -850,6 +887,92 @@ expression: outcomes
     },
     "path": "/v1/responses"
   },
+  "providers/deepinfra/hello": {
+    "body": {
+      "input": [
+        {
+          "content": "Hello!",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 1024,
+      "model": "zai-org/GLM-5.2",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/deepinfra/poem-stream": {
+    "body": {
+      "input": [
+        {
+          "content": "Write a short poem about open source.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 1024,
+      "model": "zai-org/GLM-5.2",
+      "store": false,
+      "stream": true
+    },
+    "path": "/v1/responses"
+  },
+  "providers/deepseek/say-hello": {
+    "body": {
+      "input": [
+        {
+          "content": "Say hello.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 32,
+      "model": "deepseek-flash",
+      "reasoning": {
+        "effort": "none"
+      },
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/deepseek/say-hello-stream": {
+    "body": {
+      "input": [
+        {
+          "content": "Say hello.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 32,
+      "model": "deepseek-flash",
+      "reasoning": {
+        "effort": "none"
+      },
+      "store": false,
+      "stream": true
+    },
+    "path": "/v1/responses"
+  },
+  "providers/deepseek/thinking-cache-hit": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "Hi, how are you?",
+          "role": "user"
+        }
+      ],
+      "instructions": "You are a helpful assistant.",
+      "max_output_tokens": 4096,
+      "model": "deepseek-v4-pro",
+      "reasoning": {
+        "effort": "high",
+        "summary": "auto"
+      },
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
   "providers/fireworks-ai/invalid-api-key": {
     "message": "`max_tokens 1` is not supported by OpenAI Responses. OpenAI Responses needs an output limit of at least 16 tokens; raise it or route the request to another model.",
     "param": "max_tokens",
@@ -891,6 +1014,35 @@ expression: outcomes
         "effort": "low",
         "summary": "auto"
       },
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/huggingface/count-stream": {
+    "body": {
+      "input": [
+        {
+          "content": "Count from 1 to 5.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 1024,
+      "model": "deepseek-ai/DeepSeek-V4.1-Flash",
+      "store": false,
+      "stream": true
+    },
+    "path": "/v1/responses"
+  },
+  "providers/huggingface/sky": {
+    "body": {
+      "input": [
+        {
+          "content": "Why is the sky blue? One sentence.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 1024,
+      "model": "deepseek-ai/DeepSeek-V4.1-Flash",
       "store": false
     },
     "path": "/v1/responses"
@@ -1037,6 +1189,182 @@ expression: outcomes
     "param": "messages[0].blocks[1]",
     "unsupported": "video block"
   },
+  "providers/moonshotai/thinking-effort-cache": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "Hello",
+          "role": "user"
+        }
+      ],
+      "instructions": "You are Kimi.",
+      "max_output_tokens": 4096,
+      "model": "kimi-k3",
+      "reasoning": {
+        "effort": "high",
+        "summary": "auto"
+      },
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/moonshotai/tools-stream": {
+    "body": {
+      "input": [
+        {
+          "content": "What's the weather in Beijing?",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 4096,
+      "model": "kimi-k3",
+      "store": false,
+      "stream": true,
+      "tool_choice": "auto",
+      "tools": [
+        {
+          "description": "Get the current weather in a city",
+          "name": "get_weather",
+          "parameters": {
+            "properties": {
+              "city": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "city"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
+  "providers/ollama-cloud/count-stream": {
+    "body": {
+      "input": [
+        {
+          "content": "Count from 1 to 10",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 1024,
+      "model": "gemma4:31b",
+      "store": false,
+      "stream": true
+    },
+    "path": "/v1/responses"
+  },
+  "providers/ollama-cloud/hello": {
+    "body": {
+      "input": [
+        {
+          "content": "Say hello in one sentence.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 1024,
+      "model": "gemma4:31b",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/ollama-cloud/tools": {
+    "body": {
+      "input": [
+        {
+          "content": "What is the weather in San Francisco?",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 1024,
+      "model": "gemma4:31b",
+      "store": false,
+      "tools": [
+        {
+          "description": "Get the current weather in a location",
+          "name": "get_weather",
+          "parameters": {
+            "properties": {
+              "location": {
+                "description": "The city and state",
+                "type": "string"
+              }
+            },
+            "required": [
+              "location"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
+  "providers/openrouter/hello": {
+    "body": {
+      "input": [
+        {
+          "content": "Hello, how are you?",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 1024,
+      "model": "anthropic/claude-sonnet-4",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/openrouter/hello-stream": {
+    "body": {
+      "input": [
+        {
+          "content": "Hello, how are you?",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 1024,
+      "model": "anthropic/claude-sonnet-4",
+      "store": false,
+      "stream": true
+    },
+    "path": "/v1/responses"
+  },
+  "providers/qianfan/hello": {
+    "body": {
+      "input": [
+        {
+          "content": "Hello!",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 1024,
+      "model": "deepseek-v3.2",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/qianfan/hello-stream": {
+    "body": {
+      "input": [
+        {
+          "content": "你好",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 1000,
+      "model": "deepseek-v3.2",
+      "store": false,
+      "stream": true
+    },
+    "path": "/v1/responses"
+  },
   "providers/sambanova/invalid-api-key": {
     "message": "`max_tokens 1` is not supported by OpenAI Responses. OpenAI Responses needs an output limit of at least 16 tokens; raise it or route the request to another model.",
     "param": "max_tokens",
@@ -1052,6 +1380,43 @@ expression: outcomes
       ],
       "max_output_tokens": 1024,
       "model": "gpt-oss-120b",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/tencent-tokenhub/system-stream": {
+    "body": {
+      "input": [
+        {
+          "content": "1+1等于几？",
+          "role": "user"
+        }
+      ],
+      "instructions": "你是一个友好的助手",
+      "max_output_tokens": 1024,
+      "model": "hy3",
+      "store": false,
+      "stream": true
+    },
+    "path": "/v1/responses"
+  },
+  "providers/tencent-tokenhub/thinking": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "请解释什么是递归",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 4096,
+      "model": "hy3",
+      "reasoning": {
+        "effort": "low",
+        "summary": "auto"
+      },
       "store": false
     },
     "path": "/v1/responses"

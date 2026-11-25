@@ -827,6 +827,53 @@ expression: outcomes
     },
     "path": "/v1beta/models/claude-opus-5-5:generateContent"
   },
+  "providers/alibaba/thinking-stream": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Analyze the future prospects of quantum computing."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 2048,
+        "thinkingConfig": {
+          "includeThoughts": true,
+          "thinkingBudget": 1024
+        }
+      }
+    },
+    "path": "/v1beta/models/qwen3.7-plus:streamGenerateContent?alt=sse"
+  },
+  "providers/alibaba/who-are-you": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Who are you?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1024
+      },
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "You are a helpful assistant"
+          }
+        ]
+      }
+    },
+    "path": "/v1beta/models/qwen3.7-plus:generateContent"
+  },
   "providers/amazon-bedrock/explain-doc": {
     "body": {
       "contents": [
@@ -971,6 +1018,113 @@ expression: outcomes
     },
     "path": "/v1beta/models/@cf%2Fzai-org%2Fglm-4.7-flash:generateContent"
   },
+  "providers/deepinfra/hello": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hello!"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1024
+      }
+    },
+    "path": "/v1beta/models/zai-org%2FGLM-5.2:generateContent"
+  },
+  "providers/deepinfra/poem-stream": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Write a short poem about open source."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1024
+      }
+    },
+    "path": "/v1beta/models/zai-org%2FGLM-5.2:streamGenerateContent?alt=sse"
+  },
+  "providers/deepseek/say-hello": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Say hello."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 32,
+        "thinkingConfig": {
+          "thinkingBudget": 0
+        }
+      }
+    },
+    "path": "/v1beta/models/deepseek-flash:generateContent"
+  },
+  "providers/deepseek/say-hello-stream": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Say hello."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 32,
+        "thinkingConfig": {
+          "thinkingBudget": 0
+        }
+      }
+    },
+    "path": "/v1beta/models/deepseek-flash:streamGenerateContent?alt=sse"
+  },
+  "providers/deepseek/thinking-cache-hit": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hi, how are you?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 4096,
+        "thinkingConfig": {
+          "includeThoughts": true,
+          "thinkingLevel": "HIGH"
+        }
+      },
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "You are a helpful assistant."
+          }
+        ]
+      }
+    },
+    "path": "/v1beta/models/deepseek-v4-pro:generateContent"
+  },
   "providers/fireworks-ai/invalid-api-key": {
     "body": {
       "contents": [
@@ -1037,6 +1191,42 @@ expression: outcomes
       }
     },
     "path": "/v1beta/models/accounts%2Ffireworks%2Fmodels%2Fkimi-k3:generateContent"
+  },
+  "providers/huggingface/count-stream": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Count from 1 to 5."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1024
+      }
+    },
+    "path": "/v1beta/models/deepseek-ai%2FDeepSeek-V4.1-Flash:streamGenerateContent?alt=sse"
+  },
+  "providers/huggingface/sky": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Why is the sky blue? One sentence."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1024
+      }
+    },
+    "path": "/v1beta/models/deepseek-ai%2FDeepSeek-V4.1-Flash:generateContent"
   },
   "providers/minimax/deep-thinking": {
     "body": {
@@ -1210,6 +1400,226 @@ expression: outcomes
     },
     "path": "/v1beta/models/MiniMax-M3.1-Flash:generateContent"
   },
+  "providers/moonshotai/thinking-effort-cache": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hello"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 4096,
+        "thinkingConfig": {
+          "thinkingLevel": "HIGH"
+        }
+      },
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "You are Kimi."
+          }
+        ]
+      }
+    },
+    "path": "/v1beta/models/kimi-k3:generateContent"
+  },
+  "providers/moonshotai/tools-stream": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What's the weather in Beijing?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 4096
+      },
+      "toolConfig": {
+        "functionCallingConfig": {
+          "mode": "AUTO"
+        }
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "Get the current weather in a city",
+              "name": "get_weather",
+              "parametersJsonSchema": {
+                "properties": {
+                  "city": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "city"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/kimi-k3:streamGenerateContent?alt=sse"
+  },
+  "providers/ollama-cloud/count-stream": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Count from 1 to 10"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1024
+      }
+    },
+    "path": "/v1beta/models/gemma4%3A31b:streamGenerateContent?alt=sse"
+  },
+  "providers/ollama-cloud/hello": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Say hello in one sentence."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1024
+      }
+    },
+    "path": "/v1beta/models/gemma4%3A31b:generateContent"
+  },
+  "providers/ollama-cloud/tools": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is the weather in San Francisco?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1024
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "Get the current weather in a location",
+              "name": "get_weather",
+              "parametersJsonSchema": {
+                "properties": {
+                  "location": {
+                    "description": "The city and state",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "location"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/gemma4%3A31b:generateContent"
+  },
+  "providers/openrouter/hello": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hello, how are you?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1024
+      }
+    },
+    "path": "/v1beta/models/anthropic%2Fclaude-sonnet-4:generateContent"
+  },
+  "providers/openrouter/hello-stream": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hello, how are you?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1024
+      }
+    },
+    "path": "/v1beta/models/anthropic%2Fclaude-sonnet-4:streamGenerateContent?alt=sse"
+  },
+  "providers/qianfan/hello": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hello!"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1024
+      }
+    },
+    "path": "/v1beta/models/deepseek-v3.2:generateContent"
+  },
+  "providers/qianfan/hello-stream": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "你好"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1000
+      }
+    },
+    "path": "/v1beta/models/deepseek-v3.2:streamGenerateContent?alt=sse"
+  },
   "providers/sambanova/invalid-api-key": {
     "body": {
       "contents": [
@@ -1245,6 +1655,53 @@ expression: outcomes
       }
     },
     "path": "/v1beta/models/gpt-oss-120b:generateContent"
+  },
+  "providers/tencent-tokenhub/system-stream": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "1+1等于几？"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1024
+      },
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "你是一个友好的助手"
+          }
+        ]
+      }
+    },
+    "path": "/v1beta/models/hy3:streamGenerateContent?alt=sse"
+  },
+  "providers/tencent-tokenhub/thinking": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "请解释什么是递归"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 4096,
+        "thinkingConfig": {
+          "includeThoughts": true,
+          "thinkingBudget": 2048
+        }
+      }
+    },
+    "path": "/v1beta/models/hy3:generateContent"
   },
   "providers/vercel/rate-limited": {
     "body": {

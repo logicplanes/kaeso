@@ -1,0 +1,14 @@
+{
+  "model": "deepseek-flash",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Say hello."
+    }
+  ],
+  "max_tokens": 32,
+  "thinking": {
+    "type": "disabled"
+  },
+  "stream": true
+}

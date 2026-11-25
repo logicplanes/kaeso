@@ -604,6 +604,73 @@ impl DecisionsEgress {
     }
 }
 
+/// An API a provider serves its generation models through besides its `generation` one, such as
+/// DeepSeek's Anthropic-compatible Messages API at `/anthropic/v1/messages`. A request that
+/// arrives in this dialect is sent to it as it came, instead of being translated into the
+/// provider's `generation` dialect, while the model's catalogue entry names no egress dialect and
+/// the provider's base URL is its default. A model whose entry names this dialect is sent here
+/// whatever the app speaks.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct NativeDialect {
+    pub dialect: DialectId,
+    /// What takes the place of `/v1` in the dialect's paths, when it isn't the provider's own
+    /// [`Provider::api_root`].
+    pub api_root: Option<&'static str>,
+    /// The auth header the dialect takes, when it isn't the provider's own.
+    pub auth: Option<AuthStyle>,
+    /// The models served in this dialect, as patterns where `*` stands for any run of
+    /// characters; empty for every generation model of the provider.
+    pub models: &'static [&'static str],
+    /// Whether the dialect's token count (`/v1/messages/count_tokens`) answers there.
+    pub counts_tokens: bool,
+    /// Whether `api_root` starts at the root of the base URL's host instead of under its path,
+    /// as QwenCloud's `/apps/anthropic/v1` does beside its `/compatible-mode/v1`.
+    pub from_root: bool,
+}
+
+impl NativeDialect {
+    pub const fn of(dialect: DialectId) -> NativeDialect {
+        NativeDialect {
+            dialect,
+            api_root: None,
+            auth: None,
+            models: &[],
+            counts_tokens: false,
+            from_root: false,
+        }
+    }
+
+    pub const fn from_host_root(mut self, api_root: &'static str) -> NativeDialect {
+        self.api_root = Some(api_root);
+        self.from_root = true;
+        self
+    }
+
+    pub const fn at(mut self, api_root: &'static str) -> NativeDialect {
+        self.api_root = Some(api_root);
+        self
+    }
+
+    pub const fn with_auth(mut self, auth: AuthStyle) -> NativeDialect {
+        self.auth = Some(auth);
+        self
+    }
+
+    pub const fn for_models(mut self, models: &'static [&'static str]) -> NativeDialect {
+        self.models = models;
+        self
+    }
+
+    pub const fn counting_tokens(mut self) -> NativeDialect {
+        self.counts_tokens = true;
+        self
+    }
+
+    pub fn serves(&self, model: &str) -> bool {
+        self.models.is_empty() || self.models.iter().any(|m| glob(m, model))
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct ModelRoute {
     pub pattern: &'static str,
@@ -893,6 +960,9 @@ pub struct Provider {
     /// Where Kaeso sends decision requests, by model, as for `images`.
     pub decisions: &'static [DecisionsEgress],
     pub dialects: &'static [DialectId],
+    /// The APIs besides `generation` that a request in their own dialect goes to as it came;
+    /// each is also one of `dialects`.
+    pub native: &'static [NativeDialect],
     pub refused_key_messages: &'static [&'static str],
     pub context_window_messages: &'static [&'static str],
     pub reasoning_beyond_output_limit: bool,
@@ -1006,6 +1076,7 @@ pub const PROVIDERS: &[Provider] = &[
             DialectId::OpenAiChat,
             DialectId::OpenAiEmbeddings,
         ],
+        native: &[],
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
@@ -1050,6 +1121,7 @@ pub const PROVIDERS: &[Provider] = &[
         videos: &[],
         decisions: &[],
         dialects: &[DialectId::AnthropicMessages],
+        native: &[],
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
@@ -1087,7 +1159,11 @@ pub const PROVIDERS: &[Provider] = &[
         transcriptions: &[],
         videos: &[],
         decisions: &[],
-        dialects: &[DialectId::OpenAiChat],
+        dialects: &[DialectId::OpenAiChat, DialectId::AnthropicMessages],
+        // The Anthropic-compatible Messages API at `/anthropic/v1/messages`, every model, either auth
+        // header; it ignores `top_k`, `container` and `mcp_servers`, which are refused
+        // (https://api-docs.deepseek.com/guides/anthropic_api, read 2026-11-25).
+        native: &[NativeDialect::of(DialectId::AnthropicMessages).at("/anthropic/v1")],
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
@@ -1100,7 +1176,11 @@ pub const PROVIDERS: &[Provider] = &[
             .tool_schema_root(ToolSchemaRoot::TypedObjectUnions)
             .tool_patterns(ToolPatterns::Compiled),
         responses: ResponsesProfile::compatible("DeepSeek"),
-        messages: MessagesProfile::compatible("DeepSeek"),
+        messages: MessagesProfile::compatible("DeepSeek").refusing(&[
+            "top_k",
+            "container",
+            "mcp_servers",
+        ]),
         gemini: GeminiProfile::GOOGLE_AI_STUDIO,
         account: None,
         routes: &[],
@@ -1131,6 +1211,7 @@ pub const PROVIDERS: &[Provider] = &[
         videos: &[VideosEgress::of(DialectId::XaiVideos)],
         decisions: &[],
         dialects: &[DialectId::OpenAiResponses, DialectId::OpenAiChat],
+        native: &[],
         refused_key_messages: &["Incorrect API key provided"],
         context_window_messages: &[],
         reasoning_beyond_output_limit: true,
@@ -1187,6 +1268,7 @@ pub const PROVIDERS: &[Provider] = &[
         }],
         decisions: &[],
         dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
+        native: &[],
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
@@ -1226,6 +1308,7 @@ pub const PROVIDERS: &[Provider] = &[
         videos: &[],
         decisions: &[],
         dialects: &[DialectId::OpenAiChat],
+        native: &[],
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
@@ -1271,7 +1354,14 @@ pub const PROVIDERS: &[Provider] = &[
         )],
         videos: &[VideosEgress::of(DialectId::OpenRouterVideos)],
         decisions: &[DecisionsEgress::system_one(SystemOneProfile::OPENROUTER)],
-        dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
+        dialects: &[
+            DialectId::OpenAiChat,
+            DialectId::AnthropicMessages,
+            DialectId::OpenAiEmbeddings,
+        ],
+        // The Messages API at `/api/v1/messages`, every model, with the bearer key
+        // (https://openrouter.ai/docs/api/api-reference/anthropic-messages/create-a-message.md, read 2026-11-25).
+        native: &[NativeDialect::of(DialectId::AnthropicMessages)],
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
@@ -1317,6 +1407,7 @@ pub const PROVIDERS: &[Provider] = &[
         videos: &[],
         decisions: &[],
         dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
+        native: &[],
         refused_key_messages: &[],
         context_window_messages: &["too large for model with"],
         reasoning_beyond_output_limit: false,
@@ -1381,6 +1472,9 @@ pub const PROVIDERS: &[Provider] = &[
             DialectId::AnthropicMessages,
             DialectId::OpenAiEmbeddings,
         ],
+        // The Messages API at `/v1/messages`, every model of the gateway
+        // (https://vercel.com/docs/ai-gateway/sdks-and-apis/anthropic-compat.md, read 2026-11-25).
+        native: &[NativeDialect::of(DialectId::AnthropicMessages)],
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
@@ -1429,6 +1523,7 @@ pub const PROVIDERS: &[Provider] = &[
         videos: &[],
         decisions: &[],
         dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
+        native: &[],
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
@@ -1483,7 +1578,10 @@ pub const PROVIDERS: &[Provider] = &[
         transcriptions: &[],
         videos: &[],
         decisions: &[],
-        dialects: &[DialectId::OpenAiChat],
+        dialects: &[DialectId::OpenAiChat, DialectId::AnthropicMessages],
+        // The Messages API at `/v1/messages`, with the bearer key; it takes no `tool_choice`
+        // (https://docs.ollama.com/api/anthropic-compatibility.md, read 2026-11-25).
+        native: &[NativeDialect::of(DialectId::AnthropicMessages)],
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
@@ -1495,7 +1593,7 @@ pub const PROVIDERS: &[Provider] = &[
             .reasoning_fields(&["reasoning"])
             .refusing(&["logit_bias", "logprobs", "top_logprobs"]),
         responses: ResponsesProfile::compatible("Ollama Cloud"),
-        messages: MessagesProfile::compatible("Ollama Cloud"),
+        messages: MessagesProfile::compatible("Ollama Cloud").auto_tool_choice_only(),
         gemini: GeminiProfile::GOOGLE_AI_STUDIO,
         account: None,
         routes: &[],
@@ -1525,7 +1623,12 @@ pub const PROVIDERS: &[Provider] = &[
         transcriptions: &[],
         videos: &[],
         decisions: &[],
-        dialects: &[DialectId::OpenAiChat],
+        dialects: &[DialectId::OpenAiChat, DialectId::AnthropicMessages],
+        // The Messages API at `/anthropic/v1/messages`, for the Kimi K3 models only
+        // (https://platform.kimi.ai/docs/api/messages.md, read 2026-11-25).
+        native: &[NativeDialect::of(DialectId::AnthropicMessages)
+            .at("/anthropic/v1")
+            .for_models(&["kimi-k3*"])],
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
@@ -1605,7 +1708,16 @@ pub const PROVIDERS: &[Provider] = &[
         ],
         videos: &[VideosEgress::rooted(DialectId::DashScope).for_models("wan*")],
         decisions: &[],
-        dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
+        dialects: &[
+            DialectId::OpenAiChat,
+            DialectId::AnthropicMessages,
+            DialectId::OpenAiEmbeddings,
+        ],
+        // The Messages API at the host's `/apps/anthropic/v1/messages`, for the Qwen models
+        // (https://docs.qwencloud.com/api-reference/chat/anthropic.md, read 2026-11-25).
+        native: &[NativeDialect::of(DialectId::AnthropicMessages)
+            .from_host_root("/apps/anthropic/v1")
+            .for_models(&["qwen*"])],
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: true,
@@ -1658,6 +1770,7 @@ pub const PROVIDERS: &[Provider] = &[
         videos: &[],
         decisions: &[],
         dialects: &[DialectId::OpenAiChat],
+        native: &[],
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
@@ -1716,6 +1829,7 @@ pub const PROVIDERS: &[Provider] = &[
         videos: &[VideosEgress::rooted(DialectId::ZaiVideos)],
         decisions: &[],
         dialects: &[DialectId::AnthropicMessages],
+        native: &[],
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
@@ -1772,6 +1886,7 @@ pub const PROVIDERS: &[Provider] = &[
         videos: &[VideosEgress::rooted(DialectId::MinimaxVideos)],
         decisions: &[],
         dialects: &[DialectId::AnthropicMessages],
+        native: &[],
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
@@ -1843,6 +1958,7 @@ pub const PROVIDERS: &[Provider] = &[
         videos: &[VideosEgress::of(DialectId::ElevenLabs)],
         decisions: &[],
         dialects: &[DialectId::ElevenLabs],
+        native: &[],
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
@@ -1882,6 +1998,7 @@ pub const PROVIDERS: &[Provider] = &[
         videos: &[VideosEgress::of(DialectId::GeminiInteractions).for_models("gemini-omni-*")],
         decisions: &[DecisionsEgress::gemini()],
         dialects: &[DialectId::Gemini, DialectId::GeminiEmbeddings],
+        native: &[],
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
@@ -1928,6 +2045,7 @@ pub const PROVIDERS: &[Provider] = &[
             DialectId::AnthropicMessages,
             DialectId::OpenAiChat,
         ],
+        native: &[],
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
@@ -2011,6 +2129,9 @@ pub const PROVIDERS: &[Provider] = &[
             DialectId::AnthropicMessages,
             DialectId::OpenAiEmbeddings,
         ],
+        // The Messages API at `/inference/v1/messages`, serverless and on-demand models; no token
+        // count (https://docs.fireworks.ai/tools-sdks/anthropic-compatibility.md, read 2026-11-25).
+        native: &[NativeDialect::of(DialectId::AnthropicMessages)],
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
@@ -2054,6 +2175,7 @@ pub const PROVIDERS: &[Provider] = &[
         videos: &[],
         decisions: &[],
         dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
+        native: &[],
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
@@ -2098,6 +2220,9 @@ pub const PROVIDERS: &[Provider] = &[
         videos: &[],
         decisions: &[],
         dialects: &[DialectId::OpenAiChat, DialectId::AnthropicMessages],
+        // The Messages API at `/v1/messages` and its token count, every language model
+        // (https://docs.sambanova.ai/docs/en/features/messages, read 2026-11-25).
+        native: &[NativeDialect::of(DialectId::AnthropicMessages).counting_tokens()],
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
@@ -2146,6 +2271,7 @@ pub const PROVIDERS: &[Provider] = &[
         videos: &[],
         decisions: &[],
         dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
+        native: &[],
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
@@ -2189,7 +2315,10 @@ pub const PROVIDERS: &[Provider] = &[
         transcriptions: &[],
         videos: &[],
         decisions: &[],
-        dialects: &[DialectId::OpenAiChat],
+        dialects: &[DialectId::OpenAiChat, DialectId::AnthropicMessages],
+        // The Messages API at `/v1/messages`, every chat model of every inference provider
+        // (https://huggingface.co/docs/inference-providers/guides/messages-api.md, read 2026-11-25).
+        native: &[NativeDialect::of(DialectId::AnthropicMessages)],
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
@@ -2236,6 +2365,7 @@ pub const PROVIDERS: &[Provider] = &[
         videos: &[],
         decisions: &[],
         dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
+        native: &[],
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
@@ -2281,6 +2411,7 @@ pub const PROVIDERS: &[Provider] = &[
         videos: &[],
         decisions: &[DecisionsEgress::system_one(SystemOneProfile::BASETEN)],
         dialects: &[DialectId::OpenAiChat],
+        native: &[],
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
@@ -2328,6 +2459,7 @@ pub const PROVIDERS: &[Provider] = &[
         videos: &[],
         decisions: &[],
         dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
+        native: &[],
         refused_key_messages: &[],
         context_window_messages: &[],
         // `max_tokens` caps only the answer, `thinking_budget` the thinking before it
@@ -2377,6 +2509,7 @@ pub const PROVIDERS: &[Provider] = &[
         videos: &[],
         decisions: &[],
         dialects: &[DialectId::OpenAiChat],
+        native: &[],
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
@@ -2447,6 +2580,7 @@ pub const PROVIDERS: &[Provider] = &[
             DialectId::AnthropicMessages,
             DialectId::OpenAiEmbeddings,
         ],
+        native: &[],
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
@@ -2499,6 +2633,7 @@ pub const PROVIDERS: &[Provider] = &[
         videos: &[],
         decisions: &[DecisionsEgress::system_one(SystemOneProfile::PERPLEXITY)],
         dialects: &[DialectId::OpenAiChat],
+        native: &[],
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
@@ -2578,6 +2713,7 @@ pub const PROVIDERS: &[Provider] = &[
         dialects: &[DialectId::SystemOne],
         // A refused key is a 401, a missing one a 403, both with `error_type:
         // "authentication_error"`, which the System One codec reads as a refused key.
+        native: &[],
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
@@ -2624,7 +2760,16 @@ pub const PROVIDERS: &[Provider] = &[
         transcriptions: &[],
         videos: &[],
         decisions: &[],
-        dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
+        dialects: &[
+            DialectId::OpenAiChat,
+            DialectId::AnthropicMessages,
+            DialectId::OpenAiEmbeddings,
+        ],
+        // The Messages API at `/anthropic/v1/messages` and its token count, every chat model
+        // (https://docs.deepinfra.com/integrations/anthropic, read 2026-11-25).
+        native: &[NativeDialect::of(DialectId::AnthropicMessages)
+            .at("/anthropic/v1")
+            .counting_tokens()],
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
@@ -2697,6 +2842,7 @@ pub const PROVIDERS: &[Provider] = &[
         videos: &[],
         decisions: &[],
         dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
+        native: &[],
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
@@ -2770,6 +2916,7 @@ pub const PROVIDERS: &[Provider] = &[
         videos: &[],
         decisions: &[],
         dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
+        native: &[],
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
@@ -2843,6 +2990,7 @@ pub const PROVIDERS: &[Provider] = &[
         dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
         // A refused key is a 401 `FAILED_TO_AUTH`, a missing one a 403 `INVALID_API_KEY`
         // (https://docs.novita.ai/api-reference/basic-error-code.md).
+        native: &[],
         refused_key_messages: &[],
         context_window_messages: &[],
         // `max_tokens` counts reasoning tokens too (https://docs.novita.ai/guides/LLM-FAQ.md).
@@ -2922,6 +3070,7 @@ pub const PROVIDERS: &[Provider] = &[
         videos: &[],
         decisions: &[],
         dialects: &[DialectId::OpenAiChat],
+        native: &[],
         refused_key_messages: &[],
         // 400 `OutofContextError` (https://docs.volcengine.com/docs/zh/ark/error-codes.md).
         context_window_messages: &["exceed max message tokens"],
@@ -3016,6 +3165,7 @@ pub const PROVIDERS: &[Provider] = &[
         dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
         // A wrong key is a 403 with only a `message`, "Forbidden: authentication failed.", on chat,
         // embeddings and the model listing alike; the Chat Completions codec quotes it.
+        native: &[],
         refused_key_messages: &[
             "Forbidden: authentication failed.",
             "The provider returned an error (HTTP 403): Forbidden: authentication failed.",
@@ -3083,6 +3233,7 @@ pub const PROVIDERS: &[Provider] = &[
         videos: &[],
         decisions: &[],
         dialects: &[DialectId::OpenAiChat],
+        native: &[],
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
@@ -3164,7 +3315,14 @@ pub const PROVIDERS: &[Provider] = &[
         transcriptions: &[],
         videos: &[],
         decisions: &[],
-        dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
+        dialects: &[
+            DialectId::OpenAiChat,
+            DialectId::AnthropicMessages,
+            DialectId::OpenAiEmbeddings,
+        ],
+        // The Messages API at `/v1/messages`, every model
+        // (https://cloud.tencent.com/document/product/1823/130079, read 2026-11-25).
+        native: &[NativeDialect::of(DialectId::AnthropicMessages)],
         refused_key_messages: &[],
         context_window_messages: &[],
         // Reasoning and answer share the output limit
@@ -3229,6 +3387,7 @@ pub const PROVIDERS: &[Provider] = &[
         videos: &[],
         decisions: &[],
         dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
+        native: &[],
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
@@ -3302,6 +3461,7 @@ pub const PROVIDERS: &[Provider] = &[
         // A refused key is a 401 on the Chat Completions route but a 403 `permission_error` on
         // the Messages route, with these messages for a malformed, an unsigned and an unknown key
         // (recorded live).
+        native: &[],
         refused_key_messages: &[
             "Invalid API Key format",
             "Missing required parameters in the API Key",
@@ -3385,6 +3545,7 @@ pub const PROVIDERS: &[Provider] = &[
             DialectId::OpenAiResponses,
             DialectId::OpenAiEmbeddings,
         ],
+        native: &[],
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
@@ -3455,6 +3616,7 @@ pub const PROVIDERS: &[Provider] = &[
         videos: &[],
         decisions: &[],
         dialects: &[DialectId::OpenAiEmbeddings],
+        native: &[],
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
@@ -3500,6 +3662,7 @@ pub const PROVIDERS: &[Provider] = &[
         videos: &[],
         decisions: &[],
         dialects: &[DialectId::OpenAiEmbeddings],
+        native: &[],
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
@@ -3549,6 +3712,7 @@ pub const PROVIDERS: &[Provider] = &[
         videos: &[VideosEgress::of(DialectId::Fal)],
         decisions: &[],
         dialects: &[DialectId::Fal],
+        native: &[],
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
@@ -3598,6 +3762,7 @@ pub const PROVIDERS: &[Provider] = &[
         videos: &[VideosEgress::of(DialectId::Replicate)],
         decisions: &[],
         dialects: &[DialectId::Replicate],
+        native: &[],
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
@@ -3649,6 +3814,7 @@ pub const PROVIDERS: &[Provider] = &[
         videos: &[],
         decisions: &[],
         dialects: &[DialectId::Deepgram],
+        native: &[],
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
@@ -3702,6 +3868,7 @@ pub const PROVIDERS: &[Provider] = &[
         videos: &[],
         decisions: &[],
         dialects: &[DialectId::Cartesia],
+        native: &[],
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
@@ -3750,7 +3917,14 @@ pub const PROVIDERS: &[Provider] = &[
         transcriptions: &[],
         videos: &[],
         decisions: &[],
-        dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
+        dialects: &[
+            DialectId::OpenAiChat,
+            DialectId::AnthropicMessages,
+            DialectId::OpenAiEmbeddings,
+        ],
+        // The Messages API at the host's `/anthropic/v1/messages`, every chat model
+        // (https://cloud.baidu.com/doc/qianfan-docs/s/6mh3e6gjp, read 2026-11-25).
+        native: &[NativeDialect::of(DialectId::AnthropicMessages).from_host_root("/anthropic/v1")],
         refused_key_messages: &[],
         context_window_messages: &[],
         // `max_tokens` and `max_completion_tokens` both count the answer and the chain of thought
@@ -3836,6 +4010,7 @@ pub const PROVIDERS: &[Provider] = &[
         videos: &[],
         decisions: &[],
         dialects: &[DialectId::AssemblyAi],
+        native: &[],
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
@@ -3915,6 +4090,33 @@ impl Provider {
             .find(|r| r.matches(model))
             .map(|r| r.dialect)
     }
+
+    /// The provider's own API for `dialect`, when it serves `model` there besides its
+    /// `generation` dialect.
+    pub fn native(&self, dialect: DialectId, model: &str) -> Option<&NativeDialect> {
+        self.native
+            .iter()
+            .find(|n| n.dialect == dialect && n.serves(model))
+    }
+
+    /// What takes the place of `/v1` in `dialect`'s paths: the dialect's own root where it has
+    /// one, else the provider's.
+    pub fn api_root_for(&self, dialect: DialectId) -> Option<&'static str> {
+        self.native
+            .iter()
+            .find(|n| n.dialect == dialect)
+            .and_then(|n| n.api_root)
+            .or(self.api_root)
+    }
+
+    /// The auth header `dialect` takes at the provider.
+    pub fn auth_for(&self, dialect: DialectId) -> AuthStyle {
+        self.native
+            .iter()
+            .find(|n| n.dialect == dialect)
+            .and_then(|n| n.auth)
+            .unwrap_or(self.auth)
+    }
 }
 
 pub fn known_ids() -> Vec<ProviderId> {
@@ -3937,6 +4139,79 @@ mod tests {
     use kaeso_codecs::{EgressCtx, HeaderList, dispatch};
     use kaeso_kpp::{Request, RequestKind};
     use std::path::{Path, PathBuf};
+
+    #[test]
+    fn a_native_dialect_is_one_of_the_providers_dialects_beside_its_generation() {
+        for p in PROVIDERS {
+            for n in p.native {
+                assert!(p.dialects.contains(&n.dialect), "{}: {:?}", p.id, n.dialect);
+                assert_ne!(p.generation, n.dialect, "{}", p.id);
+                assert!(
+                    p.native.iter().filter(|o| o.dialect == n.dialect).count() == 1,
+                    "{}: one entry per dialect",
+                    p.id
+                );
+                // A key's own host, region or account path decides where its requests go, so
+                // native APIs stay with providers whose base URL alone does.
+                assert!(
+                    p.regional.is_none()
+                        && p.key_endpoint.is_none()
+                        && p.account_scope.is_none()
+                        && p.account.is_none(),
+                    "{}",
+                    p.id
+                );
+                assert!(n.from_root <= n.api_root.is_some(), "{}", p.id);
+            }
+        }
+    }
+
+    #[test]
+    fn deepseek_serves_anthropic_apps_at_its_own_messages_api() {
+        let deepseek = PROVIDERS.iter().find(|p| p.id == "deepseek").unwrap();
+        let native = deepseek
+            .native(DialectId::AnthropicMessages, "deepseek-flash")
+            .unwrap();
+        assert!(!native.counts_tokens);
+        assert_eq!(
+            deepseek.api_root_for(DialectId::AnthropicMessages),
+            Some("/anthropic/v1")
+        );
+        assert_eq!(deepseek.api_root_for(DialectId::OpenAiChat), None);
+        assert_eq!(
+            deepseek.auth_for(DialectId::AnthropicMessages),
+            AuthStyle::Bearer
+        );
+        assert_eq!(
+            deepseek.native(DialectId::OpenAiResponses, "deepseek-flash"),
+            None
+        );
+        let moonshot = PROVIDERS.iter().find(|p| p.id == "moonshotai").unwrap();
+        assert!(
+            moonshot
+                .native(DialectId::AnthropicMessages, "kimi-k3")
+                .is_some()
+        );
+        assert!(
+            moonshot
+                .native(DialectId::AnthropicMessages, "kimi-k3.1-pro")
+                .is_some()
+        );
+        assert_eq!(
+            moonshot.native(DialectId::AnthropicMessages, "kimi-k2.6"),
+            None
+        );
+        let qwen = PROVIDERS.iter().find(|p| p.id == "alibaba").unwrap();
+        let native = qwen
+            .native(DialectId::AnthropicMessages, "qwen3.7-plus")
+            .unwrap();
+        assert!(native.from_root);
+        assert_eq!(native.api_root, Some("/apps/anthropic/v1"));
+        assert_eq!(
+            qwen.native(DialectId::AnthropicMessages, "wan2.6-t2v"),
+            None
+        );
+    }
 
     // Every Responses request fixture, from `requests/` and each provider's `requests/`.
     fn responses_requests() -> Vec<(PathBuf, Request)> {
@@ -4330,7 +4605,11 @@ mod tests {
                 "DeepInfra",
                 AuthStyle::Bearer,
                 DialectId::OpenAiChat,
-                &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings][..]
+                &[
+                    DialectId::OpenAiChat,
+                    DialectId::AnthropicMessages,
+                    DialectId::OpenAiEmbeddings
+                ][..]
             )
         );
         assert_eq!(p.default_base_url, "https://api.deepinfra.com");
@@ -4643,7 +4922,11 @@ mod tests {
                 "Tencent TokenHub",
                 AuthStyle::Bearer,
                 DialectId::OpenAiChat,
-                &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings][..]
+                &[
+                    DialectId::OpenAiChat,
+                    DialectId::AnthropicMessages,
+                    DialectId::OpenAiEmbeddings
+                ][..]
             )
         );
         assert_eq!(p.default_base_url, "https://tokenhub.tencentmaas.com");
@@ -5086,7 +5369,11 @@ mod tests {
                 "Baidu Qianfan",
                 AuthStyle::Bearer,
                 DialectId::OpenAiChat,
-                &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings][..]
+                &[
+                    DialectId::OpenAiChat,
+                    DialectId::AnthropicMessages,
+                    DialectId::OpenAiEmbeddings
+                ][..]
             )
         );
         assert_eq!(
