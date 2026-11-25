@@ -4,7 +4,7 @@ description: Sehen Sie, wie viel Zeit, CPU und Speicher Kaeso neben LiteLLM, Bif
 order: 14
 ---
 
-Kaeso 0.7.0 lief in [ai-gateway-bench](https://github.com/BerriAI/ai-gateway-bench), dem Benchmark von BerriAI, der Firma hinter LiteLLM. LiteLLM, Bifrost und Portkey liefen daneben auf derselben Maschine. Nutzen Sie die Zahlen, um einen Server zu bemessen und Kaeso mit dem Gateway zu vergleichen, das Sie heute betreiben. [kaeso.app/benchmarks](https://kaeso.app/benchmarks) zeigt sie als Diagramme, mit den Skripten und allen Rohdaten.
+Kaeso 0.7.2 lief in [ai-gateway-bench](https://github.com/BerriAI/ai-gateway-bench), dem Benchmark von BerriAI, der Firma hinter LiteLLM. LiteLLM, Bifrost und Portkey liefen daneben auf derselben Maschine. Nutzen Sie die Zahlen, um einen Server zu bemessen und Kaeso mit dem Gateway zu vergleichen, das Sie heute betreiben. [kaeso.app/benchmarks](https://kaeso.app/benchmarks) zeigt sie als Diagramme, mit den Skripten und allen Rohdaten.
 
 Jede Zahl ist der Median aus drei Runden. Der Mock-Anbieter des Benchmarks steht für den Modellanbieter, daher zeigen die Zahlen die Kosten des Gateways selbst, nicht die eines Modells.
 
@@ -14,12 +14,12 @@ Diese Zahlen stammen von 64 Clients gegen einen Mock, der sofort antwortet, jede
 
 | Gateway | Anfragen/s | Latenz p50 / p99 | CPU pro Anfrage | Höchster Speicher |
 | --- | --- | --- | --- | --- |
-| Kaeso 0.7.0 | 6.338 | 10,0 / 15,6 ms | 314 µs | 101 + 271 MB |
-| Kaeso 0.7.0, Anfrageprotokolle an | 5.324 | 11,8 / 20,6 ms | 373 µs | 450 + 1.163 MB |
-| LiteLLM Rust, `main` bei `d4e8f96` | 3.211 | 19,6 / 33,2 ms | 573 µs | 86 MB |
-| Bifrost 2.6.0 | 2.806 | 21,0 / 54,6 ms | 708 µs | 405 MB |
-| Portkey 1.15.2 | 779 | 79,9 / 118,3 ms | 1.449 µs | 293 MB |
-| LiteLLM Python 1.110.2 | 74 | 858,1 / 974,0 ms | 13.563 µs | 743 MB |
+| Kaeso 0.7.2 | 6.243 | 10,2 / 15,9 ms | 320 µs | 104 + 559 MB |
+| Kaeso 0.7.2, Anfrageprotokolle an | 5.177 | 12,3 / 20,2 ms | 385 µs | 212 + 1.453 MB |
+| LiteLLM Rust, `main` bei `d4e8f96` | 3.286 | 19,3 / 31,9 ms | 560 µs | 86 MB |
+| Bifrost 2.6.0 | 2.858 | 20,6 / 52,3 ms | 693 µs | 452 MB |
+| Portkey 1.15.2 | 821 | 77,9 / 113,5 ms | 1.366 µs | 301 MB |
+| LiteLLM Python 1.110.2 | 75 | 849,0 / 918,0 ms | 13.381 µs | 744 MB |
 
 Die CPU pro Anfrage ist die des Gateways. Kaesos Speicher ist der des Gateways plus der seiner Datenbanken: PostgreSQL und Valkey, mit Anfrageprotokollen auch ClickHouse. Die anderen Gateways liefen ohne Datenbank. [kaeso.app/benchmarks](https://kaeso.app/benchmarks) zeigt die Spanne jeder Runde.
 
@@ -29,12 +29,12 @@ Zusätzliche Latenz ist die Zeit einer Anfrage durch das Gateway minus die Zeit 
 
 | Gateway | 1 Client | 4 Clients | 16 Clients |
 | --- | --- | --- | --- |
-| Kaeso 0.7.0 | +0,73 / +1,66 ms | +0,56 / +1,15 ms | +0,54 / +1,47 ms |
-| Kaeso 0.7.0, Anfrageprotokolle an | +0,77 / +2,22 ms | +0,60 / +1,90 ms | +0,62 / +1,45 ms |
-| LiteLLM Rust, `main` bei `d4e8f96` | +0,87 / +0,98 ms | +0,76 / +1,68 ms | +0,69 / +2,26 ms |
-| Bifrost 2.6.0 | +1,10 / +1,32 ms | +0,85 / +2,41 ms | +0,71 / +4,08 ms |
-| Portkey 1.15.2 | +2,04 / +5,26 ms | +1,17 / +6,99 ms | +3,1 / +20,4 ms |
-| LiteLLM Python 1.110.2 | +16,0 / +17,8 ms | +50,9 / +60,5 ms | +188 / +216 ms |
+| Kaeso 0.7.2 | +0,87 / +1,63 ms | +0,66 / +1,23 ms | +0,79 / +1,73 ms |
+| Kaeso 0.7.2, Anfrageprotokolle an | +0,67 / +1,62 ms | +0,52 / +1,97 ms | +0,56 / +1,83 ms |
+| LiteLLM Rust, `main` bei `d4e8f96` | +1,01 / +1,09 ms | +0,89 / +2,11 ms | +0,67 / +2,33 ms |
+| Bifrost 2.6.0 | +1,09 / +1,24 ms | +0,96 / +2,36 ms | +0,57 / +2,98 ms |
+| Portkey 1.15.2 | +2,12 / +4,79 ms | +1,11 / +6,49 ms | +2,9 / +16,4 ms |
+| LiteLLM Python 1.110.2 | +15,8 / +17,3 ms | +49,3 / +57,8 ms | +185 / +206 ms |
 
 Eine Zeile für 64 Clients fehlt. Bei dieser Last teilen sich Mock und Treiber zwei Kerne und kommen nicht über etwa 2.900 Anfragen pro Sekunde. Den direkten Lauf abzuziehen, würde dann die Zeit jedes Gateways zu klein ausweisen; diese Last misst stattdessen die Kapazitätstabelle.
 
@@ -44,21 +44,39 @@ Der Streaming-Lauf sendet 200 gestreamte Anfragen bei 16 Clients. Die Sitzungsl�
 
 | Gateway | Zusätzliche Zeit bis zum ersten Token | Chunk-Abstand p99 | Claude-Code-Sitzung | Codex-Sitzung |
 | --- | --- | --- | --- | --- |
-| Kaeso 0.7.0 | +0,87 ms | 7,8 ms | +41,5 ms | +34,0 ms |
-| Kaeso 0.7.0, Anfrageprotokolle an | +0,94 ms | 8,1 ms | +66,0 ms | +65,5 ms |
-| LiteLLM Rust, `main` bei `d4e8f96` | +0,96 ms | 40,4 ms | +41,0 ms | +44,2 ms |
-| Bifrost 2.6.0 | Nicht vergleichbar | 20,5 ms | +126,4 ms | +91,3 ms |
-| Portkey 1.15.2 | +27,54 ms | 8,6 ms | +91,4 ms | +104,2 ms |
-| LiteLLM Python 1.110.2 | +118,92 ms | 34,0 ms | +502,1 ms | +507,7 ms |
+| Kaeso 0.7.2 | +0,95 ms | 7,7 ms | +43,5 ms | +44,8 ms |
+| Kaeso 0.7.2, Anfrageprotokolle an | +0,98 ms | 8,0 ms | +42,1 ms | +58,6 ms |
+| LiteLLM Rust, `main` bei `d4e8f96` | +0,94 ms | 40,4 ms | +45,2 ms | +46,6 ms |
+| Bifrost 2.6.0 | Nicht vergleichbar | 20,6 ms | +125,3 ms | +94,5 ms |
+| Portkey 1.15.2 | +27,54 ms | 8,1 ms | +100,0 ms | +104,5 ms |
+| LiteLLM Python 1.110.2 | +114,17 ms | 33,3 ms | +510,5 ms | +504,6 ms |
 
 Direkt zum Mock liegt der Chunk-Abstand bei 7,5 ms im p99. Bifrost sendet sein erstes Ereignis, bevor der Anbieter antwortet, und der Benchmark zählt das als erstes Token. Deshalb ist seine Zeit bis zum ersten Token negativ. Jede gestreamte Sitzung lieferte durch jedes Gateway gültige Tool-Aufrufe.
 
 ## Wo andere Gateways vorn liegen
 
-- **Speicher:** LiteLLM Rust kam nie über 86 MB und braucht keine Datenbank. Kaeso erreichte 164 MB, und seine PostgreSQL und Valkey belegten weitere 271 MB.
-- **Ein Client:** Mit einer Anfrage zur Zeit lag das p99 von LiteLLM Rust bei +0,98 ms, das von Kaeso bei +1,66 ms, und keine Runde von Kaeso kam näher.
+- **Speicher:** LiteLLM Rust kam nie über 86 MB und braucht keine Datenbank. Kaeso erreichte 160 MB, und seine PostgreSQL und Valkey belegten weitere 559 MB.
+- **Sechzehn Clients:** Im Median fügte Bifrost +0,57 ms hinzu und LiteLLM Rust +0,67 ms, Kaeso +0,79 ms, und jede Runde von Bifrost lag unter jeder Runde von Kaeso. Beim p99 fügte Kaeso am wenigsten hinzu.
 - **Gleichstand:** Die Zeit bis zum ersten Token und die Claude-Code-Sitzung liegen in der Spanne des jeweils anderen.
-- **Anfrageprotokolle:** Mit jeder Anfrage in ClickHouse schaffte Kaeso 16 % weniger Anfragen pro Sekunde, und seine Datenbanken belegten 1.163 MB.
+- **Anfrageprotokolle:** Mit jeder Anfrage in ClickHouse schaffte Kaeso 17 % weniger Anfragen pro Sekunde, und seine Datenbanken belegten 1.453 MB.
+
+## Seit Kaeso 0.7.0
+
+Der Lauf vom 22. November 2026 maß Kaeso 0.7.0 mit demselben Benchmark, denselben Skripten und Images aller anderen Gateways, auf einer anderen c-4 desselben Typs. Die Kapazität der unveränderten Gateways verschob sich zwischen den beiden Läufen um bis zu 5 %. Ein Unterschied zählt deshalb nur, wo sich die Runden beider Läufe nicht überschneiden und die anderen Gateways sich nicht genauso bewegten:
+
+| Messgröße | 0.7.0 | 0.7.2 | Einordnung |
+| --- | --- | --- | --- |
+| Anfragen pro Sekunde unter Volllast | 6.338 | 6.243 | Gleich: die Runden überschneiden sich |
+| Dasselbe mit Anfrageprotokollen | 5.324 | 5.177 | Gleich: die Runden überschneiden sich |
+| Zusätzlich im Median, 1 Client | +0,73 ms | +0,87 ms | Höher, aber LiteLLM Rust stieg etwa gleich stark: die Maschine |
+| Zusätzlich im Median, 4 Clients | +0,56 ms | +0,66 ms | Höher, aber LiteLLM Rust und Bifrost stiegen etwa gleich stark: die Maschine |
+| Zusätzlich im Median, 16 Clients | +0,54 ms | +0,79 ms | Höher, außerhalb der Runden beider Läufe |
+| Zusätzlich beim p99, 16 Clients | +1,47 ms | +1,73 ms | Gleich: die Runden überschneiden sich |
+| Chunk-Abstand p99 | 7,8 ms | 7,7 ms | Gleich: die Runden überschneiden sich |
+| Höchster Speicher unter Volllast, mit Anfrageprotokollen | 450 MB | 212 MB | Niedriger |
+| Höchster Speicher von Kaesos Datenbanken unter Volllast | 271 MB | 559 MB | Höher |
+
+0.7.2 hält die Zeilen des Anfrageprotokolls, die auf ClickHouse warten, innerhalb von [`logs.buffer_size`](configuration.md), was zum niedrigeren Speicher mit Anfrageprotokollen passt. Kaesos PostgreSQL belegte in der Spitze etwa doppelt so viel Speicher, während seine CPU pro Anfrage gleich blieb, und Kaesos zusätzlicher Median bei 16 Clients stieg, während der der anderen Gateways nicht stieg. Die Läufe zeigen nicht, ob 0.7.2 oder die Maschine diese beiden verursachte. Die [Skripte](https://kaeso.app/benchmarks/2026-11-22/harness.tar.gz) und [Rohdaten](https://kaeso.app/benchmarks/2026-11-22/raw.tar.gz) des 0.7.0-Laufs bleiben veröffentlicht.
 
 ## Was jedes Gateway tat
 
@@ -66,8 +84,8 @@ Jedes Gateway lief so, wie sein Projekt es ausliefert, gegen den Mock im Format 
 
 | Gateway | Bei jeder Anfrage geprüft | Gespeichert |
 | --- | --- | --- |
-| Kaeso 0.7.0 | Den [API-Schlüssel](../console/api-keys.md) eines Projekts und die Modelle, die das Projekt erlaubt | Nutzung in PostgreSQL; keine Anfrageprotokolle |
-| Kaeso 0.7.0, Anfrageprotokolle an | Dasselbe | Nutzung in PostgreSQL und jede Anfrage in ClickHouse |
+| Kaeso 0.7.2 | Den [API-Schlüssel](../console/api-keys.md) eines Projekts und die Modelle, die das Projekt erlaubt | Nutzung in PostgreSQL; keine Anfrageprotokolle |
+| Kaeso 0.7.2, Anfrageprotokolle an | Dasselbe | Nutzung in PostgreSQL und jede Anfrage in ClickHouse |
 | LiteLLM Rust, `main` bei `d4e8f96`, unveröffentlicht | Einen Master-Schlüssel aus seiner Konfiguration | Nichts; keine Datenbank |
 | LiteLLM Python 1.110.2 | Einen Master-Schlüssel aus seiner Konfiguration | Nichts; keine Datenbank |
 | Bifrost 2.6.0 | Keinen Schlüssel | Nichts; Logging und Stores aus |
@@ -75,7 +93,7 @@ Jedes Gateway lief so, wie sein Projekt es ausliefert, gegen den Mock im Format 
 
 ## Wie es lief
 
-- **Maschine:** eine DigitalOcean CPU-Optimized c-4 mit 4 dedizierten vCPUs (Intel Xeon Platinum 8358, 2,6 GHz), 8 GB Speicher, Ubuntu 24.04 und Docker, am 22. November 2026.
+- **Maschine:** eine DigitalOcean CPU-Optimized c-4 mit 4 dedizierten vCPUs (Intel Xeon Platinum 8358, 2,6 GHz), 8 GB Speicher, Ubuntu 24.04 und Docker, am 25. November 2026.
 - **Kerne:** Jedes Gateway lief in Docker im Host-Netzwerk, fest auf zwei Kernen. Mock, Lasttreiber und Kaesos Datenbanken liefen auf den anderen beiden.
 - **Benchmark:** `BerriAI/ai-gateway-bench` bei `44365ca`, Mock-Anbieter und Treiber unverändert: `load-probe` für Anfragen, `run_http_bench.py` für Streams und `session_runner.py` für Sitzungen.
 - **Mock-Anbieter:** das erste Token nach 20 ms, dann 40 Tokens im Abstand von 5 ms. Im Kapazitätslauf antwortet er sofort.
@@ -86,7 +104,7 @@ Jedes Gateway lief so, wie sein Projekt es ausliefert, gegen den Mock im Format 
 Die Images liefen mit diesen Digests:
 
 ```text
-ghcr.io/logicplanes/kaeso-gateway:0.7.0@sha256:3d32fd7827417e49475b4ac9ad7d25f7daed28f02fa489ef4077ff501faaae1a
+ghcr.io/logicplanes/kaeso-gateway:0.7.2@sha256:7db4ee52773bc546746fb5e3d513457929d1782fdb89795f7b9c9f406a94ae79
 ghcr.io/berriai/litellm:v1.110.2@sha256:ef798594ca3db8d81bad2e1439f536f49b71fe095ee9f20416f5e149b4e22035
 maximhq/bifrost:v2.6.0@sha256:5968d007ba4f74ee01bc4ceb071decb9927a0b7bb43dbb9072208f75e2d522e3
 portkeyai/gateway:1.15.2@sha256:97f094d9c8a764cbfaa2a7138c0017b247ca923bb06db1b4c13b7f8a33b5200d
@@ -102,7 +120,7 @@ LiteLLM Rust hat noch kein veröffentlichtes Image. Es wurde aus `BerriAI/litell
 Nehmen Sie eine frische Ubuntu-24.04-Maschine mit vier Kernen und arbeiten Sie als root. Das Setup installiert Docker, baut den Benchmark und LiteLLM Rust bei denselben Commits und lädt jedes Image über seinen Digest:
 
 ```bash
-curl -fsSLO https://kaeso.app/benchmarks/2026-11-22/harness.tar.gz
+curl -fsSLO https://kaeso.app/benchmarks/2026-11-25/harness.tar.gz
 tar -xzf harness.tar.gz
 bash kaeso-gateway-bench/setup.sh
 cd /root
