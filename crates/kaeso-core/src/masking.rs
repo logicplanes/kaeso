@@ -370,6 +370,67 @@ fn passes(check: Check, text: &str) -> bool {
     }
 }
 
+// How issuers print a card number in groups; a run of other groups that passes the checksum is
+// chance, such as one in ten lists of single digits.
+const CARD_GROUPS: [&[usize]; 4] = [&[4, 4, 4, 4], &[4, 4, 4, 4, 3], &[4, 6, 5], &[4, 6, 4]];
+
+// A value matches together with the groups next to it, such as a card's security code, and
+// then fails its checksum, so the value is looked for among the match's whole groups.
+fn passing(check: Check, text: &str) -> Option<(usize, usize)> {
+    if text.is_empty() {
+        return None;
+    }
+    if passes(check, text) {
+        return Some((0, text.len()));
+    }
+    let separators: &[char] = match check {
+        Check::Luhn => &[' ', '-'],
+        Check::Iban => &[' '],
+        Check::None | Check::Ipv6 => return None,
+    };
+    let mut groups = Vec::new();
+    let mut start = 0;
+    for (i, c) in text.char_indices() {
+        if separators.contains(&c) {
+            groups.push((start, i));
+            start = i + c.len_utf8();
+        }
+    }
+    groups.push((start, text.len()));
+    let run = |first: usize, len: usize| {
+        let from = groups.get(first)?.0;
+        let to = groups.get(first + len - 1)?.1;
+        text.get(from..to)
+            .is_some_and(|t| passes(check, t))
+            .then_some((from, to))
+    };
+    if check == Check::Iban {
+        // The number ends before a word: a shorter run of its own groups would pass by chance
+        // once in 97 times.
+        return (1..groups.len()).rev().find_map(|len| {
+            groups
+                .get(len)
+                .and_then(|g| text.get(g.0..g.1))
+                .is_some_and(|g| g.bytes().all(|b| b.is_ascii_uppercase()))
+                .then(|| run(0, len))?
+        });
+    }
+    let sizes: Vec<usize> = groups.iter().map(|g| g.1 - g.0).collect();
+    for len in (1..groups.len()).rev() {
+        let found = (0..=groups.len() - len)
+            .filter(|first| {
+                sizes
+                    .get(*first..first + len)
+                    .is_some_and(|run| len == 1 || CARD_GROUPS.contains(&run))
+            })
+            .find_map(|first| run(first, len));
+        if found.is_some() {
+            return found;
+        }
+    }
+    None
+}
+
 #[derive(Clone, Copy, Debug)]
 struct Hit {
     start: usize,
@@ -385,10 +446,10 @@ impl Scanner {
                 let Some(m) = caps.get(f.group) else {
                     continue;
                 };
-                if m.start() < m.end() && passes(f.check, m.as_str()) {
+                if let Some((from, to)) = passing(f.check, m.as_str()) {
                     hits.push(Hit {
-                        start: m.start(),
-                        end: m.end(),
+                        start: m.start() + from,
+                        end: m.start() + to,
                         finder: i,
                     });
                 }

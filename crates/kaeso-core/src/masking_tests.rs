@@ -169,6 +169,44 @@ fn block_and_flag_change_nothing_and_say_what_they_found() {
 }
 
 #[test]
+fn a_card_or_iban_next_to_other_groups_is_still_found() {
+    let scanner = rules(&[
+        (Detector::Card, RuleAction::Mask),
+        (Detector::Iban, RuleAction::Mask),
+    ])
+    .compile()
+    .unwrap();
+    for (text, masked) in [
+        ("4111 1111 1111 1111 123", "[CARD_1] 123"),
+        ("4111111111111111 123", "[CARD_1] 123"),
+        ("4111-1111-1111-1111 12/29 123", "[CARD_1] 12/29 123"),
+        ("id 7 4111 1111 1111 1111", "id 7 [CARD_1]"),
+        ("ES91 2100 0418 4502 0005 1332 PAID", "[IBAN_1] PAID"),
+        ("ES91 2100 0418 4502 0005 1332 PAID OK", "[IBAN_1] PAID OK"),
+        (
+            "ES91 2100 0418 4502 0005 1332 PAID 2026",
+            "[IBAN_1] PAID 2026",
+        ),
+        ("ref 501 4111 1111 1111 1111", "ref 501 [CARD_1]"),
+    ] {
+        assert_eq!(scanner.masker().text(text).as_deref(), Some(masked));
+    }
+    assert_eq!(masked(Detector::Card, "1234 5678 9012 3456 789"), None);
+    assert_eq!(
+        masked(Detector::Card, "3 1 4 1 5 9 2 6 5 3 5 8 9 7 9 3 2 3 8"),
+        None
+    );
+    assert_eq!(
+        masked(Detector::Iban, "ES91 2100 0418 4502 0005 1332 2026"),
+        None
+    );
+    assert_eq!(
+        masked(Detector::Iban, "DE89 3704 0044 0532 0130 01 OK"),
+        None
+    );
+}
+
+#[test]
 fn overlapping_finds_keep_the_earliest_and_longest() {
     let scanner = rules(&[
         (Detector::Email, RuleAction::Mask),
