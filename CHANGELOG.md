@@ -4,6 +4,32 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
+## [0.7.4] - 2026-11-25
+
+Kaeso 0.7.4 closes a CPU exhaustion problem in the merge of a tool schema's root union: each definition is now expanded once, and a merge stops after 4096 schemas. It also removes a wait that every reply had in organizations without a source since the previous release. The performance page now shows the 0.7.3 benchmark run. No change is marked as breaking.
+
+**Contributors:** @dvnold
+
+**Full changes:** [v0.7.3...v0.7.4](https://github.com/logicplanes/kaeso/compare/v0.7.3...v0.7.4)
+
+### Changed
+
+#### Documentation
+
+- The performance page shows the benchmark run of Kaeso 0.7.3 in English, German and Simplified Chinese. The section on changes since 0.7.0 is replaced by one on changes since 0.7.2, and the page says how the run was made and how to run it yourself. ([#1516](https://github.com/logicplanes/kaeso/pull/1516))
+
+### Fixed
+
+#### Gateway
+
+- A reply no longer waits for a background task when its organization has no source. Since the previous release every reply waited for that task, which only read a cached `false` in such organizations; a request of an organization known to have no source, or a successful one without usage, now starts no task. Organizations with sources, or not known yet, behave as before. ([#1517](https://github.com/logicplanes/kaeso/pull/1517))
+
+### Security
+
+#### KPP
+
+- Merging a tool schema's root union into one object expands each definition a `$ref` reaches once, where it was expanded again at every reference and took exponential time for a valid API key's schema before any provider call. A merge may now expand at most 4096 schemas, counting every reference it follows. Past that, the tool is refused as `Unsupported` in the app's format, before anything is sent. The cross-format page lists the new refusal. ([#1515](https://github.com/logicplanes/kaeso/pull/1515))
+
 ## [0.7.3] - 2026-11-25
 
 Kaeso 0.7.3 sends an Anthropic app's request to a provider's own Messages API without translating it, when the provider lists it for the model and the model's catalogue entry names no egress dialect. It also ends a ChatGPT plan's reply at the app's output limit and holds an account at its plan's usage limit for longer between retries. When Kaeso can't check a project's hard budgets or load its limits, it refuses the request as Kaeso being busy, and a request sent through the gateway and also reported to a source counts once across an organization's projects. No change is marked as breaking.
@@ -1805,7 +1831,8 @@ The first release of Kaeso, the open-source AI gateway you run yourself: the gat
 
 - A Release workflow that runs only from `prod`: it prepares the version changes and the changelog without write access to the repository, lets only jobs that run nothing but git push the release commit and the tag, syncs the release commit back to `dev`, and pins every action by commit SHA.
 
-[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.7.3...HEAD
+[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.7.4...HEAD
+[0.7.4]: https://github.com/logicplanes/kaeso/releases/tag/v0.7.4
 [0.7.3]: https://github.com/logicplanes/kaeso/releases/tag/v0.7.3
 [0.7.2]: https://github.com/logicplanes/kaeso/releases/tag/v0.7.2
 [0.7.1]: https://github.com/logicplanes/kaeso/releases/tag/v0.7.1
