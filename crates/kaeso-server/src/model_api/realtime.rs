@@ -37,6 +37,7 @@ const MAX_MESSAGE: usize = 1 << 20;
 // The reservation a session holds lives this long, and so may the session.
 const MAX_SESSION: Duration = Duration::from_secs(60 * 60);
 const BUDGET_CHECKS: Duration = Duration::from_secs(30);
+const CLOSING: Duration = Duration::from_secs(5);
 
 fn refuse(err: &KppError) -> Response {
     respond(D, err, &Served::default())
@@ -182,21 +183,21 @@ impl Opening {
         {
             Ok(Some(Ok(ws::Message::Text(text)))) => text,
             _ => {
-                close_with(&mut client, self.api, &super::auth::missing_key()).await;
+                close_with(&mut client, self.api, &super::auth::missing_key(), CLOSING).await;
                 return;
             }
         };
         let read = match rt::read_client_message(self.api, first.as_str()) {
             Ok(r) => r,
-            Err(e) => return close_with(&mut client, self.api, &e).await,
+            Err(e) => return close_with(&mut client, self.api, &e, CLOSING).await,
         };
         let Some(secret) = read.credential.clone() else {
-            return close_with(&mut client, self.api, &super::auth::missing_key()).await;
+            return close_with(&mut client, self.api, &super::auth::missing_key(), CLOSING).await;
         };
         let api = self.api;
         match self.open(&secret).await {
             Ok(session) => session.run(client, Some(read)).await,
-            Err(e) => close_with(&mut client, api, &e).await,
+            Err(e) => close_with(&mut client, api, &e, CLOSING).await,
         }
     }
 
@@ -406,16 +407,43 @@ impl Opening {
     }
 }
 
-async fn close_with(client: &mut WebSocket, api: RealtimeApi, err: &KppError) {
+async fn close_with(client: &mut WebSocket, api: RealtimeApi, err: &KppError, patience: Duration) {
     let clean = super::pipeline::without_key_fragments(err.clone());
     let (body, code) = rt::error_message(api, &clean);
-    let _ = client.send(ws::Message::Text(body.into())).await;
-    let _ = client
-        .send(ws::Message::Close(Some(ws::CloseFrame {
-            code,
-            reason: short_reason(&clean.message).into(),
-        })))
-        .await;
+    let _ = tokio::time::timeout(patience, async {
+        let _ = client.send(ws::Message::Text(body.into())).await;
+        let _ = client
+            .send(ws::Message::Close(Some(ws::CloseFrame {
+                code,
+                reason: short_reason(&clean.message).into(),
+            })))
+            .await;
+    })
+    .await;
+}
+
+enum Wrote {
+    Done,
+    Broke,
+    Stalled,
+}
+
+// A peer that stops reading leaves a write pending for good, and the session's limits, its
+// end and its log entry all wait behind that write.
+async fn wrote<E>(patience: Duration, write: impl Future<Output = Result<(), E>>) -> Wrote {
+    match tokio::time::timeout(patience, write).await {
+        Ok(Ok(())) => Wrote::Done,
+        Ok(Err(_)) => Wrote::Broke,
+        Err(_) => Wrote::Stalled,
+    }
+}
+
+fn stalled() -> End {
+    End::Failed(error(
+        ErrorKind::Timeout,
+        408,
+        "The session was idle too long; open a new one when you need it.",
+    ))
 }
 
 fn scrub_provider_text(text: &str) -> Option<String> {
@@ -533,18 +561,17 @@ impl Session {
         let mut measured = Measured::default();
         let started = tokio::time::Instant::now();
         let mut end = End::Done;
+        let idle = state.config.upstream.stream_idle_timeout;
         if let Some(first) = first {
             measured.add(&first, format.as_deref());
-            if self
-                .upstream
-                .send(Message::text(first.forwarded))
-                .await
-                .is_err()
-            {
-                end = End::Failed(KppError::provider("ElevenLabs closed the session."));
+            match wrote(idle, self.upstream.send(Message::text(first.forwarded))).await {
+                Wrote::Done => {}
+                Wrote::Broke => {
+                    end = End::Failed(KppError::provider("ElevenLabs closed the session."));
+                }
+                Wrote::Stalled => end = stalled(),
             }
         }
-        let idle = state.config.upstream.stream_idle_timeout;
         let deadline = started + MAX_SESSION;
         let mut last = started;
         let mut checks = tokio::time::interval_at(started + BUDGET_CHECKS, BUDGET_CHECKS);
@@ -562,16 +589,20 @@ impl Session {
                             match rt::read_client_message(api, text.as_str()) {
                                 Ok(read) => {
                                     measured.add(&read, format.as_deref());
-                                    if self.upstream.send(Message::text(read.forwarded)).await.is_err() {
-                                        break;
+                                    match wrote(idle, self.upstream.send(Message::text(read.forwarded))).await {
+                                        Wrote::Done => {}
+                                        Wrote::Broke => break,
+                                        Wrote::Stalled => end = stalled(),
                                     }
                                 }
                                 Err(e) => end = End::Failed(e),
                             }
                         }
                         Some(Ok(ws::Message::Binary(bytes))) => {
-                            if self.upstream.send(Message::binary(bytes)).await.is_err() {
-                                break;
+                            match wrote(idle, self.upstream.send(Message::binary(bytes))).await {
+                                Wrote::Done => {}
+                                Wrote::Broke => break,
+                                Wrote::Stalled => end = stalled(),
                             }
                         }
                         Some(Ok(ws::Message::Close(frame))) => {
@@ -580,11 +611,13 @@ impl Session {
                                 code: CloseCode::from(f.code),
                                 reason: f.reason.as_str().to_owned().into(),
                             });
-                            let _ = self.upstream.send(Message::Close(frame)).await;
+                            if let Wrote::Stalled = wrote(idle, self.upstream.send(Message::Close(frame))).await {
+                                end = stalled();
+                            }
                         }
                         Some(Ok(_)) => {}
                         Some(Err(_)) | None => {
-                            let _ = self.upstream.close(None).await;
+                            wrote(idle, self.upstream.close(None)).await;
                             break;
                         }
                     }
@@ -595,15 +628,23 @@ impl Session {
                         Some(Ok(Message::Text(text))) => {
                             let cleaned = scrub_provider_text(text.as_str());
                             let out = cleaned.as_deref().unwrap_or(text.as_str());
-                            if client.send(ws::Message::Text(out.into())).await.is_err() {
-                                let _ = self.upstream.close(None).await;
-                                break;
+                            match wrote(idle, client.send(ws::Message::Text(out.into()))).await {
+                                Wrote::Done => {}
+                                Wrote::Broke => {
+                                    wrote(idle, self.upstream.close(None)).await;
+                                    break;
+                                }
+                                Wrote::Stalled => end = stalled(),
                             }
                         }
                         Some(Ok(Message::Binary(bytes))) => {
-                            if client.send(ws::Message::Binary(bytes)).await.is_err() {
-                                let _ = self.upstream.close(None).await;
-                                break;
+                            match wrote(idle, client.send(ws::Message::Binary(bytes))).await {
+                                Wrote::Done => {}
+                                Wrote::Broke => {
+                                    wrote(idle, self.upstream.close(None)).await;
+                                    break;
+                                }
+                                Wrote::Stalled => end = stalled(),
                             }
                         }
                         Some(Ok(Message::Close(frame))) => {
@@ -622,7 +663,7 @@ impl Session {
                                 code,
                                 reason: short_reason(&reason).into(),
                             });
-                            let _ = client.send(ws::Message::Close(frame)).await;
+                            wrote(idle, client.send(ws::Message::Close(frame))).await;
                             break;
                         }
                         Some(Ok(_)) => {}
@@ -639,13 +680,7 @@ impl Session {
                         }
                     }
                 }
-                () = tokio::time::sleep_until(last + idle) => {
-                    end = End::Failed(error(
-                        ErrorKind::Timeout,
-                        408,
-                        "The session was idle too long; open a new one when you need it.",
-                    ));
-                }
+                () = tokio::time::sleep_until(last + idle) => end = stalled(),
                 () = cut.cancelled() => {
                     end = End::Failed(super::pipeline::shutting_down());
                 }
@@ -676,8 +711,8 @@ impl Session {
             }
         }
         if let End::Failed(e) = &end {
-            close_with(&mut client, api, e).await;
-            let _ = self.upstream.close(None).await;
+            close_with(&mut client, api, e, CLOSING).await;
+            wrote(CLOSING, self.upstream.close(None)).await;
         }
         state
             .limits
