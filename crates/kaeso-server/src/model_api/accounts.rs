@@ -3,15 +3,32 @@ use kaeso_kpp::{DialectId, ErrorKind, KppError, Request, RequestKind};
 
 use super::errors::error;
 
+pub(super) struct Prepared {
+    pub(super) dialect: DialectId,
+    // The plan's route refuses the output limit, so Kaeso ends the reply there itself; the
+    // app's field that set it is named in `kaeso-adapted`.
+    pub(super) output_limit: Option<(u64, &'static str)>,
+}
+
 pub(super) fn prepare(
     req: &mut Request,
     account: AccountSignIn,
     provider: &str,
-) -> Result<DialectId, KppError> {
+    ingress: DialectId,
+) -> Result<Prepared, KppError> {
     let (capability, cannot) = match req {
         Request::Generate(g) => {
+            let output_limit = g.sampling.max_output_tokens.map(|limit| {
+                (
+                    u64::from(limit),
+                    kaeso_core::catalogue::capability::output_param(g, ingress),
+                )
+            });
             kaeso_codecs::openai_responses::for_chatgpt_plan(g);
-            return Ok(DialectId::OpenAiResponses);
+            return Ok(Prepared {
+                dialect: DialectId::OpenAiResponses,
+                output_limit,
+            });
         }
         Request::Embed(_) => ("embeddings", "create embeddings"),
         Request::CountTokens(_) => ("token counting", "count tokens"),
@@ -103,7 +120,9 @@ mod tests {
             "m",
             kaeso_kpp::VideoOperation::Generate,
         ));
-        let err = prepare(&mut video, CHATGPT, "OpenAI").unwrap_err();
+        let Err(err) = prepare(&mut video, CHATGPT, "OpenAI", DialectId::OpenAiChat) else {
+            panic!("a plan serves no videos")
+        };
         assert_eq!(
             err.message,
             "A ChatGPT account can't serve this endpoint. Use an API key for OpenAI in this project instead."
@@ -124,7 +143,9 @@ mod tests {
             "gpt-6-luna",
             kaeso_kpp::DecisionInput::Text("state".into()),
         ));
-        let err = prepare(&mut decide, CHATGPT, "OpenAI").unwrap_err();
+        let Err(err) = prepare(&mut decide, CHATGPT, "OpenAI", DialectId::OpenAiChat) else {
+            panic!("a plan makes no decisions")
+        };
         assert_eq!(
             err.message,
             "A ChatGPT account can't make decisions. Use an API key for OpenAI in this project instead."

@@ -1240,7 +1240,11 @@ fn a_second_tool_call_at_the_same_index_starts_a_block_of_its_own() {
     let text = String::from_utf8(out).unwrap();
     assert!(text.contains("\"id\":\"call_1\""), "{text}");
     assert!(text.contains("\"id\":\"call_2\""), "{text}");
-    assert!(text.contains("{\\\"city\\\":\\\"Oslo\\\"}"), "{text}");
+    assert!(
+        text.contains("\"partial_json\":\"{\\\"city\\\":\"}")
+            && text.contains("\"partial_json\":\"\\\"Oslo\\\"}\"}"),
+        "{text}"
+    );
 }
 
 #[test]

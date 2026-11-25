@@ -288,6 +288,81 @@ async fn a_tool_call_from_the_plan_stops_for_tool_use_in_every_format() {
 }
 
 #[tokio::test]
+async fn a_reply_that_runs_past_the_apps_output_limit_ends_there_in_every_format() {
+    let p = plan().await;
+    p.oauth.reply_with(Reply::EndlessToolCall);
+    let mut streamed = messages("openai/gpt-5", "Weather in Paris?");
+    streamed["max_tokens"] = json!(40);
+    streamed["stream"] = json!(true);
+    let r = p.call("/v1/messages", true, streamed).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.header("kaeso-adapted"), Some("max_tokens"));
+    let events = sse(&r.text());
+    let kinds: Vec<&str> = events.iter().filter_map(|e| e["type"].as_str()).collect();
+    let stopped = kinds.iter().position(|k| *k == "content_block_stop");
+    let delta = kinds.iter().position(|k| *k == "message_delta");
+    assert!(stopped.is_some() && stopped < delta, "{kinds:?}");
+    assert_eq!(kinds.last(), Some(&"message_stop"));
+    let stops: Vec<&str> = events
+        .iter()
+        .filter_map(|e| e["delta"]["stop_reason"].as_str())
+        .collect();
+    assert_eq!(stops, ["max_tokens"]);
+    let args: String = events
+        .iter()
+        .filter_map(|e| e["delta"]["partial_json"].as_str())
+        .collect();
+    assert!(args.starts_with("get_weather get_weather "), "{args}");
+    assert!(
+        events
+            .iter()
+            .filter(|e| e["delta"]["type"] == "input_json_delta")
+            .count()
+            > 1,
+        "the arguments stream as they come"
+    );
+
+    let r = p
+        .call(
+            "/v1/responses",
+            false,
+            json!({ "model": "openai/gpt-5", "input": "Weather in Paris?", "max_output_tokens": 40 }),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.header("kaeso-adapted"), Some("max_output_tokens"));
+    let answer = r.json();
+    assert_eq!(answer["status"], "incomplete", "{answer}");
+    assert_eq!(answer["incomplete_details"]["reason"], "max_output_tokens");
+
+    let mut asked = chat("openai/gpt-5", "Weather in Paris?");
+    asked["max_tokens"] = json!(40);
+    asked["stream"] = json!(true);
+    let r = p.call("/v1/chat/completions", false, asked).await;
+    assert_eq!(r.status, StatusCode::OK);
+    assert_eq!(r.header("kaeso-adapted"), Some("max_tokens"));
+    let events = sse(&r.text());
+    let finished: Vec<&str> = events
+        .iter()
+        .filter_map(|e| e["choices"][0]["finish_reason"].as_str())
+        .collect();
+    assert_eq!(finished, ["length"]);
+
+    common::eventually("the plan's replies are cancelled and logged", || async {
+        p.oauth.endless_open() == 0 && p.capture.all().len() == 3
+    })
+    .await;
+    let logged = p.capture.all();
+    for o in &logged {
+        let usage = o.usage.as_ref().unwrap();
+        assert!(o.usage_estimated, "{o:?}");
+        assert!((40..60).contains(&usage.output_tokens), "{usage:?}");
+        assert_eq!(o.status, 200);
+    }
+    p.services.cleanup().await;
+}
+
+#[tokio::test]
 async fn a_web_search_without_a_stream_answers_with_the_items_openai_would_send() {
     let p = plan().await;
     p.oauth.reply_with(Reply::WebSearch);

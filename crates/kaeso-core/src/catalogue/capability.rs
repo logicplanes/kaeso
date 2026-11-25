@@ -866,7 +866,7 @@ fn fit_output_limit(g: &mut GenerateRequest, ingress: DialectId, eff: &Effective
     }
 }
 
-fn output_param(g: &GenerateRequest, ingress: DialectId) -> &'static str {
+pub fn output_param(g: &GenerateRequest, ingress: DialectId) -> &'static str {
     match ingress {
         DialectId::AnthropicMessages => "max_tokens",
         DialectId::OpenAiResponses => "max_output_tokens",

@@ -944,7 +944,7 @@ fn gemini_frames(text: &str) -> (usize, Vec<Value>) {
 }
 
 #[tokio::test]
-async fn apps_hear_keepalives_while_a_tool_calls_arguments_are_held_back() {
+async fn tool_call_arguments_stream_to_anthropic_apps_and_gemini_apps_hear_keepalives_meanwhile() {
     let env = env(&[("KAESO_STREAMS_KEEPALIVE_INTERVAL", "1s")]).await;
     let r = env
         .app
@@ -985,9 +985,10 @@ async fn apps_hear_keepalives_while_a_tool_calls_arguments_are_held_back() {
                     .position(|f| f.starts_with(&format!("event: {event}\n")))
                     .unwrap_or_else(|| panic!("{model}: no {event} in {text}"))
             };
-            let (start, held) = (at("content_block_start"), at("content_block_delta"));
-            let waiting = frames[start..held].iter().filter(|f| **f == ping).count();
-            assert!(waiting >= 2, "{model}: {text}");
+            assert!(
+                at("content_block_delta") < at("content_block_stop"),
+                "{model}: {text}"
+            );
             let deltas: Vec<Value> = frames
                 .iter()
                 .filter(|f| f.starts_with("event: content_block_delta\n"))
@@ -996,10 +997,18 @@ async fn apps_hear_keepalives_while_a_tool_calls_arguments_are_held_back() {
                         .unwrap()
                 })
                 .collect();
-            assert_eq!(deltas.len(), 1, "{model}: {text}");
-            assert_eq!(deltas[0]["delta"]["type"], "input_json_delta");
-            let sent: Value =
-                serde_json::from_str(deltas[0]["delta"]["partial_json"].as_str().unwrap()).unwrap();
+            assert!(deltas.len() > 1, "{model}: {text}");
+            assert!(
+                deltas
+                    .iter()
+                    .all(|d| d["delta"]["type"] == "input_json_delta"),
+                "{model}: {text}"
+            );
+            let joined: String = deltas
+                .iter()
+                .map(|d| d["delta"]["partial_json"].as_str().unwrap())
+                .collect();
+            let sent: Value = serde_json::from_str(&joined).unwrap();
             assert_eq!(&sent, arguments, "{model}");
             assert!(
                 text.contains("\"stop_reason\":\"tool_use\""),
