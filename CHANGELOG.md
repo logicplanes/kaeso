@@ -4,6 +4,38 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
+## [0.7.2-rc.1] - 2026-11-24
+
+This release is about console speed. The Platform API now gzip-compresses text answers to reads under set conditions, and console pages start loading their data when you point at a link. Large tables, the model picker and the project overview do less work, and overview pages and Analytics shift less while loading. No change is marked as breaking.
+
+**Contributors:** @dvnold
+
+**Full changes:** [v0.7.1...v0.7.2-rc.1](https://github.com/logicplanes/kaeso/compare/v0.7.1...v0.7.2-rc.1)
+
+### Changed
+
+#### Gateway
+
+- The Platform API gzip-compresses text answers (JSON, JSON lines and CSV downloads) to reads (`GET`, `HEAD`) from clients that send `accept-encoding: gzip`. A request with a cookie is compressed only when the browser marks it `same-origin`, as the console's own requests are; a request without a cookie, such as a platform key's, always is, and answers to changes never are. Server-sent events, media, files, ranges, bodies under 32 bytes and anything already encoded go out as they are, and the model API, MCP and the portal are unchanged. An install that serves the console from another origin than the gateway gets no compression for the console. ([#1470](https://github.com/logicplanes/kaeso/pull/1470))
+
+#### Console
+
+- Console pages start loading their data when you point at, focus or touch a link to them, so most open without a skeleton. This covers project tools and settings, organization analytics, MCP servers, providers and projects, and the account, organization and instance settings pages, and the request log's loader now also covers tool calls. The prefetch checks your rights the way the page does and nothing is awaited, so navigation is never held up. `/settings/account` now opens Profile, as the other settings areas do. ([#1501](https://github.com/logicplanes/kaeso/pull/1501))
+- Tables in request logs, tool calls and analytics mount, resize and scroll faster. Cell text no longer measures itself while drawing, and text that fits no longer mounts a tooltip. Cut text is still a tab stop and shows its full text on hover and keyboard focus, and text that fits gets no tooltip and no tab stop. ([#1471](https://github.com/logicplanes/kaeso/pull/1471))
+- The project overview's Latest requests cell asks every five seconds for the 7 requests it shows instead of 100. In a measurement on a seeded install, one poll drops from 114.4 KB to 7.7 KB. Live in the request logs is unchanged. ([#1472](https://github.com/logicplanes/kaeso/pull/1472))
+
+#### UI library
+
+- Request logs, tool calls and analytics breakdowns open faster because `DataTable` now draws only the rows in view above 50 rows by default, down from 100, so a full page of 100 rows no longer draws every row. `virtualizeAbove` still overrides the default, and tables of up to 50 rows render as before. In tables of 51 to 100 rows, find-in-page and printing see only the rows drawn, and analytics breakdowns and tool calls keep their CSV export. ([#1468](https://github.com/logicplanes/kaeso/pull/1468))
+
+### Fixed
+
+#### Console
+
+- Opening a request or a tool call in the log no longer draws every row of the table again. In a measurement on a seeded install at 1440 px, a row click to the sheet showing went from 442 ms to 181 ms. ([#1469](https://github.com/logicplanes/kaeso/pull/1469))
+- The model picker and the request log's Model filter open with far less delay and filter without freezing, also with thousands of models. Lists draw only the rows in view above 40 rows, the picker builds its items once per opening, and the request log builds the model choices only once the Model filter is added. ([#1473](https://github.com/logicplanes/kaeso/pull/1473))
+- The organization and project overviews and Analytics jump less while they load: the release banner, trend lines, the Tool calls tab, metric tab notes and header buttons keep their place. The retiring-models warning, the month's cost split and the spend limit can still move the content below them when their data arrives after the first frame. ([#1474](https://github.com/logicplanes/kaeso/pull/1474))
+
 ## [0.7.1] - 2026-11-24
 
 Kaeso 0.7.1 adds sources, keys that let clients report the calls they make straight to their provider so Kaeso can log and count them as observed requests. MCP servers, existing ones included, now auto-approve detected tool changes by default, and streaming latency and per-chunk CPU are cut; apps written for 0.7.0 can still set and read an MCP server's `change_policy`. The release also carries security fixes and fixes for Gemini apps on Google's Go SDK, OpenRouter-style `reasoning` requests and the installer's settings check, and no change in it is marked as breaking.
@@ -1705,7 +1737,8 @@ The first release of Kaeso, the open-source AI gateway you run yourself: the gat
 
 - A Release workflow that runs only from `prod`: it prepares the version changes and the changelog without write access to the repository, lets only jobs that run nothing but git push the release commit and the tag, syncs the release commit back to `dev`, and pins every action by commit SHA.
 
-[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.7.1...HEAD
+[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.7.2-rc.1...HEAD
+[0.7.2-rc.1]: https://github.com/logicplanes/kaeso/releases/tag/v0.7.2-rc.1
 [0.7.1]: https://github.com/logicplanes/kaeso/releases/tag/v0.7.1
 [0.7.0]: https://github.com/logicplanes/kaeso/releases/tag/v0.7.0
 [0.6.0]: https://github.com/logicplanes/kaeso/releases/tag/v0.6.0
