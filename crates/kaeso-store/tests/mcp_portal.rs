@@ -1287,6 +1287,14 @@ async fn portal_grants_and_tokens_are_bound_to_one_portal() {
     s.cleanup().await;
 }
 
+// Reads leave out rows past their retention, so the rows expire a month from now, not from their
+// fixed start, which has long passed.
+fn kept_until() -> OffsetDateTime {
+    (OffsetDateTime::now_utc() + Duration::days(30))
+        .replace_nanosecond(0)
+        .unwrap()
+}
+
 #[tokio::test]
 async fn tool_calls_are_logged_and_deleted_with_the_request_log() {
     let s = TestServices::start().await;
@@ -1316,7 +1324,7 @@ async fn tool_calls_are_logged_and_deleted_with_the_request_log() {
         request_bytes: 64,
         response_bytes: 512,
         has_content: true,
-        expires_at: at(0) + Duration::days(30),
+        expires_at: kept_until(),
         source_id: Uuid::nil(),
         server_name: String::new(),
     };
@@ -1337,7 +1345,7 @@ async fn tool_calls_are_logged_and_deleted_with_the_request_log() {
         started_at: at(0),
         arguments: r#"{"text":"hi"}"#.to_owned(),
         result: r#"{"content":[]}"#.to_owned(),
-        expires_at: at(0) + Duration::days(30),
+        expires_at: kept_until(),
     };
     tool_calls::insert_contents(&s.clickhouse, [&content])
         .await
