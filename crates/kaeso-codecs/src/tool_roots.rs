@@ -59,6 +59,10 @@ const UNLISTED_EVALUATION: [&str; 5] = [
 ];
 const MAX_VARIANTS: usize = 64;
 const MAX_DEPTH: usize = 32;
+// The schemas one merge may expand, counting every `$ref` it follows, even to a definition it
+// expanded before. Depth and variants alone don't bound the work: definitions that each refer
+// to the next many times expand exponentially.
+const MAX_STEPS: usize = 4096;
 
 #[derive(Deserialize)]
 struct RootKeys<'a> {
@@ -239,6 +243,7 @@ enum Fault {
     NoVariants,
     Moved(String),
     TooMany,
+    TooComplex,
 }
 
 impl Fault {
@@ -268,6 +273,9 @@ impl Fault {
             Fault::TooMany => format!(
                 "The parameters of `{tool}` combine into more than {MAX_VARIANTS} variants, too many to merge into one object for {provider}. Simplify the root union."
             ),
+            Fault::TooComplex => format!(
+                "The parameters of `{tool}` refer to their definitions too often to merge into one object for {provider}. Inline the definitions or simplify the root union."
+            ),
         };
         KppError::unsupported("union at the root of a tool schema", message).with_param(path)
     }
@@ -291,7 +299,7 @@ fn merge(root: &Map<String, Value>) -> Result<Merged, Fault> {
     if root.values().any(|v| has_key(v, "$id")) {
         return Err(Fault::Conflict("$id".to_owned()));
     }
-    let doc = Doc(root);
+    let doc = Doc::new(root);
     let variants = doc.object_variants(root, 0)?;
     if variants.is_empty() {
         return Err(Fault::NoVariants);
@@ -366,7 +374,14 @@ fn same_target(original: &Value, merged: &Value, reference: &str) -> bool {
     }
 }
 
-struct Doc<'a>(&'a Map<String, Value>);
+struct Doc<'a> {
+    root: &'a Map<String, Value>,
+    // The schemas expanded so far, against `MAX_STEPS`.
+    steps: std::cell::Cell<usize>,
+    // The variants of each definition a `$ref` reached, by the definition's address in the
+    // root, so a definition many references name is expanded once.
+    expanded: std::cell::RefCell<std::collections::HashMap<*const Value, Vec<Map<String, Value>>>>,
+}
 
 #[derive(PartialEq)]
 enum JsonSchemaDraft {
@@ -376,9 +391,41 @@ enum JsonSchemaDraft {
 }
 
 impl<'a> Doc<'a> {
+    fn new(root: &'a Map<String, Value>) -> Self {
+        Doc {
+            root,
+            steps: std::cell::Cell::new(0),
+            expanded: std::cell::RefCell::new(std::collections::HashMap::new()),
+        }
+    }
+
+    fn step(&self) -> Result<(), Fault> {
+        let steps = self.steps.get() + 1;
+        self.steps.set(steps);
+        if steps > MAX_STEPS {
+            return Err(Fault::TooComplex);
+        }
+        Ok(())
+    }
+
+    // The variants of the definition `reference` names: expanded once, then remembered. A
+    // definition still being expanded is not remembered yet, so a cycle still ends at
+    // `MAX_DEPTH`, and every step counts against `MAX_STEPS`.
+    fn referred(&self, reference: &str, depth: usize) -> Result<Vec<Map<String, Value>>, Fault> {
+        let target = self.lookup(reference)?;
+        let key: *const Value = target;
+        if let Some(known) = self.expanded.borrow().get(&key) {
+            self.step()?;
+            return Ok(known.clone());
+        }
+        let variants = self.variants(target, depth)?;
+        self.expanded.borrow_mut().insert(key, variants.clone());
+        Ok(variants)
+    }
+
     fn draft(&self) -> JsonSchemaDraft {
         let dialect = self
-            .0
+            .root
             .get("$schema")
             .and_then(Value::as_str)
             .unwrap_or_default();
@@ -407,7 +454,7 @@ impl<'a> Doc<'a> {
             return Err(unresolved());
         }
         let name = name.replace("~1", "/").replace("~0", "~");
-        self.0
+        self.root
             .get(defs)
             .and_then(|d| d.get(&name))
             .ok_or_else(unresolved)
@@ -468,6 +515,7 @@ impl<'a> Doc<'a> {
         if depth > MAX_DEPTH {
             return Err(Fault::Circular);
         }
+        self.step()?;
         match v {
             Value::Object(m) => self.object_variants(m, depth),
             Value::Bool(true) => Ok(vec![Map::new()]),
@@ -489,8 +537,7 @@ impl<'a> Doc<'a> {
             match self.draft() {
                 JsonSchemaDraft::From2019 => {}
                 JsonSchemaDraft::UpTo7 => {
-                    let target = self.lookup(reference.as_str().unwrap_or_default())?;
-                    return self.variants(target, depth + 1);
+                    return self.referred(reference.as_str().unwrap_or_default(), depth + 1);
                 }
                 JsonSchemaDraft::Unknown => return Err(Fault::RefSiblings),
             }
@@ -513,8 +560,8 @@ impl<'a> Doc<'a> {
             .collect();
         let mut out = vec![own];
         if let Some(reference) = m.get("$ref") {
-            let target = self.lookup(reference.as_str().unwrap_or_default())?;
-            out = product(&out, &self.variants(target, depth + 1)?)?;
+            let referred = self.referred(reference.as_str().unwrap_or_default(), depth + 1)?;
+            out = product(&out, &referred)?;
         }
         if let Some(parts) = m.get("allOf") {
             for part in parts.as_array().ok_or(Fault::NotObject)? {
