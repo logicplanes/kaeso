@@ -44,6 +44,8 @@ Viele Anbieter, deren eigenes Format Chat Completions ist, bedienen auch Message
 
 Die Messages-Endpunkte von Baseten und Standard Compute sind nicht nativ: Sie verwerfen Thinking, das ihre Chat Completions behalten. Die Messages-API von SpaceX ist veraltet, und Venice und Perplexity bedienen Messages nur für andere Produkte, daher steht keiner von ihnen hier. Alle Seiten wurden am 2026-11-25 gelesen.
 
+Die Messages-API von QwenCloud beantwortet Fehler mit dem Body von DashScope, `{"request_id", "code", "message"}`, und einen abgelehnten Stream mit diesem Body als Frame `event:error`. Der Decoder liest beide nach ihrem Code, wie bei Chat Completions: `InvalidApiKey` ist ein abgelehnter Schlüssel, `Throttling…` ein Ratenlimit, `DataInspection…` ein Inhaltsfilter, `AllocationQuota…`, `Arrearage…` und ein `AccessDenied` für ein aufgebrauchtes Freikontingent eine Ablehnung wegen Abrechnung (`fixtures/anthropic_messages/providers/alibaba/errors/`).
+
 | Anbieter | Einstellungen | Quellen |
 |---|---|---|
 | Amazon Bedrock (`amazon-bedrock`) | lehnt `mcp_servers` und `container` ab | Anthropics Seite [Claude on Amazon Bedrock](https://platform.claude.com/docs/en/build-with-claude/claude-on-amazon-bedrock-legacy) zu bedrock-runtime, gelesen am 2026-11-14, die den MCP-Connector und Agent Skills als nicht unterstützt nennt |

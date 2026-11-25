@@ -44,6 +44,8 @@ The gateway's `pipeline::native_egress` sends a generation in the app's own dial
 
 Baseten's and Standard Compute's Messages endpoints aren't native: they drop thinking, which their Chat Completions keeps. SpaceX's Messages API is deprecated, and Venice and Perplexity serve Messages only for other products, so none of them is listed. All pages were read on 2026-11-25.
 
+QwenCloud's Messages API answers errors with DashScope's body, `{"request_id", "code", "message"}`, and a refused stream with that body as an `event:error` frame. The decoder reads both by their code, as for Chat Completions: `InvalidApiKey` is a refused key, `Throttling…` a rate limit, `DataInspection…` a content filter, `AllocationQuota…`, `Arrearage…` and an `AccessDenied` for a spent free quota a billing refusal (`fixtures/anthropic_messages/providers/alibaba/errors/`).
+
 | Provider | Settings | Sources |
 |---|---|---|
 | Amazon Bedrock (`amazon-bedrock`) | refuses `mcp_servers` and `container` | Anthropic's [Claude on Amazon Bedrock](https://platform.claude.com/docs/en/build-with-claude/claude-on-amazon-bedrock-legacy) page for bedrock-runtime, read 2026-11-14, which lists the MCP connector and Agent Skills as not supported |

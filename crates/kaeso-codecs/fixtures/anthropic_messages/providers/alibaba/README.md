@@ -8,6 +8,7 @@ No key was available. The fixtures are built from the [Anthropic Messages API](h
 |---|---|---|
 | `requests/who-are-you.json`, `responses/who-are-you.json` | the reference's request example and 200 example: a `thinking` block with an empty `signature`, then the text | doc |
 | `requests/thinking-stream.json`, `streams/thinking-stream.sse` | the reference's thinking curl example (`budget_tokens: 1024`, streamed); `message_start` usage with only `input_tokens` and `output_tokens`, the cache counts first on `message_delta`; the `thinking` block ends with an empty `signature_delta` | doc (request, event rules); the stream itself is constructed from the `AnthropicStreamEvent` and `AnthropicUsage` descriptions |
+| `errors/recorded-free-tier-exhausted.json` | 403 with DashScope's body, `{"request_id", "code": "AccessDenied", "message"}`, for a key whose free quota is spent; Kaeso reads it as a billing refusal with QwenCloud's message, as it reads `AllocationQuota.FreeTierOnly` from Chat Completions. A refused stream answers the same body as an `event:error` frame | live, from a live install's request log, 2026-11-25; request id replaced with zeros |
 
 Documented differences from Anthropic:
 

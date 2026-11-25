@@ -44,6 +44,8 @@ nav: Messages 服务商
 
 Baseten 和 Standard Compute 的 Messages 端点不算原生：它们会丢弃思考内容，而它们的 Chat Completions 会保留。SpaceX 的 Messages API 已弃用，Venice 和 Perplexity 只为其他产品提供 Messages，因此它们都未列出。所有页面均于 2026-11-25 阅读。
 
+QwenCloud 的 Messages API 以 DashScope 的错误体 `{"request_id", "code", "message"}` 返回错误，被拒绝的流则以 `event:error` 帧携带同一错误体。解码器按错误码读取两者，与 Chat Completions 相同：`InvalidApiKey` 为密钥被拒，`Throttling…` 为速率限制，`DataInspection…` 为内容过滤，`AllocationQuota…`、`Arrearage…` 以及免费额度用尽时的 `AccessDenied` 为计费拒绝（`fixtures/anthropic_messages/providers/alibaba/errors/`）。
+
 | 服务商 | 设置 | 来源 |
 |---|---|---|
 | Amazon Bedrock（`amazon-bedrock`） | 拒绝 `mcp_servers` 和 `container` | Anthropic 关于 bedrock-runtime 的 [Claude on Amazon Bedrock](https://platform.claude.com/docs/en/build-with-claude/claude-on-amazon-bedrock-legacy) 页面，2026-11-14 阅读，其中列出 MCP 连接器和 Agent Skills 不受支持 |

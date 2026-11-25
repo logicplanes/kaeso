@@ -100,6 +100,7 @@ pub(crate) fn decode_stream_error(data: &str) -> KppError {
 
 fn decode_body(body: &[u8], status: Option<u16>) -> KppError {
     let origin = Origin::new(D);
+    let body = sse_data(body);
     let raw: Option<Value> = serde_json::from_slice(body).ok();
     let parsed = Ext::<ErrorResponseW>::from_slice(body)
         .ok()
@@ -135,6 +136,13 @@ fn decode_body(body: &[u8], status: Option<u16>) -> KppError {
                 let kind = status.map_or(ErrorKind::ProviderError, kind_for_status);
                 let mut err = KppError::new(kind, message).with_origin(origin);
                 err.raw = raw;
+                return err;
+            }
+            if let Some((code, message)) = dashscope_shaped(raw.as_ref()) {
+                let kind = dashscope_kind(code, message)
+                    .unwrap_or_else(|| status.map_or(ErrorKind::ProviderError, kind_for_status));
+                let mut err = KppError::new(kind, message.to_owned()).with_origin(origin);
+                err.raw = raw.clone();
                 return err;
             }
             if let Some((ty, message)) =
@@ -176,6 +184,52 @@ fn openai_shaped(raw: Option<&Value>) -> Option<(String, &str)> {
         .and_then(Value::as_str)
         .unwrap_or_default();
     Some((ty.to_owned(), message))
+}
+
+// An error answered as a server-sent event, as QwenCloud's Messages API answers a refused stream
+// (`event:error` then `data:{…}`): the data of its last frame.
+fn sse_data(body: &[u8]) -> &[u8] {
+    let Ok(text) = std::str::from_utf8(body) else {
+        return body;
+    };
+    let trimmed = text.trim_start();
+    if !(trimmed.starts_with("event:") || trimmed.starts_with("data:")) {
+        return body;
+    }
+    text.lines()
+        .filter_map(|l| l.strip_prefix("data:"))
+        .map(str::trim)
+        .rfind(|d| !d.is_empty())
+        .map_or(body, str::as_bytes)
+}
+
+// QwenCloud's Messages API answers with DashScope's error body, `{"request_id", "code",
+// "message"}`, not Anthropic's (a refused key on a live install, 2026-11-25).
+fn dashscope_shaped(raw: Option<&Value>) -> Option<(&str, &str)> {
+    let raw = raw?.as_object()?;
+    if raw.contains_key("error") || raw.contains_key("type") {
+        return None;
+    }
+    let code = raw.get("code")?.as_str().filter(|c| !c.is_empty())?;
+    let message = raw.get("message")?.as_str().filter(|m| !m.is_empty())?;
+    Some((code, message))
+}
+
+// DashScope's codes, as Kaeso reads them from its Chat Completions errors: a spent free tier
+// comes as `AccessDenied` with that message here, as `AllocationQuota.FreeTierOnly` there.
+fn dashscope_kind(code: &str, message: &str) -> Option<ErrorKind> {
+    match code {
+        "InvalidApiKey" => Some(ErrorKind::Authentication),
+        c if c.starts_with("Throttling") => Some(ErrorKind::RateLimited),
+        c if c.starts_with("DataInspection") => Some(ErrorKind::ContentFiltered),
+        c if c.starts_with("AllocationQuota") || c.starts_with("Arrearage") => {
+            Some(ErrorKind::Billing)
+        }
+        "AccessDenied" if message.contains("free quota has been exhausted") => {
+            Some(ErrorKind::Billing)
+        }
+        _ => None,
+    }
 }
 
 // Z.ai answers a path it doesn't serve, `/v1/models` among them, with HTTP 200 and its platform's
