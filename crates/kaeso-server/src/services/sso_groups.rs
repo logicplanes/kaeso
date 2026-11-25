@@ -9,7 +9,7 @@ use std::collections::BTreeMap;
 use kaeso_core::id::{OrgId, ProjectId, UserId};
 use kaeso_store::pg::members::{self, Grant};
 use kaeso_store::pg::sso_groups::{self as store, Rule};
-use kaeso_store::pg::{key_lifecycle, limits};
+use kaeso_store::pg::{key_lifecycle, limits, roles};
 use serde_json::{Value, json};
 use time::OffsetDateTime;
 use uuid::Uuid;
@@ -195,6 +195,13 @@ pub async fn apply(
                 ));
             }
         }
+    }
+    // No foreign key clears a deleted custom role from a rule's projects. Such a project gives
+    // nothing but still goes before later rules, which the role's deletion must not promote.
+    if wanted.values().any(|(_, role_id, _)| role_id.is_some()) {
+        let roles = roles::list(&mut *tx, org).await?;
+        wanted
+            .retain(|_, (_, role_id, _)| role_id.is_none_or(|id| roles.iter().any(|r| r.id == id)));
     }
     let current = store::project_memberships(&mut *tx, org, user).await?;
     for (project, (preset, role_id, value)) in &wanted {

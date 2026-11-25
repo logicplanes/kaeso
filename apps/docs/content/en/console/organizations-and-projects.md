@@ -87,7 +87,7 @@ Under **Security** › **Provisioning**, **Create token** lets your identity pro
 Under **Security** › **Single sign-on** › **Groups**, rules give the people who sign in through your provider an organization role and project memberships from their groups. This needs the **Manage SSO** right and a console session with a recent sign-in.
 
 - **Groups claim** names the ID token claim that lists the person's groups, `groups` by default. **Extra scopes** are scopes Kaeso asks for besides `openid email profile`, such as `groups` for providers that send the claim only on request.
-- Each rule names a group's value, compared exactly, with an optional organization role and projects with a role each. Up to 200 rules. The first matching rule sets the organization role; without a match the role people join with applies. Every matching rule adds its projects.
+- Each rule names a group's value, compared exactly, with an optional organization role and projects with a role each. Up to 200 rules. The first matching rule sets the organization role; without a match the role people join with applies. Every matching rule adds its projects. A project whose custom role was deleted since gives nothing until you change the rule.
 - A rule can't make anyone an owner, and an owner is never changed by one. A rule gives only roles whose rights you hold.
 - **Add only** never takes anything away. **Keep in sync** also takes away what a rule gave once no rule gives it: the role goes back to the one people join with, and a project membership ends, with the person's keys in that project archived. What an admin gave by hand always stays.
 

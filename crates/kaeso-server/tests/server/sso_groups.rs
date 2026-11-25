@@ -436,3 +436,64 @@ async fn rules_need_a_connection() {
     assert_eq!(r.body["mode"], "add");
     s.cleanup().await;
 }
+
+#[tokio::test]
+async fn a_deleted_custom_role_in_a_rule_gives_nothing_and_sign_ins_go_on() {
+    let t = setup("sync").await;
+    let (app, owner, idp) = (&t.app, &t.owner, &t.idp);
+    let custom = app
+        .post(
+            &format!("/orgs/{}/roles", owner.org_id),
+            json!({ "scope": "project", "name": "Reader", "rights": ["project.view"] }),
+            Some(&owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::CREATED)
+        .body["id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let r = rules(
+        app,
+        owner,
+        json!({ "mode": "sync", "rules": [
+            { "group": "readers", "role": "developer", "projects": [
+                { "project": t.mapped, "role": custom },
+                { "project": t.by_hand, "role": "viewer" }
+            ] },
+            { "group": "everyone", "projects": [{ "project": t.mapped, "role": "developer" }] }
+        ] }),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+
+    idp.set_groups("gus@acme.example", Some(&["everyone"]));
+    let (_, gus) = sign_in(app, idp, "gus@acme.example").await;
+    assert_eq!(
+        in_project(app, owner, &t.mapped, &gus).await.as_deref(),
+        Some("developer")
+    );
+
+    let r = app
+        .call(
+            Method::DELETE,
+            &format!("/orgs/{}/roles/{custom}", owner.org_id),
+            None,
+            Some(&owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::NO_CONTENT, "{:?}", r.body);
+
+    idp.set_groups("gus@acme.example", Some(&["readers", "everyone"]));
+    let (_, gus) = sign_in(app, idp, "gus@acme.example").await;
+    assert_eq!(role(app, owner, &gus).await, "developer");
+    assert_eq!(
+        in_project(app, owner, &t.by_hand, &gus).await.as_deref(),
+        Some("viewer")
+    );
+    assert_eq!(
+        in_project(app, owner, &t.mapped, &gus).await,
+        None,
+        "the first rule for the project still decides, and its role is gone"
+    );
+}
