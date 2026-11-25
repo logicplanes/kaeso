@@ -4,19 +4,20 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
-## [0.7.2-rc.1] - 2026-11-24
+## [0.7.2] - 2026-11-25
 
-This release is about console speed. The Platform API now gzip-compresses text answers to reads under set conditions, and console pages start loading their data when you point at a link. Large tables, the model picker and the project overview do less work, and overview pages and Analytics shift less while loading. No change is marked as breaking.
+Kaeso 0.7.2 is mostly about console speed, lower gateway memory and a long list of fixes. Console pages prefetch their data, large tables and the model picker do less work, and the Platform API gzip-compresses text answers to reads under set conditions. Open streams and the request log buffer hold less memory, and several security fixes tighten guardrails, limits, sign-in and the updater's release check. No change is marked as breaking.
 
 **Contributors:** @dvnold
 
-**Full changes:** [v0.7.1...v0.7.2-rc.1](https://github.com/logicplanes/kaeso/compare/v0.7.1...v0.7.2-rc.1)
+**Full changes:** [v0.7.1...v0.7.2](https://github.com/logicplanes/kaeso/compare/v0.7.1...v0.7.2)
 
 ### Changed
 
 #### Gateway
 
 - The Platform API gzip-compresses text answers (JSON, JSON lines and CSV downloads) to reads (`GET`, `HEAD`) from clients that send `accept-encoding: gzip`. A request with a cookie is compressed only when the browser marks it `same-origin`, as the console's own requests are; a request without a cookie, such as a platform key's, always is, and answers to changes never are. Server-sent events, media, files, ranges, bodies under 32 bytes and anything already encoded go out as they are, and the model API, MCP and the portal are unchanged. An install that serves the console from another origin than the gateway gets no compression for the console. ([#1470](https://github.com/logicplanes/kaeso/pull/1470))
+- An open stream takes about a third less of the gateway's memory: the state of the work that ends a stream is now allocated only when the stream ends. In the pull request's measurements on a development machine, memory per open stream fell from about 151 KiB to about 105 KiB at 5,000 streams, and time to first byte and chunk gap stayed within the spread between runs. The same code runs in the same order. ([#1500](https://github.com/logicplanes/kaeso/pull/1500))
 
 #### Console
 
@@ -26,15 +27,55 @@ This release is about console speed. The Platform API now gzip-compresses text a
 
 #### UI library
 
-- Request logs, tool calls and analytics breakdowns open faster because `DataTable` now draws only the rows in view above 50 rows by default, down from 100, so a full page of 100 rows no longer draws every row. `virtualizeAbove` still overrides the default, and tables of up to 50 rows render as before. In tables of 51 to 100 rows, find-in-page and printing see only the rows drawn, and analytics breakdowns and tool calls keep their CSV export. ([#1468](https://github.com/logicplanes/kaeso/pull/1468))
+- `DataTable` now draws only the rows in view above 50 rows by default, down from 100, so request logs, tool calls and analytics breakdowns open faster. `virtualizeAbove` still overrides the default, and tables of up to 50 rows render as before. In tables of 51 to 100 rows, find-in-page and printing see only the rows drawn, and analytics breakdowns and tool calls keep their CSV export. ([#1468](https://github.com/logicplanes/kaeso/pull/1468))
 
 ### Fixed
+
+- Two MCP servers of an organization can no longer expose a tool under the same name in the portal. A server handle that ends in a hyphen or holds two in a row now keeps its hyphens in the tool names, for example `a-__x` instead of `a___x`. Every other handle is unchanged, and only servers created through the API with such a handle see their tools renamed, since the console already refuses them. ([#1480](https://github.com/logicplanes/kaeso/pull/1480))
+- A single sign-on group rule that gives a since-deleted custom role in a project no longer makes the sign-ins it matches fail. The rule gives nothing in that project and the sign-in goes on with everything else the rules give. Saving group rules still refuses a rule that names a deleted role. ([#1486](https://github.com/logicplanes/kaeso/pull/1486))
+- An OpenAI Responses request or reply with a field name that is empty, contains a dot or starts with `header:`, `@` or `~` keeps that field and its other unknown fields, such as `store` and `prompt_cache_key`. Before, one such key removed itself and every other unknown field of its object. The key is still never sent as a header, and other dialects still refuse it as an extras field. ([#1493](https://github.com/logicplanes/kaeso/pull/1493))
+- An OpenAI Chat Completions tool call whose `type` is neither `function` nor `custom` stays in `tool_calls`: a reply no longer loses it while `finish_reason` stays `tool_calls`, and a request no longer sends it inside the assistant message's `content`. The stream codec was not affected. ([#1497](https://github.com/logicplanes/kaeso/pull/1497))
+
+#### Gateway
+
+- An amount too large to convert between currencies, such as a spend budget near the largest decimal value in an organization that counts in euros, is refused with the limit's normal message instead of aborting the request. ([#1475](https://github.com/logicplanes/kaeso/pull/1475))
+- The top-level object of a body sent to `POST /mcp` or `POST /mcp/{project}`, and of a message an upstream MCP server answers with, is read in time linear in its member count. A body within the default 1 MiB limit with about 100,000 distinct member names took about 8 seconds of CPU in a release build before. Duplicate member names are refused as before. ([#1477](https://github.com/logicplanes/kaeso/pull/1477))
+- Guardrails find a card number followed by its security code, a card after a digit, and an IBAN followed by a word in capitals; before, such values were neither masked, blocked nor counted. Still not found, as before: an IBAN directly followed by a group of digits, a 13-digit card printed in groups next to other digits, and the second of two grouped cards in a row. ([#1479](https://github.com/logicplanes/kaeso/pull/1479))
+- The `batches` and `webhooks` background jobs no longer share one lock, so a running `batches` job no longer makes every `webhooks` run (every 5 seconds) skip, and a `batches` run is no longer skipped when it meets a `webhooks` run. During a rolling upgrade, an instance on the old release and one on this release can run `batches` at the same moment; the pull request did not check whether that is safe. ([#1485](https://github.com/logicplanes/kaeso/pull/1485))
+- A realtime session whose app or provider stops reading its socket now ends as idle after the idle timeout and is written to the request log and billed. Before, a blocked write could keep the session open, hold its limit reservation and leave it unlogged. Closing messages get five seconds. ([#1496](https://github.com/logicplanes/kaeso/pull/1496))
+- Request log rows that wait for ClickHouse hold no more memory than `logs.buffer_size` allows. In the pull request's test, a full 1 MiB buffer held 3,831,344 bytes before and about 1.07 to 1.08 million bytes after. The buffer now drops its oldest rows at the memory `logs.buffer_size` names instead of far beyond it. ([#1503](https://github.com/logicplanes/kaeso/pull/1503))
+
+#### KPP
+
+- A Gemini request with many function calls is decoded in time linear in its size. A 9 MB body with 80,000 calls took about 14 s of CPU before and about 0.35 s now. The order in which responses are matched to calls is unchanged. ([#1484](https://github.com/logicplanes/kaeso/pull/1484))
+- A Bedrock `ConverseStream` reply keeps the events that arrived before a damaged message, however the transport split the bytes, and the error follows them. Before, a chunk holding complete messages and then a malformed one returned only the error. A 3.5 MB chunk of small messages is also read in about 16 ms instead of about 1.4 s. ([#1488](https://github.com/logicplanes/kaeso/pull/1488))
+- ElevenLabs' streamed speech with timestamps is read in time linear in its size. One 32 MiB line in 16 KiB chunks took 12.3 s before and takes 21 ms now. The events are the same as before. ([#1494](https://github.com/logicplanes/kaeso/pull/1494))
+- A streamed OpenAI Chat Completions tool call keeps its `index` when it follows a tool call of an unknown type or one at a higher index, so two calls are no longer written at the same index and merged into one slot by clients. ([#1499](https://github.com/logicplanes/kaeso/pull/1499))
 
 #### Console
 
 - Opening a request or a tool call in the log no longer draws every row of the table again. In a measurement on a seeded install at 1440 px, a row click to the sheet showing went from 442 ms to 181 ms. ([#1469](https://github.com/logicplanes/kaeso/pull/1469))
 - The model picker and the request log's Model filter open with far less delay and filter without freezing, also with thousands of models. Lists draw only the rows in view above 40 rows, the picker builds its items once per opening, and the request log builds the model choices only once the Model filter is added. ([#1473](https://github.com/logicplanes/kaeso/pull/1473))
 - The organization and project overviews and Analytics jump less while they load: the release banner, trend lines, the Tool calls tab, metric tab notes and header buttons keep their place. The retiring-models warning, the month's cost split and the spend limit can still move the content below them when their data arrives after the first frame. ([#1474](https://github.com/logicplanes/kaeso/pull/1474))
+- The console shows exchange-rate days and model release dates as the gateway sent them, instead of the day before for people whose time zone is west of UTC. This covers the rates note under converted costs, the exchange-rate hint under a model price, the instance's exchange-rate settings and "Released" on new-model cards and the overview's list of more models. ([#1487](https://github.com/logicplanes/kaeso/pull/1487))
+- The playground's Markdown export writes where a box answer is in German and Simplified Chinese too, not only in English. ([#1498](https://github.com/logicplanes/kaeso/pull/1498))
+
+### Security
+
+- A guardrail rule that blocks or masks a value still acts when a longer value of another rule overlaps it, such as a secret followed by `@host` that an email rule also finds. A blocking find always counts, and a masking find is added when it overlaps no kept masking or blocking find. Finds that were kept before stay as they were, and the built-in rules guide says so. ([#1478](https://github.com/logicplanes/kaeso/pull/1478))
+- Sign-in and password reset links sent to an address stop working once the identity provider of the managing organization moves the account to another address; before, they worked until they expired 15 minutes after being sent. ([#1492](https://github.com/logicplanes/kaeso/pull/1492))
+
+#### Gateway
+
+- A video's file link sends the provider's key only when the link's scheme, host and port match the provider's base URL. A link that differs, such as `http` for an `https` provider, is fetched without the key and with a guard that refuses plain HTTP to public addresses. A provider reached over plain `http` on an allowed network still gets its key for `http` links on its own host and port. ([#1481](https://github.com/logicplanes/kaeso/pull/1481))
+- The error for a wrongly written `otel.headers` pair names the pair by its position and no longer quotes it, so a token in a pair written with a colon is not repeated in the startup error or the logs. ([#1482](https://github.com/logicplanes/kaeso/pull/1482))
+- An agent that creates a shared link can share only the usage, costs and member names its own grant lets it see; before, the content was decided from the rights of the person behind the agent. Names the grant hides are stored as `hide_members` and `hide_keys` on the link. Links made in a console session are unchanged. ([#1483](https://github.com/logicplanes/kaeso/pull/1483))
+- Requiring single sign-on now also refuses, for the accounts the organization manages, a password or sign-in link sign-in that waits for its TOTP code and a signup link sent before, answering that the organization requires single sign-on. The challenge of a link from `kaeso user sign-in-link` keeps working, as that link itself does. ([#1489](https://github.com/logicplanes/kaeso/pull/1489))
+- Rate, token and spend limits count a request that moved on from a plan to an API key of the same pool, such as a ChatGPT plan that gives way for a media request. Before, that request counted against no limit. ([#1495](https://github.com/logicplanes/kaeso/pull/1495))
+
+#### Self-hosting
+
+- The updater refuses a release whose transparency log entry names a time or body the log didn't sign, when a bundle carries a field under both its camelCase and snake_case names. All checks now run on the bundle as it was parsed. The pull request states that forging a release still needs a leaked signing key and that no release is known to be affected. ([#1476](https://github.com/logicplanes/kaeso/pull/1476))
 
 ## [0.7.1] - 2026-11-24
 
@@ -1737,8 +1778,8 @@ The first release of Kaeso, the open-source AI gateway you run yourself: the gat
 
 - A Release workflow that runs only from `prod`: it prepares the version changes and the changelog without write access to the repository, lets only jobs that run nothing but git push the release commit and the tag, syncs the release commit back to `dev`, and pins every action by commit SHA.
 
-[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.7.2-rc.1...HEAD
-[0.7.2-rc.1]: https://github.com/logicplanes/kaeso/releases/tag/v0.7.2-rc.1
+[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.7.2...HEAD
+[0.7.2]: https://github.com/logicplanes/kaeso/releases/tag/v0.7.2
 [0.7.1]: https://github.com/logicplanes/kaeso/releases/tag/v0.7.1
 [0.7.0]: https://github.com/logicplanes/kaeso/releases/tag/v0.7.0
 [0.6.0]: https://github.com/logicplanes/kaeso/releases/tag/v0.6.0

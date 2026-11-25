@@ -6,7 +6,7 @@ This crate holds the KPP types and the rules that need no wire format: `validate
 
 ```toml
 [dependencies]
-kaeso-kpp = "0.7.2-rc.1"
+kaeso-kpp = "0.7"
 ```
 
 ```rust
