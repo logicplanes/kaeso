@@ -501,6 +501,15 @@ describe("single sign-on for instance admins", () => {
 });
 
 describe("exchange rates", () => {
+  it("shows the day of the latest rates as the gateway has it, west of UTC too", async () => {
+    signedIn({ session: whoAmI({ timezone: "America/Los_Angeles" }) });
+    settingsApi();
+    await renderApp(PATH);
+
+    await screen.findByRole("switch", { name: "Fetch exchange rates" });
+    expect(screen.getByText("13 Nov 2026")).toBeInTheDocument();
+  });
+
   it("shows the day of the latest rates and turns the daily fetch off", async () => {
     signedIn();
     settingsApi();
