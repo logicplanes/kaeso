@@ -21,10 +21,35 @@ Jeder Anbieter in `PROVIDERS` nennt in seinem Feld `messages` ein `kaeso_codecs:
 
 Ablehnungen geschehen, während die Anfrage für das Ziel angepasst wird, vor dem Kodieren; daher wird nichts gesendet, und die Ablehnung erreicht die App in ihrem eigenen Format.
 
+## Native Messages-APIs
+
+Viele Anbieter, deren eigenes Format Chat Completions ist, bedienen auch Messages, als Anthropics Format für Claude Code und andere Anthropic-Apps. `Provider::native` führt sie als Einträge vom Typ `NativeDialect`: den Dialekt, seine API-Wurzel, wenn sie nicht die des Anbieters ist (`at("/anthropic/v1")` für DeepSeek, Moonshot und DeepInfra; `from_host_root(…)`, wenn die Wurzel am Host beginnt statt unter dem Pfad der Basis-URL, wie QwenClouds `/apps/anthropic/v1` neben `/compatible-mode/v1` und Qianfans `/anthropic/v1` neben `/v2`), seinen Auth-Header, wenn er abweicht, die Modelle, die er bedient (`for_models(&["kimi-k3*"])`; leer für alle), und ob seine Token-Zählung dort antwortet (`counting_tokens()`). Jeder Eintrag steht auch in den `dialects` des Anbieters, daher kann der Wert **Sendet als** eines Modells ihn nennen.
+
+`pipeline::native_egress` im Gateway sendet eine Generierung im eigenen Dialekt der App, wenn der Anbieter ihn für das Modell führt und der Katalogeintrag des Modells keinen Egress-Dialekt nennt; eine Token-Zählung nur dort, wo der Eintrag Token zählt. Der Egress-Dialekt von KPMR oder der Organisation gewinnt immer, was ein Modell bei der Übersetzung hält. Die Anfrage wird trotzdem nach KPP dekodiert und wieder kodiert, daher gilt das Profil des Anbieters wie für jede App, und `kaeso-left-out` nennt, was es auslässt.
+
+| Anbieter | Native Messages-API | Modelle | Token-Zählung | Quellen |
+|---|---|---|---|---|
+| DeepSeek (`deepseek`) | `/anthropic/v1/messages` | jedes Modell | — | [Anthropic API](https://api-docs.deepseek.com/guides/anthropic_api), [Messages API](https://api-docs.deepseek.com/api/create-message.md) |
+| Moonshot (`moonshotai`) | `/anthropic/v1/messages` | `kimi-k3*` | — | [Messages](https://platform.kimi.ai/docs/api/messages.md) |
+| QwenCloud (`alibaba`) | `/apps/anthropic/v1/messages` des Hosts | `qwen*` | — | [Anthropic Messages API](https://docs.qwencloud.com/api-reference/chat/anthropic.md) |
+| Baidu Qianfan (`qianfan`) | `/anthropic/v1/messages` des Hosts | jedes Chat-Modell | — | [Anthropic-Kompatibilität](https://cloud.baidu.com/doc/qianfan-docs/s/6mh3e6gjp) |
+| DeepInfra (`deepinfra`) | `/anthropic/v1/messages` | jedes Chat-Modell | `/anthropic/v1/messages/count_tokens` | [Anthropic](https://docs.deepinfra.com/integrations/anthropic) |
+| OpenRouter (`openrouter`) | `/api/v1/messages` | jedes Modell | — | [Nachricht erstellen](https://openrouter.ai/docs/api/api-reference/anthropic-messages/create-a-message.md) |
+| Hugging Face (`huggingface`) | `/v1/messages` | jedes Chat-Modell | — | [Messages API](https://huggingface.co/docs/inference-providers/guides/messages-api.md) |
+| Ollama Cloud (`ollama-cloud`) | `/v1/messages` | jedes Modell | — | [Anthropic-Kompatibilität](https://docs.ollama.com/api/anthropic-compatibility.md) |
+| Tencent TokenHub (`tencent-tokenhub`) | `/v1/messages` | jedes Modell | — | [Anthropic-Kompatibilität](https://cloud.tencent.com/document/product/1823/130079) |
+| Fireworks AI (`fireworks-ai`) | `/inference/v1/messages` | jedes Modell | — | [Anthropic-Kompatibilität](https://docs.fireworks.ai/tools-sdks/anthropic-compatibility.md) |
+| SambaNova (`sambanova`) | `/v1/messages` | jedes Sprachmodell | `/v1/messages/count_tokens` | [Messages](https://docs.sambanova.ai/docs/en/features/messages) |
+| Vercel (`vercel`) | `/v1/messages` | jedes Modell | — | [Anthropic-Kompatibilität](https://vercel.com/docs/ai-gateway/sdks-and-apis/anthropic-compat.md) |
+
+Die Messages-Endpunkte von Baseten und Standard Compute sind nicht nativ: Sie verwerfen Thinking, das ihre Chat Completions behalten. Die Messages-API von SpaceX ist veraltet, und Venice und Perplexity bedienen Messages nur für andere Produkte, daher steht keiner von ihnen hier. Alle Seiten wurden am 2026-11-25 gelesen.
+
 | Anbieter | Einstellungen | Quellen |
 |---|---|---|
 | Amazon Bedrock (`amazon-bedrock`) | lehnt `mcp_servers` und `container` ab | Anthropics Seite [Claude on Amazon Bedrock](https://platform.claude.com/docs/en/build-with-claude/claude-on-amazon-bedrock-legacy) zu bedrock-runtime, gelesen am 2026-11-14, die den MCP-Connector und Agent Skills als nicht unterstützt nennt |
+| DeepSeek (`deepseek`) | lehnt `top_k`, `container` und `mcp_servers` ab | DeepSeeks Seite [Anthropic API](https://api-docs.deepseek.com/guides/anthropic_api), gelesen am 2026-11-25, die die drei als ignoriert führt |
 | MiniMax (`minimax`) | lehnt `top_k`, `stop_sequences`, `mcp_servers`, `container` und `context_management` ab; `sampling_fixed_at([("temperature", 1), ("top_p", 0.95)])`; `auto_tool_choice_only()`; `with_video(MINIMAX_VIDEO_MEDIA_TYPES)` (MP4, AVI, MOV, MKV, aus `MediaSource`) | MiniMax' Seite zur [Anthropic-API-Kompatibilität](https://platform.minimax.io/docs/api-reference/text-anthropic-api), gelesen am 2026-11-08, deren Tabelle `temperature`, `top_p`, `top_k`, `stop_sequences`, `mcp_servers`, `context_management` und `container` als ignoriert führt, sagt, dass MiniMax immer eine `temperature` von 1 und ein `top_p` von 0.95 verwendet, und für `tool_choice` nur `auto` unterstützt |
+| Ollama Cloud (`ollama-cloud`) | `auto_tool_choice_only()` | Ollamas Seite zur [Anthropic-Kompatibilität](https://docs.ollama.com/api/anthropic-compatibility.md), gelesen am 2026-11-25, die `tool_choice` als nicht unterstützt führt |
 
 ## Amazon Bedrock
 

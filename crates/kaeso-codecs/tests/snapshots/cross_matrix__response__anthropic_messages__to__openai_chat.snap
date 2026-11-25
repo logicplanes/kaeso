@@ -247,6 +247,117 @@ expression: outcomes
       "total_tokens": 5330
     }
   },
+  "providers/alibaba/who-are-you": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Hello! I am Qwen...",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_00000000-0000-0000-0000-000000000000",
+    "model": "qwen3.7-plus",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 223,
+      "prompt_tokens": 22,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 245
+    }
+  },
+  "providers/deepinfra/hello": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Hello! How can I help you today?",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_000000000000000000000000",
+    "model": "zai-org/GLM-5.2",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 10,
+      "prompt_tokens": 6,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 16
+    }
+  },
+  "providers/deepseek/say-hello": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Hello!",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "00000000-0000-0000-0000-000000000000",
+    "model": "deepseek-flash",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 3,
+      "prompt_tokens": 12,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 15
+    }
+  },
+  "providers/deepseek/thinking-cache-hit": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "I'm doing well, thanks! How can I help you today?",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "00000000-0000-0000-0000-000000000000",
+    "model": "deepseek-v4-pro",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 31,
+      "completion_tokens_details": {
+        "reasoning_tokens": 18
+      },
+      "prompt_tokens": 137,
+      "prompt_tokens_details": {
+        "cached_tokens": 128
+      },
+      "total_tokens": 168
+    }
+  },
   "providers/fireworks-ai/thinking-effort": {
     "choices": [
       {
@@ -268,6 +379,33 @@ expression: outcomes
     "usage": {
       "completion_tokens": 27,
       "prompt_tokens": 22,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 49
+    }
+  },
+  "providers/huggingface/sky": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "The sky looks blue because air molecules scatter short blue wavelengths of sunlight far more than longer red ones.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_000000000000000000000000",
+    "model": "deepseek-ai/DeepSeek-V4.1-Flash",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 35,
+      "prompt_tokens": 14,
       "prompt_tokens_details": {
         "cached_tokens": 0
       },
@@ -392,6 +530,155 @@ expression: outcomes
       "total_tokens": 2638
     }
   },
+  "providers/moonshotai/thinking-effort-cache": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Hello! How can I help you today?",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_000000000000000000000000",
+    "model": "kimi-k3",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 21,
+      "completion_tokens_details": {
+        "reasoning_tokens": 11
+      },
+      "prompt_tokens": 16,
+      "prompt_tokens_details": {
+        "cache_write_tokens": 12,
+        "cached_tokens": 0
+      },
+      "total_tokens": 37
+    }
+  },
+  "providers/ollama-cloud/hello": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Hello, it's nice to meet you!",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_000000000000000000000000",
+    "model": "gemma4:31b",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 9,
+      "prompt_tokens": 15,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 24
+    }
+  },
+  "providers/ollama-cloud/tools": {
+    "choices": [
+      {
+        "finish_reason": "tool_calls",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": null,
+          "refusal": null,
+          "role": "assistant",
+          "tool_calls": [
+            {
+              "function": {
+                "arguments": "{\n        \"location\": \"San Francisco, CA\"\n      }",
+                "name": "get_weather"
+              },
+              "id": "call_000000000000000000000000",
+              "type": "function"
+            }
+          ]
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_000000000000000000000000",
+    "model": "gemma4:31b",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 20,
+      "prompt_tokens": 71,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 91
+    }
+  },
+  "providers/openrouter/hello": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "I'm doing well, thank you for asking! How can I help you today?",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_abc123",
+    "model": "anthropic/claude-sonnet-4",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 18,
+      "prompt_tokens": 12,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 30
+    }
+  },
+  "providers/qianfan/hello": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Hello! How can I help you today?",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_000000000000000000000000",
+    "model": "deepseek-v3.2",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 10,
+      "prompt_tokens": 5,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 15
+    }
+  },
   "providers/sambanova/thinking": {
     "choices": [
       {
@@ -417,6 +704,33 @@ expression: outcomes
         "cached_tokens": 0
       },
       "total_tokens": 124
+    }
+  },
+  "providers/tencent-tokenhub/thinking": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "递归是函数在定义中调用自身来解决问题的方法。",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_000000000000000000000000",
+    "model": "hy3",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 46,
+      "prompt_tokens": 12,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 58
     }
   },
   "providers/vercel/recorded-text": {

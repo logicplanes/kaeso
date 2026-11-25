@@ -120,7 +120,7 @@ Platform API 请求通过会话 Cookie、具有平台访问权限的 API 密钥�
 | `thinking_binding` | `reasoning.thinking_binding` | 对会把重放的思考块与产生它的对话进行核对的 Anthropic 模型（preserved thinking，例如 Claude Fable 5.1、Opus 5.5、Sonnet 5.5 和 Haiku 5.5）为 `true`。对这类模型，来自其他格式、重放 Claude 思考内容的请求会要求 Anthropic 丢弃对话已改变的思考块（[Anthropic Messages](../kpp/anthropic-messages.md)）。它只在自适应思考下生效，因为 `block_binding` 需要自适应思考。缺省表示不核对 |
 | `forced_tool_choice` | `capabilities.forced_tool_choice` | 对拒绝强制工具选择（Anthropic 的 `tool_choice` `any` 或 `tool`）的模型为 `false`，网关会在调用服务商之前拒绝 `required`、`any` 或指定工具。缺省表示模型接受 |
 | `efforts` | `reasoning.efforts` | 模型支持的推理强度级别；本版本不认识的级别会被略去 |
-| `egress_dialect` | `gateway.egress_dialect` | Kaeso 发送的格式：服务商的某个方言，默认为其生成方言（OpenAI 为 `openai_responses`）。类型为 `embedding` 的模型，若其服务商支持 Embeddings 格式，则以 Embeddings 发送 |
+| `egress_dialect` | `gateway.egress_dialect` | Kaeso 发送的格式：服务商的某个方言，默认为其生成方言（OpenAI 为 `openai_responses`）。类型为 `embedding` 的模型，若其服务商支持 Embeddings 格式，则以 Embeddings 发送。未设置时，如果服务商在 `Provider::native` 中为该模型列出了应用的方言，生成请求或 Token 计数会以应用自己的方言发送（`pipeline::native_egress`） |
 | `cache_write_1h_price` | `pricing.cache_write_1h` | 保留一小时的缓存写入价格；缺省时，或覆盖值设置了输入价格时，为输入价格的两倍 |
 | `price_tiers` | `pricing.tiers` | 长提示词的价格：当请求的提示词（含缓存 Token）超过某一档的 `context_above` 个 Token 时，该请求的所有 Token（包括输出）均按该档价格计费。`kaeso_core::cost::prices_for_prompt` 选取提示词所超过的最高一档；该档未给出的价格沿用基础价格，其 1 小时缓存写入价格为该档输入价格的两倍，除非手动设置了该价格。覆盖值若设置了输入、输出、缓存读取或缓存写入价格而未设置档位，则会舍弃 KPMR 的档位；KPMR 中无法解析的某一档会被单独跳过 |
 | `input_image_price`、`output_image_price`、`cache_read_image_price` | `pricing.input_image`、`pricing.output_image`、`pricing.cache_read_image` | 每百万图片 Token 的价格。图片 Token 是服务商报告为图片的那部分输入、输出或缓存读取（`Usage::input_image_tokens` 等字段）；它们按这些价格计费，没有这些价格时按输入、输出或缓存读取价格计费。设置了图片输出价格时，`output_price` 是文本输出的价格。只设置 Token 价格而未设置任何图片价格的覆盖会丢弃 KPMR 的图片价格 |

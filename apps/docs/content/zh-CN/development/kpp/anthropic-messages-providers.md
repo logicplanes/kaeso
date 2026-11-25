@@ -21,10 +21,35 @@ nav: Messages 服务商
 
 拒绝发生在为目标调整请求时、编码之前，因此不会发送任何内容，拒绝以应用自己的格式送达。
 
+## 原生 Messages API
+
+许多自身格式为 Chat Completions 的服务商也提供 Messages，作为 Anthropic 的格式供 Claude Code 和其他 Anthropic 应用使用。`Provider::native` 以 `NativeDialect` 条目列出它们：方言；与服务商的 API 根路径不同时，它自己的 API 根路径（DeepSeek、Moonshot 和 DeepInfra 为 `at("/anthropic/v1")`；根路径从主机开始、而不在基础 URL 的路径之下时为 `from_host_root(…)`，例如 QwenCloud 与 `/compatible-mode/v1` 并列的 `/apps/anthropic/v1`，以及千帆与 `/v2` 并列的 `/anthropic/v1`）；不同时它的认证请求头；它提供的模型（`for_models(&["kimi-k3*"])`；为空表示全部）；以及它的 Token 计数是否在那里响应（`counting_tokens()`）。每个条目也在服务商的 `dialects` 中，因此模型的**发送格式**可以指定它。
+
+当服务商为该模型列出应用自己的方言、且模型的目录条目未指定出站方言时，网关的 `pipeline::native_egress` 以该方言发送生成请求；Token 计数则只在条目支持计数 Token 时如此。KPMR 或组织设置的出站方言始终优先，这样可以让模型继续使用格式转换。请求仍会解码为 KPP 再重新编码，因此服务商的配置与对任何应用一样生效，`kaeso-left-out` 会注明它省略的内容。
+
+| 服务商 | 原生 Messages API | 模型 | Token 计数 | 来源 |
+|---|---|---|---|---|
+| DeepSeek（`deepseek`） | `/anthropic/v1/messages` | 所有模型 | — | [Anthropic API](https://api-docs.deepseek.com/guides/anthropic_api)、[Messages API](https://api-docs.deepseek.com/api/create-message.md) |
+| Moonshot（`moonshotai`） | `/anthropic/v1/messages` | `kimi-k3*` | — | [Messages](https://platform.kimi.ai/docs/api/messages.md) |
+| QwenCloud（`alibaba`） | 主机的 `/apps/anthropic/v1/messages` | `qwen*` | — | [Anthropic Messages API](https://docs.qwencloud.com/api-reference/chat/anthropic.md) |
+| Baidu Qianfan（`qianfan`） | 主机的 `/anthropic/v1/messages` | 所有聊天模型 | — | [Anthropic 兼容性](https://cloud.baidu.com/doc/qianfan-docs/s/6mh3e6gjp) |
+| DeepInfra（`deepinfra`） | `/anthropic/v1/messages` | 所有聊天模型 | `/anthropic/v1/messages/count_tokens` | [Anthropic](https://docs.deepinfra.com/integrations/anthropic) |
+| OpenRouter（`openrouter`） | `/api/v1/messages` | 所有模型 | — | [创建消息](https://openrouter.ai/docs/api/api-reference/anthropic-messages/create-a-message.md) |
+| Hugging Face（`huggingface`） | `/v1/messages` | 所有聊天模型 | — | [Messages API](https://huggingface.co/docs/inference-providers/guides/messages-api.md) |
+| Ollama Cloud（`ollama-cloud`） | `/v1/messages` | 所有模型 | — | [Anthropic 兼容性](https://docs.ollama.com/api/anthropic-compatibility.md) |
+| Tencent TokenHub（`tencent-tokenhub`） | `/v1/messages` | 所有模型 | — | [Anthropic 兼容性](https://cloud.tencent.com/document/product/1823/130079) |
+| Fireworks AI（`fireworks-ai`） | `/inference/v1/messages` | 所有模型 | — | [Anthropic 兼容性](https://docs.fireworks.ai/tools-sdks/anthropic-compatibility.md) |
+| SambaNova（`sambanova`） | `/v1/messages` | 所有语言模型 | `/v1/messages/count_tokens` | [Messages](https://docs.sambanova.ai/docs/en/features/messages) |
+| Vercel（`vercel`） | `/v1/messages` | 所有模型 | — | [Anthropic 兼容性](https://vercel.com/docs/ai-gateway/sdks-and-apis/anthropic-compat.md) |
+
+Baseten 和 Standard Compute 的 Messages 端点不算原生：它们会丢弃思考内容，而它们的 Chat Completions 会保留。SpaceX 的 Messages API 已弃用，Venice 和 Perplexity 只为其他产品提供 Messages，因此它们都未列出。所有页面均于 2026-11-25 阅读。
+
 | 服务商 | 设置 | 来源 |
 |---|---|---|
 | Amazon Bedrock（`amazon-bedrock`） | 拒绝 `mcp_servers` 和 `container` | Anthropic 关于 bedrock-runtime 的 [Claude on Amazon Bedrock](https://platform.claude.com/docs/en/build-with-claude/claude-on-amazon-bedrock-legacy) 页面，2026-11-14 阅读，其中列出 MCP 连接器和 Agent Skills 不受支持 |
+| DeepSeek（`deepseek`） | 拒绝 `top_k`、`container` 和 `mcp_servers` | DeepSeek 的 [Anthropic API](https://api-docs.deepseek.com/guides/anthropic_api) 页面，2026-11-25 阅读，其中将这三个字段列为被忽略 |
 | MiniMax（`minimax`） | 拒绝 `top_k`、`stop_sequences`、`mcp_servers`、`container` 和 `context_management`；`sampling_fixed_at([("temperature", 1), ("top_p", 0.95)])`；`auto_tool_choice_only()`；`with_video(MINIMAX_VIDEO_MEDIA_TYPES)` | MiniMax 的 [Anthropic API 兼容性](https://platform.minimax.io/docs/api-reference/text-anthropic-api)页面（2026-11-08 阅读），其表格将 `temperature`、`top_p`、`top_k`、`stop_sequences`、`mcp_servers`、`context_management` 和 `container` 列为被忽略，说明 MiniMax 始终使用 1 的 `temperature` 和 0.95 的 `top_p`，并且 `tool_choice` 只支持 `auto` |
+| Ollama Cloud（`ollama-cloud`） | `auto_tool_choice_only()` | Ollama 的 [Anthropic 兼容性](https://docs.ollama.com/api/anthropic-compatibility.md)页面，2026-11-25 阅读，其中将 `tool_choice` 列为不支持 |
 
 ## Amazon Bedrock
 

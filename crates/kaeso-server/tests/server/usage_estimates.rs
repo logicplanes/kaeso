@@ -8,9 +8,15 @@ use axum::http::StatusCode;
 use common::v1::{Capture, Env, call, chat, messages};
 use kaeso_server::model_api::hooks::Outcome;
 use kaeso_testkit::mock_provider::MockProvider;
-use serde_json::json;
+use serde_json::{Value, json};
 
 const FLASH: &str = "deepseek-flash";
+
+// Generation models are sent as Chat Completions, so an Anthropic app's request is translated;
+// `native_dialects.rs` covers the Messages API it reaches as it came.
+fn sent_as(_model: &str) -> Value {
+    json!({ "egress_dialect": "openai_chat" })
+}
 
 async fn env_with_chat_provider() -> (Env, MockProvider) {
     let provider = MockProvider::start().await;
@@ -36,7 +42,7 @@ async fn env_with_chat_provider() -> (Env, MockProvider) {
         .app
         .post(
             &format!("/orgs/{org}/projects/{}/models", env.project),
-            json!({ "provider": "deepseek", "model_id": FLASH }),
+            json!({ "provider": "deepseek", "model_id": FLASH, "overrides": sent_as(FLASH) }),
             Some(&env.owner.cookie),
         )
         .await;

@@ -1,0 +1,25 @@
+{
+  "id": "msg_00000000-0000-0000-0000-000000000000",
+  "type": "message",
+  "role": "assistant",
+  "model": "qwen3.7-plus",
+  "content": [
+    {
+      "type": "thinking",
+      "thinking": "Let me analyze this question...",
+      "signature": ""
+    },
+    {
+      "type": "text",
+      "text": "Hello! I am Qwen..."
+    }
+  ],
+  "stop_reason": "end_turn",
+  "stop_sequence": null,
+  "usage": {
+    "input_tokens": 22,
+    "output_tokens": 223,
+    "cache_creation_input_tokens": 0,
+    "cache_read_input_tokens": 0
+  }
+}

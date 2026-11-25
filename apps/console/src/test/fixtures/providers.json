@@ -66,7 +66,7 @@
         "label": "API keys"
       },
       "key_prefix": "sk-",
-      "dialects": ["openai_chat"],
+      "dialects": ["openai_chat", "anthropic_messages"],
       "count_tokens": null,
       "embeddings": null,
       "rerank": null,
@@ -171,7 +171,7 @@
         "label": "API Keys"
       },
       "key_prefix": "sk-or-v1-",
-      "dialects": ["openai_chat", "openai_embeddings"],
+      "dialects": ["openai_chat", "anthropic_messages", "openai_embeddings"],
       "count_tokens": null,
       "embeddings": "openai_embeddings",
       "rerank": null,
@@ -271,7 +271,7 @@
         "label": "Settings → Keys"
       },
       "key_prefix": null,
-      "dialects": ["openai_chat"],
+      "dialects": ["openai_chat", "anthropic_messages"],
       "count_tokens": null,
       "embeddings": null,
       "rerank": null,
@@ -296,7 +296,7 @@
         "label": "API Keys"
       },
       "key_prefix": "sk-",
-      "dialects": ["openai_chat"],
+      "dialects": ["openai_chat", "anthropic_messages"],
       "count_tokens": null,
       "embeddings": null,
       "rerank": null,
@@ -321,7 +321,7 @@
         "label": "API keys"
       },
       "key_prefix": "sk-",
-      "dialects": ["openai_chat", "openai_embeddings"],
+      "dialects": ["openai_chat", "anthropic_messages", "openai_embeddings"],
       "count_tokens": null,
       "embeddings": "openai_embeddings",
       "rerank": null,
@@ -645,7 +645,7 @@
         "label": "Settings → Access Tokens"
       },
       "key_prefix": "hf_",
-      "dialects": ["openai_chat"],
+      "dialects": ["openai_chat", "anthropic_messages"],
       "count_tokens": null,
       "embeddings": null,
       "rerank": null,
@@ -851,7 +851,7 @@
         "label": "API keys"
       },
       "key_prefix": null,
-      "dialects": ["openai_chat", "openai_embeddings"],
+      "dialects": ["openai_chat", "anthropic_messages", "openai_embeddings"],
       "count_tokens": null,
       "embeddings": "openai_embeddings",
       "rerank": null,
@@ -1026,7 +1026,7 @@
         "label": "API Key management"
       },
       "key_prefix": null,
-      "dialects": ["openai_chat", "openai_embeddings"],
+      "dialects": ["openai_chat", "anthropic_messages", "openai_embeddings"],
       "count_tokens": null,
       "embeddings": "openai_embeddings",
       "rerank": null,
@@ -1325,7 +1325,7 @@
         "label": "API Key"
       },
       "key_prefix": null,
-      "dialects": ["openai_chat", "openai_embeddings"],
+      "dialects": ["openai_chat", "anthropic_messages", "openai_embeddings"],
       "count_tokens": null,
       "embeddings": "openai_embeddings",
       "rerank": null,

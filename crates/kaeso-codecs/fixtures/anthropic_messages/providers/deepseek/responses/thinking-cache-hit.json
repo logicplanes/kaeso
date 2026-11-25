@@ -1,0 +1,29 @@
+{
+  "id": "00000000-0000-0000-0000-000000000000",
+  "type": "message",
+  "role": "assistant",
+  "model": "deepseek-v4-pro",
+  "content": [
+    {
+      "type": "thinking",
+      "thinking": "The user greets me and asks how I am. I'll answer briefly.",
+      "signature": "c2lnbmF0dXJlLWV4YW1wbGUtMDAwMQ=="
+    },
+    {
+      "type": "text",
+      "text": "I'm doing well, thanks! How can I help you today?"
+    }
+  ],
+  "stop_reason": "end_turn",
+  "stop_sequence": null,
+  "usage": {
+    "input_tokens": 9,
+    "cache_creation_input_tokens": 0,
+    "cache_read_input_tokens": 128,
+    "output_tokens": 31,
+    "output_tokens_details": {
+      "thinking_tokens": 18
+    },
+    "service_tier": "standard"
+  }
+}

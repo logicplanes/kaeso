@@ -552,8 +552,12 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
             Some(CloudflarePath::Api(rest)) => rest,
             _ => path,
         };
-    // Amazon Bedrock's runtime host serves Anthropic Messages at `/anthropic/v1/messages`.
-    let path = match path.strip_prefix("/anthropic") {
+    // Amazon Bedrock's runtime host serves Anthropic Messages at `/anthropic/v1/messages`, as
+    // DeepSeek, Moonshot, DeepInfra and Qianfan do; QwenCloud at `/apps/anthropic/v1/messages`.
+    let path = match path
+        .strip_prefix("/apps/anthropic")
+        .or_else(|| path.strip_prefix("/anthropic"))
+    {
         Some(rest) if rest.starts_with("/v1/messages") => rest.to_owned(),
         _ => path,
     };

@@ -1,0 +1,17 @@
+{
+  "model": "hy3",
+  "system": [
+    {
+      "type": "text",
+      "text": "你是一个友好的助手"
+    }
+  ],
+  "messages": [
+    {
+      "role": "user",
+      "content": "1+1等于几？"
+    }
+  ],
+  "max_tokens": 1024,
+  "stream": true
+}

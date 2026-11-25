@@ -238,6 +238,100 @@ expression: outcomes
       "totalTokenCount": 5330
     }
   },
+  "providers/alibaba/who-are-you": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Hello! I am Qwen..."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "qwen3.7-plus",
+    "responseId": "msg_00000000-0000-0000-0000-000000000000",
+    "usageMetadata": {
+      "candidatesTokenCount": 223,
+      "promptTokenCount": 22,
+      "totalTokenCount": 245
+    }
+  },
+  "providers/deepinfra/hello": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Hello! How can I help you today?"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "zai-org/GLM-5.2",
+    "responseId": "msg_000000000000000000000000",
+    "usageMetadata": {
+      "candidatesTokenCount": 10,
+      "promptTokenCount": 6,
+      "totalTokenCount": 16
+    }
+  },
+  "providers/deepseek/say-hello": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Hello!"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "deepseek-flash",
+    "responseId": "00000000-0000-0000-0000-000000000000",
+    "usageMetadata": {
+      "candidatesTokenCount": 3,
+      "promptTokenCount": 12,
+      "totalTokenCount": 15
+    }
+  },
+  "providers/deepseek/thinking-cache-hit": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "I'm doing well, thanks! How can I help you today?"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "deepseek-v4-pro",
+    "responseId": "00000000-0000-0000-0000-000000000000",
+    "usageMetadata": {
+      "cachedContentTokenCount": 128,
+      "candidatesTokenCount": 13,
+      "promptTokenCount": 137,
+      "thoughtsTokenCount": 18,
+      "totalTokenCount": 168
+    }
+  },
   "providers/fireworks-ai/thinking-effort": {
     "candidates": [
       {
@@ -258,6 +352,29 @@ expression: outcomes
     "usageMetadata": {
       "candidatesTokenCount": 27,
       "promptTokenCount": 22,
+      "totalTokenCount": 49
+    }
+  },
+  "providers/huggingface/sky": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "The sky looks blue because air molecules scatter short blue wavelengths of sunlight far more than longer red ones."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "deepseek-ai/DeepSeek-V4.1-Flash",
+    "responseId": "msg_000000000000000000000000",
+    "usageMetadata": {
+      "candidatesTokenCount": 35,
+      "promptTokenCount": 14,
       "totalTokenCount": 49
     }
   },
@@ -366,6 +483,128 @@ expression: outcomes
       "totalTokenCount": 2638
     }
   },
+  "providers/moonshotai/thinking-effort-cache": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Hello! How can I help you today?"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "kimi-k3",
+    "responseId": "msg_000000000000000000000000",
+    "usageMetadata": {
+      "candidatesTokenCount": 10,
+      "promptTokenCount": 16,
+      "thoughtsTokenCount": 11,
+      "totalTokenCount": 37
+    }
+  },
+  "providers/ollama-cloud/hello": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Hello, it's nice to meet you!"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gemma4:31b",
+    "responseId": "msg_000000000000000000000000",
+    "usageMetadata": {
+      "candidatesTokenCount": 9,
+      "promptTokenCount": 15,
+      "totalTokenCount": 24
+    }
+  },
+  "providers/ollama-cloud/tools": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "functionCall": {
+                "args": {
+                  "location": "San Francisco, CA"
+                },
+                "id": "call_000000000000000000000000",
+                "name": "get_weather"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gemma4:31b",
+    "responseId": "msg_000000000000000000000000",
+    "usageMetadata": {
+      "candidatesTokenCount": 20,
+      "promptTokenCount": 71,
+      "totalTokenCount": 91
+    }
+  },
+  "providers/openrouter/hello": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "I'm doing well, thank you for asking! How can I help you today?"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "anthropic/claude-sonnet-4",
+    "responseId": "msg_abc123",
+    "usageMetadata": {
+      "candidatesTokenCount": 18,
+      "promptTokenCount": 12,
+      "totalTokenCount": 30
+    }
+  },
+  "providers/qianfan/hello": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Hello! How can I help you today?"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "deepseek-v3.2",
+    "responseId": "msg_000000000000000000000000",
+    "usageMetadata": {
+      "candidatesTokenCount": 10,
+      "promptTokenCount": 5,
+      "totalTokenCount": 15
+    }
+  },
   "providers/sambanova/thinking": {
     "candidates": [
       {
@@ -387,6 +626,29 @@ expression: outcomes
       "candidatesTokenCount": 46,
       "promptTokenCount": 78,
       "totalTokenCount": 124
+    }
+  },
+  "providers/tencent-tokenhub/thinking": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "递归是函数在定义中调用自身来解决问题的方法。"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "hy3",
+    "responseId": "msg_000000000000000000000000",
+    "usageMetadata": {
+      "candidatesTokenCount": 46,
+      "promptTokenCount": 12,
+      "totalTokenCount": 58
     }
   },
   "providers/vercel/recorded-text": {

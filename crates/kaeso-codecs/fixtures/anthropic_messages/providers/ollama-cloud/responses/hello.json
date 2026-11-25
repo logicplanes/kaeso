@@ -1,0 +1,18 @@
+{
+  "id": "msg_000000000000000000000000",
+  "type": "message",
+  "role": "assistant",
+  "model": "gemma4:31b",
+  "content": [
+    {
+      "type": "text",
+      "text": "Hello, it's nice to meet you!"
+    }
+  ],
+  "stop_reason": "end_turn",
+  "stop_sequence": null,
+  "usage": {
+    "input_tokens": 15,
+    "output_tokens": 9
+  }
+}

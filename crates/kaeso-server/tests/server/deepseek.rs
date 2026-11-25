@@ -10,6 +10,12 @@ use serde_json::{Value, json};
 const DEEPSEEK_SECRET: &str = "sk-test-deepseek-credential-0004";
 const FLASH: &str = "deepseek-flash";
 
+// Generation models are sent as Chat Completions, so an Anthropic app's request is translated;
+// `native_dialects.rs` covers the Messages API it reaches as it came.
+fn sent_as(_model: &str) -> Value {
+    json!({ "egress_dialect": "openai_chat" })
+}
+
 async fn env_with_deepseek() -> (Env, MockProvider) {
     let deepseek = MockProvider::start().await;
     let env = common::v1::env(
@@ -34,7 +40,7 @@ async fn env_with_deepseek() -> (Env, MockProvider) {
         .app
         .post(
             &format!("/orgs/{org}/projects/{}/models", env.project),
-            json!({ "provider": "deepseek", "model_id": FLASH }),
+            json!({ "provider": "deepseek", "model_id": FLASH, "overrides": sent_as(FLASH) }),
             Some(&env.owner.cookie),
         )
         .await;

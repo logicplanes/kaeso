@@ -763,6 +763,41 @@ expression: outcomes
     },
     "path": "/v1/chat/completions"
   },
+  "providers/alibaba/thinking-stream": {
+    "body": {
+      "max_completion_tokens": 2048,
+      "messages": [
+        {
+          "content": "Analyze the future prospects of quantum computing.",
+          "role": "user"
+        }
+      ],
+      "model": "qwen3.7-plus",
+      "reasoning_effort": "low",
+      "stream": true,
+      "stream_options": {
+        "include_usage": true
+      }
+    },
+    "path": "/v1/chat/completions"
+  },
+  "providers/alibaba/who-are-you": {
+    "body": {
+      "max_completion_tokens": 1024,
+      "messages": [
+        {
+          "content": "You are a helpful assistant",
+          "role": "system"
+        },
+        {
+          "content": "Who are you?",
+          "role": "user"
+        }
+      ],
+      "model": "qwen3.7-plus"
+    },
+    "path": "/v1/chat/completions"
+  },
   "providers/amazon-bedrock/explain-doc": {
     "body": {
       "max_completion_tokens": 1024,
@@ -867,6 +902,86 @@ expression: outcomes
     },
     "path": "/v1/chat/completions"
   },
+  "providers/deepinfra/hello": {
+    "body": {
+      "max_completion_tokens": 1024,
+      "messages": [
+        {
+          "content": "Hello!",
+          "role": "user"
+        }
+      ],
+      "model": "zai-org/GLM-5.2"
+    },
+    "path": "/v1/chat/completions"
+  },
+  "providers/deepinfra/poem-stream": {
+    "body": {
+      "max_completion_tokens": 1024,
+      "messages": [
+        {
+          "content": "Write a short poem about open source.",
+          "role": "user"
+        }
+      ],
+      "model": "zai-org/GLM-5.2",
+      "stream": true,
+      "stream_options": {
+        "include_usage": true
+      }
+    },
+    "path": "/v1/chat/completions"
+  },
+  "providers/deepseek/say-hello": {
+    "body": {
+      "max_completion_tokens": 32,
+      "messages": [
+        {
+          "content": "Say hello.",
+          "role": "user"
+        }
+      ],
+      "model": "deepseek-flash",
+      "reasoning_effort": "none"
+    },
+    "path": "/v1/chat/completions"
+  },
+  "providers/deepseek/say-hello-stream": {
+    "body": {
+      "max_completion_tokens": 32,
+      "messages": [
+        {
+          "content": "Say hello.",
+          "role": "user"
+        }
+      ],
+      "model": "deepseek-flash",
+      "reasoning_effort": "none",
+      "stream": true,
+      "stream_options": {
+        "include_usage": true
+      }
+    },
+    "path": "/v1/chat/completions"
+  },
+  "providers/deepseek/thinking-cache-hit": {
+    "body": {
+      "max_completion_tokens": 4096,
+      "messages": [
+        {
+          "content": "You are a helpful assistant.",
+          "role": "system"
+        },
+        {
+          "content": "Hi, how are you?",
+          "role": "user"
+        }
+      ],
+      "model": "deepseek-v4-pro",
+      "reasoning_effort": "high"
+    },
+    "path": "/v1/chat/completions"
+  },
   "providers/fireworks-ai/invalid-api-key": {
     "body": {
       "max_completion_tokens": 1,
@@ -913,6 +1028,36 @@ expression: outcomes
       ],
       "model": "accounts/fireworks/models/kimi-k3",
       "reasoning_effort": "low"
+    },
+    "path": "/v1/chat/completions"
+  },
+  "providers/huggingface/count-stream": {
+    "body": {
+      "max_completion_tokens": 1024,
+      "messages": [
+        {
+          "content": "Count from 1 to 5.",
+          "role": "user"
+        }
+      ],
+      "model": "deepseek-ai/DeepSeek-V4.1-Flash",
+      "stream": true,
+      "stream_options": {
+        "include_usage": true
+      }
+    },
+    "path": "/v1/chat/completions"
+  },
+  "providers/huggingface/sky": {
+    "body": {
+      "max_completion_tokens": 1024,
+      "messages": [
+        {
+          "content": "Why is the sky blue? One sentence.",
+          "role": "user"
+        }
+      ],
+      "model": "deepseek-ai/DeepSeek-V4.1-Flash"
     },
     "path": "/v1/chat/completions"
   },
@@ -1038,6 +1183,186 @@ expression: outcomes
     "param": "messages[0].blocks[1]",
     "unsupported": "video block"
   },
+  "providers/moonshotai/thinking-effort-cache": {
+    "body": {
+      "max_completion_tokens": 4096,
+      "messages": [
+        {
+          "content": "You are Kimi.",
+          "role": "system"
+        },
+        {
+          "content": "Hello",
+          "role": "user"
+        }
+      ],
+      "model": "kimi-k3",
+      "reasoning_effort": "high"
+    },
+    "path": "/v1/chat/completions"
+  },
+  "providers/moonshotai/tools-stream": {
+    "body": {
+      "max_completion_tokens": 4096,
+      "messages": [
+        {
+          "content": "What's the weather in Beijing?",
+          "role": "user"
+        }
+      ],
+      "model": "kimi-k3",
+      "stream": true,
+      "stream_options": {
+        "include_usage": true
+      },
+      "tool_choice": "auto",
+      "tools": [
+        {
+          "function": {
+            "description": "Get the current weather in a city",
+            "name": "get_weather",
+            "parameters": {
+              "properties": {
+                "city": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "city"
+              ],
+              "type": "object"
+            }
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/chat/completions"
+  },
+  "providers/ollama-cloud/count-stream": {
+    "body": {
+      "max_completion_tokens": 1024,
+      "messages": [
+        {
+          "content": "Count from 1 to 10",
+          "role": "user"
+        }
+      ],
+      "model": "gemma4:31b",
+      "stream": true,
+      "stream_options": {
+        "include_usage": true
+      }
+    },
+    "path": "/v1/chat/completions"
+  },
+  "providers/ollama-cloud/hello": {
+    "body": {
+      "max_completion_tokens": 1024,
+      "messages": [
+        {
+          "content": "Say hello in one sentence.",
+          "role": "user"
+        }
+      ],
+      "model": "gemma4:31b"
+    },
+    "path": "/v1/chat/completions"
+  },
+  "providers/ollama-cloud/tools": {
+    "body": {
+      "max_completion_tokens": 1024,
+      "messages": [
+        {
+          "content": "What is the weather in San Francisco?",
+          "role": "user"
+        }
+      ],
+      "model": "gemma4:31b",
+      "tools": [
+        {
+          "function": {
+            "description": "Get the current weather in a location",
+            "name": "get_weather",
+            "parameters": {
+              "properties": {
+                "location": {
+                  "description": "The city and state",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "location"
+              ],
+              "type": "object"
+            }
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/chat/completions"
+  },
+  "providers/openrouter/hello": {
+    "body": {
+      "max_completion_tokens": 1024,
+      "messages": [
+        {
+          "content": "Hello, how are you?",
+          "role": "user"
+        }
+      ],
+      "model": "anthropic/claude-sonnet-4"
+    },
+    "path": "/v1/chat/completions"
+  },
+  "providers/openrouter/hello-stream": {
+    "body": {
+      "max_completion_tokens": 1024,
+      "messages": [
+        {
+          "content": "Hello, how are you?",
+          "role": "user"
+        }
+      ],
+      "model": "anthropic/claude-sonnet-4",
+      "stream": true,
+      "stream_options": {
+        "include_usage": true
+      }
+    },
+    "path": "/v1/chat/completions"
+  },
+  "providers/qianfan/hello": {
+    "body": {
+      "max_completion_tokens": 1024,
+      "messages": [
+        {
+          "content": "Hello!",
+          "role": "user"
+        }
+      ],
+      "model": "deepseek-v3.2"
+    },
+    "path": "/v1/chat/completions"
+  },
+  "providers/qianfan/hello-stream": {
+    "body": {
+      "max_completion_tokens": 1000,
+      "messages": [
+        {
+          "content": "你好",
+          "role": "user"
+        }
+      ],
+      "model": "deepseek-v3.2",
+      "stream": true,
+      "stream_options": {
+        "include_usage": true
+      }
+    },
+    "path": "/v1/chat/completions"
+  },
   "providers/sambanova/invalid-api-key": {
     "body": {
       "max_completion_tokens": 1,
@@ -1061,6 +1386,41 @@ expression: outcomes
         }
       ],
       "model": "gpt-oss-120b"
+    },
+    "path": "/v1/chat/completions"
+  },
+  "providers/tencent-tokenhub/system-stream": {
+    "body": {
+      "max_completion_tokens": 1024,
+      "messages": [
+        {
+          "content": "你是一个友好的助手",
+          "role": "system"
+        },
+        {
+          "content": "1+1等于几？",
+          "role": "user"
+        }
+      ],
+      "model": "hy3",
+      "stream": true,
+      "stream_options": {
+        "include_usage": true
+      }
+    },
+    "path": "/v1/chat/completions"
+  },
+  "providers/tencent-tokenhub/thinking": {
+    "body": {
+      "max_completion_tokens": 4096,
+      "messages": [
+        {
+          "content": "请解释什么是递归",
+          "role": "user"
+        }
+      ],
+      "model": "hy3",
+      "reasoning_effort": "low"
     },
     "path": "/v1/chat/completions"
   },
