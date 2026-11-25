@@ -206,7 +206,7 @@ fn claude_thinking_streams_to_a_responses_app_as_reasoning_summary_text() {
 }
 
 #[test]
-fn a_tool_call_held_until_it_is_complete_keeps_the_app_hearing_from_the_stream() {
+fn a_long_tool_call_streams_to_anthropic_apps_and_one_held_for_gemini_keeps_the_app_hearing() {
     let pieces = 4000;
     let mut events = vec![
         StreamEvent::ResponseStart(ResponseStart::new("x", "m")),
@@ -236,9 +236,13 @@ fn a_tool_call_held_until_it_is_complete_keeps_the_app_hearing_from_the_stream()
     assert!(frames >= 7);
 
     let outputs = encode_each(A, &events);
-    assert!(longest_silence(&events, &outputs) <= HIDDEN_TEXT_PER_KEEPALIVE);
+    assert_eq!(
+        longest_silence(&events, &outputs),
+        0,
+        "nothing is held back"
+    );
     let all = outputs.concat();
-    assert_eq!(pings(&all), frames);
+    assert_eq!(pings(&all), 0);
     let deltas: Vec<serde_json::Value> = parse_all(&all)
         .unwrap()
         .iter()
@@ -249,9 +253,12 @@ fn a_tool_call_held_until_it_is_complete_keeps_the_app_hearing_from_the_stream()
             _ => None,
         })
         .collect();
-    assert_eq!(deltas.len(), 1);
-    let sent: serde_json::Value =
-        serde_json::from_str(deltas[0]["delta"]["partial_json"].as_str().unwrap()).unwrap();
+    assert_eq!(deltas.len(), pieces + 2);
+    let joined: String = deltas
+        .iter()
+        .map(|d| d["delta"]["partial_json"].as_str().unwrap())
+        .collect();
+    let sent: serde_json::Value = serde_json::from_str(&joined).unwrap();
     assert_eq!(sent, serde_json::json!({ "text": text }));
 
     let g = DialectId::Gemini;
