@@ -4,29 +4,15 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
-## [0.7.3-rc.2] - 2026-11-25
+## [0.7.3] - 2026-11-25
 
-Kaeso 0.7.3-rc.2 fixes how errors from QwenCloud's Messages API reach apps. Apps now get QwenCloud's own message and error kind, where they got `permission_denied` with a message about a body that is not an Anthropic error before. No change is marked as breaking.
+Kaeso 0.7.3 sends an Anthropic app's request to a provider's own Messages API without translating it, when the provider lists it for the model and the model's catalogue entry names no egress dialect. It also ends a ChatGPT plan's reply at the app's output limit and holds an account at its plan's usage limit for longer between retries. When Kaeso can't check a project's hard budgets or load its limits, it refuses the request as Kaeso being busy, and a request sent through the gateway and also reported to a source counts once across an organization's projects. No change is marked as breaking.
 
-**Contributors:** @dvnold
-
-**Full changes:** [v0.7.3-rc.1...v0.7.3-rc.2](https://github.com/logicplanes/kaeso/compare/v0.7.3-rc.1...v0.7.3-rc.2)
-
-### Fixed
-
-- QwenCloud's Messages API errors now reach apps with QwenCloud's message and kind. The Messages error decoder reads DashScope's error body by its code, as it does for Chat Completions, and takes the data of an error body sent as an SSE `event:error` frame with a non-2xx status. A refusal for a spent free quota is now a billing refusal with QwenCloud's message; before, apps got `permission_denied` and a message that the provider returned an HTTP 403 with a body that is not an Anthropic error. ([#1514](https://github.com/logicplanes/kaeso/pull/1514))
-
-## [0.7.3-rc.1] - 2026-11-25
-
-Kaeso 0.7.3-rc.1 sends an Anthropic app's request to the own Messages API of the providers and models it lists, without translating it, and holds a ChatGPT plan's reply to the app's output limit. Observed requests that also pass through the gateway count once, and an account at its plan's usage limit is held longer between retries. Requests that Kaeso can't check against a project's limits are refused as Kaeso being busy, and a request after a pause no longer loads its project's settings one after another. No change is marked as breaking.
-
-**Contributors:** @dvnold
-
-**Full changes:** [v0.7.2...v0.7.3-rc.1](https://github.com/logicplanes/kaeso/compare/v0.7.2...v0.7.3-rc.1)
+**Full changes:** [v0.7.2...v0.7.3](https://github.com/logicplanes/kaeso/compare/v0.7.2...v0.7.3)
 
 ### Changed
 
-- An Anthropic app's request goes as it came to a provider's own Messages API instead of being translated into Chat Completions and back, when the provider lists it for the model and the model's catalogue entry names no egress dialect. This covers DeepSeek, Moonshot (K3 models), QwenCloud (Qwen models), Baidu Qianfan, DeepInfra, OpenRouter, Hugging Face, Ollama Cloud, Tencent TokenHub, Fireworks AI, SambaNova and Vercel. KPMR's or the organization's Sends as setting always wins, so sending a model as Chat Completions keeps the translation. The Anthropic stream decoder also reads DeepSeek's timeout frame as DeepSeek's error with its message; before, the stream failed with "ended before `message_stop`". ([#1506](https://github.com/logicplanes/kaeso/pull/1506))
+- An Anthropic app's request goes as it came to a provider's own Messages API instead of being translated into Chat Completions and back, when the provider lists it for the model and the model's catalogue entry names no egress dialect. This covers DeepSeek, Moonshot (K3 models), QwenCloud (Qwen models), Baidu Qianfan, DeepInfra, OpenRouter, Hugging Face, Ollama Cloud, Tencent TokenHub, Fireworks AI, SambaNova and Vercel. KPMR's or the organization's Sends as setting always wins, so sending a model as Chat Completions keeps the translation; the Anthropic stream decoder also reads DeepSeek's timeout frame as DeepSeek's error with its message, where the stream failed with "ended before `message_stop`" before. ([#1506](https://github.com/logicplanes/kaeso/pull/1506))
 - A request after a pause no longer waits for its project's settings to load one after another: every entry that ran out, such as limits, log settings or the response cache, now loads in parallel with the others. Entries stay warm for an hour after their last use instead of 15 minutes. `stream_processing` now adds up only the decoding, translating and encoding of each batch, no longer the time spent waiting. The warm path is unchanged. ([#1511](https://github.com/logicplanes/kaeso/pull/1511))
 
 #### Documentation
@@ -39,6 +25,7 @@ Kaeso 0.7.3-rc.1 sends an Anthropic app's request to the own Messages API of the
 - An account at its plan's usage limit, such as a ChatGPT plan, is held longer with each limit in a row instead of being tried again every 5 minutes. Without a stated wait the hold is 5, 15 and 45 minutes, then 2 hours at most. A stated `Retry-After` holds the account that long, at least 5 minutes and now up to a week (it was capped at an hour). Any answer from the account starts the backoff over at 5 minutes. ([#1507](https://github.com/logicplanes/kaeso/pull/1507))
 - When Kaeso can't check a project's hard budgets because its limit counters are unreachable, or can't load the project's limits, it refuses the request before any provider is called as Kaeso being busy: 503 for OpenAI formats and Gemini, 529 for Anthropic apps, with `Retry-After: 5`. The request log shows `overloaded` instead of `provider_error` against a provider that was never called, and OpenAI Chat Completions and Responses apps get 503 instead of 500. An alias route still stops at this refusal. ([#1509](https://github.com/logicplanes/kaeso/pull/1509))
 - A request that a client sends through the gateway and also reports to a source (Claude Code, Codex, Gemini CLI, Antigravity or LiteLLM, for example) now counts once across an organization's projects, where matching was per project. The gateway notes its requests before the reply ends, and failed gateway requests are noted too. Models named with an effort level log as one model, and the request log keeps each request's reasoning effort. A provider a client only derives from its own setup is priced like the source kind's usual provider first, and the model's maker when that provider doesn't sell the model. ([#1510](https://github.com/logicplanes/kaeso/pull/1510))
+- QwenCloud's Messages API errors now reach apps with QwenCloud's message and kind. The Messages error decoder reads DashScope's error body by its code, as it does for Chat Completions, and takes the data of an error body sent as an SSE `event:error` frame with a non-2xx status. A refusal for a spent free quota is now a billing refusal with QwenCloud's message; before, apps got `permission_denied` and a message that the provider returned an HTTP 403 with a body that is not an Anthropic error. ([#1514](https://github.com/logicplanes/kaeso/pull/1514))
 
 #### KPP
 
@@ -1818,9 +1805,8 @@ The first release of Kaeso, the open-source AI gateway you run yourself: the gat
 
 - A Release workflow that runs only from `prod`: it prepares the version changes and the changelog without write access to the repository, lets only jobs that run nothing but git push the release commit and the tag, syncs the release commit back to `dev`, and pins every action by commit SHA.
 
-[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.7.3-rc.2...HEAD
-[0.7.3-rc.2]: https://github.com/logicplanes/kaeso/releases/tag/v0.7.3-rc.2
-[0.7.3-rc.1]: https://github.com/logicplanes/kaeso/releases/tag/v0.7.3-rc.1
+[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.7.3...HEAD
+[0.7.3]: https://github.com/logicplanes/kaeso/releases/tag/v0.7.3
 [0.7.2]: https://github.com/logicplanes/kaeso/releases/tag/v0.7.2
 [0.7.1]: https://github.com/logicplanes/kaeso/releases/tag/v0.7.1
 [0.7.0]: https://github.com/logicplanes/kaeso/releases/tag/v0.7.0
