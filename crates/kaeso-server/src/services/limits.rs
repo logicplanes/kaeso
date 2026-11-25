@@ -949,7 +949,7 @@ impl Limits for ValkeyLimits {
                         message:
                             "Kaeso cannot check this project's limits right now; try again shortly."
                                 .into(),
-                        retry_after: None,
+                        retry_after: Some(RECHECK_AFTER),
                         param: None,
                         left: None,
                     });
@@ -1052,12 +1052,16 @@ impl Limits for ValkeyLimits {
     }
 }
 
+// Valkey answers again within seconds of a blip, and rebuilding the counters takes about as
+// long, so an app that waits this long and retries usually gets through.
+const RECHECK_AFTER: Duration = Duration::from_secs(5);
+
 fn unavailable() -> Refusal {
     Refusal {
         status: 503,
         message: "Kaeso cannot check this project's hard budgets right now; try again shortly."
             .into(),
-        retry_after: None,
+        retry_after: Some(RECHECK_AFTER),
         param: None,
         left: None,
     }

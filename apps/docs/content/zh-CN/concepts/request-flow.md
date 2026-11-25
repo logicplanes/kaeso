@@ -18,7 +18,7 @@ sequenceDiagram
   Note over Gateway: 读取请求<br>400、413、415、503 或 529
   Note over Gateway: 解析模型<br>400、404 或 410
   Note over Gateway: 询问防护规则<br>400、429 或 503
-  Note over Gateway: 检查限额<br>403、429 或 503
+  Note over Gateway: 检查限额<br>403、429、503 或 529
   Note over Gateway: 选择服务商密钥<br>502
   Gateway->>Provider: 转换后的请求
   Note over Gateway,Provider: 超时 504<br>无法连接 502
@@ -86,7 +86,7 @@ Kaeso 在一步之内检查所有适用的限额：密钥、其成员和项目�
 | 超出硬性预算 | 429。消息会说明预算何时重置 |
 | 受支出预算约束，且使用了它无法计价的功能 | 403，并指出该功能（[支出预算无法计价的功能](../console/limits-and-budgets.md#支出预算无法计价的功能)） |
 | 超出软性预算 | 请求放行。软性预算只发出提醒 |
-| 无法连接 Valkey | 受硬性预算约束的请求返回 503。其他请求不经检查直接放行 |
+| 无法连接 Valkey | 受硬性预算约束的请求返回 503 和 `Retry-After: 5`（Anthropic 格式下为 529），日志记为 `overloaded`。其他请求不经检查直接放行 |
 | 无法加载项目的限额 | 所有请求返回 503，因为 Kaeso 无法判断哪些限额适用 |
 
 使用 OpenAI 格式的应用收到的这些 503 会变成 500，其 SDK 会自动重试。[限额和预算](../console/limits-and-budgets.md)说明了如何设置限额。

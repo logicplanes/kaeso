@@ -87,7 +87,7 @@ Kaeso refuses a request that could cost more than what's left of a hard budget o
 Kaeso can't bound a request that sets no output limit, to a model with neither an output limit nor a context window. Nor can it bound audio sent as a link or a file id to a model priced by its length, since Kaeso never reads it. Such a request passes when nothing else runs, so it can overrun a limit by itself. Under a hard budget with no finished request in its period or the 30 days before, it runs alone, though videos and image generations still being made don't stop it.
 
 > [!NOTE]
-> Kaeso counts limits in Valkey. While Valkey can't be reached, rates and soft budgets let requests through, and hard budgets refuse them with status 503.
+> Kaeso counts limits in Valkey. While Valkey can't be reached, rates and soft budgets let requests through, and hard budgets refuse them with status 503 and `Retry-After: 5`, or 529 in the Anthropic format. The request log shows them as `overloaded`, Kaeso's own refusal, not the provider's error.
 
 ## Next steps
 

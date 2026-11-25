@@ -5,7 +5,7 @@ use crate::common;
 use std::time::Duration;
 
 use axum::http::{Method, StatusCode};
-use common::v1::{Answer, Env, call, call_app, messages};
+use common::v1::{Answer, Env, call, call_app, chat, messages};
 use futures::StreamExt;
 use futures::stream::FuturesUnordered;
 use kaeso_core::id::RequestId;
@@ -1462,9 +1462,22 @@ async fn without_valkey_hard_budgets_fail_closed_and_the_rest_open() {
         StatusCode::OK,
         "soft budgets fail open"
     );
-    let r = ask_down(budgeted).await;
-    assert_eq!(r.status, StatusCode::SERVICE_UNAVAILABLE, "{}", r.text());
+    let r = ask_down(budgeted.clone()).await;
+    assert_eq!(r.status.as_u16(), 529, "{}", r.text());
+    assert_eq!(r.json()["error"]["type"], "overloaded_error");
     assert!(r.text().contains("hard budget"));
+    assert_eq!(r.header("retry-after"), Some("5"));
+    let r = call_app(
+        &down,
+        "/v1/chat/completions",
+        Some(&budgeted),
+        false,
+        Some(chat("claude-haiku-4-5", "Hi")),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::SERVICE_UNAVAILABLE, "{}", r.text());
+    assert_eq!(r.json()["error"]["type"], "service_unavailable_error");
+    assert_eq!(r.header("retry-after"), Some("5"));
 }
 
 async fn make_free(env: &Env, model: &str) {
@@ -1958,7 +1971,9 @@ async fn requests_are_refused_while_the_limits_cannot_be_loaded() {
     kaeso_server::services::limits::forget(&env.app.state, project.uuid()).await;
     env.app.state.pg.close().await;
     let refused = ask().await;
-    assert_eq!(refused.status, StatusCode::SERVICE_UNAVAILABLE);
+    assert_eq!(refused.status.as_u16(), 529, "{}", refused.text());
+    assert_eq!(refused.json()["error"]["type"], "overloaded_error");
+    assert_eq!(refused.header("retry-after"), Some("5"));
     assert!(
         refused.json()["error"]["message"]
             .as_str()
