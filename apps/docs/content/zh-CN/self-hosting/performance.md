@@ -128,12 +128,11 @@ bash kaeso-gateway-bench/setup.sh
 cd /root
 ai-gateway-bench/.venv/bin/python run.py
 ai-gateway-bench/.venv/bin/python run_capacity.py
-# 再次运行 Kaeso 0.7.2，用于上文的比较
 ai-gateway-bench/.venv/bin/python run072.py kaeso kaeso-logs
 ai-gateway-bench/.venv/bin/python cap072.py kaeso kaeso-logs
 ```
 
-所有网关跑完三轮约需 90 分钟，容量测试另需 30 分钟。结果保存在 `/root/out` 和 `/root/cap` 中，0.7.2 的结果保存在 `/root/out072` 和 `/root/cap072` 中。绝对数值因机器而异，请比较同一次运行中测得的网关。
+所有网关跑完三轮约需 90 分钟，容量测试另需 30 分钟。结果保存在 `/root/out` 和 `/root/cap` 中。`run072.py` 和 `cap072.py` 为上文的比较再次运行 Kaeso 0.7.2，结果保存在 `/root/out072` 和 `/root/cap072` 中。绝对数值因机器而异，请比较同一次运行中测得的网关。
 
 ## 下一步
 

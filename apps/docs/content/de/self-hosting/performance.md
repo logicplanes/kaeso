@@ -128,12 +128,11 @@ bash kaeso-gateway-bench/setup.sh
 cd /root
 ai-gateway-bench/.venv/bin/python run.py
 ai-gateway-bench/.venv/bin/python run_capacity.py
-# Kaeso 0.7.2 noch einmal, für den Abschnitt oben
 ai-gateway-bench/.venv/bin/python run072.py kaeso kaeso-logs
 ai-gateway-bench/.venv/bin/python cap072.py kaeso kaeso-logs
 ```
 
-Drei Runden aller Gateways dauern etwa 90 Minuten, der Kapazitätslauf weitere 30. Die Ergebnisse landen in `/root/out` und `/root/cap`, die von 0.7.2 in `/root/out072` und `/root/cap072`. Absolute Zahlen ändern sich von Maschine zu Maschine; vergleichen Sie Gateways aus demselben Lauf.
+Drei Runden aller Gateways dauern etwa 90 Minuten, der Kapazitätslauf weitere 30. Die Ergebnisse landen in `/root/out` und `/root/cap`. `run072.py` und `cap072.py` messen Kaeso 0.7.2 noch einmal für den Vergleich oben, nach `/root/out072` und `/root/cap072`. Absolute Zahlen ändern sich von Maschine zu Maschine; vergleichen Sie Gateways aus demselben Lauf.
 
 ## Nächste Schritte
 
