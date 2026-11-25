@@ -118,7 +118,10 @@ pub(crate) async fn challenge(
     ctx: &Ctx,
     user: &users::User,
     method: Method,
+    by_operator: bool,
 ) -> ApiResult<Response> {
+    let issued_by = by_operator.then_some(crate::services::users::OPERATOR_LINK);
+    let data = serde_json::json!({ "method": method.as_str(), "issued_by": issued_by });
     let challenge = random_token();
     let expires_at = ctx.now + CHALLENGE_LIFETIME;
     tokens::insert(
@@ -128,7 +131,7 @@ pub(crate) async fn challenge(
             hash: &secret::hash(&challenge),
             user_id: Some(user.id),
             email: None,
-            data: serde_json::json!({ "method": method.as_str() }),
+            data,
             expires_at,
         },
     )
@@ -191,7 +194,7 @@ pub async fn password(
     }
     attempts.succeeded(&state).await;
     if totp::is_enabled(&state.pg, user.id).await? {
-        return challenge(&state, &ctx, &user, Method::Password).await;
+        return challenge(&state, &ctx, &user, Method::Password, false).await;
     }
     sign_in(&state, &ctx, &user, Method::Password, false, None).await
 }
@@ -219,7 +222,9 @@ pub struct TotpRequest {
     description = "A challenge takes 3 codes; after 3 wrong ones it ends, and the next try needs \
     the password or sign-in link again. After 10 wrong codes in a row, across challenges, codes \
     from the authenticator app are refused with `permission_denied` and the account's owner gets \
-    an email: only a recovery code signs in, until one does or the password is reset by email.",
+    an email: only a recovery code signs in, until one does or the password is reset by email. \
+    It refuses an account whose managing org requires SSO, even with a challenge from before the \
+    org turned that on, unless its sign-in link came from `kaeso user sign-in-link`.",
     tag = "auth",
     request_body = TotpRequest,
     responses((status = 200, description = "Signed in; the session cookie is set.", body = SignedIn))
@@ -253,6 +258,16 @@ pub async fn totp(
         .user_id
         .map(UserId::from_uuid)
         .ok_or_else(|| ApiError::internal("challenge without user"))?;
+    let by_operator = challenge.data.get("issued_by").and_then(|v| v.as_str())
+        == Some(crate::services::users::OPERATOR_LINK);
+    // Before the code is checked, so a refused sign-in uses up no recovery code.
+    if !by_operator
+        && let Some(email) = users::get(&state.pg, user_id.uuid())
+            .await?
+            .and_then(|u| u.email)
+    {
+        crate::services::managed::refuse_other_sign_in(&state.pg, &email).await?;
+    }
     let attempts = Attempts::for_user(&ctx, user_id);
     attempts.begin(&state).await?;
     let app_code = matches!(factor, Factor::Code(_));

@@ -1233,7 +1233,7 @@
           "auth"
         ],
         "summary": "Creates the account with the link and signs in. The account creation\nsetting is checked again: a link sent before it changed no longer works.",
-        "description": "**Access:** public; no authentication.",
+        "description": "It refuses an address whose managing org requires SSO, even with a link sent before the org turned that on.\n\n**Access:** public; no authentication.",
         "operationId": "postAuthSignupVerify",
         "requestBody": {
           "content": {
@@ -1292,7 +1292,7 @@
           "auth"
         ],
         "summary": "Completes a password or sign-in link sign-in with a TOTP or recovery\ncode. A code of the same 30-second step is accepted only once.",
-        "description": "A challenge takes 3 codes; after 3 wrong ones it ends, and the next try needs the password or sign-in link again. After 10 wrong codes in a row, across challenges, codes from the authenticator app are refused with `permission_denied` and the account's owner gets an email: only a recovery code signs in, until one does or the password is reset by email.\n\n**Access:** public; no authentication.",
+        "description": "A challenge takes 3 codes; after 3 wrong ones it ends, and the next try needs the password or sign-in link again. After 10 wrong codes in a row, across challenges, codes from the authenticator app are refused with `permission_denied` and the account's owner gets an email: only a recovery code signs in, until one does or the password is reset by email. It refuses an account whose managing org requires SSO, even with a challenge from before the org turned that on, unless its sign-in link came from `kaeso user sign-in-link`.\n\n**Access:** public; no authentication.",
         "operationId": "postAuthTotp",
         "requestBody": {
           "content": {

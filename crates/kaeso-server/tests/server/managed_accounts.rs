@@ -280,6 +280,139 @@ async fn requiring_sso_takes_password_reset_from_managed_accounts_too() {
 }
 
 #[tokio::test]
+async fn requiring_sso_ends_a_password_sign_in_that_waits_for_its_second_step() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let team = team(&app).await;
+    let begin = app
+        .post("/me/totp", json!({}), Some(&team.ada))
+        .await
+        .expect_status(StatusCode::OK);
+    let secret = begin.body["secret"].as_str().unwrap().to_owned();
+    let code = |app: &App| {
+        app.clock.advance(time::Duration::seconds(30));
+        common::totp_code(&secret, app)
+    };
+    let recovery = app
+        .post(
+            "/me/totp/confirm",
+            json!({ "code": code(&app) }),
+            Some(&team.ada),
+        )
+        .await
+        .expect_status(StatusCode::OK)
+        .body["recovery_codes"][0]
+        .clone();
+    let challenge = password(&app, "ada@acme.example")
+        .await
+        .expect_status(StatusCode::ACCEPTED)
+        .body["challenge"]
+        .clone();
+    require_sso(&app, &team, true)
+        .await
+        .expect_status(StatusCode::OK);
+
+    let r = app
+        .post(
+            "/auth/totp",
+            json!({ "challenge": challenge, "code": code(&app) }),
+            None,
+        )
+        .await;
+    assert_eq!(
+        (r.status, r.body["error"]["message"].as_str().unwrap()),
+        (StatusCode::FORBIDDEN, SSO_ONLY),
+        "a password entered before SSO was required"
+    );
+    assert!(r.cookie().is_none());
+    let r = app
+        .post(
+            "/auth/totp",
+            json!({ "challenge": challenge, "recovery_code": recovery }),
+            None,
+        )
+        .await;
+    assert_eq!(
+        (r.status, r.body["error"]["message"].as_str().unwrap()),
+        (StatusCode::FORBIDDEN, SSO_ONLY)
+    );
+
+    use kaeso_server::services::users::{OperatorSignIn, operator_sign_in_link};
+    use secrecy::ExposeSecret;
+    let OperatorSignIn::Link(url) = operator_sign_in_link(&app.state, "ada@acme.example")
+        .await
+        .unwrap()
+    else {
+        panic!("no link for Ada");
+    };
+    let token = url.expose_secret().split("#token=").nth(1).unwrap();
+    let challenge = app
+        .post("/auth/magic-link/verify", json!({ "token": token }), None)
+        .await
+        .expect_status(StatusCode::ACCEPTED)
+        .body["challenge"]
+        .clone();
+    let r = app
+        .post(
+            "/auth/totp",
+            json!({ "challenge": challenge, "recovery_code": recovery }),
+            None,
+        )
+        .await;
+    assert_eq!(
+        r.status,
+        StatusCode::OK,
+        "the sign-in link from the server keeps its second step, and the refusals used up no recovery code: {:?}",
+        r.body
+    );
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn requiring_sso_takes_account_creation_from_a_link_sent_before() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let team = team(&app).await;
+    app.call(
+        Method::PATCH,
+        "/instance/settings",
+        Some(json!({ "account_creation": "everyone" })),
+        Some(&team.owner.cookie),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    app.post("/auth/signup", json!({ "email": "cy@acme.example" }), None)
+        .await
+        .expect_status(StatusCode::OK);
+    app.wait_for_mail("cy@acme.example", 1).await;
+    let link = app.last_token("cy@acme.example");
+    require_sso(&app, &team, true)
+        .await
+        .expect_status(StatusCode::OK);
+
+    let r = app
+        .post(
+            "/auth/signup/verify",
+            json!({ "token": link, "name": "Cy", "password": PASSWORD }),
+            None,
+        )
+        .await;
+    assert_eq!(
+        (r.status, r.body["error"]["message"].as_str().unwrap()),
+        (StatusCode::FORBIDDEN, SSO_ONLY),
+        "a link sent before SSO was required"
+    );
+    assert!(r.cookie().is_none());
+    let accounts: i64 =
+        sqlx::query_scalar("SELECT count(*) FROM users WHERE email = 'cy@acme.example'")
+            .fetch_one(&app.state.pg)
+            .await
+            .unwrap();
+    assert_eq!(accounts, 0);
+    s.cleanup().await;
+}
+
+#[tokio::test]
 async fn the_requiring_admins_own_session_stays_and_the_org_closes_to_it() {
     let s = TestServices::start().await;
     let app = App::start(&s).await;
