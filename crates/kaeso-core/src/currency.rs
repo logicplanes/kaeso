@@ -90,14 +90,14 @@ impl RateBook {
             .on(code, day)
             .map(|(_, r)| r)
             .or_else(|| self.last(code))?;
-        Some(usd * rate)
+        usd.checked_mul(rate)
     }
 
     pub fn from_usd(&self, usd: Decimal, code: &str) -> Option<Decimal> {
         if code == USD {
             return Some(usd);
         }
-        Some(usd * self.last(code)?)
+        usd.checked_mul(self.last(code)?)
     }
 
     pub fn to_usd(&self, amount: Decimal, code: &str) -> Option<Decimal> {
@@ -106,7 +106,8 @@ impl RateBook {
         }
         let rate = self.last(code)?;
         Some(
-            (amount / rate)
+            amount
+                .checked_div(rate)?
                 .round_dp_with_strategy(PRICE_PLACES, RoundingStrategy::MidpointNearestEven)
                 .normalize(),
         )
@@ -310,6 +311,15 @@ mod tests {
         assert_eq!(b.to_usd(dec!(3), "CHF"), None);
         assert_eq!(RateBook::default().to_usd(dec!(3), "EUR"), None);
         assert_eq!(RateBook::default().to_usd(dec!(3), "USD"), Some(dec!(3)));
+    }
+
+    #[test]
+    fn an_amount_too_large_to_convert_has_no_value_in_the_other_currency() {
+        let b = book(DAILY);
+        assert_eq!(b.to_usd(Decimal::MAX, "EUR"), None);
+        assert_eq!(b.from_usd(Decimal::MAX, "IDR"), None);
+        assert_eq!(b.convert(Decimal::MAX, "IDR", date!(2026 - 11 - 16)), None);
+        assert_eq!(b.to_usd(Decimal::MAX, "USD"), Some(Decimal::MAX));
     }
 
     #[test]
