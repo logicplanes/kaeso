@@ -508,17 +508,25 @@ impl OtelConfig {
         let Some(headers) = &self.headers else {
             return Ok(map);
         };
-        for pair in headers
+        for (at, pair) in headers
             .expose_secret()
             .split(',')
             .map(str::trim)
             .filter(|p| !p.is_empty())
+            .enumerate()
         {
             let (name, value) = pair
                 .split_once('=')
                 .ok_or_else(|| "must be `name=value` pairs separated by commas".to_owned())?;
-            let name = reqwest::header::HeaderName::from_bytes(name.trim().as_bytes())
-                .map_err(|_| format!("names `{}`, which is not a header name", name.trim()))?;
+            // The text before `=` is not quoted: in a pair written wrongly, such as
+            // `Authorization: Bearer <token>=`, it holds the collector's token.
+            let name =
+                reqwest::header::HeaderName::from_bytes(name.trim().as_bytes()).map_err(|_| {
+                    format!(
+                        "has a pair, number {}, whose name is not a header name",
+                        at + 1
+                    )
+                })?;
             let value = percent_encoding::percent_decode_str(value.trim()).decode_utf8_lossy();
             let mut value = reqwest::header::HeaderValue::from_str(&value)
                 .map_err(|_| format!("has a value for `{name}` that a header can't carry"))?;
