@@ -1248,6 +1248,9 @@ impl Pump {
             && self.carry.is_none()
     }
 
+    // Only the batch's own work counts as stream processing: decoding, translating and encoding
+    // its chunks. Waiting for the answer's memory, for more chunks to coalesce and for the
+    // scheduler is time the stream spent waiting, not Kaeso's work.
     async fn process_batch(&mut self, start: BatchStart) -> Option<PendingOut> {
         let mut out = Vec::new();
         let mut stop = false;
@@ -1255,7 +1258,6 @@ impl Pump {
         let mut in_place = 0u32;
         let mut last = false;
         let mut capped = false;
-        let work_started = std::time::Instant::now();
         match start {
             BatchStart::Initial(mut init) => {
                 if init.received > 0
@@ -1270,20 +1272,24 @@ impl Pump {
                     }
                 }
                 if !capped {
+                    let timed = std::time::Instant::now();
                     self.app.progress.count(&init.events);
                     last = self.record_event_errors(&mut init.events);
                     stop = self.encode_events(init.events, &mut out, &mut ends, &mut in_place);
+                    self.processing.0 += timed.elapsed();
                     last |= self.output_capped();
                     if !stop
                         && !last
                         && let Some(err) = init.error
                     {
+                        let timed = std::time::Instant::now();
                         let (chunk_last, chunk_stop) = self.process_one_chunk(
                             Some(Err(err)),
                             &mut out,
                             &mut ends,
                             &mut in_place,
                         );
+                        self.processing.0 += timed.elapsed();
                         last = chunk_last;
                         stop = chunk_stop;
                     }
@@ -1314,17 +1320,21 @@ impl Pump {
                         out.extend_from_slice(&self.engine.encode_error(&err, &mut self.broken));
                         last = true;
                     } else if let Some(err) = init.error {
+                        let timed = std::time::Instant::now();
                         let (chunk_last, chunk_stop) = self.process_one_chunk(
                             Some(Err(err)),
                             &mut out,
                             &mut ends,
                             &mut in_place,
                         );
+                        self.processing.0 += timed.elapsed();
                         last = chunk_last;
                         stop = chunk_stop;
                     } else if init.eof {
+                        let timed = std::time::Instant::now();
                         let (chunk_last, chunk_stop) =
                             self.process_one_chunk(None, &mut out, &mut ends, &mut in_place);
+                        self.processing.0 += timed.elapsed();
                         last = chunk_last;
                         stop = chunk_stop;
                     }
@@ -1341,8 +1351,10 @@ impl Pump {
                     }
                 }
                 if !capped {
+                    let timed = std::time::Instant::now();
                     let (chunk_last, chunk_stop) =
                         self.process_one_chunk(next, &mut out, &mut ends, &mut in_place);
+                    self.processing.0 += timed.elapsed();
                     last = chunk_last;
                     stop = chunk_stop;
                 }
@@ -1388,12 +1400,13 @@ impl Pump {
                     break;
                 }
             }
+            let timed = std::time::Instant::now();
             let (chunk_last, chunk_stop) =
                 self.process_one_chunk(next, &mut out, &mut ends, &mut in_place);
+            self.processing.0 += timed.elapsed();
             last = chunk_last;
             stop = chunk_stop;
         }
-        self.processing.0 += work_started.elapsed();
         if last
             && !stop
             && !capped

@@ -1479,19 +1479,11 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     }
 }
 
-// After a pause every cached entry of a project has run out at once, and the request would
-// wait for each load in turn. They are loaded beside each other while the body arrives; the
+// After a pause a project's cached entries run out, not always together, and the request would
+// wait for each load in turn. Each one is looked up beside the others while the body arrives, so
+// a load runs for every entry that ran out, and one still cached costs a look in memory; the
 // steps below then find them, and report a load that failed as they always did.
 async fn preload(state: &AppState, project: Uuid) {
-    if state
-        .caches
-        .project_models
-        .cached(&project.to_string())
-        .await
-        .is_some()
-    {
-        return;
-    }
     Box::pin(async {
         let _ = tokio::join!(
             crate::services::logs::keeps(state, project),
