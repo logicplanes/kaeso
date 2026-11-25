@@ -9,8 +9,8 @@ use serde_json::value::RawValue;
 
 use super::DIALECT;
 use super::convert::{
-    AsRaw, PartContext, add_nested, decode_part, decode_tool_call, extras_of, form_str, parse_ext,
-    to_raw,
+    AsRaw, PartContext, add_nested, decode_part, decode_tool_call, extras_of, form_str,
+    note_kept_call, parse_ext, to_raw,
 };
 use super::wire::{
     AssistantMessage, AudioParam, ChatRequest, FunctionToolWire, InstructionMessage,
@@ -919,13 +919,9 @@ fn decode_assistant(raw: &RawValue, origin: &Origin) -> Result<Message, KppError
         }
     }
     for call in &known.tool_calls {
-        blocks.push(decode_tool_call(
-            call,
-            origin,
-            false,
-            &|n| n.to_owned(),
-            None,
-        )?);
+        let block = decode_tool_call(call, origin, false, &|n| n.to_owned(), None)?;
+        note_kept_call(&mut extras, &block);
+        blocks.push(block);
     }
     let mut message = Message::new(Role::Assistant, blocks);
     message.extras = extras;

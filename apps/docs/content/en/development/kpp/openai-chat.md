@@ -145,7 +145,7 @@ Objects kept whole, such as unknown parts, tools and tool choices, custom tool c
 | `id`, `function.name` | `ToolCallBlock.id`, `.name` | Names Kaeso rewrote are mapped back when a reply is decoded. A call in a reply without an `id`, or with `""`, gets `call_kaeso_<response id>_<n>` (the id's letters and digits, `n` its position), so apps in other formats can answer it; form `id` keeps the received spelling (`null` for absent) for Chat apps. Streams do the same with `n` the KPP block index and form `tc`. |
 | `function.arguments` | `ToolCallBlock.arguments` raw | The JSON text inside the string, byte for byte. Text that is not valid JSON, or has surrounding whitespace, keeps its literal in form `arguments`; KPP then holds `{}` for blank text and otherwise the text as a JSON string. KPP's convention is that a JSON string in `ToolCallBlock.arguments` means the provider sent text that is not JSON, so for calls from other dialects the string's content is sent as `arguments`; objects, arrays and other JSON values are sent as their JSON text. |
 | unknown keys | extras (`function.<key>` nested) | |
-| `type: custom` | `Block::Unknown` | Sent back in `tool_calls`. |
+| `type: custom`, other types | `Block::Unknown` | Sent back in `tool_calls`. The message's form `kept_calls` lists the other types it kept, which tells such an entry from a content part kept whole. |
 | `type` absent, with a `function` object | `Block::ToolCall`, form `no_type` | `ChatCompletionMessageToolCall` requires `type`, but some OpenAI-compatible providers leave it out; only function calls have a `function` object, so the call reaches every app. Written back without `type`. |
 
 ## Response: `CreateChatCompletionResponse`

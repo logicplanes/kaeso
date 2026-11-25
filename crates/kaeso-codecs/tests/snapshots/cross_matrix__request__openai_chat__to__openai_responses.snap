@@ -6566,6 +6566,11 @@ expression: outcomes
     "param": null,
     "unsupported": "response_format"
   },
+  "unknown-tool-call-type": {
+    "message": "`x_future_part content block` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove the block, or send the request to a model served through its original format.",
+    "param": "messages[1].blocks[1]",
+    "unsupported": "x_future_part content block"
+  },
   "unknown-top-level-field": {
     "message": "`x_future_field` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
     "param": null,

@@ -6412,6 +6412,32 @@ expression: outcomes
       "output_tokens": 0
     }
   },
+  "unknown-tool-call-type": {
+    "content": [
+      {
+        "id": "call_2",
+        "input": {
+          "q": "report"
+        },
+        "name": "lookup",
+        "type": "tool_use"
+      }
+    ],
+    "id": "chatcmpl-x9future3",
+    "model": "gpt-5.6-sol",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "tool_use",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 12,
+      "output_tokens": 9
+    }
+  },
   "unknown-top-level-field": {
     "content": [
       {

@@ -844,7 +844,7 @@ fn encode_assistant(message: &Message, names: &mut Names<'_>) -> Result<RawJson,
                 tool_calls.push(encode_tool_call(call, &name)?);
             }
             Block::Unknown(item) if item.origin.is(DIALECT) => {
-                if is_tool_call_item(item) {
+                if is_tool_call_item(item, &message.extras) {
                     tool_calls.push(item.raw.clone());
                 } else {
                     content.push(block);

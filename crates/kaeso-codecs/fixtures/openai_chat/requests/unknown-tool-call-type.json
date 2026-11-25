@@ -1,0 +1,85 @@
+{
+  "model": "gpt-5.6-sol",
+  "messages": [
+    {
+      "role": "user",
+      "content": "What changed in the report since last week?"
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "I will look that up."
+        },
+        {
+          "type": "x_future_part",
+          "x_future_note": "kept"
+        }
+      ],
+      "tool_calls": [
+        {
+          "id": "call_1",
+          "type": "x_future_call",
+          "x_future_call": {
+            "name": "search",
+            "input": "report changes"
+          }
+        },
+        {
+          "id": "call_2",
+          "type": "function",
+          "function": {
+            "name": "lookup",
+            "arguments": "{\"q\":\"report\"}"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "call_1",
+      "content": "Two sections were added."
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "call_2",
+      "content": "report.pdf"
+    },
+    {
+      "role": "assistant",
+      "content": null,
+      "tool_calls": [
+        {
+          "id": "call_3",
+          "type": "x_future_call",
+          "x_future_call": {
+            "name": "search",
+            "input": "report sections"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "call_3",
+      "content": "Summary and outlook."
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "lookup",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "q": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  ]
+}
