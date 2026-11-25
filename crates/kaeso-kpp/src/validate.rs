@@ -57,7 +57,7 @@ impl GenerateRequest {
                         if message.role != Role::Assistant {
                             return Err(invalid(
                                 format!(
-                                    "Tool calls may only appear in assistant messages, but message {mi} is a {} message.",
+                                    "Tool calls may only appear in assistant messages, but message {mi} has the role `{}`.",
                                     message.role.as_str()
                                 ),
                                 param(),
@@ -75,7 +75,7 @@ impl GenerateRequest {
                         if message.role != Role::User {
                             return Err(invalid(
                                 format!(
-                                    "Tool results may only appear in user messages, but message {mi} is a {} message.",
+                                    "Tool results may only appear in user messages, but message {mi} has the role `{}`.",
                                     message.role.as_str()
                                 ),
                                 param(),
