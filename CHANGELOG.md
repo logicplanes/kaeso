@@ -4,6 +4,18 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
+## [0.7.3-rc.2] - 2026-11-25
+
+Kaeso 0.7.3-rc.2 fixes how errors from QwenCloud's Messages API reach apps. Apps now get QwenCloud's own message and error kind, where they got `permission_denied` with a message about a body that is not an Anthropic error before. No change is marked as breaking.
+
+**Contributors:** @dvnold
+
+**Full changes:** [v0.7.3-rc.1...v0.7.3-rc.2](https://github.com/logicplanes/kaeso/compare/v0.7.3-rc.1...v0.7.3-rc.2)
+
+### Fixed
+
+- QwenCloud's Messages API errors now reach apps with QwenCloud's message and kind. The Messages error decoder reads DashScope's error body by its code, as it does for Chat Completions, and takes the data of an error body sent as an SSE `event:error` frame with a non-2xx status. A refusal for a spent free quota is now a billing refusal with QwenCloud's message; before, apps got `permission_denied` and a message that the provider returned an HTTP 403 with a body that is not an Anthropic error. ([#1514](https://github.com/logicplanes/kaeso/pull/1514))
+
 ## [0.7.3-rc.1] - 2026-11-25
 
 Kaeso 0.7.3-rc.1 sends an Anthropic app's request to the own Messages API of the providers and models it lists, without translating it, and holds a ChatGPT plan's reply to the app's output limit. Observed requests that also pass through the gateway count once, and an account at its plan's usage limit is held longer between retries. Requests that Kaeso can't check against a project's limits are refused as Kaeso being busy, and a request after a pause no longer loads its project's settings one after another. No change is marked as breaking.
@@ -1806,7 +1818,8 @@ The first release of Kaeso, the open-source AI gateway you run yourself: the gat
 
 - A Release workflow that runs only from `prod`: it prepares the version changes and the changelog without write access to the repository, lets only jobs that run nothing but git push the release commit and the tag, syncs the release commit back to `dev`, and pins every action by commit SHA.
 
-[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.7.3-rc.1...HEAD
+[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.7.3-rc.2...HEAD
+[0.7.3-rc.2]: https://github.com/logicplanes/kaeso/releases/tag/v0.7.3-rc.2
 [0.7.3-rc.1]: https://github.com/logicplanes/kaeso/releases/tag/v0.7.3-rc.1
 [0.7.2]: https://github.com/logicplanes/kaeso/releases/tag/v0.7.2
 [0.7.1]: https://github.com/logicplanes/kaeso/releases/tag/v0.7.1
