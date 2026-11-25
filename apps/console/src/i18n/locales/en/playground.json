@@ -29,6 +29,7 @@
   "playground.errorWithRequest": "{error} Request {id}",
   "playground.export": "Export",
   "playground.export.attachments": "Attachments",
+  "playground.export.box": "top {top}, bottom {bottom}, left {left}, right {right}",
   "playground.export.failed": "Failed: {reason}",
   "playground.export.firstToken": "first token {time}",
   "playground.export.noAnswer": "no answer",

@@ -79,6 +79,7 @@
   "playground.export.request": "Anfrage {id}",
   "playground.export.noAnswer": "keine Antwort",
   "playground.export.predicate": "ja, Wahrscheinlichkeit {p}",
+  "playground.export.box": "oben {top}, unten {bottom}, links {left}, rechts {right}",
   "playground.export.refusedBecause": "abgelehnt: {reason}",
   "playground.export.refused": "abgelehnt",
   "playground.exportMarkdown": "Markdown",
