@@ -9,7 +9,7 @@ use bytes::Bytes;
 use futures::{Stream as _, StreamExt};
 use kaeso_codecs::{StreamDecoder, StreamEncoder, StreamPassthrough};
 use kaeso_core::assembler::Assembler;
-use kaeso_core::estimate::{self, Tally};
+use kaeso_core::estimate::{self, OutputCap, Tally};
 use kaeso_core::provider::AccountSignIn;
 use kaeso_kpp::{DialectId, KppError, Reply, RequestKind, StopReason, StreamEvent};
 use kaeso_upstream::memory::AnswerMemory;
@@ -498,6 +498,7 @@ pub(super) struct Parts {
     pub(super) binary: Option<Binary>,
     // Puts back the values built-in rules masked, where the model names their placeholders.
     pub(super) restoring: Option<crate::services::guardrails::rules::Restoring>,
+    pub(super) output_cap: Option<OutputCap>,
 }
 
 pub(super) enum Gathered {
@@ -760,6 +761,7 @@ pub(super) async fn gather(
     mut decoder: Box<dyn StreamDecoder>,
     dialect: DialectId,
     max: usize,
+    mut cap: Option<OutputCap>,
 ) -> Result<Reply, Gathered> {
     let mut asm = Assembler::new(dialect);
     let mut read = 0usize;
@@ -775,10 +777,14 @@ pub(super) async fn gather(
             Some(Err(e)) => return Err(Gathered::Transport(e)),
             None => (decoder.finish(), true),
         };
+        let (events, capped) = match cap.as_mut() {
+            Some(c) => (c.apply(events), c.reached()),
+            None => (events, false),
+        };
         for event in &events {
             asm.feed(event);
         }
-        if last {
+        if last || capped {
             break;
         }
     }
@@ -935,6 +941,7 @@ struct Pump {
     first: Option<tokio::sync::oneshot::Sender<Option<KppError>>>,
     aborted: Option<Aborted>,
     restoring: Option<crate::services::guardrails::rules::Restoring>,
+    output_cap: Option<OutputCap>,
     tally: Tally,
     app: ToApp,
     max_bytes: u64,
@@ -968,6 +975,7 @@ impl Pump {
             taken,
             binary,
             restoring,
+            output_cap,
         } = parts;
         let (first, aborted) = match binary {
             Some(b) => (Some(b.first), Some(b.aborted)),
@@ -1033,6 +1041,7 @@ impl Pump {
             first,
             aborted,
             restoring,
+            output_cap,
             tally: Tally::new(),
             app,
             max_bytes,
@@ -1121,7 +1130,7 @@ impl Pump {
             StreamEngine::Codec { .. } => {
                 let (events, chunk_last) = self.decode_chunk(next, *ends);
                 let stop = self.encode_events(events, out, ends, in_place);
-                (chunk_last, stop)
+                (chunk_last || self.output_capped(), stop)
             }
         }
     }
@@ -1186,6 +1195,10 @@ impl Pump {
         else {
             return false;
         };
+        let events = match self.output_cap.as_mut() {
+            Some(c) => c.apply(events),
+            None => events,
+        };
         let events = match self.restoring.as_mut() {
             Some(r) => r.apply(events),
             None => events,
@@ -1223,6 +1236,10 @@ impl Pump {
         stop
     }
 
+    fn output_capped(&self) -> bool {
+        self.output_cap.as_ref().is_some_and(OutputCap::reached)
+    }
+
     fn can_finish_before_accounting(&self) -> bool {
         self.broken.is_none()
             && self.first.is_none()
@@ -1256,6 +1273,7 @@ impl Pump {
                     self.app.progress.count(&init.events);
                     last = self.record_event_errors(&mut init.events);
                     stop = self.encode_events(init.events, &mut out, &mut ends, &mut in_place);
+                    last |= self.output_capped();
                     if !stop
                         && !last
                         && let Some(err) = init.error
@@ -1532,6 +1550,10 @@ impl Pump {
                 // An early exit leaves what the decoder held back: the app's stream is over, but
                 // the logged reply and the usage estimate still count it.
                 let held = self.processing.time(|| decoder.flush());
+                let held = match self.output_cap.as_mut() {
+                    Some(c) => c.apply(held),
+                    None => held,
+                };
                 self.app.progress.count(&held);
                 for event in &held {
                     asm.feed(event);

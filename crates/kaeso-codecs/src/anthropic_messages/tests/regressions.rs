@@ -617,6 +617,77 @@ fn tool_arguments_that_are_not_an_object_are_refused_in_replies() {
 }
 
 #[test]
+fn a_plan_streams_tool_arguments_to_an_anthropic_app_as_they_arrive() {
+    let sse = std::fs::read(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/fixtures/openai_responses/streams/plan-function-call-stream.sse"
+    ))
+    .unwrap();
+    let mut dec = crate::openai_responses::OpenAiResponses::stream_decoder(&stream_ctx());
+    let mut events = dec.feed(&sse);
+    events.extend(dec.finish());
+    let ctx = EncodeCtx::new(RequestKind::Generate, kaeso_kpp::StreamMode::on(true));
+    let mut enc = AnthropicMessages::stream_encoder(&ctx);
+    let mut written = Vec::new();
+    let mut streamed = 0;
+    for e in &events {
+        let out = enc.encode(e).unwrap();
+        if let StreamEvent::BlockDelta(d) = e
+            && let Delta::ToolArguments(args) = &d.delta
+            && !args.trim().is_empty()
+        {
+            let text = String::from_utf8_lossy(&out);
+            assert!(text.contains("input_json_delta"), "{args:?} was held back");
+            streamed += 1;
+        }
+        written.extend(out);
+    }
+    written.extend(enc.finish().unwrap());
+    assert!(streamed > 1, "{streamed}");
+    assert_eq!(
+        accumulate(&written)["content"][0]["input"],
+        json!({"city": "Paris"})
+    );
+}
+
+#[test]
+fn blank_arguments_wait_for_the_first_text_and_a_blank_call_sends_none() {
+    use kaeso_kpp::ToolCallHeader;
+    let tool = |i: u32| {
+        StreamEvent::BlockStart(BlockStart::new(
+            i,
+            BlockHeader::ToolCall(ToolCallHeader::new(format!("call_{i}"), "f")),
+        ))
+    };
+    let args = |i: u32, s: &str| {
+        StreamEvent::BlockDelta(BlockDelta::new(i, Delta::ToolArguments(s.into())))
+    };
+    let ctx = EncodeCtx::new(RequestKind::Generate, kaeso_kpp::StreamMode::on(true));
+    let mut enc = AnthropicMessages::stream_encoder(&ctx);
+    enc.encode(&StreamEvent::ResponseStart(ResponseStart::new("r", "m")))
+        .unwrap();
+    enc.encode(&tool(0)).unwrap();
+    assert!(enc.encode(&args(0, "")).unwrap().is_empty());
+    assert!(enc.encode(&args(0, " \n")).unwrap().is_empty());
+    let first = String::from_utf8(enc.encode(&args(0, "{}")).unwrap()).unwrap();
+    assert!(first.contains(r#""partial_json":" \n{}""#), "{first}");
+    let stop = String::from_utf8(
+        enc.encode(&StreamEvent::BlockStop(BlockStop::new(0)))
+            .unwrap(),
+    )
+    .unwrap();
+    assert!(!stop.contains("input_json_delta"), "{stop}");
+    enc.encode(&tool(1)).unwrap();
+    enc.encode(&args(1, "  ")).unwrap();
+    let stop = String::from_utf8(
+        enc.encode(&StreamEvent::BlockStop(BlockStop::new(1)))
+            .unwrap(),
+    )
+    .unwrap();
+    assert!(!stop.contains("input_json_delta"), "{stop}");
+}
+
+#[test]
 fn streamed_tool_arguments_that_do_not_form_an_object_are_sent_as_they_came() {
     use kaeso_kpp::ToolCallHeader;
     let tool = |i: u32, id: &str| {
@@ -659,7 +730,10 @@ fn streamed_tool_arguments_that_do_not_form_an_object_are_sent_as_they_came() {
         })
         .map(|(i, p)| format!("{i}:{p}"))
         .collect();
-    assert_eq!(partial, ["0:{\"city\": \"Par", "1:{\"city\":\"Oslo\"}"]);
+    assert_eq!(
+        partial,
+        ["0:{\"city\": ", "0:\"Par", "1:{\"city\":", "1:\"Oslo\"}"]
+    );
     let own = format!(
         "{START}event: content_block_start\ndata: {{\"type\":\"content_block_start\",\"index\":0,\"content_block\":{{\"type\":\"tool_use\",\"id\":\"t\",\"name\":\"f\",\"input\":{{}}}}}}\n\n\
 event: content_block_delta\ndata: {{\"type\":\"content_block_delta\",\"index\":0,\"delta\":{{\"type\":\"input_json_delta\",\"partial_json\":\"{{\\\"a\\\": \"}}}}\n\n\

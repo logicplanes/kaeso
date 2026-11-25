@@ -2340,6 +2340,7 @@ async fn attempt(
         kaeso_codecs::openai_responses::without_store(g);
     }
     let chatgpt = account.filter(|a| a.method == AuthMethod::ChatGpt);
+    let mut output_cap = None;
     if let Some(a) = chatgpt {
         let stage =
             super::accounts::media_api(kind).map_or(Stage::Capability, |api| Stage::NeedsApiKey {
@@ -2347,8 +2348,13 @@ async fn attempt(
                 provider: eff.provider.name().to_owned(),
                 api,
             });
-        plan.dialect =
-            super::accounts::prepare(&mut req, a, eff.provider.name()).map_err(fail(stage))?;
+        let prepared = super::accounts::prepare(&mut req, a, eff.provider.name(), ingress)
+            .map_err(fail(stage))?;
+        plan.dialect = prepared.dialect;
+        if let Some((limit, field)) = prepared.output_limit {
+            output_cap = Some(kaeso_core::estimate::OutputCap::new(limit));
+            plan.adapted.push(field.to_owned());
+        }
         rec.outcome().egress = Some(plan.dialect);
     }
 
@@ -2798,7 +2804,7 @@ async fn attempt(
             let max = state.config.body_limits.provider_response.as_usize();
             let reply = tokio::time::timeout_at(
                 deadline,
-                stream::gather(chunks, decoder, plan.dialect, max),
+                stream::gather(chunks, decoder, plan.dialect, max, output_cap),
             )
             .await
             .map_err(late)?
@@ -2850,6 +2856,7 @@ async fn attempt(
                 && !checks_replies
                 && restoring.is_none()
                 && carry.is_none()
+                && output_cap.is_none()
             {
                 kaeso_codecs::passthrough::for_stream(ingress, &ectx, &encode_ctx)
             } else {
@@ -2928,6 +2935,7 @@ async fn attempt(
                     decoder,
                     plan.dialect,
                     max,
+                    output_cap.clone(),
                 )
                 .await;
                 // A stream that ends in an error or breaks off goes to the app as it came, and
@@ -3002,6 +3010,7 @@ async fn attempt(
                 taken: taken.clone(),
                 binary: None,
                 restoring,
+                output_cap,
             };
             let aborted = stream::Aborted::default();
             // Audio has no room for an error once it has begun, so its status waits for the

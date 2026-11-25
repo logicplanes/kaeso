@@ -1,4 +1,6 @@
-use kaeso_kpp::{Block, Delta, StreamEvent, Usage};
+use kaeso_kpp::{
+    Block, BlockStop, Delta, ResponseDelta, ResponseStop, StopReason, StreamEvent, Usage,
+};
 
 pub const BYTES_PER_TOKEN: u64 = 4;
 
@@ -88,6 +90,71 @@ impl Tally {
     pub fn reasoning_tokens(&self) -> u64 {
         self.reasoning_deltas
             .max(tokens_of_bytes(self.reasoning_bytes))
+    }
+}
+
+// For a route that refuses the output limit field (a ChatGPT plan), Kaeso ends the reply the
+// way a provider would at the limit: open blocks stop and the reply stops with `MaxTokens`.
+#[derive(Clone, Debug)]
+pub struct OutputCap {
+    limit: u64,
+    tally: Tally,
+    open: Vec<u32>,
+    ended: bool,
+    reached: bool,
+}
+
+impl OutputCap {
+    pub fn new(limit: u64) -> OutputCap {
+        OutputCap {
+            limit,
+            tally: Tally::new(),
+            open: Vec::new(),
+            ended: false,
+            reached: false,
+        }
+    }
+
+    pub fn limit(&self) -> u64 {
+        self.limit
+    }
+
+    pub fn reached(&self) -> bool {
+        self.reached
+    }
+
+    pub fn apply(&mut self, events: Vec<StreamEvent>) -> Vec<StreamEvent> {
+        if self.reached {
+            return Vec::new();
+        }
+        let mut out = Vec::with_capacity(events.len());
+        for event in events {
+            match &event {
+                StreamEvent::BlockStart(s) => self.open.push(s.index),
+                StreamEvent::BlockStop(s) => self.open.retain(|i| *i != s.index),
+                StreamEvent::ResponseDelta(d) if d.stop.is_some() => self.ended = true,
+                StreamEvent::ResponseStop(_) | StreamEvent::Error(_) => self.ended = true,
+                _ => {}
+            }
+            let output = matches!(event, StreamEvent::BlockDelta(_));
+            self.tally.feed(&event);
+            out.push(event);
+            if output && !self.ended && self.tally.output_tokens() >= self.limit {
+                self.reached = true;
+                out.extend(
+                    self.open
+                        .drain(..)
+                        .map(|i| StreamEvent::BlockStop(BlockStop::new(i))),
+                );
+                out.push(StreamEvent::ResponseDelta(ResponseDelta::new(
+                    Some(StopReason::MaxTokens),
+                    None,
+                )));
+                out.push(StreamEvent::ResponseStop(ResponseStop::new()));
+                break;
+            }
+        }
+        out
     }
 }
 
@@ -208,5 +275,78 @@ mod tests {
         assert_eq!(t.reasoning_tokens(), (8 + 24_u64).div_ceil(4));
         assert_eq!(t.output_tokens(), (8 + 24 + 27 + 17 + 3_u64).div_ceil(4));
         assert!(!t.has_final_usage());
+    }
+
+    fn capped_run(limit: u64, events: Vec<StreamEvent>) -> (Vec<StreamEvent>, bool) {
+        let mut cap = OutputCap::new(limit);
+        let out = cap.apply(events);
+        (out, cap.reached())
+    }
+
+    fn start(index: u32, block: kaeso_kpp::BlockHeader) -> StreamEvent {
+        StreamEvent::BlockStart(kaeso_kpp::BlockStart::new(index, block))
+    }
+
+    #[test]
+    fn a_reply_at_its_output_limit_stops_with_max_tokens_and_closes_its_blocks() {
+        use kaeso_kpp::{BlockHeader, ResponseStart, ToolCallHeader};
+        let mut events = vec![
+            StreamEvent::ResponseStart(ResponseStart::new("resp_1", "m")),
+            start(0, BlockHeader::Text),
+            delta(0, Delta::Text("Calling.".into())),
+            StreamEvent::BlockStop(BlockStop::new(0)),
+            start(
+                1,
+                BlockHeader::ToolCall(ToolCallHeader::new("call_1", "search")),
+            ),
+        ];
+        events.extend((0..10).map(|_| delta(1, Delta::ToolArguments("{\"q\":".into()))));
+        let (out, reached) = capped_run(5, events);
+        assert!(reached);
+        let tail: Vec<_> = out.iter().rev().take(4).rev().cloned().collect();
+        assert_eq!(
+            tail,
+            vec![
+                delta(1, Delta::ToolArguments("{\"q\":".into())),
+                StreamEvent::BlockStop(BlockStop::new(1)),
+                StreamEvent::ResponseDelta(ResponseDelta::new(Some(StopReason::MaxTokens), None)),
+                StreamEvent::ResponseStop(ResponseStop::new()),
+            ]
+        );
+        assert_eq!(
+            out.len(),
+            5 + 2 + 3,
+            "the deltas after the second call delta are dropped"
+        );
+    }
+
+    #[test]
+    fn nothing_follows_a_capped_reply_and_a_finished_reply_is_never_capped() {
+        let mut cap = OutputCap::new(2);
+        let first = cap.apply(vec![
+            start(0, kaeso_kpp::BlockHeader::Text),
+            delta(0, Delta::Text("a".into())),
+            delta(0, Delta::Text("b".into())),
+        ]);
+        assert!(cap.reached());
+        assert_eq!(first.len(), 6);
+        assert!(
+            cap.apply(vec![delta(0, Delta::Text("c".into()))])
+                .is_empty()
+        );
+
+        let events = vec![
+            start(0, kaeso_kpp::BlockHeader::Text),
+            delta(0, Delta::Text("one two".into())),
+            StreamEvent::BlockStop(BlockStop::new(0)),
+            StreamEvent::ResponseDelta(ResponseDelta::new(Some(StopReason::EndTurn), None)),
+            StreamEvent::ResponseStop(ResponseStop::new()),
+        ];
+        let (out, reached) = capped_run(1, events.clone());
+        assert!(reached, "the delta that uses up the limit ends the reply");
+        assert_eq!(out.len(), 2 + 3);
+        let (out, reached) = capped_run(100, events.clone());
+        assert!(!reached);
+        assert_eq!(out, events);
     }
 }

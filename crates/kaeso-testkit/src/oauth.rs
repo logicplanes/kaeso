@@ -52,6 +52,8 @@ pub enum Reply {
     Trickle,
     ToolCall,
     WebSearch,
+    // A tool call whose arguments never end, as a model caught in a loop writes them.
+    EndlessToolCall,
 }
 
 struct Grant {
@@ -123,6 +125,7 @@ struct Inner {
     reply: Mutex<Reply>,
     refresh_wait: Mutex<i64>,
     hold: Mutex<Option<Hold>>,
+    endless: Arc<AtomicUsize>,
 }
 
 fn locked<T>(m: &Mutex<T>) -> std::sync::MutexGuard<'_, T> {
@@ -164,6 +167,7 @@ impl MockOAuth {
             reply: Mutex::default(),
             refresh_wait: Mutex::new(0),
             hold: Mutex::default(),
+            endless: Arc::new(AtomicUsize::new(0)),
         });
         let app = Router::new()
             .route("/.well-known/jwks.json", get(jwks))
@@ -211,6 +215,10 @@ impl MockOAuth {
 
     pub fn issued(&self) -> Vec<String> {
         locked(&self.inner.issued).clone()
+    }
+
+    pub fn endless_open(&self) -> usize {
+        self.inner.endless.load(Ordering::SeqCst)
     }
 
     pub fn received(&self) -> Vec<Received> {
@@ -529,6 +537,44 @@ fn trickle() -> Response {
         .unwrap_or_default()
 }
 
+struct Open(Arc<AtomicUsize>);
+
+impl Drop for Open {
+    fn drop(&mut self) {
+        self.0.fetch_sub(1, Ordering::SeqCst);
+    }
+}
+
+fn endless_tool_call(open: &Arc<AtomicUsize>) -> Response {
+    let path = kpp_fixtures().join("openai_responses/streams/plan-function-call-stream.sse");
+    let recorded = std::fs::read_to_string(path).expect("the plan's tool call stream fixture");
+    let start: String = recorded.split_inclusive("\n\n").take(3).collect();
+    open.fetch_add(1, Ordering::SeqCst);
+    let guard = Open(open.clone());
+    let chunks = futures::stream::unfold(
+        (Some(start), 3u64, guard),
+        |(first, n, guard)| async move {
+            let chunk = match first {
+                Some(start) => start,
+                None => {
+                    tokio::time::sleep(std::time::Duration::from_millis(1)).await;
+                    format!(
+                        "event: response.function_call_arguments.delta\ndata: {{\"type\":\"response.function_call_arguments.delta\",\"item_id\":\"fc_0a15cefd2d0978ac016adb4722461087d2b93002f217f8f968\",\"output_index\":0,\"delta\":\"get_weather \",\"sequence_number\":{n}}}\n\n"
+                    )
+                }
+            };
+            Some((
+                Ok::<_, std::io::Error>(Bytes::from(chunk)),
+                (None, n + 1, guard),
+            ))
+        },
+    );
+    Response::builder()
+        .header(header::CONTENT_TYPE, "text/event-stream")
+        .body(Body::from_stream(chunks))
+        .unwrap_or_default()
+}
+
 async fn api(
     State(inner): State<Arc<Inner>>,
     method: Method,
@@ -594,6 +640,7 @@ async fn api(
                     .into_response(),
                 Reply::UsageLimitInStream => stream(FAILED_STREAM.to_owned()),
                 Reply::Trickle => trickle(),
+                Reply::EndlessToolCall => endless_tool_call(&inner.endless),
                 Reply::ModelNotFound => (
                     StatusCode::NOT_FOUND,
                     [(header::CONTENT_TYPE, "application/json")],

@@ -43,7 +43,9 @@ struct Slot {
     wire: u32,
     buffered: Vec<Buffered>,
     stop_pending: bool,
-    tool_args: Option<String>,
+    // A foreign call's arguments while they are still blank: they go out with the first delta
+    // that isn't, and a call whose arguments stay blank gets no `input_json_delta`.
+    blank_args: Option<String>,
     carry: Option<Box<Carried>>,
 }
 
@@ -158,7 +160,7 @@ impl Encoder {
             wire: 0,
             buffered: Vec::new(),
             stop_pending: false,
-            tool_args: (matches!(s.block, BlockHeader::ToolCall(_)) && !s.extras.is_from(D))
+            blank_args: (matches!(s.block, BlockHeader::ToolCall(_)) && !s.extras.is_from(D))
                 .then(String::new),
             carry,
         };
@@ -495,9 +497,14 @@ fn write_carried_delta(
 }
 
 fn write_block_delta(d: &BlockDelta, slot: &mut Slot, out: &mut Vec<u8>) -> Result<(), KppError> {
-    if let (Some(args), Delta::ToolArguments(json)) = (&mut slot.tool_args, &d.delta) {
-        args.push_str(json);
-        return Ok(());
+    if let (Some(blank), Delta::ToolArguments(json)) = (&mut slot.blank_args, &d.delta) {
+        blank.push_str(json);
+        if blank.trim().is_empty() {
+            return Ok(());
+        }
+        let args = std::mem::take(blank);
+        slot.blank_args = None;
+        return write_plain_delta(slot.wire, "input_json_delta", "partial_json", &args, out);
     }
     if let Some(carried) = slot.carry.as_deref_mut() {
         return write_carried_delta(d, carried, slot.wire, out);
@@ -610,20 +617,6 @@ fn write_block_stop(slot: &mut Slot, extras: &Extras, out: &mut Vec<u8>) -> Resu
                 ty: "signature_delta".into(),
                 signature: crate::continuity::wrap_reasoning(&carried.block),
             })?,
-        };
-        write(out, "content_block_delta", &ev, &Extras::default())?;
-    }
-    if let Some(args) = slot.tool_args.take()
-        && !args.trim().is_empty()
-    {
-        let delta = to_raw(&InputJsonDeltaW {
-            ty: "input_json_delta".into(),
-            partial_json: args,
-        })?;
-        let ev = BlockDeltaW {
-            ty: "content_block_delta".into(),
-            index: slot.wire,
-            delta,
         };
         write(out, "content_block_delta", &ev, &Extras::default())?;
     }

@@ -346,6 +346,7 @@ order: 7
 
 - 它会省略 `background`、`conversation`、`max_output_tokens`、`max_tool_calls`、`metadata`、`moderation`、`multi_agent`、`prompt`、`prompt_cache_retention`、`safety_identifier`、`temperature`、`top_logprobs`、`top_p`、`truncation`、`user` 和 `previous_response_id`。这涉及类型化字段、extras 字段，以及形式标记 `set`、`unset` 和 `canon` 中显式的默认值和 null。
 - 它会省略 Anthropic 网页搜索工具的 `max_uses`，否则该字段会变为 `max_tool_calls`（[托管网页搜索](cross-format.md#托管网页搜索)）。
+- 网关自行在应用的输出上限处结束回复：达到估算的上限时关闭未结束的块，以 `StopReason::MaxTokens` 停止并取消流；`kaeso-adapted` 列出应用的字段。
 - 它会设置 `stream: true` 和 `store: false`。
 - 它会删除形式标记 `input`，因此 `input` 为数组。若某个开头的项角色为 `system`，它还会删除形式标记 `system_items` 和 `instructions`，开头的系统文本成为 `instructions`；Codex 发送的开头 `developer` 项保留其结构和 ID。其他系统消息会失去 `role` 覆盖，并作为 `developer` 消息写出，因为该路由拒绝 `system` 项。
 
