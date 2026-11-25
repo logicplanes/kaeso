@@ -290,7 +290,11 @@ impl Trust {
             body,
             integrated_time,
             log_id: hex(&id),
-            log_index: number(entry.get("logIndex")).ok_or("no log index")?,
+            // The parsed bundle leaves out a zero, protobuf's default: the log's first entry.
+            log_index: match entry.get("logIndex") {
+                None => 0,
+                index => number(index).ok_or("no log index")?,
+            },
         };
         let payload = serde_json::to_vec(&signed).map_err(|e| e.to_string())?;
         UnparsedPublicKey::new(&ECDSA_P256_SHA256_ASN1, &key.point)
@@ -372,10 +376,14 @@ impl Sigstore {
     }
 
     async fn check_bundle(&self, bundle: &Value, subject: &Subject<'_>) -> Result<(), String> {
-        check_statement(bundle, subject)?;
-        let signed_at = self.trust.check_promise(bundle)?;
         let parsed: Bundle = serde_json::from_value(bundle.clone())
             .map_err(|e| format!("the bundle does not parse: {e}"))?;
+        // A bundle may name a field twice, as `integratedTime` and `integrated_time`, and the
+        // signature check reads one of them: every other check reads the bundle as it was parsed.
+        let read =
+            serde_json::to_value(&parsed).map_err(|e| format!("the bundle does not parse: {e}"))?;
+        check_statement(&read, subject)?;
+        let signed_at = self.trust.check_promise(&read)?;
         let verifier = self.trust.verifier(signed_at)?;
         let policy = Identity::new(&self.identity, GITHUB_ISSUER);
         verifier
