@@ -1,0 +1,18 @@
+{
+  "model": "kimi-k3",
+  "max_tokens": 4096,
+  "system": "You are Kimi.",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hello"
+    }
+  ],
+  "cache_control": {
+    "type": "ephemeral",
+    "ttl": "1h"
+  },
+  "output_config": {
+    "effort": "high"
+  }
+}

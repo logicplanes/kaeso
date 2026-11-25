@@ -1,0 +1,22 @@
+{
+  "model": "deepseek-v4-pro",
+  "max_tokens": 4096,
+  "system": "You are a helpful assistant.",
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "Hi, how are you?"
+        }
+      ]
+    }
+  ],
+  "thinking": {
+    "type": "adaptive"
+  },
+  "output_config": {
+    "effort": "high"
+  }
+}

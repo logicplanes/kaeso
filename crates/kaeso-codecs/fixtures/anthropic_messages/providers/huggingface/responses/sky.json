@@ -1,0 +1,22 @@
+{
+  "id": "msg_000000000000000000000000",
+  "type": "message",
+  "role": "assistant",
+  "model": "deepseek-ai/DeepSeek-V4.1-Flash",
+  "content": [
+    {
+      "type": "thinking",
+      "thinking": "Rayleigh scattering; answer in one sentence."
+    },
+    {
+      "type": "text",
+      "text": "The sky looks blue because air molecules scatter short blue wavelengths of sunlight far more than longer red ones."
+    }
+  ],
+  "stop_reason": "end_turn",
+  "stop_sequence": null,
+  "usage": {
+    "input_tokens": 14,
+    "output_tokens": 35
+  }
+}

@@ -137,11 +137,32 @@ impl Dialect {
 
 pub(crate) type Service = &'static Provider;
 
-fn auth_header(service: Service, key: &str) -> (String, String) {
-    (
-        service.auth.header_name().to_owned(),
-        service.auth.header_value(key),
-    )
+fn auth_header(service: Service, dialect: DialectId, key: &str) -> (String, String) {
+    let auth = service.auth_for(dialect);
+    (auth.header_name().to_owned(), auth.header_value(key))
+}
+
+// A dialect the provider serves besides its own format may sit under another API root, such as
+// DeepSeek's `/anthropic/v1`, some at the root of the host, such as QwenCloud's
+// `/apps/anthropic/v1`: the path's `/v1` gives way to it.
+fn native_url(service: Service, dialect: DialectId, base_url: &str, path: &str) -> String {
+    let native = service.native.iter().find(|n| n.dialect == dialect);
+    let base = match native.filter(|n| n.from_root) {
+        Some(_) => base_url
+            .split_once("://")
+            .and_then(|(scheme, rest)| {
+                rest.split('/')
+                    .next()
+                    .map(|host| format!("{scheme}://{host}"))
+            })
+            .unwrap_or_else(|| base_url.to_owned()),
+        None => base_url.to_owned(),
+    };
+    let path = native
+        .and_then(|n| n.api_root)
+        .and_then(|root| path.strip_prefix("/v1").map(|rest| format!("{root}{rest}")))
+        .unwrap_or_else(|| path.to_owned());
+    format!("{base}{path}")
 }
 
 #[derive(clap::Args)]
@@ -279,13 +300,14 @@ pub(crate) async fn run(
         service,
         count,
         base_url: endpoint.base_url.trim_end_matches('/').to_owned(),
-        url: format!(
-            "{}{}",
+        url: native_url(
+            service,
+            args.dialect.id(),
             endpoint.base_url.trim_end_matches('/'),
             count
                 .map(|(path, _)| path)
                 .or(args.dialect.path_at(service))
-                .unwrap_or_default()
+                .unwrap_or_default(),
         ),
         model: args.model.as_deref(),
         key: endpoint.key.as_deref().filter(|_| !args.dry_run),
@@ -526,7 +548,7 @@ impl Recorder<'_> {
 
     fn headers(&self, fixture: &Path, key: &str) -> Result<HeaderMap, Error> {
         let mut headers = vec![("content-type".to_owned(), "application/json".to_owned())];
-        headers.push(auth_header(self.service, key));
+        headers.push(auth_header(self.service, self.dialect.id(), key));
         if self.dialect.is_anthropic() {
             headers.push((
                 "anthropic-version".to_owned(),
@@ -731,6 +753,7 @@ mod tests {
         videos: &[],
         decisions: &[],
         dialects: &[DialectId::OpenAiChat, DialectId::AnthropicMessages],
+        native: &[],
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
@@ -852,6 +875,42 @@ mod tests {
                 .unwrap_err()
                 .to_string(),
             "`Example_Cloud` is not a provider id: lowercase letters and digits, with single hyphens between them"
+        );
+    }
+
+    #[test]
+    fn a_native_dialect_is_recorded_at_its_own_api_root() {
+        let path = anthropic_messages::MESSAGES_PATH;
+        assert_eq!(
+            native_url(
+                known("deepseek"),
+                DialectId::AnthropicMessages,
+                "https://api.deepseek.com",
+                path
+            ),
+            "https://api.deepseek.com/anthropic/v1/messages"
+        );
+        assert_eq!(
+            native_url(
+                known("alibaba"),
+                DialectId::AnthropicMessages,
+                "https://ap-southeast-1.maas.qwencloudapi.com/compatible-mode",
+                path
+            ),
+            "https://ap-southeast-1.maas.qwencloudapi.com/apps/anthropic/v1/messages"
+        );
+        assert_eq!(
+            native_url(
+                known("deepseek"),
+                DialectId::OpenAiChat,
+                "https://api.deepseek.com",
+                "/v1/chat/completions"
+            ),
+            "https://api.deepseek.com/v1/chat/completions"
+        );
+        assert_eq!(
+            auth_header(known("deepseek"), DialectId::AnthropicMessages, "sk-test").0,
+            "authorization"
         );
     }
 

@@ -1,0 +1,11 @@
+{
+  "model": "gemma4:31b",
+  "max_tokens": 1024,
+  "stream": true,
+  "messages": [
+    {
+      "role": "user",
+      "content": "Count from 1 to 10"
+    }
+  ]
+}

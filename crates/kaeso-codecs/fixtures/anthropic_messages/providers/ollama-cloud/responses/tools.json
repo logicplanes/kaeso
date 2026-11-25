@@ -1,0 +1,22 @@
+{
+  "id": "msg_000000000000000000000000",
+  "type": "message",
+  "role": "assistant",
+  "model": "gemma4:31b",
+  "content": [
+    {
+      "type": "tool_use",
+      "id": "call_000000000000000000000000",
+      "name": "get_weather",
+      "input": {
+        "location": "San Francisco, CA"
+      }
+    }
+  ],
+  "stop_reason": "tool_use",
+  "stop_sequence": null,
+  "usage": {
+    "input_tokens": 71,
+    "output_tokens": 20
+  }
+}

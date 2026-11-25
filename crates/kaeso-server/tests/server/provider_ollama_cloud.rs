@@ -21,6 +21,12 @@ fn error(name: &str) -> String {
     format!("[mock:error=../providers/ollama-cloud/errors/{name}]")
 }
 
+// Generation models are sent as Chat Completions, so an Anthropic app's request is translated;
+// `native_dialects.rs` covers the Messages API it reaches as it came.
+fn sent_as(_model: &str) -> Value {
+    json!({ "egress_dialect": "openai_chat" })
+}
+
 async fn env() -> Env {
     let env = common::v1::env(Some(Arc::new(Capture::default())), None).await;
     let org = &env.owner.org_id;
@@ -38,7 +44,7 @@ async fn env() -> Env {
             .app
             .post(
                 &format!("/orgs/{org}/projects/{}/models", env.project),
-                json!({ "provider": "ollama-cloud", "model_id": model }),
+                json!({ "provider": "ollama-cloud", "model_id": model, "overrides": sent_as(model) }),
                 Some(&env.owner.cookie),
             )
             .await;

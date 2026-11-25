@@ -1,0 +1,11 @@
+{
+  "model": "deepseek-ai/DeepSeek-V4.1-Flash",
+  "max_tokens": 1024,
+  "messages": [
+    {
+      "role": "user",
+      "content": "Count from 1 to 5."
+    }
+  ],
+  "stream": true
+}

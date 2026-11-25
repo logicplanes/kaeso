@@ -74,17 +74,29 @@ impl InputCounter {
         };
         let app_req = Request::CountTokens(app);
         let req = Request::CountTokens(sent);
-        let mut ctx =
-            super::pipeline::egress_ctx(&app_req, &self.provider, req.model(), self.flags);
+        let mut ctx = super::pipeline::egress_ctx(
+            &app_req,
+            &self.provider,
+            self.dialect,
+            req.model(),
+            self.flags,
+        );
         if let Some(p) = &self.platform {
             ctx = p.apply(ctx);
         }
         let encoded = dispatch::encode_request(self.dialect, &req, &mut ctx)?;
+        let rooted;
         let base = match &self.platform {
             Some(p) => &p.base,
             None => base_url(&self.state, &self.provider).ok_or_else(|| {
                 KppError::provider(format!("no base URL for `{}`", self.provider.id()))
             })?,
+        };
+        let base = if self.platform.is_none() && self.provider.from_host_root(self.dialect) {
+            rooted = super::media::host_root(base);
+            &rooted
+        } else {
+            base
         };
         let resp = self
             .state
@@ -94,7 +106,7 @@ impl InputCounter {
                 auth: self
                     .platform
                     .as_ref()
-                    .map_or_else(|| self.provider.auth(), |p| Some(p.auth)),
+                    .map_or_else(|| self.provider.auth_for(self.dialect), |p| Some(p.auth)),
                 guard: super::pipeline::guard_for(&self.provider),
                 credential: self
                     .platform

@@ -756,13 +756,48 @@ impl ProviderRef {
         self.built_in().and_then(|p| p.route(model))
     }
 
-    // A provider with routes counts tokens in a routed format only where its route says so;
-    // the others count in their one format whatever a model is sent as.
+    /// The built-in provider's own API for `dialect`, when it serves `model` there besides its
+    /// `generation` dialect; custom providers speak one generation dialect.
+    pub fn native(
+        &self,
+        dialect: DialectId,
+        model: &str,
+    ) -> Option<crate::provider::NativeDialect> {
+        self.built_in()
+            .and_then(|p| p.native(dialect, model))
+            .copied()
+    }
+
+    /// What takes the place of `/v1` in `dialect`'s paths at the provider.
+    pub fn api_root_for(&self, dialect: DialectId) -> Option<&'static str> {
+        self.built_in().and_then(|p| p.api_root_for(dialect))
+    }
+
+    /// Whether `dialect`'s API root starts at the root of the base URL's host
+    /// ([`NativeDialect::from_root`](crate::provider::NativeDialect::from_root)).
+    pub fn from_host_root(&self, dialect: DialectId) -> bool {
+        self.built_in()
+            .is_some_and(|p| p.native.iter().any(|n| n.dialect == dialect && n.from_root))
+    }
+
+    /// The auth header `dialect` takes at the provider.
+    pub fn auth_for(&self, dialect: DialectId) -> Option<AuthStyle> {
+        match self {
+            ProviderRef::BuiltIn(p) => Some(p.auth_for(dialect)),
+            ProviderRef::Custom(c) => c.auth.style(),
+        }
+    }
+
+    // A provider with routes counts tokens in a routed format only where its route says so,
+    // and in a native dialect only where that dialect counts them; the others count in their
+    // one format whatever a model is sent as.
     pub fn count_tokens_for(&self, dialect: DialectId) -> Option<DialectId> {
-        match self
-            .built_in()
-            .and_then(|p| p.routes.iter().find(|r| r.dialect == dialect))
+        let built_in = self.built_in();
+        if let Some(native) = built_in.and_then(|p| p.native.iter().find(|n| n.dialect == dialect))
         {
+            return native.counts_tokens.then_some(dialect);
+        }
+        match built_in.and_then(|p| p.routes.iter().find(|r| r.dialect == dialect)) {
             Some(route) => route.counts_tokens.then_some(dialect),
             None => self.count_tokens(),
         }

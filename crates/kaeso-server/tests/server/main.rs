@@ -56,6 +56,7 @@ mod metrics_emitted;
 mod model_api;
 mod model_lifecycle;
 mod model_lines;
+mod native_dialects;
 mod notification_dispatch;
 mod notification_settings;
 mod oidc;

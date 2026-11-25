@@ -1,0 +1,11 @@
+{
+  "model": "zai-org/GLM-5.2",
+  "max_tokens": 1024,
+  "messages": [
+    {
+      "role": "user",
+      "content": "Write a short poem about open source."
+    }
+  ],
+  "stream": true
+}
