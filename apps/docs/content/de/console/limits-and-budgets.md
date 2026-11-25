@@ -87,7 +87,7 @@ Eine Anfrage, die mehr kosten könnte, als von einem harten Budget oder einer To
 Eine Anfrage ohne Ausgabelimit an ein Modell ohne Ausgabelimit und ohne Kontextfenster kann Kaeso nicht begrenzen. Ebenso wenig begrenzt es Audio, das als Link oder Datei-ID an ein Modell geht, das nach Länge abrechnet, denn Kaeso liest es nie. Eine solche Anfrage kommt durch, wenn nichts anderes läuft, und kann ein Limit daher allein überschreiten. Unter einem harten Budget ohne abgeschlossene Anfrage in seinem Zeitraum oder den 30 Tagen davor läuft sie allein; noch entstehende Videos und Bilderzeugungen halten sie aber nicht auf.
 
 > [!NOTE]
-> Kaeso zählt Limits in Valkey. Solange Valkey nicht erreichbar ist, lassen Raten und weiche Budgets Anfragen durch, und harte Budgets lehnen sie mit Status 503 ab.
+> Kaeso zählt Limits in Valkey. Solange Valkey nicht erreichbar ist, lassen Raten und weiche Budgets Anfragen durch, und harte Budgets lehnen sie mit Status 503 und `Retry-After: 5` ab, im Anthropic-Format mit 529. Das Anfrageprotokoll zeigt sie als `overloaded`, als Ablehnung von Kaeso selbst, nicht als Fehler des Anbieters.
 
 ## Nächste Schritte
 

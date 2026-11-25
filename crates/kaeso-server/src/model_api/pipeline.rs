@@ -654,8 +654,10 @@ pub(super) fn count_upstream_error(kind: &'static str, provider: &'static str) {
 }
 
 pub(super) fn limited(refusal: super::hooks::Refusal) -> KppError {
+    // A 503 is Kaeso's own: its limit counters can't be read. It reaches apps and the request
+    // log as Kaeso being busy, like its other busy refusals, never as the provider's error.
     let kind = match refusal.status {
-        503 => ErrorKind::ProviderError,
+        503 => ErrorKind::Overloaded,
         403 => ErrorKind::PermissionDenied,
         _ => ErrorKind::RateLimited,
     };
@@ -4095,6 +4097,32 @@ mod tests {
             egress_ctx(&decide, &openai, "gpt-6-luna", ModelFlags::default()).base_path,
             None
         );
+    }
+
+    #[test]
+    fn kaesos_own_limit_refusals_never_read_as_the_providers_error() {
+        let refusal = |status: u16| super::super::hooks::Refusal {
+            status,
+            message: "m".into(),
+            retry_after: Some(Duration::from_secs(5)),
+            param: None,
+            left: None,
+        };
+        let down = limited(refusal(503));
+        assert_eq!(
+            (down.kind.clone(), down.status, down.retry_after),
+            (
+                ErrorKind::Overloaded,
+                Some(503),
+                Some(Duration::from_secs(5))
+            )
+        );
+        assert_eq!(
+            dispatch::encode_error(DialectId::OpenAiChat, &down).status,
+            503
+        );
+        assert_eq!(limited(refusal(403)).kind, ErrorKind::PermissionDenied);
+        assert_eq!(limited(refusal(429)).kind, ErrorKind::RateLimited);
     }
 
     #[test]
