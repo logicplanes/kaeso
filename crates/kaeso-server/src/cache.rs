@@ -22,7 +22,7 @@ pub const REFRESH_AFTER: Duration = Duration::from_secs(20);
 // nobody asks for it meanwhile: an app that pauses between requests, as a person reading an
 // agent's answer does, then finds its key and its project's settings in memory. An entry left
 // alone for longer runs out as before, and every entry is still never older than `TTL`.
-pub const KEEP_WARM: Duration = Duration::from_secs(15 * 60);
+pub const KEEP_WARM: Duration = Duration::from_secs(60 * 60);
 
 // How often the entries are looked over for a load ahead of time. Shorter than what is left of
 // an entry when it becomes due, `TTL - REFRESH_AFTER`, so none runs out between two looks.

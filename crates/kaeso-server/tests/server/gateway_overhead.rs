@@ -177,8 +177,8 @@ async fn a_cold_project_is_loaded_beside_the_upload_even_for_a_request_refused_a
     caches.project_limits.invalidate(&key).await;
     assert_eq!(refused().await.status, StatusCode::BAD_REQUEST);
     assert!(
-        caches.project_limits.cached(&key).await.is_none(),
-        "a project whose models are in memory loads nothing ahead"
+        caches.project_limits.cached(&key).await.is_some(),
+        "an entry that ran out alone is loaded ahead, though the project's models are in memory"
     );
 }
 
