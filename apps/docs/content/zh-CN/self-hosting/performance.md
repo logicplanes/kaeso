@@ -4,7 +4,7 @@ description: 了解在 BerriAI 的基准测试中，Kaeso 与 LiteLLM、Bifrost 
 order: 14
 ---
 
-Kaeso 0.7.0 在 [ai-gateway-bench](https://github.com/BerriAI/ai-gateway-bench) 上运行，这是 LiteLLM 背后的公司 BerriAI 发布的基准测试。LiteLLM、Bifrost 和 Portkey 在同一台机器上一同运行。您可以用这些数字来规划服务器，并将 Kaeso 与您现在运行的网关进行比较。[kaeso.app/benchmarks](https://kaeso.app/benchmarks) 以图表展示这些数字，并提供脚本和全部原始结果。
+Kaeso 0.7.2 在 [ai-gateway-bench](https://github.com/BerriAI/ai-gateway-bench) 上运行，这是 LiteLLM 背后的公司 BerriAI 发布的基准测试。LiteLLM、Bifrost 和 Portkey 在同一台机器上一同运行。您可以用这些数字来规划服务器，并将 Kaeso 与您现在运行的网关进行比较。[kaeso.app/benchmarks](https://kaeso.app/benchmarks) 以图表展示这些数字，并提供脚本和全部原始结果。
 
 每个数字都是三轮的中位数。基准测试的模拟服务商代替了模型服务商，因此这些数字反映的是网关本身的开销，而不是模型的开销。
 
@@ -14,12 +14,12 @@ Kaeso 0.7.0 在 [ai-gateway-bench](https://github.com/BerriAI/ai-gateway-bench) 
 
 | 网关 | 每秒请求数 | 延迟 p50 / p99 | 每个请求的 CPU | 内存峰值 |
 | --- | --- | --- | --- | --- |
-| Kaeso 0.7.0 | 6,338 | 10.0 / 15.6 ms | 314 µs | 101 + 271 MB |
-| Kaeso 0.7.0，开启请求日志 | 5,324 | 11.8 / 20.6 ms | 373 µs | 450 + 1,163 MB |
-| LiteLLM Rust，`main` 分支 `d4e8f96` | 3,211 | 19.6 / 33.2 ms | 573 µs | 86 MB |
-| Bifrost 2.6.0 | 2,806 | 21.0 / 54.6 ms | 708 µs | 405 MB |
-| Portkey 1.15.2 | 779 | 79.9 / 118.3 ms | 1,449 µs | 293 MB |
-| LiteLLM Python 1.110.2 | 74 | 858.1 / 974.0 ms | 13,563 µs | 743 MB |
+| Kaeso 0.7.2 | 6,243 | 10.2 / 15.9 ms | 320 µs | 104 + 559 MB |
+| Kaeso 0.7.2，开启请求日志 | 5,177 | 12.3 / 20.2 ms | 385 µs | 212 + 1,453 MB |
+| LiteLLM Rust，`main` 分支 `d4e8f96` | 3,286 | 19.3 / 31.9 ms | 560 µs | 86 MB |
+| Bifrost 2.6.0 | 2,858 | 20.6 / 52.3 ms | 693 µs | 452 MB |
+| Portkey 1.15.2 | 821 | 77.9 / 113.5 ms | 1,366 µs | 301 MB |
+| LiteLLM Python 1.110.2 | 75 | 849.0 / 918.0 ms | 13,381 µs | 744 MB |
 
 每个请求的 CPU 只计网关本身。Kaeso 的内存是网关加上其数据库的内存：PostgreSQL 和 Valkey，开启请求日志时还包括 ClickHouse。其他网关运行时没有数据库。[kaeso.app/benchmarks](https://kaeso.app/benchmarks) 展示每一轮的范围。
 
@@ -29,12 +29,12 @@ Kaeso 0.7.0 在 [ai-gateway-bench](https://github.com/BerriAI/ai-gateway-bench) 
 
 | 网关 | 1 个客户端 | 4 个客户端 | 16 个客户端 |
 | --- | --- | --- | --- |
-| Kaeso 0.7.0 | +0.73 / +1.66 ms | +0.56 / +1.15 ms | +0.54 / +1.47 ms |
-| Kaeso 0.7.0，开启请求日志 | +0.77 / +2.22 ms | +0.60 / +1.90 ms | +0.62 / +1.45 ms |
-| LiteLLM Rust，`main` 分支 `d4e8f96` | +0.87 / +0.98 ms | +0.76 / +1.68 ms | +0.69 / +2.26 ms |
-| Bifrost 2.6.0 | +1.10 / +1.32 ms | +0.85 / +2.41 ms | +0.71 / +4.08 ms |
-| Portkey 1.15.2 | +2.04 / +5.26 ms | +1.17 / +6.99 ms | +3.1 / +20.4 ms |
-| LiteLLM Python 1.110.2 | +16.0 / +17.8 ms | +50.9 / +60.5 ms | +188 / +216 ms |
+| Kaeso 0.7.2 | +0.87 / +1.63 ms | +0.66 / +1.23 ms | +0.79 / +1.73 ms |
+| Kaeso 0.7.2，开启请求日志 | +0.67 / +1.62 ms | +0.52 / +1.97 ms | +0.56 / +1.83 ms |
+| LiteLLM Rust，`main` 分支 `d4e8f96` | +1.01 / +1.09 ms | +0.89 / +2.11 ms | +0.67 / +2.33 ms |
+| Bifrost 2.6.0 | +1.09 / +1.24 ms | +0.96 / +2.36 ms | +0.57 / +2.98 ms |
+| Portkey 1.15.2 | +2.12 / +4.79 ms | +1.11 / +6.49 ms | +2.9 / +16.4 ms |
+| LiteLLM Python 1.110.2 | +15.8 / +17.3 ms | +49.3 / +57.8 ms | +185 / +206 ms |
 
 没有 64 个客户端的数据。在这一负载下，模拟服务商和驱动程序共用两个核心，上限约为每秒 2,900 个请求。此时减去直连运行会低估每个网关的耗时；这一负载改由容量表衡量。
 
@@ -44,21 +44,39 @@ Kaeso 0.7.0 在 [ai-gateway-bench](https://github.com/BerriAI/ai-gateway-bench) 
 
 | 网关 | 首个 token 附加时间 | 分块间隔 p99 | Claude Code 会话 | Codex 会话 |
 | --- | --- | --- | --- | --- |
-| Kaeso 0.7.0 | +0.87 ms | 7.8 ms | +41.5 ms | +34.0 ms |
-| Kaeso 0.7.0，开启请求日志 | +0.94 ms | 8.1 ms | +66.0 ms | +65.5 ms |
-| LiteLLM Rust，`main` 分支 `d4e8f96` | +0.96 ms | 40.4 ms | +41.0 ms | +44.2 ms |
-| Bifrost 2.6.0 | 不可比较 | 20.5 ms | +126.4 ms | +91.3 ms |
-| Portkey 1.15.2 | +27.54 ms | 8.6 ms | +91.4 ms | +104.2 ms |
-| LiteLLM Python 1.110.2 | +118.92 ms | 34.0 ms | +502.1 ms | +507.7 ms |
+| Kaeso 0.7.2 | +0.95 ms | 7.7 ms | +43.5 ms | +44.8 ms |
+| Kaeso 0.7.2，开启请求日志 | +0.98 ms | 8.0 ms | +42.1 ms | +58.6 ms |
+| LiteLLM Rust，`main` 分支 `d4e8f96` | +0.94 ms | 40.4 ms | +45.2 ms | +46.6 ms |
+| Bifrost 2.6.0 | 不可比较 | 20.6 ms | +125.3 ms | +94.5 ms |
+| Portkey 1.15.2 | +27.54 ms | 8.1 ms | +100.0 ms | +104.5 ms |
+| LiteLLM Python 1.110.2 | +114.17 ms | 33.3 ms | +510.5 ms | +504.6 ms |
 
 直连模拟服务商时，分块间隔的 p99 为 7.5 ms。Bifrost 在服务商应答之前就发送第一个事件，基准测试将其计为首个 token，因此它的首 token 时间为负数。每个流式会话经过每个网关都给出了有效的工具调用。
 
 ## 其他网关领先之处
 
-- **内存：**LiteLLM Rust 从未超过 86 MB，且无需数据库。Kaeso 最高达到 164 MB，其 PostgreSQL 和 Valkey 另占 271 MB。
-- **单个客户端：**每次只发一个请求时，LiteLLM Rust 的 p99 为 +0.98 ms，Kaeso 为 +1.66 ms，Kaeso 没有任何一轮更接近。
+- **内存：**LiteLLM Rust 从未超过 86 MB，且无需数据库。Kaeso 最高达到 160 MB，其 PostgreSQL 和 Valkey 另占 559 MB。
+- **16 个客户端：**在中位数上，Bifrost 附加 +0.57 ms，LiteLLM Rust 附加 +0.67 ms，Kaeso 附加 +0.79 ms，而且 Bifrost 每一轮都低于 Kaeso 的每一轮。在 p99 上，Kaeso 附加得最少。
 - **平手：**首个 token 时间和 Claude Code 会话都落在彼此的范围之内。
-- **请求日志：**将每个请求记录到 ClickHouse 时，Kaeso 每秒处理的请求少了 16%，其数据库占用 1,163 MB。
+- **请求日志：**将每个请求记录到 ClickHouse 时，Kaeso 每秒处理的请求少了 17%，其数据库占用 1,453 MB。
+
+## 自 Kaeso 0.7.0 以来
+
+2026 年 11 月 22 日的测试使用同一个基准测试、同一套脚本和其他所有网关的同一批镜像测量了 Kaeso 0.7.0，运行在另一台同型号的 c-4 上。两次运行之间，未变的网关容量变化最多 5%，因此只有在两次运行的各轮结果互不重叠、且其他网关没有同向变化时，差异才算数：
+
+| 指标 | 0.7.0 | 0.7.2 | 解读 |
+| --- | --- | --- | --- |
+| 满载时每秒请求数 | 6,338 | 6,243 | 相同：各轮结果重叠 |
+| 同上，开启请求日志 | 5,324 | 5,177 | 相同：各轮结果重叠 |
+| 中位数附加延迟，1 个客户端 | +0.73 ms | +0.87 ms | 更高，但 LiteLLM Rust 升幅相近：源于机器 |
+| 中位数附加延迟，4 个客户端 | +0.56 ms | +0.66 ms | 更高，但 LiteLLM Rust 和 Bifrost 升幅相近：源于机器 |
+| 中位数附加延迟，16 个客户端 | +0.54 ms | +0.79 ms | 更高，超出两次运行的各轮范围 |
+| p99 附加延迟，16 个客户端 | +1.47 ms | +1.73 ms | 相同：各轮结果重叠 |
+| 分块间隔 p99 | 7.8 ms | 7.7 ms | 相同：各轮结果重叠 |
+| 满载时内存峰值，开启请求日志 | 450 MB | 212 MB | 更低 |
+| 满载时 Kaeso 数据库的内存峰值 | 271 MB | 559 MB | 更高 |
+
+0.7.2 将等待写入 ClickHouse 的请求日志行控制在 [`logs.buffer_size`](configuration.md) 之内，这与开启请求日志时更低的内存峰值相符。Kaeso 的 PostgreSQL 内存峰值约为原来的两倍，而每个请求的 CPU 不变；16 个客户端时，Kaeso 的中位数附加延迟上升了，而其他网关没有。两次运行无法说明这两点是 0.7.2 还是机器造成的。0.7.0 测试的[脚本](https://kaeso.app/benchmarks/2026-11-22/harness.tar.gz)和[原始结果](https://kaeso.app/benchmarks/2026-11-22/raw.tar.gz)仍然公开。
 
 ## 每个网关做了什么
 
@@ -66,8 +84,8 @@ Kaeso 0.7.0 在 [ai-gateway-bench](https://github.com/BerriAI/ai-gateway-bench) 
 
 | 网关 | 每个请求检查的内容 | 保存的内容 |
 | --- | --- | --- |
-| Kaeso 0.7.0 | 项目的 [API 密钥](../console/api-keys.md)，以及项目允许的模型 | 用量存入 PostgreSQL；无请求日志 |
-| Kaeso 0.7.0，开启请求日志 | 同上 | 用量存入 PostgreSQL，每个请求存入 ClickHouse |
+| Kaeso 0.7.2 | 项目的 [API 密钥](../console/api-keys.md)，以及项目允许的模型 | 用量存入 PostgreSQL；无请求日志 |
+| Kaeso 0.7.2，开启请求日志 | 同上 | 用量存入 PostgreSQL，每个请求存入 ClickHouse |
 | LiteLLM Rust，`main` 分支 `d4e8f96`，未发布 | 配置中的一个主密钥 | 不保存；无数据库 |
 | LiteLLM Python 1.110.2 | 配置中的一个主密钥 | 不保存；无数据库 |
 | Bifrost 2.6.0 | 不检查密钥 | 不保存；日志与存储均关闭 |
@@ -75,7 +93,7 @@ Kaeso 0.7.0 在 [ai-gateway-bench](https://github.com/BerriAI/ai-gateway-bench) 
 
 ## 测试方法
 
-- **机器：**DigitalOcean CPU-Optimized c-4，4 个专用 vCPU（Intel Xeon Platinum 8358，2.6 GHz），8 GB 内存，Ubuntu 24.04 与 Docker，测试日期为 2026 年 11 月 22 日。
+- **机器：**DigitalOcean CPU-Optimized c-4，4 个专用 vCPU（Intel Xeon Platinum 8358，2.6 GHz），8 GB 内存，Ubuntu 24.04 与 Docker，测试日期为 2026 年 11 月 25 日。
 - **核心：**每个网关运行在 Docker 中，使用主机网络，固定在两个核心上。模拟服务商、负载驱动程序和 Kaeso 的数据库运行在另外两个核心上。
 - **基准测试：**`BerriAI/ai-gateway-bench`，提交 `44365ca`，模拟服务商与驱动程序均未改动：`load-probe` 用于请求，`run_http_bench.py` 用于流式输出，`session_runner.py` 用于会话。
 - **模拟服务商：**20 ms 后发出首个 token，随后以 5 ms 的间隔发出 40 个 token。容量测试中立即应答。
@@ -86,7 +104,7 @@ Kaeso 0.7.0 在 [ai-gateway-bench](https://github.com/BerriAI/ai-gateway-bench) 
 各镜像按以下摘要运行：
 
 ```text
-ghcr.io/logicplanes/kaeso-gateway:0.7.0@sha256:3d32fd7827417e49475b4ac9ad7d25f7daed28f02fa489ef4077ff501faaae1a
+ghcr.io/logicplanes/kaeso-gateway:0.7.2@sha256:7db4ee52773bc546746fb5e3d513457929d1782fdb89795f7b9c9f406a94ae79
 ghcr.io/berriai/litellm:v1.110.2@sha256:ef798594ca3db8d81bad2e1439f536f49b71fe095ee9f20416f5e149b4e22035
 maximhq/bifrost:v2.6.0@sha256:5968d007ba4f74ee01bc4ceb071decb9927a0b7bb43dbb9072208f75e2d522e3
 portkeyai/gateway:1.15.2@sha256:97f094d9c8a764cbfaa2a7138c0017b247ca923bb06db1b4c13b7f8a33b5200d
@@ -102,7 +120,7 @@ LiteLLM Rust 尚无已发布的镜像。它由 `BerriAI/litellm` 的提交 `d4e8
 使用一台全新的四核 Ubuntu 24.04 机器，并以 root 身份运行。安装脚本会安装 Docker，按相同提交构建基准测试和 LiteLLM Rust，并按摘要拉取每个镜像：
 
 ```bash
-curl -fsSLO https://kaeso.app/benchmarks/2026-11-22/harness.tar.gz
+curl -fsSLO https://kaeso.app/benchmarks/2026-11-25/harness.tar.gz
 tar -xzf harness.tar.gz
 bash kaeso-gateway-bench/setup.sh
 cd /root
