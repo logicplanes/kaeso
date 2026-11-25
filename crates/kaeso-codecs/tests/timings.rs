@@ -259,3 +259,38 @@ fn a_long_responses_conversation_decodes_about_as_fast_as_the_same_messages() {
         r.as_secs_f64() / m.as_secs_f64(),
     );
 }
+
+fn timed_speech(chunks: &[&[u8]]) -> std::time::Duration {
+    let ctx =
+        kaeso_codecs::EgressCtx::for_kind(RequestKind::Speech, kaeso_kpp::StreamMode::on(true));
+    let mut decoder = dispatch::stream_decoder(DialectId::ElevenLabs, &ctx).unwrap();
+    let started = Instant::now();
+    for chunk in chunks {
+        decoder.feed(chunk);
+    }
+    decoder.finish();
+    started.elapsed()
+}
+
+#[test]
+#[ignore = "timing, run with --release --ignored --nocapture"]
+fn elevenlabs_speech_lines_read_in_time_linear_in_their_bytes() {
+    let newlines = |lines: usize| timed_speech(&[&vec![b'\n'; lines]]);
+    let (few, many) = (newlines(50_000), newlines(400_000));
+    eprintln!("empty lines in one chunk: 50,000 in {few:?}, 400,000 in {many:?}");
+    assert!(
+        many < few * 40,
+        "eight times the lines took {many:?}, not {few:?} times eight"
+    );
+
+    let unbroken = |megabytes: usize| {
+        let line = vec![b'a'; megabytes << 20];
+        timed_speech(&line.chunks(16 * 1024).collect::<Vec<_>>())
+    };
+    let (short, long) = (unbroken(4), unbroken(32));
+    eprintln!("a line in 16 KiB chunks: 4 MiB in {short:?}, 32 MiB in {long:?}");
+    assert!(
+        long < short * 40,
+        "eight times the bytes took {long:?}, not {short:?} times eight"
+    );
+}

@@ -243,11 +243,17 @@ impl StreamDecoder for Decoder {
             }
             return out;
         }
-        self.buffer.extend_from_slice(bytes);
-        while let Some(at) = self.buffer.iter().position(|b| *b == b'\n') {
-            let line: Vec<u8> = self.buffer.drain(..=at).collect();
-            self.line(&line, &mut out);
+        let Some(last) = bytes.iter().rposition(|b| *b == b'\n') else {
+            self.buffer.extend_from_slice(bytes);
+            return out;
+        };
+        let (ended, rest) = bytes.split_at(last + 1);
+        let mut lines = std::mem::take(&mut self.buffer);
+        lines.extend_from_slice(ended);
+        for line in lines.split_inclusive(|b| *b == b'\n') {
+            self.line(line, &mut out);
         }
+        self.buffer.extend_from_slice(rest);
         out
     }
 
