@@ -169,12 +169,16 @@ async fn a_cold_project_is_loaded_beside_the_upload_even_for_a_request_refused_a
     };
     caches.project_models.invalidate(&key).await;
     caches.project_limits.invalidate(&key).await;
+    tokio::time::sleep(std::time::Duration::from_millis(300)).await;
     let r = refused().await;
     assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
     assert!(caches.project_models.cached(&key).await.is_some());
     assert!(caches.project_limits.cached(&key).await.is_some());
 
     caches.project_limits.invalidate(&key).await;
+    // The invalidation also reaches this instance through Valkey, and would drop an entry
+    // loaded before it arrives.
+    tokio::time::sleep(std::time::Duration::from_millis(300)).await;
     assert_eq!(refused().await.status, StatusCode::BAD_REQUEST);
     assert!(
         caches.project_limits.cached(&key).await.is_some(),
