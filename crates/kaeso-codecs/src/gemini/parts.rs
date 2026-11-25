@@ -5,6 +5,7 @@ use kaeso_kpp::{
     VideoBlock,
 };
 use serde_json::Value;
+use std::collections::{BTreeSet, HashMap};
 
 use super::D;
 use super::wire::{BlobW, FileDataW, FunctionCallW, FunctionResponseW, PartW, Raw, ResponsePartW};
@@ -177,33 +178,64 @@ fn file_block(origin: &Origin, file: Ext<FileDataW>, mut extras: Extras) -> Bloc
 /// it answers and every result knows the name Gemini wants back.
 #[derive(Debug, Default)]
 pub(crate) struct Calls {
-    open: Vec<(String, String)>,
-    named: Vec<(String, String)>,
+    opened: u64,
+    open: HashMap<u64, (String, String)>,
+    open_by_id: HashMap<String, BTreeSet<u64>>,
+    open_by_name: HashMap<String, BTreeSet<u64>>,
+    names: HashMap<String, String>,
 }
 
 impl Calls {
     pub(crate) fn name_of(&self, id: &str) -> Option<&str> {
-        self.named
-            .iter()
-            .rev()
-            .find(|(i, _)| i == id)
-            .map(|(_, n)| n.as_str())
+        self.names.get(id).map(String::as_str)
     }
 
     fn opened(&mut self, id: &str, name: &str) {
-        self.open.push((id.to_owned(), name.to_owned()));
-        self.named.push((id.to_owned(), name.to_owned()));
+        let seq = self.opened;
+        self.opened += 1;
+        self.open.insert(seq, (id.to_owned(), name.to_owned()));
+        self.open_by_id
+            .entry(id.to_owned())
+            .or_default()
+            .insert(seq);
+        self.open_by_name
+            .entry(name.to_owned())
+            .or_default()
+            .insert(seq);
+        self.names.insert(id.to_owned(), name.to_owned());
     }
 
     fn answered(&mut self, id: &str) {
-        if let Some(i) = self.open.iter().position(|(o, _)| o == id) {
-            self.open.remove(i);
+        if let Some(seq) = first_open(&mut self.open_by_id, id)
+            && let Some((_, name)) = self.open.remove(&seq)
+        {
+            forget(&mut self.open_by_name, &name, seq);
         }
     }
 
     fn take_by_name(&mut self, name: &str) -> Option<String> {
-        let i = self.open.iter().position(|(_, n)| n == name)?;
-        Some(self.open.remove(i).0)
+        let seq = first_open(&mut self.open_by_name, name)?;
+        let (id, _) = self.open.remove(&seq)?;
+        forget(&mut self.open_by_id, &id, seq);
+        Some(id)
+    }
+}
+
+fn first_open(index: &mut HashMap<String, BTreeSet<u64>>, key: &str) -> Option<u64> {
+    let open = index.get_mut(key)?;
+    let seq = open.pop_first();
+    if open.is_empty() {
+        index.remove(key);
+    }
+    seq
+}
+
+fn forget(index: &mut HashMap<String, BTreeSet<u64>>, key: &str, seq: u64) {
+    if let Some(open) = index.get_mut(key) {
+        open.remove(&seq);
+        if open.is_empty() {
+            index.remove(key);
+        }
     }
 }
 
