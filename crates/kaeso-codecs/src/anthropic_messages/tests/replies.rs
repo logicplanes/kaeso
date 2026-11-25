@@ -334,6 +334,24 @@ fn every_error_fixture_round_trips_with_status_and_retry_after() {
 }
 
 #[test]
+fn qwencloud_answers_a_refused_stream_as_an_event_with_dashscopes_error() {
+    let body = br#"event:error
+data:{"request_id":"00000000-0000-0000-0000-000000000000","code":"AccessDenied","message":"The free quota has been exhausted."}
+
+"#;
+    let e = AnthropicMessages::decode_error(403, &HeaderList::new(), body);
+    assert_eq!(e.kind, kaeso_kpp::ErrorKind::Billing);
+    assert_eq!(e.message, "The free quota has been exhausted.");
+    let e = AnthropicMessages::decode_error(
+        429,
+        &HeaderList::new(),
+        br#"{"request_id":"0","code":"Throttling.RateQuota","message":"Requests rate limit exceeded."}"#,
+    );
+    assert_eq!(e.kind, kaeso_kpp::ErrorKind::RateLimited);
+    assert_eq!(e.message, "Requests rate limit exceeded.");
+}
+
+#[test]
 fn errors_from_elsewhere_get_anthropic_shapes_and_statuses() {
     use kaeso_kpp::{ErrorKind as K, KppError};
     let cases = [

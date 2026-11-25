@@ -1,0 +1,13 @@
+{
+  "status": 403,
+  "kind": "billing",
+  "encoded_status": 402,
+  "encoded": {
+    "type": "error",
+    "error": {
+      "type": "billing_error",
+      "message": "The free quota has been exhausted. To continue accessing the model on a paid basis, please complete your payment information （or disable the \"use free tier only\" mode in the management console if already completed)."
+    },
+    "request_id": null
+  }
+}
