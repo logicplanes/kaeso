@@ -13,10 +13,15 @@ use uuid::Uuid;
 const ACCOUNT: Duration = Duration::minutes(5);
 const MODEL: Duration = Duration::seconds(30);
 const LONGEST_RETRY_AFTER: Duration = Duration::minutes(5);
-// A plan's usage limit lasts until the plan resets, often hours later, and its provider asks
-// apps to pause rather than guess when: the account stays out of routes for at least
-// `ACCOUNT`, and as long as the provider says, up to an hour.
-const LONGEST_PLAN_LIMIT: Duration = Duration::hours(1);
+// A plan's usage limit lasts until the plan resets, hours or days later. A wait the provider
+// states holds the account that long, up to a weekly window. OpenAI's plan limit names no
+// reset and asks apps not to infer one, only to pause
+// (https://developers.openai.com/siwc/token-sharing-open-source/errors-and-recovery), so
+// without a stated wait each hit in a row holds three times as long, from `ACCOUNT` up to
+// `LONGEST_PLAN_BACKOFF`: few calls to a spent plan, and a reset plan is back within hours.
+const LONGEST_PLAN_LIMIT: Duration = Duration::days(7);
+const LONGEST_PLAN_BACKOFF: Duration = Duration::hours(2);
+const PLAN_BACKOFF_FACTOR: i32 = 3;
 const MOST_HELD: usize = 4096;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -42,6 +47,20 @@ pub struct Held {
     pub status: u16,
     pub error_kind: String,
     pub error_message: String,
+    // Set on a plan limit's hold without a stated wait. The record outlives `until` by as
+    // long again, so the next hit in a row finds it and holds longer.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub backoff_ms: Option<u64>,
+}
+
+impl Held {
+    fn kept_for(&self, now: OffsetDateTime) -> Duration {
+        let grace = self
+            .backoff_ms
+            .and_then(|ms| i64::try_from(ms).ok())
+            .map_or(Duration::ZERO, Duration::milliseconds);
+        self.until - now + grace
+    }
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -118,6 +137,10 @@ impl Memory {
     pub fn held(&self, step: &Step<'_>, now: OffsetDateTime) -> Option<Held> {
         let map = self.lock();
         longest(step.keys().iter().filter_map(|k| map.get(k)), now)
+    }
+
+    fn get(&self, key: &Key) -> Option<Held> {
+        self.lock().get(key).cloned()
     }
 
     pub fn release(&self, step: &Step<'_>) {
@@ -216,7 +239,7 @@ impl Cooldowns {
         now: OffsetDateTime,
     ) {
         self.memory.hold(step, reach, held.clone(), now);
-        let left = (held.until - now).whole_milliseconds();
+        let left = held.kept_for(now).whole_milliseconds();
         let Ok(px) = u64::try_from(left) else {
             return;
         };
@@ -293,6 +316,35 @@ impl Cooldowns {
         }
     }
 
+    /// How long a reached plan limit holds the account: the wait the provider states, or the
+    /// next length of the backoff when the account's last hold was one that just lapsed.
+    pub async fn plan_limit(
+        &self,
+        valkey: &Valkey,
+        step: &Step<'_>,
+        err: &KppError,
+        now: OffsetDateTime,
+    ) -> (Duration, Option<u64>) {
+        if let Some(stated) = stated(err) {
+            return (stated.clamp(ACCOUNT, LONGEST_PLAN_LIMIT), None);
+        }
+        let key = step.key(Reach::Provider);
+        let mut conn = valkey.conn();
+        let read: Result<Option<String>, redis::RedisError> = redis::cmd("GET")
+            .arg(valkey_key(valkey, &key))
+            .query_async(&mut conn)
+            .await;
+        let previous = match read {
+            Ok(value) => value.and_then(|v| serde_json::from_str::<Held>(&v).ok()),
+            Err(e) => {
+                tracing::warn!(error = %e, "cannot read an account's last plan limit from Valkey; using this gateway's own");
+                self.memory.get(&key)
+            }
+        };
+        let length = plan_backoff(previous.as_ref(), now);
+        (length, u64::try_from(length.whole_milliseconds()).ok())
+    }
+
     pub async fn release(&self, valkey: &Valkey, step: &Step<'_>) {
         self.memory.release(step);
         let names: Vec<String> = step.keys().iter().map(|k| valkey_key(valkey, k)).collect();
@@ -311,9 +363,7 @@ pub fn length(cause: Cause<'_>) -> Option<(Reach, Duration)> {
         Cause::KeyRefused => Some((Reach::Provider, ACCOUNT)),
         Cause::PlanLimit(err) => Some((
             Reach::Provider,
-            err.retry_after
-                .and_then(|d| Duration::try_from(d).ok())
-                .map_or(ACCOUNT, |d| d.clamp(ACCOUNT, LONGEST_PLAN_LIMIT)),
+            stated(err).map_or(ACCOUNT, |d| d.clamp(ACCOUNT, LONGEST_PLAN_LIMIT)),
         )),
         Cause::Provider(err) => match err.kind {
             ErrorKind::Billing => Some((Reach::Provider, ACCOUNT)),
@@ -324,6 +374,23 @@ pub fn length(cause: Cause<'_>) -> Option<(Reach, Duration)> {
             }
             _ => None,
         },
+    }
+}
+
+fn stated(err: &KppError) -> Option<Duration> {
+    err.retry_after.and_then(|d| Duration::try_from(d).ok())
+}
+
+fn plan_backoff(previous: Option<&Held>, now: OffsetDateTime) -> Duration {
+    match previous {
+        Some(p) if p.kept_for(now) >= Duration::ZERO => p
+            .backoff_ms
+            .and_then(|ms| i64::try_from(ms).ok())
+            .map_or(ACCOUNT, |ms| {
+                (Duration::milliseconds(ms) * PLAN_BACKOFF_FACTOR)
+                    .clamp(ACCOUNT, LONGEST_PLAN_BACKOFF)
+            }),
+        _ => ACCOUNT,
     }
 }
 
@@ -356,6 +423,7 @@ mod tests {
             status: 402,
             error_kind: "billing".into(),
             error_message: "Your credit balance is too low.".into(),
+            backoff_ms: None,
         }
     }
 
@@ -481,6 +549,12 @@ mod tests {
         limited.retry_after = Some(std::time::Duration::from_secs(86_400));
         assert_eq!(
             length(Cause::PlanLimit(&limited)),
+            Some((Reach::Provider, Duration::days(1))),
+            "a stated reset a day away holds a day"
+        );
+        limited.retry_after = Some(std::time::Duration::from_secs(30 * 86_400));
+        assert_eq!(
+            length(Cause::PlanLimit(&limited)),
             Some((Reach::Provider, LONGEST_PLAN_LIMIT))
         );
         assert_eq!(
@@ -496,5 +570,95 @@ mod tests {
         let text = serde_json::to_string(&h).unwrap();
         assert!(text.contains("\"until\":1500"), "{text}");
         assert_eq!(serde_json::from_str::<Held>(&text).unwrap(), h);
+    }
+
+    #[test]
+    fn plan_limits_in_a_row_without_a_stated_wait_hold_longer_each_time() {
+        let now = OffsetDateTime::UNIX_EPOCH;
+        let mut lengths = Vec::new();
+        let mut previous: Option<Held> = None;
+        let mut at = now;
+        for _ in 0..6 {
+            let length = plan_backoff(previous.as_ref(), at);
+            lengths.push(length);
+            let mut h = held(at + length);
+            h.backoff_ms = u64::try_from(length.whole_milliseconds()).ok();
+            previous = Some(h);
+            at += length;
+        }
+        assert_eq!(
+            lengths,
+            [
+                ACCOUNT,
+                Duration::minutes(15),
+                Duration::minutes(45),
+                LONGEST_PLAN_BACKOFF,
+                LONGEST_PLAN_BACKOFF,
+                LONGEST_PLAN_BACKOFF
+            ]
+        );
+        let last = previous.unwrap();
+        let long_after = last.until + LONGEST_PLAN_BACKOFF + Duration::SECOND;
+        assert_eq!(
+            plan_backoff(Some(&last), long_after),
+            ACCOUNT,
+            "a hit after a quiet spell starts over"
+        );
+        assert_eq!(
+            plan_backoff(Some(&held(now + ACCOUNT)), now),
+            ACCOUNT,
+            "another cause's hold is no step of the backoff"
+        );
+    }
+
+    #[test]
+    fn a_backoff_record_outlives_its_hold_by_as_long_again_and_keeps_its_old_json() {
+        let now = OffsetDateTime::UNIX_EPOCH;
+        let mut h = held(now + ACCOUNT);
+        assert_eq!(h.kept_for(now), ACCOUNT);
+        let text = serde_json::to_string(&h).unwrap();
+        assert!(!text.contains("backoff_ms"), "{text}");
+        h.backoff_ms = Some(300_000);
+        assert_eq!(h.kept_for(now), ACCOUNT * 2);
+        let text = serde_json::to_string(&h).unwrap();
+        assert_eq!(serde_json::from_str::<Held>(&text).unwrap(), h);
+    }
+
+    #[tokio::test]
+    async fn a_plan_limit_reads_the_last_hold_from_this_gateway_while_valkey_is_away() {
+        let now = OffsetDateTime::UNIX_EPOCH;
+        let unreachable = Valkey::new(
+            &secrecy::SecretString::from("redis://127.0.0.1:1"),
+            "kaeso-test:",
+            None,
+        )
+        .unwrap_or_else(|e| panic!("{e}"));
+        let cooldowns = Cooldowns::default();
+        let limited = KppError::new(ErrorKind::RateLimited, "plan limit");
+        let first = cooldowns
+            .plan_limit(&unreachable, &at(FABLE), &limited, now)
+            .await;
+        assert_eq!(first, (ACCOUNT, Some(300_000)));
+        let mut h = held(now + ACCOUNT);
+        h.backoff_ms = first.1;
+        cooldowns
+            .hold(&unreachable, &at(FABLE), Reach::Provider, h, now)
+            .await;
+        let later = now + ACCOUNT;
+        assert_eq!(
+            cooldowns
+                .plan_limit(&unreachable, &at(OPUS), &limited, later)
+                .await,
+            (Duration::minutes(15), Some(900_000)),
+            "every model of the account shares the backoff"
+        );
+        let mut stated = limited.clone();
+        stated.retry_after = Some(std::time::Duration::from_secs(7_200));
+        assert_eq!(
+            cooldowns
+                .plan_limit(&unreachable, &at(OPUS), &stated, later)
+                .await,
+            (Duration::hours(2), None)
+        );
     }
 }
