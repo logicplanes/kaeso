@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::collections::HashSet;
 use std::fmt;
 
 use serde::de::{self, DeserializeSeed, Deserializer, MapAccess, Visitor};
@@ -155,6 +156,10 @@ impl<'de: 'a, 'a> Deserialize<'de> for RawObject<'a> {
 
 struct ObjectVisitor;
 
+// Comparing every name with every earlier one costs seconds of CPU for an object as large as a
+// request body, so past this many members the names are looked up in a set.
+const SCANNED: usize = 32;
+
 impl<'de> Visitor<'de> for ObjectVisitor {
     type Value = RawObject<'de>;
 
@@ -164,10 +169,19 @@ impl<'de> Visitor<'de> for ObjectVisitor {
 
     fn visit_map<M: MapAccess<'de>>(self, mut map: M) -> Result<Self::Value, M::Error> {
         let mut members: Vec<Member<'de>> = Vec::with_capacity(map.size_hint().unwrap_or(4));
+        let mut seen: HashSet<Cow<'de, str>> = HashSet::new();
         while let Some(key) = map.next_key_seed(KeySeed)? {
             // Two members with one name would let a check read the first while the server that
             // gets the message reads the last.
-            if members.iter().any(|(k, _)| *k == key) {
+            let duplicate = if members.len() < SCANNED {
+                members.iter().any(|(k, _)| *k == key)
+            } else {
+                if seen.is_empty() {
+                    seen.extend(members.iter().map(|(k, _)| k.clone()));
+                }
+                !seen.insert(key.clone())
+            };
+            if duplicate {
                 return Err(de::Error::custom(format_args!("duplicate member `{key}`")));
             }
             let value: &'de RawValue = map.next_value()?;
@@ -211,7 +225,43 @@ impl<'de> Visitor<'de> for KeyVisitor {
 
 #[cfg(test)]
 mod tests {
+    use std::time::{Duration, Instant};
+
     use super::*;
+
+    fn object_of(members: usize) -> String {
+        let listed: Vec<String> = (0..members).map(|i| format!("\"{i}\":0")).collect();
+        format!("{{{}}}", listed.join(","))
+    }
+
+    #[test]
+    fn an_object_as_large_as_a_request_body_is_read_in_linear_time() {
+        let body = object_of(100_000);
+        assert!(body.len() < 1 << 20);
+        let started = Instant::now();
+        let o = RawObject::parse(body.as_bytes()).unwrap();
+        assert!(
+            started.elapsed() < Duration::from_secs(3),
+            "{:?}",
+            started.elapsed()
+        );
+        assert_eq!(o.len(), 100_000);
+        assert_eq!(o.get("99999").unwrap().get(), "0");
+    }
+
+    #[test]
+    fn duplicate_members_are_refused_in_large_objects() {
+        let distinct = object_of(500);
+        for name in ["0", "31", "32", "499", r"4\u0039\u0039"] {
+            let body = format!("{},\"{name}\":1}}", distinct.trim_end_matches('}'));
+            let err = RawObject::parse(body.as_bytes()).unwrap_err();
+            assert!(err.to_string().contains("duplicate member `"), "{name}");
+        }
+        let twice = r#"{"n\u0061me":1,"#.to_owned() + distinct.trim_start_matches('{');
+        let body = format!("{},\"name\":2}}", twice.trim_end_matches('}'));
+        assert!(RawObject::parse(body.as_bytes()).is_err());
+        assert_eq!(RawObject::parse(distinct.as_bytes()).unwrap().len(), 500);
+    }
 
     #[test]
     fn members_keep_their_order_and_bytes() {
