@@ -183,6 +183,75 @@ fn overlapping_finds_keep_the_earliest_and_longest() {
 }
 
 #[test]
+fn a_stricter_rule_still_acts_on_a_value_inside_a_longer_find() {
+    let text = "sk-ant-api03-abcdefghijklmnopqrstuvwxyz@example.com";
+    let scan = |detectors: &[(Detector, RuleAction)], mask_log: bool, text: &str| {
+        let scanner = Rules {
+            mask_log,
+            ..rules(detectors)
+        }
+        .compile()
+        .unwrap();
+        let mut m = scanner.masker();
+        let out = m.text(text);
+        (out, m.blocked.clone(), m.logged().to_vec())
+    };
+    let pair = |v: &str, p: &str| (v.to_owned(), p.to_owned());
+
+    let (_, blocked, _) = scan(
+        &[
+            (Detector::Secrets, RuleAction::Block),
+            (Detector::Email, RuleAction::Flag),
+        ],
+        false,
+        text,
+    );
+    assert_eq!(blocked.as_deref(), Some("api_key"));
+
+    let (out, blocked, logged) = scan(
+        &[
+            (Detector::Secrets, RuleAction::Block),
+            (Detector::Email, RuleAction::Mask),
+        ],
+        false,
+        text,
+    );
+    assert_eq!(blocked.as_deref(), Some("api_key"));
+    assert_eq!(out.as_deref(), Some("[EMAIL_1]"));
+    assert_eq!(logged, [pair(text, "[EMAIL_1]")]);
+
+    let (out, blocked, logged) = scan(
+        &[
+            (Detector::Secrets, RuleAction::Mask),
+            (Detector::Email, RuleAction::Flag),
+        ],
+        true,
+        text,
+    );
+    assert_eq!(blocked, None);
+    assert_eq!(out.as_deref(), Some("[API_KEY_1]@example.com"));
+    assert_eq!(
+        logged,
+        [
+            pair(text, "[EMAIL_1]"),
+            pair("sk-ant-api03-abcdefghijklmnopqrstuvwxyz", "[API_KEY_1]")
+        ]
+    );
+    assert_eq!(mask_text(text, &logged), "[EMAIL_1]");
+
+    let (out, blocked, _) = scan(
+        &[
+            (Detector::Email, RuleAction::Mask),
+            (Detector::Ip, RuleAction::Flag),
+        ],
+        false,
+        "root@192.0.2.7.example.com",
+    );
+    assert_eq!(blocked, None);
+    assert_eq!(out.as_deref(), Some("[EMAIL_1]"));
+}
+
+#[test]
 fn custom_patterns_are_checked_and_named() {
     let custom = |name: &str, pattern: &str| Rules {
         custom: vec![CustomRule {

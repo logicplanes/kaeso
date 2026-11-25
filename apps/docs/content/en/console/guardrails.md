@@ -40,7 +40,7 @@ Built-in rules find secrets and personal data in a request without a service of 
 | Payment card numbers | 13 to 19 digits, also with spaces or hyphens, whose Luhn check holds, as `[CARD_1]` |
 | IP addresses | IPv4 and IPv6 addresses, as `[IP_1]` |
 
-The same value gets the same placeholder throughout a request, so the model can still tell two people apart. The rules read the text of the system prompt and the messages, tool results and the arguments of tool calls; media and tool definitions stay as they are.
+The same value gets the same placeholder throughout a request, so the model can still tell two people apart. Where the values of two detectors overlap, one that blocks still refuses the request, and one that masks still masks its value inside a value another only counts. The rules read the text of the system prompt and the messages, tool results and the arguments of tool calls; media and tool definitions stay as they are.
 
 Add up to 20 custom patterns: a name of lowercase letters, digits and `_`, and a regular expression of at most 500 characters in the syntax of Rust's `regex` crate, which matches in time linear in the text. A match of `order_id` becomes `[ORDER_ID_1]`.
 
