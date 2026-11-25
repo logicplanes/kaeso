@@ -35,7 +35,8 @@ Kaeso 会回答它保留了哪些内容：
 | `model` | 必填。模型，例如 `gpt-5.4-mini` |
 | `provider` | 服务商的 ID，例如 `openai`，用于按 KPMR 为请求定价 |
 | `started_at` | 开始时间，采用 RFC 3339；默认为当前时间。最早为七天前 |
-| `duration_ms`、`ttft_ms` | 耗时，以及到首 Token 的时间 |
+| `duration_ms`、`ttft_ms` | 耗时，以及到首 Token 的时间；没有 `duration_ms` 时请求没有耗时 |
+| `reasoning_effort` | 请求的推理强度，例如 `high` |
 | `status` | HTTP 状态；默认为 200，带有 `error` 时为 502 |
 | `error` | 失败请求出了什么问题 |
 | `usage` | 请求的 Token，见下文 |

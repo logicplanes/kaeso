@@ -54,7 +54,7 @@ Gemini CLI logs your prompts unless you turn it off, so the settings above set `
 | `gemini_cli.tool_call` of an MCP tool | A tool call with its server, tool, duration and outcome |
 | `gemini_cli.user_prompt`, `gemini_cli.api_request` | The prompt and the request's conversation, when Gemini CLI logs prompts |
 
-Gemini CLI counts cached input inside its input and its thoughts apart from its output; Kaeso counts the thoughts as output and the cache apart. Its `auth_type` names the provider: an API key is Google's Gemini API, Vertex AI is Gemini Enterprise Agent Platform. An MCP tool keeps its own name, without the `mcp_<server>_` that Gemini CLI writes before it. Gemini CLI also sends the same calls as GenAI events, which Kaeso leaves out so nothing counts twice.
+Gemini CLI counts cached input inside its input and its thoughts apart from its output; Kaeso counts the thoughts as output and the cache apart. Its `auth_type` names the provider: an API key is Google's Gemini API, Vertex AI is Gemini Enterprise Agent Platform. A model that provider doesn't sell, as when Gemini CLI talks to a gateway, is its maker's. An MCP tool keeps its own name, without the `mcp_<server>_` that Gemini CLI writes before it. Gemini CLI also sends the same calls as GenAI events, which Kaeso leaves out so nothing counts twice.
 
 ## Next steps
 

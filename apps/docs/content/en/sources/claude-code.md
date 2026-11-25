@@ -52,7 +52,7 @@ Claude Code leaves your prompts out of its events. To keep them, turn on **Keep 
 
 | Claude Code event | In Kaeso |
 | --- | --- |
-| `api_request` | A request: model, tokens, cache reads and writes, time to the first token, Anthropic's request id, the cost Claude Code computed |
+| `api_request` | A request: model, tokens, cache reads and writes, time to the first token, the effort level, Anthropic's request id, the cost Claude Code computed |
 | `api_error` | A failed request with its status and message |
 | `tool_result` of an MCP tool | A tool call with its server, tool, duration and outcome |
 

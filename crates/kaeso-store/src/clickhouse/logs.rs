@@ -81,6 +81,9 @@ pub struct LogRow {
     /// The source that reported a request Kaeso observed; the nil id for the gateway's own.
     #[serde(with = "clickhouse::serde::uuid")]
     pub source_id: Uuid,
+    /// The reasoning effort the request asked its model for, such as `high`; empty when it
+    /// named none.
+    pub reasoning_effort: String,
 }
 
 #[derive(Clone, Debug, PartialEq, Row, Serialize, Deserialize)]
@@ -796,6 +799,8 @@ pub struct TimelineRow {
     pub cost: i128,
     pub duration: Vec<f64>,
     pub duration_max: u32,
+    /// How many of its requests have a measured duration.
+    pub timed: u64,
     pub ttfb: Vec<f64>,
     pub with_ttfb: u64,
 }
@@ -868,6 +873,10 @@ fn timeline_where(
 // tokens, but the job is the request that started it, and the row has no duration of its own.
 const STARTED: &str = "endpoint NOT IN ('videos/completed', 'flows/image/completed')";
 
+/// The rows whose duration was measured: a source that sends no timing, such as Antigravity's
+/// transcript, leaves an observed request at 0 ms, which isn't how long it took.
+pub const TIMED: &str = "(source != 'observed' OR duration_ms > 0)";
+
 pub async fn timeline(
     ch: &ClickHouse,
     org: Uuid,
@@ -884,7 +893,8 @@ pub async fn timeline(
          sum(input_tokens) AS input_tokens, sum(output_tokens) AS output_tokens, \
          sum(cache_read_tokens) AS cache_read_tokens, sum(cache_write_tokens) AS cache_write_tokens, \
          sum(reasoning_tokens) AS reasoning_tokens, sum(cost) AS cost, \
-         quantilesIf(0.5, 0.95)(duration_ms, {STARTED}) AS duration, maxIf(duration_ms, {STARTED}) AS duration_max, \
+         quantilesIf(0.5, 0.95)(duration_ms, {STARTED} AND {TIMED}) AS duration, \
+         maxIf(duration_ms, {STARTED} AND {TIMED}) AS duration_max, countIf({STARTED} AND {TIMED}) AS timed, \
          quantilesIf(0.5, 0.95)(assumeNotNull(ttfb_ms), isNotNull(ttfb_ms) AND {STARTED}) AS ttfb, \
          countIf(isNotNull(ttfb_ms) AND {STARTED}) AS with_ttfb"
     );

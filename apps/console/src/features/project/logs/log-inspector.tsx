@@ -448,7 +448,7 @@ function Overview({
         <Stat
           variant="tile"
           label={t("logs.column.duration", "Duration")}
-          value={seconds(e.duration_ms)}
+          value={known(e.duration_ms) ? seconds(e.duration_ms) : "—"}
           detail={
             <Tooltip content={formatDate(e.started_at, { time: true, seconds: true })}>
               <time dateTime={e.started_at}>{startedLabel(e.started_at)}</time>
@@ -499,7 +499,7 @@ function Overview({
       {(known(e.ttfb_ms) || timing.length > 0) && (
         <Section title={t("logs.inspector.timing", "Timing")} spacing="none">
           <div className="flex flex-col gap-16">
-            {known(e.ttfb_ms) && <RequestTimeline ttfbMs={e.ttfb_ms} totalMs={e.duration_ms} className="w-full" />}
+            {known(e.ttfb_ms) && known(e.duration_ms) && <RequestTimeline ttfbMs={e.ttfb_ms} totalMs={e.duration_ms} className="w-full" />}
             {timing.length > 0 && <KeyValue layout="stacked" className="-my-8 grid grid-cols-2 gap-x-32" items={timing} />}
           </div>
         </Section>
@@ -541,6 +541,7 @@ function Overview({
               label: common.provider(),
               value: e.provider ? <ProviderBadge provider={e.provider} name={providers.name(e.provider)} withName size="sm" /> : "—",
             },
+            ...(e.reasoning_effort ? [{ label: t("logs.param.reasoningEffort", "Reasoning effort"), value: <Long mono>{e.reasoning_effort}</Long> }] : []),
             ...(e.media
               ? [
                   {

@@ -35,7 +35,8 @@ Every record needs an `id` that is unique within the source. Send a record again
 | `model` | Required. The model, such as `gpt-5.4-mini` |
 | `provider` | The provider's id, such as `openai`, which prices the request from KPMR |
 | `started_at` | When it started, in RFC 3339; now by default. At most seven days ago |
-| `duration_ms`, `ttft_ms` | How long it took, and until the first token |
+| `duration_ms`, `ttft_ms` | How long it took, and until the first token; without `duration_ms` it has no duration |
+| `reasoning_effort` | The reasoning effort it asked for, such as `high` |
 | `status` | Its HTTP status; 200, or 502 with an `error` |
 | `error` | What went wrong, for a failed request |
 | `usage` | Its tokens, below |

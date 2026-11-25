@@ -54,7 +54,7 @@ Gemini CLI 默认会记录您的提示词，因此上面的设置把 `logPrompts
 | MCP 工具的 `gemini_cli.tool_call` | 带有服务器、工具、耗时和结果的工具调用 |
 | `gemini_cli.user_prompt`、`gemini_cli.api_request` | Gemini CLI 记录提示词时，提示词和请求的对话 |
 
-Gemini CLI 的输入数包含缓存的输入，思考部分与输出分开计数；Kaeso 把思考计入输出，并把缓存分开计数。它的 `auth_type` 指明服务商：API 密钥对应 Google 的 Gemini API，Vertex AI 对应 Gemini Enterprise Agent Platform。MCP 工具保留自己的名称，不含 Gemini CLI 在前面加上的 `mcp_<server>_`。Gemini CLI 还会把相同的调用作为 GenAI 事件发送，Kaeso 会忽略它们，避免重复统计。
+Gemini CLI 的输入数包含缓存的输入，思考部分与输出分开计数；Kaeso 把思考计入输出，并把缓存分开计数。它的 `auth_type` 指明服务商：API 密钥对应 Google 的 Gemini API，Vertex AI 对应 Gemini Enterprise Agent Platform。该服务商不销售的模型（例如 Gemini CLI 连接网关时）归属其开发方。MCP 工具保留自己的名称，不含 Gemini CLI 在前面加上的 `mcp_<server>_`。Gemini CLI 还会把相同的调用作为 GenAI 事件发送，Kaeso 会忽略它们，避免重复统计。
 
 ## 下一步
 

@@ -374,6 +374,19 @@ describe("observed requests", () => {
     expect(api).not.toHaveTextContent("Observed");
   });
 
+  it("shows a dash for a duration the source didn't send, not 0 ms", () => {
+    const all = logColumns({ sourceOf: () => undefined, spansDays: true, keyName: (id) => id, partyName: (p) => p.id ?? "", providerName: (id) => id });
+    render(
+      <DataTable
+        aria-label="Requests"
+        data={[logRow({ id: "req_a", source: "observed", duration_ms: null }), logRow({ id: "req_b", duration_ms: 1250 })]}
+        columns={[all.duration]}
+        getRowId={(r) => r.id}
+      />,
+    );
+    expect(screen.getAllByRole("cell").map((c) => c.textContent)).toEqual(["—", "1.3 s"]);
+  });
+
   it("show a dash for the key without the project's sources", () => {
     const all = logColumns({ sourceOf: () => undefined, spansDays: true, keyName: (id) => id, partyName: (p) => p.id ?? "", providerName: (id) => id });
     render(<DataTable aria-label="Requests" data={[logRow({ key_id: null })]} columns={[all.key]} getRowId={(r) => r.id} />);

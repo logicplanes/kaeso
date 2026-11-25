@@ -215,7 +215,10 @@ describe("the project overview", () => {
     on(
       "GET",
       "orgs/:org/projects/:project/logs",
-      listed([logRow({ id: "req_play", key_id: null }), logRow({ id: "req_gone", key_id: "key_deleted", provider: "", model: "", requested_model: "fast" })]),
+      listed([
+        logRow({ id: "req_play", key_id: null }),
+        logRow({ id: "req_gone", key_id: "key_deleted", provider: "", model: "", requested_model: "fast", duration_ms: null }),
+      ]),
     );
     await renderApp(projectPath());
     const latest = await screen.findByRole("list", { name: "Latest requests" });
@@ -223,6 +226,7 @@ describe("the project overview", () => {
     const [play, gone] = within(latest).getAllByRole("button");
     expect(play).toHaveTextContent(/GPT mini.*Playground.*1\.3 s/);
     expect(gone).toHaveTextContent("fast");
+    expect(gone).toHaveTextContent("—");
     expect(gone).not.toHaveTextContent("key_deleted");
   });
 

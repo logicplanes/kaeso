@@ -229,7 +229,12 @@ export function logColumns({
           </Tag>
         ) : null,
     ),
-    duration: col.duration({ id: "duration", header: columnLabel("duration"), size: KEPT_WIDTHS.duration, priority: 2 }, (r: LogView) => r.duration_ms),
+    duration: col.custom(
+      { id: "duration", header: columnLabel("duration"), size: KEPT_WIDTHS.duration, priority: 2 },
+      (r: LogView) => r.duration_ms ?? null,
+      (v) => (v === null ? "—" : formatDuration(v)),
+      { align: "end" },
+    ),
     ttfb: col.custom(
       { id: "ttfb", header: columnLabel("ttfb"), size: 104, priority: 4 },
       (r: LogView) => r.ttfb_ms ?? null,

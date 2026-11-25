@@ -128,20 +128,21 @@ function FailedByCell({ o }: { o: Overview }) {
 function SlowestCell({ o, hours }: { o: Overview; hours: NonNullable<Overview["hours"]> }) {
   const navigate = useNavigate();
   const title = t("kaeso.overview.slowest", "Slowest hours, 95th percentile");
-  const all = hours.data ?? [];
+  // An hour of only observed requests whose source sends no timing has no latency.
+  const all = (hours.data ?? []).flatMap((b) => (b.duration_p95_ms == null ? [] : [{ ...b, p95: b.duration_p95_ms }]));
   const busy = all.filter((b) => b.requests >= BUSY_HOUR);
   const items: RankItem[] = [...(busy.length ? busy : all)]
-    .sort((a, b) => b.duration_p95_ms - a.duration_p95_ms)
+    .sort((a, b) => b.p95 - a.p95)
     .slice(0, ROWS)
     .map((b) => ({
       id: b.start,
       label: <span className="min-w-0 truncate">{hourOf(new Date(b.start))}</span>,
       secondary: t("kaeso.analytics.ofRequests", "{requests} requests", { requests: formatNumber(b.requests) }),
-      value: formatDuration(b.duration_p95_ms),
+      value: formatDuration(b.p95),
     }));
   const logs = o.project && o.showErrors ? `${projectPath(o.org, o.project)}/logs` : undefined;
   // Every listed hour is one of these.
-  const p95 = new Map(all.map((b) => [b.start, b.duration_p95_ms]));
+  const p95 = new Map(all.map((b) => [b.start, b.p95]));
   return (
     <DashboardCell className="lg:col-span-1" title={title}>
       <RankList

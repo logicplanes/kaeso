@@ -1620,6 +1620,9 @@ impl Pump {
         let mut to_app = Some(tail);
         if let Some(mut p) = fused {
             let mut tail_len = 0u64;
+            if self.broken.is_none() {
+                self.note_for_sources(&assembled).await;
+            }
             if self.broken.is_none()
                 && let Some(tail) = to_app.take()
             {
@@ -1664,6 +1667,34 @@ impl Pump {
             return;
         }
         self.finish_accounting(assembled, to_app).await;
+    }
+
+    // The reply's end goes out with the bytes before the accounting here, so the request is
+    // noted for sources first: a client may report it the moment it has the end.
+    async fn note_for_sources(&mut self, assembled: &kaeso_core::assembler::Assembled) {
+        let Some(r) = assembled.response.as_ref() else {
+            return;
+        };
+        if !self.engine.has_final_usage(&self.tally) {
+            return;
+        }
+        let duration = self.app.arrived.elapsed();
+        let state = self.rec.state().clone();
+        let o = self.rec.outcome();
+        if o.sources_noted {
+            return;
+        }
+        let Some(mut note) = crate::services::observed::GatewayRequest::of(o) else {
+            return;
+        };
+        o.sources_noted = true;
+        note.failed = false;
+        note.usage = Some(r.usage.clone());
+        note.models.push(r.model.clone());
+        note.duration = duration;
+        crate::services::observed::note_soon(&state, note)
+            .wait()
+            .await;
     }
 
     async fn finish_cancelled(mut self, assembled: kaeso_core::assembler::Assembled) {

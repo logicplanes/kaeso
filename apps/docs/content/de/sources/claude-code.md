@@ -52,7 +52,7 @@ Claude Code lässt Ihre Prompts aus seinen Ereignissen heraus. Um sie zu behalte
 
 | Ereignis von Claude Code | In Kaeso |
 | --- | --- |
-| `api_request` | Eine Anfrage: Modell, Tokens, Cache-Lese- und -Schreibvorgänge, Zeit bis zum ersten Token, Anthropics Anfrage-ID, die von Claude Code berechneten Kosten |
+| `api_request` | Eine Anfrage: Modell, Tokens, Cache-Lese- und -Schreibvorgänge, Zeit bis zum ersten Token, die Effort-Stufe, Anthropics Anfrage-ID, die von Claude Code berechneten Kosten |
 | `api_error` | Eine fehlgeschlagene Anfrage mit Status und Meldung |
 | `tool_result` eines MCP-Tools | Ein Tool-Aufruf mit Server, Tool, Dauer und Ergebnis |
 

@@ -78,6 +78,8 @@ struct RequestIn {
     prompt: Option<String>,
     #[serde(default)]
     reply: Option<String>,
+    #[serde(default)]
+    reasoning_effort: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -178,6 +180,7 @@ fn request(r: RequestIn) -> Result<ObservedRequest, Refusal> {
         dialect: None,
         prompt: r.prompt,
         reply: r.reply,
+        reasoning_effort: r.reasoning_effort,
         ..ObservedRequest::default()
     })
 }

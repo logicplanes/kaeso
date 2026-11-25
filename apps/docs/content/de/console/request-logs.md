@@ -19,7 +19,7 @@ Kaeso protokolliert jede Modellanfrage: das Modell, den Anbieter, den Status, To
 - Die Anzeigeoptionen wählen die Spalten und die Dichte. Neben den anfangs gezeigten bieten sie die Anfrage-ID, den User-Agent, die Client-IP, den Alias, die Formate (das der App, und das des Anbieters nach einem Pfeil, wenn Kaeso übersetzt hat), die Antwort des Antwort-Caches, die Zahl der Ausweichschritte und die Anfrage-ID des Anbieters. Die Konsole merkt sich die Auswahl.
 - **Anfrage per ID öffnen** findet die Anfrage, deren Header `kaeso-request-id` Ihre App erhalten hat.
 
-Eine Anfrage, die eine Quelle gemeldet hat, etwa eine, die Claude Code direkt an Anthropic gesendet hat, trägt die Markierung **Beobachtet** und nennt ihre Quelle, wo sonst ein Schlüssel stünde. Ihre Details sagen, dass Kaeso sie protokolliert und gezählt hat, sie aber nicht routen, begrenzen oder stoppen konnte ([Quellen](../concepts/sources.md)).
+Eine Anfrage, die eine Quelle gemeldet hat, etwa eine, die Claude Code direkt an Anthropic gesendet hat, trägt die Markierung **Beobachtet** und nennt ihre Quelle, wo sonst ein Schlüssel stünde. Ihre Details sagen, dass Kaeso sie protokolliert und gezählt hat, sie aber nicht routen, begrenzen oder stoppen konnte ([Quellen](../concepts/sources.md)). Ihre Dauer zeigt einen Strich, wenn ihre Quelle keine Zeiten sendet.
 
 Ist das Ergebnis auf **Fehlgeschlagen** gesetzt, zeigt **Häufigste Fehler** über der Liste die zehn häufigsten Fehler des Zeitraums: Anfragen mit derselben Fehlerart, demselben Status, Anbieter und derselben Meldung ohne ihre Zahlen und IDs, jeweils mit der Zahl der so fehlgeschlagenen Anfragen und der neuesten Meldung. Die Wahl eines Eintrags setzt diese Filter, die Meldung bis zu ihrer ersten Zahl oder ID.
 
@@ -37,7 +37,7 @@ Wählen Sie eine Anfrage, um sie zu öffnen:
 
 | Tab | Inhalt |
 | --- | --- |
-| Übersicht | Das Ergebnis, die Route, wer sie gesendet hat, die Zeiten, der Stream und die Nutzung. Modell, Alias, Schlüssel und Absender öffnen ihr Blatt oder ihren Routen-Editor, wenn Sie ihn öffnen dürfen, und die Filtertaste daneben und neben dem Status zeigt nur die Anfragen mit diesem Wert, während die Anfrage offen bleibt |
+| Übersicht | Das Ergebnis, die Route mit dem Reasoning-Aufwand, den die Anfrage verlangte, wer sie gesendet hat, die Zeiten, der Stream und die Nutzung. Modell, Alias, Schlüssel und Absender öffnen ihr Blatt oder ihren Routen-Editor, wenn Sie ihn öffnen dürfen, und die Filtertaste daneben und neben dem Status zeigt nur die Anfragen mit diesem Wert, während die Anfrage offen bleibt |
 | Anfrage | Was die App gesendet hat. **Als curl kopieren** kopiert einen `curl`-Befehl, der sie erneut sendet, mit Ihrem Schlüssel aus `KAESO_API_KEY`; er erscheint bei JSON-Anfragen, deren Inhalt und Medien ganz gespeichert wurden, nicht bei Uploads oder ElevenLabs-Aufrufen |
 | Antwort | Was die App zurückbekommen hat |
 | Rohdaten | Der Protokolleintrag, wie die Platform API ihn liefert |

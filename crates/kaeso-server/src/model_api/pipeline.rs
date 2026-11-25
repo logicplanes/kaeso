@@ -185,6 +185,9 @@ impl Recording {
         let elapsed = self.started.elapsed();
         if let Some(mut o) = self.outcome.take() {
             o.status = status;
+            if o.duration.is_zero() {
+                o.duration = elapsed;
+            }
             if let (Some(kept), Some(caller)) = (self.kept.take(), o.caller.as_ref())
                 && (200..300).contains(&status)
             {
@@ -198,18 +201,33 @@ impl Recording {
                 )
                 .await;
             }
-            if o.duration.is_zero() {
-                o.duration = elapsed;
+            let (noted, charged) = self.hand_over(o);
+            // The reply ends for the app only after this: a client that reports the request to a
+            // source as soon as it has the reply must find it noted.
+            if let Some(noted) = noted {
+                noted.wait().await;
             }
-            let charged = self.hand_over(o);
             if self.reservation.is_held() {
                 let _ = charged.await;
             }
         }
     }
 
-    fn hand_over(&mut self, mut o: Outcome) -> tokio::sync::oneshot::Receiver<()> {
+    fn hand_over(
+        &mut self,
+        mut o: Outcome,
+    ) -> (
+        Option<crate::services::observed::Noting>,
+        tokio::sync::oneshot::Receiver<()>,
+    ) {
         let (done, charged) = tokio::sync::oneshot::channel();
+        let noted = if o.sources_noted {
+            None
+        } else {
+            o.sources_noted = true;
+            crate::services::observed::GatewayRequest::of(&o)
+                .map(|r| crate::services::observed::note_soon(&self.state, r))
+        };
         let (sink, state) = (self.sink.clone(), self.state.clone());
         let logging = self.logging.take();
         self.state.in_flight.finish(async move {
@@ -227,7 +245,7 @@ impl Recording {
             crate::services::guardrails::rules::mask_logged(&mut o);
             sink.finish_charged(&state, o, done).await;
         });
-        charged
+        (noted, charged)
     }
 
     pub(super) async fn finish_cancelled(mut self) {
@@ -357,6 +375,8 @@ pub(crate) fn blank_outcome(request_id: RequestId) -> Outcome {
         content_type: None,
         guardrails: Vec::new(),
         log_masks: Vec::new(),
+        reasoning_effort: None,
+        sources_noted: false,
     }
 }
 
@@ -1704,6 +1724,18 @@ fn requested_timeout(headers: &HeaderMap) -> Result<Option<u32>, KppError> {
         })
 }
 
+/// The reasoning effort the request asks the provider for, once adapted to the model.
+fn sent_effort(req: &Request) -> Option<String> {
+    match req {
+        Request::Generate(g) => g
+            .reasoning
+            .as_ref()
+            .and_then(|r| r.effort.as_ref())
+            .map(|e| e.as_wire().to_owned()),
+        _ => None,
+    }
+}
+
 fn begin_attempt(rec: &mut Recording) {
     rec.sent_input = None;
     rec.sent_at = None;
@@ -1720,6 +1752,7 @@ fn begin_attempt(rec: &mut Recording) {
     o.upstream_request_id = None;
     o.cache_breakpoints = None;
     o.response_cache = None;
+    o.reasoning_effort = None;
 }
 
 /// A step as it is tried: where it sits in its route and what it calls, for its entries in the
@@ -2526,6 +2559,7 @@ async fn attempt(
     ectx.left_out.splice(0..0, plan.left_out.iter().cloned());
     ectx.adapted.splice(0..0, plan.adapted.iter().cloned());
     rec.outcome().cache_breakpoints = ectx.cache_breakpoints;
+    rec.outcome().reasoning_effort = sent_effort(&req);
     if !ectx.left_out.is_empty() {
         tracing::info!(
             left_out = %ectx.left_out.join(", "),

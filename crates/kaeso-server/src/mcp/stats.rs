@@ -300,15 +300,21 @@ fn busy<'a>(rows: &[&'a Value]) -> Vec<&'a Value> {
         .collect()
 }
 
+// A bucket whose requests have no known time, such as only observed ones without timing, has
+// no latency.
+fn timed(rows: &[&Value], key: &str) -> Vec<i64> {
+    busy(rows)
+        .iter()
+        .filter_map(|r| r.get(key).and_then(Value::as_i64))
+        .collect()
+}
+
 fn slowest(rows: &[&Value]) -> Option<i64> {
-    busy(rows).iter().map(|r| int(r, "duration_p95_ms")).max()
+    timed(rows, "duration_p95_ms").into_iter().max()
 }
 
 fn median_hour(rows: &[&Value]) -> Option<i64> {
-    let mut p50: Vec<i64> = busy(rows)
-        .iter()
-        .map(|r| int(r, "duration_p50_ms"))
-        .collect();
+    let mut p50 = timed(rows, "duration_p50_ms");
     p50.sort_unstable();
     p50.get(p50.len() / 2).copied()
 }

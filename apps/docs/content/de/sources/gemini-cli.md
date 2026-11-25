@@ -54,7 +54,7 @@ Gemini CLI protokolliert Ihre Prompts, solange Sie es nicht abschalten, deshalb 
 | `gemini_cli.tool_call` eines MCP-Tools | Ein Tool-Aufruf mit Server, Tool, Dauer und Ergebnis |
 | `gemini_cli.user_prompt`, `gemini_cli.api_request` | Der Prompt und die Unterhaltung der Anfrage, wenn Gemini CLI Prompts protokolliert |
 
-Gemini CLI zählt gecachte Eingabe in seiner Eingabe mit und seine Thoughts getrennt von seiner Ausgabe; Kaeso zählt die Thoughts als Ausgabe und den Cache getrennt. Sein `auth_type` nennt den Anbieter: Ein API-Schlüssel steht für die Gemini API von Google, Vertex AI für Gemini Enterprise Agent Platform. Ein MCP-Tool behält seinen eigenen Namen, ohne das `mcp_<server>_`, das Gemini CLI davorschreibt. Gemini CLI sendet dieselben Aufrufe zusätzlich als GenAI-Ereignisse, die Kaeso auslässt, damit nichts doppelt zählt.
+Gemini CLI zählt gecachte Eingabe in seiner Eingabe mit und seine Thoughts getrennt von seiner Ausgabe; Kaeso zählt die Thoughts als Ausgabe und den Cache getrennt. Sein `auth_type` nennt den Anbieter: Ein API-Schlüssel steht für die Gemini API von Google, Vertex AI für Gemini Enterprise Agent Platform. Ein Modell, das dieser Anbieter nicht verkauft, etwa wenn Gemini CLI mit einem Gateway spricht, gehört seinem Hersteller. Ein MCP-Tool behält seinen eigenen Namen, ohne das `mcp_<server>_`, das Gemini CLI davorschreibt. Gemini CLI sendet dieselben Aufrufe zusätzlich als GenAI-Ereignisse, die Kaeso auslässt, damit nichts doppelt zählt.
 
 ## Nächste Schritte
 
