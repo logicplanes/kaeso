@@ -113,6 +113,12 @@ pub struct ObservedRequest {
     pub ttfb: Option<Duration>,
     /// The provider's id as KPMR names it, when the source says or Kaeso can tell.
     pub provider: Option<String>,
+    /// `provider` only says how the client is set up, such as its sign-in, not which provider
+    /// answered: a client pointed at a gateway reports its usual provider for any model, so a
+    /// model that provider doesn't sell is its maker's.
+    pub provider_guessed: bool,
+    /// The reasoning effort the record says the request asked for, such as `high`.
+    pub reasoning_effort: Option<String>,
     pub model: String,
     /// 200 for an answered request, else the provider's HTTP status or 502.
     pub status: u16,
@@ -395,7 +401,10 @@ fn fill(r: &mut ObservedRequest, what: Wanted, value: &str) {
             if r.provider.is_none() && !r.unguessed {
                 match value {
                     UNNAMED_PROVIDER => r.unguessed = true,
-                    named => r.provider = Some(named.to_owned()),
+                    named => {
+                        r.provider = Some(named.to_owned());
+                        r.provider_guessed = true;
+                    }
                 }
             }
         }
@@ -437,36 +446,62 @@ fn fill(r: &mut ObservedRequest, what: Wanted, value: &str) {
 
 /// How a request made through the gateway is told apart from the copy its client reports to a
 /// source: the gateway's id never reaches the client, so the copy is matched on what both name.
-/// A copy that starts or ends within `SAME_TIME` of a gateway request of the same project and
-/// model, with the same tokens, is that request.
+/// A copy that starts or ends within `SAME_TIME` of a gateway request of the same organization
+/// and model, with the same tokens, or failed as it did, is that request.
 const SAME_TIME: time::Duration = time::Duration::seconds(5);
 /// How long the gateway's requests wait for their copies. Clients export every few seconds, and
 /// each request the gateway answers holds a key this long, so it stays short.
 const GATEWAY_KEPT: u64 = 120;
+/// How long a fresh record that matches nothing waits for its gateway request to be noted, when
+/// the organization's gateway served the same model lately. Requests are noted before their
+/// reply ends, so this only covers one that ended without its app, noted after the fact.
+const HOLD: Duration = Duration::from_millis(1_500);
+/// The longest the end of a reply waits for its note.
+const NOTE_DEADLINE: Duration = Duration::from_millis(250);
 
-fn fingerprint(state: &AppState, project: Uuid, model: &str, usage: &Usage) -> String {
-    let model = model
+fn model_tag(model: &str) -> String {
+    model
         .rsplit('/')
         .next()
         .unwrap_or(model)
-        .to_ascii_lowercase();
-    let input = usage
-        .input_tokens
-        .saturating_add(usage.cache_read_tokens)
-        .saturating_add(usage.cache_write_tokens);
+        .to_ascii_lowercase()
+}
+
+// A request that failed is matched by its model and time alone: what a client reports of a
+// failure, and what the gateway estimated of it, rarely agree on tokens.
+fn fingerprint(state: &AppState, org: Uuid, model: &str, usage: Option<&Usage>) -> String {
     let mut h = Sha256::new();
-    h.update(model.as_bytes());
-    h.update(format!(":{input}:{}", usage.output_tokens).as_bytes());
+    h.update(model_tag(model).as_bytes());
+    match usage {
+        Some(usage) => {
+            let input = usage
+                .input_tokens
+                .saturating_add(usage.cache_read_tokens)
+                .saturating_add(usage.cache_write_tokens);
+            h.update(format!(":{input}:{}", usage.output_tokens).as_bytes());
+        }
+        None => h.update(b":failed"),
+    }
     let d = h.finalize();
     let tag: String = d.iter().take(12).map(|b| format!("{b:02x}")).collect();
-    state.valkey.key(&format!("obsgw:{project}:{tag}"))
+    state.valkey.key(&format!("obsgw:{org}:{tag}"))
+}
+
+// Set while the organization's gateway serves a model, so a fresh copy that matches nothing
+// yet is worth a second look.
+fn serving(state: &AppState, org: Uuid, model: &str) -> String {
+    let mut h = Sha256::new();
+    h.update(model_tag(model).as_bytes());
+    let d = h.finalize();
+    let tag: String = d.iter().take(12).map(|b| format!("{b:02x}")).collect();
+    state.valkey.key(&format!("obsgw:{org}:m:{tag}"))
 }
 
 fn unix_ms(t: OffsetDateTime) -> i64 {
     i64::try_from(t.unix_timestamp_nanos() / 1_000_000).unwrap_or(0)
 }
 
-// Whether a project has an active source, kept for a short while: most projects have none, and
+// Whether an organization has an active source, kept for a short while: most have none, and
 // their requests then cost no Valkey write.
 static WITH_SOURCES: std::sync::LazyLock<moka::future::Cache<Uuid, bool>> =
     std::sync::LazyLock::new(|| {
@@ -476,81 +511,163 @@ static WITH_SOURCES: std::sync::LazyLock<moka::future::Cache<Uuid, bool>> =
             .build()
     });
 
-async fn has_sources(state: &AppState, project: Uuid) -> bool {
-    if let Some(known) = WITH_SOURCES.get(&project).await {
+async fn has_sources(state: &AppState, org: Uuid) -> bool {
+    if let Some(known) = WITH_SOURCES.get(&org).await {
         return known;
     }
     // While PostgreSQL is away, the answer is kept too, so the requests don't all ask again.
-    let active = match kaeso_store::pg::sources::list(&state.pg, project, false, None, 100).await {
-        Ok(sources) => sources.iter().any(|s| s.disabled_at.is_none()),
+    let active = match kaeso_store::pg::sources::any_active(&state.pg, org).await {
+        Ok(active) => active,
         Err(e) => {
-            tracing::debug!(error = %e, "cannot tell whether a project has sources");
+            tracing::debug!(error = %e, "cannot tell whether an organization has sources");
             false
         }
     };
-    WITH_SOURCES.insert(project, active).await;
+    WITH_SOURCES.insert(org, active).await;
     active
 }
 
-/// Forgets this instance's answer for the project once a source is added or changed, so its
-/// gateway requests are noted from then on.
-pub async fn sources_changed(project: Uuid) {
-    WITH_SOURCES.invalidate(&project).await;
+/// Forgets this instance's answer for the organization once a source is added or changed, so
+/// its gateway requests are noted from then on.
+pub async fn sources_changed(org: Uuid) {
+    WITH_SOURCES.invalidate(&org).await;
 }
 
-/// Notes a request the gateway answered, so a source reporting the same request doesn't count it
-/// again. Runs after the response is sent; a note that can't be written only loses the match.
-pub async fn note_gateway(state: &AppState, o: &crate::model_api::hooks::Outcome) {
-    if o.source == Origin::Observed || o.status >= 400 {
+/// What a source's copy of a gateway request is matched on.
+#[derive(Clone, Debug)]
+pub struct GatewayRequest {
+    pub request_id: RequestId,
+    pub org: Uuid,
+    pub failed: bool,
+    pub usage: Option<Usage>,
+    /// The model the app named, the one called and the one that answered.
+    pub models: Vec<String>,
+    pub started_at: OffsetDateTime,
+    pub duration: Duration,
+}
+
+impl GatewayRequest {
+    /// The request as its copies would name it; `None` for one no source can report, such as
+    /// an observed one or one refused before Kaeso knew its caller.
+    pub fn of(o: &crate::model_api::hooks::Outcome) -> Option<Self> {
+        let caller = o.caller.as_ref().filter(|_| o.source != Origin::Observed)?;
+        Some(GatewayRequest {
+            request_id: o.request_id,
+            org: caller.org_id,
+            failed: o.status >= 400,
+            usage: o.usage.clone(),
+            models: [&o.requested_model, &o.model_id, &o.response_model]
+                .into_iter()
+                .flatten()
+                .cloned()
+                .collect(),
+            started_at: o.started_at,
+            duration: o.duration,
+        })
+    }
+}
+
+/// Notes the request in the background, so the gateway's own work never waits on it; the reply's
+/// end waits for the answer at most `NOTE_DEADLINE`.
+pub fn note_soon(state: &AppState, r: GatewayRequest) -> Noting {
+    let (noted, rx) = tokio::sync::oneshot::channel();
+    let st = state.clone();
+    state.in_flight.finish(async move {
+        note(&st, r).await;
+        let _ = noted.send(());
+    });
+    Noting(rx)
+}
+
+pub struct Noting(tokio::sync::oneshot::Receiver<()>);
+
+impl Noting {
+    pub async fn wait(self) {
+        let _ = tokio::time::timeout(NOTE_DEADLINE, self.0).await;
+    }
+}
+
+/// Notes a request the gateway answered once, so a source reporting the same request doesn't
+/// count it again.
+pub async fn note_gateway(state: &AppState, o: &mut crate::model_api::hooks::Outcome) {
+    if o.sources_noted {
         return;
     }
-    let (Some(caller), Some(usage)) = (&o.caller, &o.usage) else {
-        return;
+    o.sources_noted = true;
+    if let Some(r) = GatewayRequest::of(o) {
+        note(state, r).await;
+    }
+}
+
+/// Notes a gateway request for its copies to match, failed ones included; says whether it was
+/// one to note. A note that can't be written only loses the match.
+pub async fn note(state: &AppState, r: GatewayRequest) -> bool {
+    let usage = match &r.usage {
+        _ if r.failed => None,
+        Some(u) if u.input_tokens > 0 || u.output_tokens > 0 => Some(u),
+        _ => return false,
     };
-    if usage.input_tokens == 0 && usage.output_tokens == 0
-        || !has_sources(state, caller.project_id).await
-    {
-        return;
-    }
-    let start = unix_ms(o.started_at);
-    let end = unix_ms(o.started_at + o.duration);
-    let member = format!("{}:{end}", o.request_id);
-    let mut models: Vec<&str> = [o.requested_model.as_deref(), o.model_id.as_deref()]
-        .into_iter()
-        .flatten()
+    let mut models: Vec<String> = r
+        .models
+        .iter()
+        .filter(|m| !m.is_empty())
+        .map(|m| model_tag(m))
         .collect();
+    models.sort();
     models.dedup();
+    if models.is_empty() || !has_sources(state, r.org).await {
+        return false;
+    }
+    let start = unix_ms(r.started_at);
+    let end = unix_ms(r.started_at + r.duration);
+    let member = format!("{}:{end}", r.request_id);
     let mut pipe = redis::pipe();
-    for model in models {
-        let key = fingerprint(state, caller.project_id, model, usage);
+    for model in &models {
+        let key = fingerprint(state, r.org, model, usage);
         pipe.cmd("ZADD").arg(&key).arg(start).arg(&member).ignore();
         pipe.cmd("EXPIRE").arg(&key).arg(GATEWAY_KEPT).ignore();
+        pipe.cmd("SET")
+            .arg(serving(state, r.org, model))
+            .arg(1)
+            .arg("EX")
+            .arg(GATEWAY_KEPT)
+            .ignore();
     }
     let mut conn = state.valkey.conn();
-    match tokio::time::timeout(VALKEY_DEADLINE, pipe.query_async::<()>(&mut conn)).await {
+    match tokio::time::timeout(NOTE_DEADLINE, pipe.query_async::<()>(&mut conn)).await {
         Ok(Ok(())) => {}
         Ok(Err(e)) => {
             tracing::debug!(error = %e, "cannot note a gateway request for sources to match");
         }
         Err(_) => tracing::debug!("noting a gateway request for sources to match timed out"),
     }
+    true
+}
+
+/// What the gateway's notes say of a request a source reported.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Match {
+    /// It is a gateway request's copy, which only it matched.
+    Yes,
+    /// It matched nothing, but the organization's gateway serves its model: its request may
+    /// not be noted yet.
+    NotYet,
+    No,
 }
 
 /// Which of the requests a source reports the gateway already logged; each match takes its
 /// gateway request out of the matching, so each counts once. The whole batch is looked up in two
 /// round trips.
-async fn made_by_gateway(
-    state: &AppState,
-    project: Uuid,
-    requests: &[&ObservedRequest],
-) -> Vec<bool> {
-    let mut found = vec![false; requests.len()];
-    let keys: Vec<Option<(String, i64, i64)>> = requests
+async fn made_by_gateway(state: &AppState, org: Uuid, requests: &[&ObservedRequest]) -> Vec<Match> {
+    let mut found = vec![Match::No; requests.len()];
+    let keys: Vec<Option<(String, String, i64, i64)>> = requests
         .iter()
         .map(|r| {
             let start = r.started_at?;
-            let key = fingerprint(state, project, &r.model, &usage(r.tokens));
-            Some((key, unix_ms(start), unix_ms(start + r.duration)))
+            let usage = (r.status < 400).then(|| usage(r.tokens));
+            let key = fingerprint(state, org, &r.model, usage.as_ref());
+            let serving = serving(state, org, &r.model);
+            Some((key, serving, unix_ms(start), unix_ms(start + r.duration)))
         })
         .collect();
     if keys.iter().all(Option::is_none) {
@@ -558,7 +675,7 @@ async fn made_by_gateway(
     }
     let window = SAME_TIME.whole_milliseconds() as i64;
     let mut pipe = redis::pipe();
-    for (key, start, _) in keys.iter().flatten() {
+    for (key, serving, start, _) in keys.iter().flatten() {
         // A long request may have begun well before its copy says it did, when the client only
         // reports when it ended; its end then has to match.
         pipe.cmd("ZRANGEBYSCORE")
@@ -566,33 +683,45 @@ async fn made_by_gateway(
             .arg(start - 15 * 60_000)
             .arg(start + window)
             .arg("WITHSCORES");
+        pipe.cmd("EXISTS").arg(serving);
     }
     let mut conn = state.valkey.conn();
     let Ok(Ok(listed)) = tokio::time::timeout(
         VALKEY_DEADLINE,
-        pipe.query_async::<Vec<Vec<(String, i64)>>>(&mut conn),
+        pipe.query_async::<Vec<redis::Value>>(&mut conn),
     )
     .await
     else {
         return found;
     };
     let close = |a: i64, b: i64| (a - b).abs() <= window;
-    let mut picked: Vec<(usize, &str, &str)> = Vec::new();
-    let mut listed = listed.iter();
+    let mut picked: Vec<(usize, &str, String)> = Vec::new();
+    let mut listed = listed.into_iter();
     for (i, k) in keys.iter().enumerate() {
-        let Some((key, start, end)) = k else { continue };
-        let Some(candidates) = listed.next() else {
+        let Some((key, _, start, end)) = k else {
+            continue;
+        };
+        let (Some(candidates), Some(served)) = (listed.next(), listed.next()) else {
             break;
         };
-        let hit = candidates.iter().find(|(member, at)| {
+        let candidates: Vec<(String, i64)> =
+            redis::from_redis_value(candidates).unwrap_or_default();
+        let served: bool = redis::from_redis_value(served).unwrap_or(false);
+        let hit = candidates.into_iter().find(|(member, at)| {
             let ended = member
                 .rsplit_once(':')
                 .and_then(|(_, e)| e.parse::<i64>().ok());
             let taken = picked.iter().any(|(_, k, m)| k == key && m == member);
             !taken && (close(*at, *start) || ended.is_some_and(|e| close(e, *end)))
         });
-        if let Some((member, _)) = hit {
-            picked.push((i, key.as_str(), member.as_str()));
+        match hit {
+            Some((member, _)) => picked.push((i, key.as_str(), member)),
+            None if served => {
+                if let Some(f) = found.get_mut(i) {
+                    *f = Match::NotYet;
+                }
+            }
+            None => {}
         }
     }
     if picked.is_empty() {
@@ -600,7 +729,7 @@ async fn made_by_gateway(
     }
     let mut pipe = redis::pipe();
     for (_, key, member) in &picked {
-        pipe.cmd("ZREM").arg(*key).arg(*member);
+        pipe.cmd("ZREM").arg(*key).arg(member);
     }
     // Of two copies racing for one gateway request, only the one that removes it matches.
     if let Ok(Ok(removed)) =
@@ -608,11 +737,57 @@ async fn made_by_gateway(
     {
         for ((i, _, _), n) in picked.iter().zip(removed) {
             if let Some(f) = found.get_mut(*i) {
-                *f = n == 1;
+                *f = if n == 1 { Match::Yes } else { Match::No };
             }
         }
     }
     found
+}
+
+/// How long to wait before looking again for the gateway request of a fresh copy that matched
+/// nothing yet; `None` for a record that ended too long ago for its note to be missing still.
+fn hold_for(now: OffsetDateTime, r: &ObservedRequest) -> Option<Duration> {
+    let end = r.started_at? + r.duration;
+    let left = end + time::Duration::try_from(HOLD).ok()? - now;
+    let left = Duration::try_from(left).ok().filter(|d| !d.is_zero())?;
+    Some(left.min(HOLD))
+}
+
+/// The copies among the requests: those that matched nothing while their model's gateway
+/// requests may not be noted yet are looked up once more after a short wait.
+async fn copies(
+    state: &AppState,
+    org: Uuid,
+    requests: &[&ObservedRequest],
+    now: OffsetDateTime,
+) -> Vec<bool> {
+    let mut found = made_by_gateway(state, org, requests).await;
+    let mut wait = None;
+    let mut waiting = Vec::new();
+    for (i, c) in found.iter().enumerate() {
+        if let (Match::NotYet, Some(r)) = (c, requests.get(i))
+            && let Some(hold) = hold_for(now, r)
+        {
+            wait = wait.max(Some(hold));
+            waiting.push(i);
+        }
+    }
+    if let Some(wait) = wait {
+        tokio::time::sleep(wait).await;
+        let again: Vec<&ObservedRequest> = waiting
+            .iter()
+            .filter_map(|i| requests.get(*i).copied())
+            .collect();
+        for (i, c) in waiting
+            .iter()
+            .zip(made_by_gateway(state, org, &again).await)
+        {
+            if let Some(f) = found.get_mut(*i) {
+                *f = c;
+            }
+        }
+    }
+    found.into_iter().map(|c| c == Match::Yes).collect()
 }
 
 /// Whether the person can see the project, so a source's requests may count for them.
@@ -700,13 +875,28 @@ pub struct Priced {
     pub prices: Option<Fields>,
 }
 
-/// A model's id without the effort level Antigravity ends it with, as it names Gemini 3 Flash at
-/// low effort `gemini-3-flash-low`.
-fn without_effort(model: &str) -> Option<&str> {
-    ["-minimal", "-low", "-medium", "-high", "-xhigh", "-max"]
+/// A model's id without the effort level a client ends it with, and the level, as Antigravity
+/// names Gemini 3 Flash at low effort `gemini-3-flash-low`.
+fn without_effort(model: &str) -> Option<(&str, &'static str)> {
+    ["minimal", "low", "medium", "high", "xhigh", "max"]
         .iter()
-        .find_map(|effort| model.strip_suffix(effort))
-        .filter(|m| !m.is_empty())
+        .find_map(|effort| {
+            let base = model.strip_suffix(effort)?.strip_suffix('-')?;
+            Some((base, *effort))
+        })
+        .filter(|(m, _)| !m.is_empty())
+}
+
+/// An effort level as the log keeps it: a short lowercase word, such as `high`; anything else a
+/// record names isn't one.
+fn effort_level(level: &str) -> Option<String> {
+    let level = level.trim().to_ascii_lowercase();
+    (!level.is_empty()
+        && level.len() <= 16
+        && level
+            .bytes()
+            .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'-' || b == b'_'))
+    .then_some(level)
 }
 
 /// The prices of a request whose record names no provider: the provider its kind of source
@@ -1009,7 +1199,7 @@ pub async fn record(
         .filter(|(_, fresh)| **fresh)
         .map(|(r, _)| r)
         .collect();
-    let mut copies = made_by_gateway(state, source.project_id, &candidates)
+    let mut copies = copies(state, source.org_id, &candidates, now)
         .await
         .into_iter();
     for ((r, id), fresh) in batch
@@ -1099,8 +1289,12 @@ async fn record_request(
     let priced_as = |model: String| {
         let named = named.clone();
         let unguessed = r.unguessed;
+        let guessed = r.provider_guessed;
         async move {
             match named {
+                Some(p) if guessed => {
+                    price_guessed(state, source.project_id, Some(&p), &model).await
+                }
                 Some(p) => price(state, source.project_id, Some(&p), &model).await,
                 None if unguessed => Priced {
                     provider: None,
@@ -1115,13 +1309,20 @@ async fn record_request(
         }
     };
     let mut priced = priced_as(model.clone()).await;
+    let mut effort = r.reasoning_effort.as_deref().and_then(effort_level);
+    let mut model = model;
+    // A model named with its effort level is one model at that level: logged under the model
+    // the catalogue or KPMR knows, unless they know the whole name.
     if priced.prices.is_none()
-        && kind == Some(SourceKind::Antigravity)
-        && let Some(base) = without_effort(&model)
+        && !r.unguessed
+        && let Some((base, level)) = without_effort(&model)
     {
-        let base = priced_as(base.to_owned()).await;
-        if base.prices.is_some() {
-            priced = base;
+        let base = base.to_owned();
+        let base_priced = priced_as(base.clone()).await;
+        if base_priced.prices.is_some() {
+            priced = base_priced;
+            effort.get_or_insert_with(|| level.to_owned());
+            model = base;
         }
     }
     let dialect = r.dialect.unwrap_or(DialectId::OpenAiChat);
@@ -1147,6 +1348,7 @@ async fn record_request(
     };
     o.requested_model = Some(model.clone());
     o.model_id = Some(model.clone());
+    o.reasoning_effort = effort;
     o.catalogue_model_id = priced.catalogue_model_id;
     o.prices = priced.prices;
     o.observed_cost = r.reported_cost.filter(|c| !c.is_sign_negative());
@@ -1329,11 +1531,57 @@ mod tests {
     fn a_model_named_with_its_effort_level_is_priced_as_the_model() {
         assert_eq!(
             without_effort("gemini-3.8-flash-low"),
-            Some("gemini-3.8-flash")
+            Some(("gemini-3.8-flash", "low"))
         );
-        assert_eq!(without_effort("gemini-4-neon-xhigh"), Some("gemini-4-neon"));
+        assert_eq!(
+            without_effort("gemini-4-neon-xhigh"),
+            Some(("gemini-4-neon", "xhigh"))
+        );
+        assert_eq!(
+            without_effort("gemini-4-carbon-high"),
+            Some(("gemini-4-carbon", "high"))
+        );
+        assert_eq!(without_effort("gemini-4-max"), Some(("gemini-4", "max")));
         assert_eq!(without_effort("gpt-5.4-mini"), None);
+        assert_eq!(without_effort("gemini-shallow"), None);
         assert_eq!(without_effort("-low"), None);
+        assert_eq!(without_effort("low"), None);
+    }
+
+    #[test]
+    fn only_a_copy_fresh_enough_to_miss_its_note_waits_for_it() {
+        let ended = datetime!(2026-11-23 12:00:10 UTC);
+        let mut r = request();
+        r.started_at = Some(datetime!(2026-11-23 12:00:00 UTC));
+        r.duration = Duration::from_secs(10);
+        assert_eq!(hold_for(ended, &r), Some(HOLD));
+        assert_eq!(
+            hold_for(ended + time::Duration::seconds(1), &r),
+            Some(Duration::from_millis(500))
+        );
+        assert_eq!(hold_for(ended + time::Duration::seconds(2), &r), None);
+        assert_eq!(
+            hold_for(ended - time::Duration::seconds(3), &r),
+            Some(HOLD),
+            "a client's clock ahead of Kaeso's waits no longer"
+        );
+        r.started_at = None;
+        assert_eq!(hold_for(ended, &r), None);
+    }
+
+    #[test]
+    fn a_copy_is_matched_on_its_model_alone_whatever_its_path_and_case() {
+        assert_eq!(model_tag("anthropic/Claude-Haiku-5-5"), "claude-haiku-5-5");
+        assert_eq!(model_tag("claude-haiku-5-5"), "claude-haiku-5-5");
+    }
+
+    #[test]
+    fn an_effort_level_is_kept_only_as_a_short_word() {
+        assert_eq!(effort_level("High").as_deref(), Some("high"));
+        assert_eq!(effort_level(" xhigh ").as_deref(), Some("xhigh"));
+        assert_eq!(effort_level(""), None);
+        assert_eq!(effort_level("think really hard"), None);
+        assert_eq!(effort_level(&"x".repeat(17)), None);
     }
 
     #[test]

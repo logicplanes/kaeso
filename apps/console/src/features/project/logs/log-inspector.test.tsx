@@ -276,6 +276,37 @@ describe("LogInspector", () => {
     await waitFor(() => expect(router.state.location.search).toMatchObject({ source_id: "src_claude" }));
   });
 
+  it("shows a dash for the time of an observed request its source didn't time, and the effort it asked for", async () => {
+    signedIn();
+    projectData({ sources: [externalSource()] });
+    const observed = {
+      source: "observed" as const,
+      source_id: "src_claude",
+      key_id: null,
+      duration_ms: null,
+      ttfb_ms: null,
+      request_upload_us: null,
+      overhead_us: null,
+      reasoning_effort: "high",
+    };
+    logsData({ rows: [logRow(observed)], entries: [logEntry(observed)] });
+    await renderApp(projectPath("logs?log=req_0001"));
+    const panel = await sheet();
+    const summary = await within(panel).findByRole("list", { name: "Summary" });
+    expect(summary).toHaveTextContent(/Duration—/);
+    expect(summary).not.toHaveTextContent("0 ms");
+    noSection(panel, "Timing");
+    expect(section(panel, "Route")).toHaveTextContent("Reasoning efforthigh");
+  });
+
+  it("leaves the effort out of a request that asked for none", async () => {
+    signedIn();
+    projectData();
+    logsData({ rows: [logRow()], entries: [logEntry({ reasoning_effort: null })] });
+    await renderApp(projectPath("logs?log=req_0001"));
+    expect(section(await sheet(), "Route")).not.toHaveTextContent("Reasoning effort");
+  });
+
   it("names a source the person can't see as a source", async () => {
     signedIn({ projectRights: without("sources.view") });
     projectData();

@@ -246,6 +246,11 @@ pub struct Outcome {
     pub guardrails: Vec<crate::services::guardrails::Run>,
     /// Values built-in rules found that the log keeps only as their placeholders.
     pub log_masks: Vec<(String, String)>,
+    /// The reasoning effort the request asked its model for, as sent to the provider or as a
+    /// source reported it, such as `high`.
+    pub reasoning_effort: Option<String>,
+    /// The request is already noted for sources that report it too, so it isn't noted again.
+    pub sources_noted: bool,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]

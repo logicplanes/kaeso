@@ -982,6 +982,7 @@ async fn record_with(state: &AppState, o: &Outcome, body: Option<Bytes>) {
         cost_known: crate::services::usage::cost_known(o),
         cost_basis: cost_basis(o).to_owned(),
         source_id: o.source_id.unwrap_or_default(),
+        reasoning_effort: o.reasoning_effort.clone().unwrap_or_default(),
     };
     let content_expires = days(o.started_at, cfg.content_days.min(cfg.metadata_days));
     let (content, parts) = if content {
@@ -1205,11 +1206,11 @@ pub struct Recorder;
 impl Sink for Recorder {
     fn finish<'a>(&'a self, state: &'a AppState, mut outcome: Outcome) -> BoxFuture<'a, ()> {
         Box::pin(async move {
+            crate::services::observed::note_gateway(state, &mut outcome).await;
             crate::services::usage::account(state, &outcome).await;
             crate::services::otel::record(state, &outcome).await;
             let body = outcome.request_body.take();
             record_with(state, &outcome, body).await;
-            crate::services::observed::note_gateway(state, &outcome).await;
         })
     }
 
@@ -1220,12 +1221,12 @@ impl Sink for Recorder {
         charged: tokio::sync::oneshot::Sender<()>,
     ) -> BoxFuture<'a, ()> {
         Box::pin(async move {
+            crate::services::observed::note_gateway(state, &mut outcome).await;
             crate::services::usage::account(state, &outcome).await;
             let _ = charged.send(());
             crate::services::otel::record(state, &outcome).await;
             let body = outcome.request_body.take();
             record_with(state, &outcome, body).await;
-            crate::services::observed::note_gateway(state, &outcome).await;
         })
     }
 }

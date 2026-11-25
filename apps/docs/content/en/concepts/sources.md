@@ -55,16 +55,18 @@ Clients count tokens differently: Claude Code leaves cached input out of its inp
 
 A request costs what the project's catalogue says the model costs. Without a catalogue entry, Kaeso uses the model's price from [KPMR](../kpmr/index.md). When neither has a price, the request keeps the cost the source reported, such as Claude Code's or LiteLLM's, and its details say so. Cache writes that Anthropic keeps for an hour cost the hour's price.
 
-When a record names no provider, Kaeso looks for the model at the provider the kind of source usually calls, then at the model's maker, or at the one provider that sells it. An Antigravity model named with an effort level at its end, such as `gemini-3.8-flash-low`, is priced as the model without it.
+When a record names no provider, Kaeso looks for the model at the provider the kind of source usually calls, then at the model's maker, or at the one provider that sells it. A provider the client names only from how it is set up, such as Gemini CLI's sign-in or the provider Codex is configured with, counts the same way: a model it doesn't sell, as when the client talks to a gateway, is its maker's.
+
+A model named with an effort level at its end, such as `gemini-3.8-flash-low`, is logged as the model without it, with `low` as its reasoning effort, when the catalogue or KPMR knows that model and not the whole name. A source that sends no timing, such as Antigravity, leaves its requests without a duration: the request log shows a dash, and latency figures leave them out.
 
 ## Duplicates and refusals
 
 Clients send an event again when an export failed, so Kaeso keeps each request and tool call once. A source that reports the same id within seven days counts it once, and its activity counts the rest as duplicates. An app that exports a call both as a span and as a log event written in that span counts it once too.
 
-A client that sends its requests through Kaeso's gateway and also reports them to a source would count each one twice. Kaeso matches such a copy to the gateway's request: same project, model and tokens, starting or ending within five seconds of it. The copy then counts as a duplicate.
+A client that sends its requests through Kaeso's gateway and also reports them to a source would count each one twice. Kaeso matches such a copy to the gateway's request: same organization, from any of its projects, same model and tokens, starting or ending within five seconds of it. A failed copy matches a failed request of the same model. The model can be the one the app named, such as an alias, the one Kaeso called or the one that answered. Kaeso notes each request before its reply ends, so a client that reports it at once finds it, and a copy that matches nothing yet while the gateway serves its model looks again after a moment. The copy then counts as a duplicate.
 
 > [!WARNING]
-> The match misses when the client names the model differently from the request it sent, such as an alias. Point a client at the gateway or at a source, not both.
+> The match needs the client to report the provider's own token counts. Point a client at the gateway or at a source, not both.
 
 Kaeso refuses a record that:
 

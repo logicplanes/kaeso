@@ -52,7 +52,7 @@ Claude Code 的事件默认不含您的提示词。要保留它们，请为来�
 
 | Claude Code 事件 | 在 Kaeso 中 |
 | --- | --- |
-| `api_request` | 一个请求：模型、Token、缓存读取和写入、首 Token 时间、Anthropic 的请求 ID、Claude Code 计算的费用 |
+| `api_request` | 一个请求：模型、Token、缓存读取和写入、首 Token 时间、推理强度级别、Anthropic 的请求 ID、Claude Code 计算的费用 |
 | `api_error` | 带有状态和消息的失败请求 |
 | MCP 工具的 `tool_result` | 带有服务器、工具、耗时和结果的工具调用 |
 

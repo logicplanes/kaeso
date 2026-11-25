@@ -51,6 +51,7 @@ Ein Span oder ein Log-Ereignis ist eine Anfrage, wenn sein `gen_ai.operation.nam
 | --- | --- |
 | `gen_ai.request.model`, `gen_ai.response.model` | Das Modell |
 | `gen_ai.provider.name` oder `gen_ai.system` | Der Anbieter |
+| `gen_ai.request.reasoning.level` | Der Reasoning-Aufwand, den sie verlangte, etwa `high` |
 | `gen_ai.usage.input_tokens`, `gen_ai.usage.output_tokens` | Tokens, mit dem Cache getrennt gezählt |
 | `gen_ai.usage.cache_read.input_tokens`, `gen_ai.usage.cache_write.input_tokens`, `gen_ai.usage.reasoning.output_tokens` | Cache-Lese- und -Schreibvorgänge und Reasoning |
 | `gen_ai.response.id` | Die ID der Anfrage, sodass ein doppelt gesendeter Aufruf einmal zählt |

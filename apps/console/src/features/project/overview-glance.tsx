@@ -236,7 +236,7 @@ function LiveCell({ org, project, className }: { org: string; project: string; c
       </>
     ),
     secondary: formatRelative(l.started_at),
-    ...(phone ? {} : { value: formatDuration(l.duration_ms) }),
+    ...(phone ? {} : { value: l.duration_ms == null ? "—" : formatDuration(l.duration_ms) }),
   }));
   return (
     <DashboardCell

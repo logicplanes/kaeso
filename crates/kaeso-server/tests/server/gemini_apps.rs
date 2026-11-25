@@ -137,6 +137,12 @@ async fn a_gemini_apps_thinking_budget_reaches_claude_5_as_adaptive_thinking() {
     let sent = env.mock.last().unwrap().json();
     assert_eq!(sent["thinking"], json!({ "type": "adaptive" }), "{sent}");
     assert_eq!(sent["output_config"], json!({ "effort": "low" }), "{sent}");
+    let outcomes = env.outcomes().await;
+    assert_eq!(
+        outcomes.last().unwrap().reasoning_effort.as_deref(),
+        Some("low"),
+        "the log keeps the effort sent, not the budget asked for"
+    );
 }
 
 #[tokio::test]

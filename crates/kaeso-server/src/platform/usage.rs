@@ -721,12 +721,15 @@ pub struct TimelineBucket {
     #[doc = "The organization's currency, which `converted_cost` is in."]
     #[schema(example = "EUR")]
     pub currency: String,
-    #[doc = "The median total time of its requests, in milliseconds."]
-    pub duration_p50_ms: u32,
-    #[doc = "The 95th percentile of the total time of its requests, in milliseconds."]
-    pub duration_p95_ms: u32,
-    #[doc = "The longest total time of its requests, in milliseconds."]
-    pub duration_max_ms: u32,
+    #[doc = "The median total time of its requests, in milliseconds; `null` when none has a\n\
+        known time, such as observed requests whose source sends no timing."]
+    pub duration_p50_ms: Option<u32>,
+    #[doc = "The 95th percentile of the total time of its requests, in milliseconds; `null`\n\
+        when none has a known time."]
+    pub duration_p95_ms: Option<u32>,
+    #[doc = "The longest total time of its requests, in milliseconds; `null` when none has a\n\
+        known time."]
+    pub duration_max_ms: Option<u32>,
     #[doc = "The median time to the provider's first byte, in milliseconds; `null`\n\
         when no request reached a provider, such as refusals and cache hits."]
     pub ttfb_p50_ms: Option<u32>,
@@ -852,6 +855,7 @@ async fn timeline(
             let at = time::OffsetDateTime::from_unix_timestamp(r.start_unix).ok()?;
             let start = at.format(&format).ok()?;
             let reached = r.with_ttfb > 0;
+            let timed = r.timed > 0;
             let cost = scope.costs.then(|| cost_from_raw(r.cost));
             Some(TimelineBucket {
                 start,
@@ -866,9 +870,9 @@ async fn timeline(
                 cost: cost.map(|c| c.normalize().to_string()),
                 converted_cost: cost.and_then(|c| money.text_on(c, at.date())),
                 currency: money.code.clone(),
-                duration_p50_ms: millis(&r.duration, 0).unwrap_or(r.duration_max),
-                duration_p95_ms: millis(&r.duration, 1).unwrap_or(r.duration_max),
-                duration_max_ms: r.duration_max,
+                duration_p50_ms: timed.then(|| millis(&r.duration, 0).unwrap_or(r.duration_max)),
+                duration_p95_ms: timed.then(|| millis(&r.duration, 1).unwrap_or(r.duration_max)),
+                duration_max_ms: timed.then_some(r.duration_max),
                 ttfb_p50_ms: millis(&r.ttfb, 0).filter(|_| reached),
                 ttfb_p95_ms: millis(&r.ttfb, 1).filter(|_| reached),
             })

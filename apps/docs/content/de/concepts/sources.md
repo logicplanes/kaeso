@@ -55,16 +55,18 @@ Clients zählen Tokens unterschiedlich: Claude Code lässt gecachte Eingabe aus 
 
 Eine Anfrage kostet, was der Katalog des Projekts für das Modell angibt. Ohne Katalogeintrag nutzt Kaeso den Preis des Modells aus [KPMR](../kpmr/index.md). Hat keiner einen Preis, behält die Anfrage die Kosten, die die Quelle gemeldet hat, etwa die von Claude Code oder LiteLLM, und ihre Details sagen das. Cache-Schreibvorgänge, die Anthropic eine Stunde lang behält, kosten den Preis für eine Stunde.
 
-Nennt ein Datensatz keinen Anbieter, sucht Kaeso das Modell beim Anbieter, den diese Art von Quelle üblicherweise aufruft, dann beim Hersteller des Modells oder bei dem einen Anbieter, der es verkauft. Ein Antigravity-Modell, dessen Name auf eine Effort-Stufe endet, etwa `gemini-3.8-flash-low`, kostet so viel wie das Modell ohne sie.
+Nennt ein Datensatz keinen Anbieter, sucht Kaeso das Modell beim Anbieter, den diese Art von Quelle üblicherweise aufruft, dann beim Hersteller des Modells oder bei dem einen Anbieter, der es verkauft. Ein Anbieter, den der Client nur aus seiner Einrichtung kennt, etwa aus der Anmeldung von Gemini CLI oder dem Anbieter, mit dem Codex eingerichtet ist, zählt genauso: Ein Modell, das er nicht verkauft, etwa wenn der Client mit einem Gateway spricht, gehört seinem Hersteller.
+
+Ein Modell, dessen Name auf eine Effort-Stufe endet, etwa `gemini-3.8-flash-low`, wird als das Modell ohne sie protokolliert, mit `low` als Reasoning-Aufwand, wenn der Katalog oder KPMR dieses Modell kennt und nicht den ganzen Namen. Eine Quelle, die keine Zeiten sendet, etwa Antigravity, lässt ihre Anfragen ohne Dauer: Das Anfrageprotokoll zeigt einen Strich, und Latenzwerte lassen sie aus.
 
 ## Duplikate und Ablehnungen
 
 Clients senden ein Ereignis erneut, wenn ein Export fehlschlug, deshalb behält Kaeso jede Anfrage und jeden Tool-Aufruf einmal. Meldet eine Quelle dieselbe ID innerhalb von sieben Tagen, zählt Kaeso sie einmal, und die Aktivität der Quelle zählt den Rest als Duplikate. Exportiert eine App einen Aufruf als Span und als Log-Ereignis, das in diesem Span geschrieben wurde, zählt er ebenfalls einmal.
 
-Ein Client, der seine Anfragen über das Gateway von Kaeso sendet und sie zusätzlich an eine Quelle meldet, würde jede doppelt zählen. Kaeso ordnet eine solche Kopie der Anfrage des Gateways zu: gleiches Projekt, Modell und gleiche Tokens, Beginn oder Ende innerhalb von fünf Sekunden. Die Kopie zählt dann als Duplikat.
+Ein Client, der seine Anfragen über das Gateway von Kaeso sendet und sie zusätzlich an eine Quelle meldet, würde jede doppelt zählen. Kaeso ordnet eine solche Kopie der Anfrage des Gateways zu: gleiche Organisation, aus jedem ihrer Projekte, gleiches Modell und gleiche Tokens, Beginn oder Ende innerhalb von fünf Sekunden. Eine fehlgeschlagene Kopie gehört zu einer fehlgeschlagenen Anfrage desselben Modells. Das Modell kann das sein, das die App nannte, etwa ein Alias, das, das Kaeso aufrief, oder das, das antwortete. Kaeso vermerkt jede Anfrage, bevor ihre Antwort endet, sodass ein Client, der sie sofort meldet, sie findet, und eine Kopie, die noch nichts zugeordnet ist, während das Gateway ihr Modell bedient, sieht nach einem Moment noch einmal nach. Die Kopie zählt dann als Duplikat.
 
 > [!WARNING]
-> Die Zuordnung schlägt fehl, wenn der Client das Modell anders nennt als in der gesendeten Anfrage, etwa mit einem Alias. Verbinden Sie einen Client mit dem Gateway oder mit einer Quelle, nicht mit beiden.
+> Die Zuordnung braucht die Token-Zahlen des Anbieters in der Meldung des Clients. Verbinden Sie einen Client mit dem Gateway oder mit einer Quelle, nicht mit beiden.
 
 Kaeso lehnt einen Datensatz ab, der:
 

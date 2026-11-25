@@ -1295,6 +1295,8 @@ mod tests {
             content_type: None,
             guardrails: Vec::new(),
             log_masks: Vec::new(),
+            reasoning_effort: None,
+            sources_noted: false,
         };
         let trace = request_trace(&outcome, [2; 16]);
         let server_err = trace.server.error.as_deref().unwrap_or_default();

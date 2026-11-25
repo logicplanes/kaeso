@@ -37239,7 +37239,6 @@
               "required": [
                 "id",
                 "started_at",
-                "duration_ms",
                 "source",
                 "principal_kind",
                 "principal_id",
@@ -37342,9 +37341,12 @@
                   "example": "EUR"
                 },
                 "duration_ms": {
-                  "type": "integer",
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
                   "format": "int32",
-                  "description": "Total time in milliseconds.",
+                  "description": "Total time in milliseconds; `null` when it isn't known, for an observed request\nwhose source sends no timing.",
                   "minimum": 0
                 },
                 "egress_dialect": {
@@ -37449,6 +37451,14 @@
                 "provider": {
                   "type": "string",
                   "description": "The provider."
+                },
+                "reasoning_effort": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The reasoning effort the request asked the model for, such as `high`: as Kaeso\nsent it to the provider, once adapted to the model, or as a source reported it,\nsuch as from a model named with its effort level (`gemini-3.8-flash-low`). `null`\nwhen the request named none, and for requests logged before Kaeso recorded it.",
+                  "example": "high"
                 },
                 "request_upload_us": {
                   "type": [
@@ -39692,10 +39702,7 @@
                 "cache_read_tokens",
                 "cache_write_tokens",
                 "reasoning_tokens",
-                "currency",
-                "duration_p50_ms",
-                "duration_p95_ms",
-                "duration_max_ms"
+                "currency"
               ],
               "properties": {
                 "cache_read_tokens": {
@@ -39731,21 +39738,30 @@
                   "example": "EUR"
                 },
                 "duration_max_ms": {
-                  "type": "integer",
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
                   "format": "int32",
-                  "description": "The longest total time of its requests, in milliseconds.",
+                  "description": "The longest total time of its requests, in milliseconds; `null` when none has a\nknown time.",
                   "minimum": 0
                 },
                 "duration_p50_ms": {
-                  "type": "integer",
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
                   "format": "int32",
-                  "description": "The median total time of its requests, in milliseconds.",
+                  "description": "The median total time of its requests, in milliseconds; `null` when none has a\nknown time, such as observed requests whose source sends no timing.",
                   "minimum": 0
                 },
                 "duration_p95_ms": {
-                  "type": "integer",
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
                   "format": "int32",
-                  "description": "The 95th percentile of the total time of its requests, in milliseconds.",
+                  "description": "The 95th percentile of the total time of its requests, in milliseconds; `null`\nwhen none has a known time.",
                   "minimum": 0
                 },
                 "errors": {
@@ -40594,7 +40610,6 @@
         "required": [
           "id",
           "started_at",
-          "duration_ms",
           "source",
           "principal_kind",
           "principal_id",
@@ -40697,9 +40712,12 @@
             "example": "EUR"
           },
           "duration_ms": {
-            "type": "integer",
+            "type": [
+              "integer",
+              "null"
+            ],
             "format": "int32",
-            "description": "Total time in milliseconds.",
+            "description": "Total time in milliseconds; `null` when it isn't known, for an observed request\nwhose source sends no timing.",
             "minimum": 0
           },
           "egress_dialect": {
@@ -40804,6 +40822,14 @@
           "provider": {
             "type": "string",
             "description": "The provider."
+          },
+          "reasoning_effort": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The reasoning effort the request asked the model for, such as `high`: as Kaeso\nsent it to the provider, once adapted to the model, or as a source reported it,\nsuch as from a model named with its effort level (`gemini-3.8-flash-low`). `null`\nwhen the request named none, and for requests logged before Kaeso recorded it.",
+            "example": "high"
           },
           "request_upload_us": {
             "type": [
@@ -49769,10 +49795,7 @@
           "cache_read_tokens",
           "cache_write_tokens",
           "reasoning_tokens",
-          "currency",
-          "duration_p50_ms",
-          "duration_p95_ms",
-          "duration_max_ms"
+          "currency"
         ],
         "properties": {
           "cache_read_tokens": {
@@ -49808,21 +49831,30 @@
             "example": "EUR"
           },
           "duration_max_ms": {
-            "type": "integer",
+            "type": [
+              "integer",
+              "null"
+            ],
             "format": "int32",
-            "description": "The longest total time of its requests, in milliseconds.",
+            "description": "The longest total time of its requests, in milliseconds; `null` when none has a\nknown time.",
             "minimum": 0
           },
           "duration_p50_ms": {
-            "type": "integer",
+            "type": [
+              "integer",
+              "null"
+            ],
             "format": "int32",
-            "description": "The median total time of its requests, in milliseconds.",
+            "description": "The median total time of its requests, in milliseconds; `null` when none has a\nknown time, such as observed requests whose source sends no timing.",
             "minimum": 0
           },
           "duration_p95_ms": {
-            "type": "integer",
+            "type": [
+              "integer",
+              "null"
+            ],
             "format": "int32",
-            "description": "The 95th percentile of the total time of its requests, in milliseconds.",
+            "description": "The 95th percentile of the total time of its requests, in milliseconds; `null`\nwhen none has a known time.",
             "minimum": 0
           },
           "errors": {

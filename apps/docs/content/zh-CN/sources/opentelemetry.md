@@ -51,6 +51,7 @@ service:
 | --- | --- |
 | `gen_ai.request.model`、`gen_ai.response.model` | 模型 |
 | `gen_ai.provider.name` 或 `gen_ai.system` | 服务商 |
+| `gen_ai.request.reasoning.level` | 请求的推理强度，例如 `high` |
 | `gen_ai.usage.input_tokens`、`gen_ai.usage.output_tokens` | Token，缓存分开计数 |
 | `gen_ai.usage.cache_read.input_tokens`、`gen_ai.usage.cache_write.input_tokens`、`gen_ai.usage.reasoning.output_tokens` | 缓存读取和写入，以及推理 |
 | `gen_ai.response.id` | 请求的 ID，因此重复发送的调用只计一次 |

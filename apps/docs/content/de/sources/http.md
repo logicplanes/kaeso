@@ -35,7 +35,8 @@ Jeder Datensatz braucht eine `id`, die innerhalb der Quelle eindeutig ist. Sende
 | `model` | Pflicht. Das Modell, etwa `gpt-5.4-mini` |
 | `provider` | Die ID des Anbieters, etwa `openai`, die die Anfrage aus KPMR bepreist |
 | `started_at` | Wann sie begann, in RFC 3339; standardmäßig jetzt. Höchstens sieben Tage zurück |
-| `duration_ms`, `ttft_ms` | Wie lange sie dauerte, und bis zum ersten Token |
+| `duration_ms`, `ttft_ms` | Wie lange sie dauerte, und bis zum ersten Token; ohne `duration_ms` hat sie keine Dauer |
+| `reasoning_effort` | Der Reasoning-Aufwand, den sie verlangte, etwa `high` |
 | `status` | Ihr HTTP-Status; 200, oder 502 mit einem `error` |
 | `error` | Was schiefging, bei einer fehlgeschlagenen Anfrage |
 | `usage` | Ihre Tokens, siehe unten |

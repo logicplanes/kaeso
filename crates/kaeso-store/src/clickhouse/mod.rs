@@ -138,6 +138,13 @@ const MIGRATIONS: &[Migration] = &[
         name: "source_skip",
         sql: include_str!("../../migrations/clickhouse/0021_source_skip.sql"),
     },
+    // The reasoning effort a request asked its model for, such as `high`; empty when it named
+    // none or for requests logged before.
+    Migration {
+        version: 22,
+        name: "reasoning_effort",
+        sql: include_str!("../../migrations/clickhouse/0022_reasoning_effort.sql"),
+    },
 ];
 
 #[derive(Clone)]
@@ -290,7 +297,7 @@ mod tests {
     #[test]
     fn migration_files_split_into_statements() {
         let all: Vec<String> = MIGRATIONS.iter().flat_map(|m| statements(m.sql)).collect();
-        assert_eq!(all.len(), 41);
+        assert_eq!(all.len(), 42);
         assert!(all.iter().all(|s| s.starts_with("CREATE ")
             || s.starts_with("ALTER TABLE ")
             || s.starts_with("DROP ")));

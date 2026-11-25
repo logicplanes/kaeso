@@ -844,3 +844,317 @@ async fn codex_times_a_request_whose_start_came_in_the_export_before() {
         "its prompt came along"
     );
 }
+
+async fn project_named(env: &Env, org: &str, name: &str) -> String {
+    let r = env
+        .app
+        .post(
+            &format!("/orgs/{org}/projects"),
+            json!({ "name": name }),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
+    r.body["id"].as_str().unwrap().to_owned()
+}
+
+async fn source_at(env: &Env, org: &str, project: &str, kind: &str) -> String {
+    let r = env
+        .app
+        .post(
+            &format!("/orgs/{org}/projects/{project}/sources"),
+            json!({ "kind": kind, "name": kind }),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
+    r.body["key"].as_str().unwrap().to_owned()
+}
+
+async fn events(env: &Env, key: &str, requests: Value) -> Value {
+    let (status, _, body) = post(
+        env,
+        "/ingest/v1/events",
+        Some(key),
+        "application/json",
+        false,
+        json!({ "requests": requests }).to_string().into_bytes(),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{}", String::from_utf8_lossy(&body));
+    serde_json::from_slice(&body).unwrap()
+}
+
+fn now_text(env: &Env) -> String {
+    env.app
+        .state
+        .clock
+        .now()
+        .format(&time::format_description::well_known::Rfc3339)
+        .unwrap()
+}
+
+// Kaeso's JSON counts input as Anthropic does: without what came from or went into the cache.
+fn usage_of(u: &Value) -> Value {
+    json!({
+        "input_tokens": u["input_tokens"],
+        "output_tokens": u["output_tokens"],
+        "cache_read_tokens": u["cache_read_input_tokens"].as_u64().unwrap_or(0),
+        "cache_write_tokens": u["cache_creation_input_tokens"].as_u64().unwrap_or(0),
+    })
+}
+
+#[tokio::test]
+async fn a_gateway_requests_copy_counts_once_from_any_project_of_its_organization() {
+    let env = env().await;
+    let org = env.owner.org_id.to_string();
+    let second = project_named(&env, &org, "Laptops").await;
+    let key = source_at(&env, &org, &second, "http").await;
+
+    let at = now_text(&env);
+    let r = common::v1::call(
+        &env,
+        "/v1/messages",
+        Some(&env.key),
+        true,
+        Some(common::v1::messages("claude-haiku-4-5", "Hi")),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let usage = usage_of(&r.json()["usage"]);
+    // The client reports the request the moment it has the reply, from another project.
+    let copy = json!([{ "id": "copy-1", "started_at": at, "duration_ms": 40, "provider": "anthropic",
+        "model": "claude-haiku-4-5", "usage": usage }]);
+    let answer = events(&env, &key, copy).await;
+    assert_eq!(
+        (&answer["requests"], &answer["duplicates"]),
+        (&json!(0), &json!(1)),
+        "{answer}"
+    );
+    // The gateway request is taken: the same tokens again are another request.
+    let again = json!([{ "id": "copy-2", "started_at": at, "duration_ms": 40, "provider": "anthropic",
+        "model": "claude-haiku-4-5", "usage": usage }]);
+    assert_eq!(events(&env, &key, again).await["requests"], 1);
+
+    let at = now_text(&env);
+    let r = common::v1::call(
+        &env,
+        "/v1/messages",
+        Some(&env.key),
+        true,
+        Some(common::v1::messages(
+            "claude-haiku-4-5",
+            "Hi [mock:fail=claude-haiku-4-5 overloaded]",
+        )),
+    )
+    .await;
+    assert!(r.status.as_u16() >= 400, "{}", r.text());
+    let failed = json!([{ "id": "failed-1", "started_at": at, "duration_ms": 30, "provider": "anthropic",
+        "model": "claude-haiku-4-5", "status": r.status.as_u16(), "error": "Overloaded" }]);
+    let answer = events(&env, &key, failed).await;
+    assert_eq!(
+        answer["duplicates"], 1,
+        "a failed request is its copy too: {answer}"
+    );
+
+    let at = now_text(&env);
+    let mut streamed = common::v1::messages("claude-haiku-4-5", "Hi");
+    streamed["stream"] = json!(true);
+    let r = common::v1::call(&env, "/v1/messages", Some(&env.key), true, Some(streamed)).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let events_of: Vec<Value> = r
+        .text()
+        .lines()
+        .filter_map(|l| l.strip_prefix("data: "))
+        .filter_map(|d| serde_json::from_str(d).ok())
+        .collect();
+    let mut u = events_of
+        .iter()
+        .find(|e| e["type"] == "message_start")
+        .unwrap()["message"]["usage"]
+        .clone();
+    u["output_tokens"] = events_of
+        .iter()
+        .rev()
+        .find(|e| e["type"] == "message_delta")
+        .unwrap()["usage"]["output_tokens"]
+        .clone();
+    let copy = json!([{ "id": "streamed-1", "started_at": at, "duration_ms": 60, "provider": "anthropic",
+        "model": "claude-haiku-4-5", "usage": usage_of(&u), "stream": true }]);
+    let answer = events(&env, &key, copy).await;
+    assert_eq!(
+        answer["duplicates"], 1,
+        "a stream is noted before its end reaches the app: {answer}"
+    );
+
+    flush(&env).await;
+    let observed: Vec<Value> = logs(&env, "?source=observed").await;
+    assert!(observed.is_empty(), "{observed:#?}");
+}
+
+#[tokio::test]
+async fn another_organizations_source_never_takes_a_gateway_request_for_its_copy() {
+    let env = env().await;
+    let r = env
+        .app
+        .post(
+            "/me/orgs",
+            json!({ "name": "Elsewhere" }),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
+    let other = r.body["id"].as_str().unwrap().to_owned();
+    let project = project_named(&env, &other, "Laptops").await;
+    let key = source_at(&env, &other, &project, "http").await;
+    // The gateway's own organization has a source too, so its requests are noted.
+    source(&env, "http").await;
+
+    let at = now_text(&env);
+    let r = common::v1::call(
+        &env,
+        "/v1/messages",
+        Some(&env.key),
+        true,
+        Some(common::v1::messages("claude-haiku-4-5", "Hi")),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let copy = json!([{ "id": "copy-1", "started_at": at, "duration_ms": 40, "provider": "anthropic",
+        "model": "claude-haiku-4-5", "usage": usage_of(&r.json()["usage"]) }]);
+    let answer = events(&env, &key, copy).await;
+    assert_eq!(
+        (&answer["requests"], &answer["duplicates"]),
+        (&json!(1), &json!(0)),
+        "{answer}"
+    );
+}
+
+#[tokio::test]
+async fn a_model_named_with_its_effort_is_one_model_and_a_request_without_timing_has_none() {
+    let env = env().await;
+    let (_, key) = source(&env, "http").await;
+    let now = env.app.state.clock.now();
+    let rfc = |t: time::OffsetDateTime| {
+        t.format(&time::format_description::well_known::Rfc3339)
+            .unwrap()
+    };
+    let at = rfc(now);
+    let answer = events(
+        &env,
+        &key,
+        json!([
+            { "id": "effort-1", "started_at": at, "provider": "anthropic", "model": "claude-haiku-4-5-high",
+              "usage": { "input_tokens": 100, "output_tokens": 20 } },
+            { "id": "effort-2", "started_at": at, "duration_ms": 900, "provider": "anthropic",
+              "model": "claude-haiku-4-5", "reasoning_effort": "Medium",
+              "usage": { "input_tokens": 100, "output_tokens": 20 } },
+            { "id": "effort-3", "started_at": at, "duration_ms": 900, "provider": "anthropic",
+              "model": "made-up-model-high", "usage": { "input_tokens": 1, "output_tokens": 1 } }
+        ]),
+    )
+    .await;
+    assert_eq!(answer["requests"], 3, "{answer}");
+    flush(&env).await;
+    let rows = logs(&env, "?source=observed").await;
+    let by_effort = |e: Option<&str>, model: &str| {
+        rows.iter()
+            .find(|r| r["reasoning_effort"].as_str() == e && r["model"] == model)
+            .unwrap_or_else(|| panic!("{e:?} {model}: {rows:#?}"))
+            .clone()
+    };
+    let high = by_effort(Some("high"), "claude-haiku-4-5");
+    assert_eq!(high["requested_model"], "claude-haiku-4-5");
+    assert_eq!(high["cost_known"], true);
+    assert_eq!(high["duration_ms"], Value::Null, "{high}");
+    assert_eq!(
+        by_effort(Some("medium"), "claude-haiku-4-5")["duration_ms"],
+        900
+    );
+    assert_eq!(
+        by_effort(None, "made-up-model-high")["requested_model"],
+        "made-up-model-high",
+        "a model neither the catalogue nor KPMR knows keeps its whole name"
+    );
+
+    let timeline = env
+        .app
+        .get(
+            &format!(
+                "{}/usage/timeline?step=hour&group_by=model&from={}&to={}",
+                base(&env),
+                rfc(now - time::Duration::hours(1)),
+                rfc(now + time::Duration::hours(1)),
+            ),
+            &env.owner.cookie,
+        )
+        .await;
+    assert_eq!(timeline.status, StatusCode::OK, "{:?}", timeline.body);
+    let buckets = timeline.body["data"].as_array().unwrap();
+    let haiku = buckets
+        .iter()
+        .find(|b| {
+            b["key"]
+                .as_str()
+                .is_some_and(|k| k.ends_with("claude-haiku-4-5"))
+        })
+        .unwrap_or_else(|| panic!("{buckets:#?}"));
+    assert_eq!(
+        (
+            haiku["requests"].as_u64(),
+            haiku["duration_max_ms"].as_u64()
+        ),
+        (Some(2), Some(900)),
+        "the untimed request leaves the latency alone: {haiku}"
+    );
+}
+
+#[tokio::test]
+async fn a_client_set_up_for_one_provider_reports_another_makers_model_as_the_makers() {
+    let env = env().await;
+    let (_, key) = source(&env, "gemini_cli").await;
+    let at = env.app.state.clock.now();
+    let int = |n: u64| json!({ "intValue": n.to_string() });
+    let text = |s: &str| json!({ "stringValue": s });
+    let record = |model: &str, prompt: &str| {
+        json!({
+            "timeUnixNano": at.unix_timestamp_nanos().to_string(),
+            "attributes": [
+                { "key": "event.name", "value": text("gemini_cli.api_response") },
+                { "key": "model", "value": text(model) },
+                { "key": "auth_type", "value": text("gemini-api-key") },
+                { "key": "prompt_id", "value": text(prompt) },
+                { "key": "session.id", "value": text("s-1") },
+                { "key": "duration_ms", "value": int(700) },
+                { "key": "input_token_count", "value": int(120) },
+                { "key": "output_token_count", "value": int(12) },
+            ]
+        })
+    };
+    let (status, _, body) = post(
+        &env,
+        "/ingest/otlp/v1/logs",
+        Some(&key),
+        "application/json",
+        false,
+        logs_body(
+            "gemini-cli",
+            vec![
+                record("claude-haiku-4-5", "p-1"),
+                record("gemini-2.5-flash", "p-2"),
+            ],
+        ),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{}", String::from_utf8_lossy(&body));
+    flush(&env).await;
+    let rows = logs(&env, "?source=observed").await;
+    let provider = |model: &str| {
+        rows.iter()
+            .find(|r| r["model"] == model)
+            .unwrap_or_else(|| panic!("{model}: {rows:#?}"))["provider"]
+            .clone()
+    };
+    assert_eq!(provider("claude-haiku-4-5"), "anthropic");
+    assert_eq!(provider("gemini-2.5-flash"), "google");
+}

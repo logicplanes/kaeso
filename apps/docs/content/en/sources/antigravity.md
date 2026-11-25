@@ -60,7 +60,7 @@ The script leaves your last prompt and each step's text out. To keep them, turn 
 
 ## What Kaeso reads
 
-Each `PLANNER_RESPONSE` step of the transcript becomes a request with its model, input, cached and output tokens, and its time. Antigravity names its models with the effort level at the end, such as `gemini-3.8-flash-low`; Kaeso prices them as the model without it, when the catalogue or KPMR has it, and finds the provider from the model. A model only Antigravity knows, such as `gemini-4-neon-high`, has no cost, but still counts its tokens.
+Each `PLANNER_RESPONSE` step of the transcript becomes a request with its model, input, cached and output tokens, and its time. Antigravity names its models with the effort level at the end, such as `gemini-3.8-flash-low`. When the catalogue or KPMR has the model without it, Kaeso logs and prices the request as that model, keeps the level as its reasoning effort and finds the provider from the model, so every level shows as one model. A model only Antigravity knows, such as `gemini-4-neon-high`, keeps its whole name and has no cost, but still counts its tokens. Antigravity's transcript has no timing, so its requests have no duration and stay out of latency figures.
 
 A call to an MCP tool becomes a tool call, with its server and tool, and whether the step that ran it succeeded. A script copied before Kaeso read tool calls sends none; copy it again from the source's sheet.
 

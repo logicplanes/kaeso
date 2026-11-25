@@ -230,6 +230,8 @@ fn claude_code(groups: &[Group<LogRecord>], batch: &mut Batch) {
                         duration,
                         ttfb: a.u64("ttft_ms").map(Duration::from_millis),
                         provider: Some(claude_provider(a).to_owned()),
+                        provider_guessed: true,
+                        reasoning_effort: a.str("effort").map(str::to_owned),
                         model: model.to_owned(),
                         status: if error {
                             status_of(a.get("status_code")).unwrap_or(502)
@@ -456,6 +458,7 @@ fn codex(groups: &[Group<LogRecord>], batch: &mut Batch) {
                             duration: headers,
                             unguessed: provider.as_deref() == Some(UNNAMED_PROVIDER),
                             provider: provider.filter(|p| p != UNNAMED_PROVIDER),
+                            provider_guessed: true,
                             model: model.to_owned(),
                             status: status.filter(|s| *s >= 400).unwrap_or(502),
                             error_message: error.or(Some("The request failed.".into())),
@@ -500,6 +503,7 @@ fn codex(groups: &[Group<LogRecord>], batch: &mut Batch) {
                         ttfb,
                         unguessed: provider.as_deref() == Some(UNNAMED_PROVIDER),
                         provider: provider.filter(|p| p != UNNAMED_PROVIDER),
+                        provider_guessed: true,
                         model: model.to_owned(),
                         status: 502,
                         error_message: text(a.str("error.message"))
@@ -553,6 +557,7 @@ fn codex(groups: &[Group<LogRecord>], batch: &mut Batch) {
                         ttfb,
                         unguessed: provider.as_deref() == Some(UNNAMED_PROVIDER),
                         provider: provider.filter(|p| p != UNNAMED_PROVIDER),
+                        provider_guessed: true,
                         model: model.to_owned(),
                         status: if failed.is_some() { 502 } else { 200 },
                         error_message: failed.map(str::to_owned),
@@ -759,6 +764,7 @@ fn gemini_cli(groups: &[Group<LogRecord>], batch: &mut Batch) {
                         started_at: started(ended(r), duration),
                         duration,
                         provider: gemini_provider(a.str("auth_type")),
+                        provider_guessed: true,
                         model: model.to_owned(),
                         status: match status_of(a.get("status_code")) {
                             Some(s) => s,
@@ -915,6 +921,7 @@ fn grok(groups: &[Group<LogRecord>], batch: &mut Batch) {
                         started_at: started(ended(r), duration),
                         duration,
                         provider: Some("xai".into()),
+                        provider_guessed: true,
                         model: model.to_owned(),
                         status: if error { grok_status(a) } else { 200 },
                         error_message: error.then(|| {
@@ -1229,6 +1236,7 @@ fn span(service: &str, resource: &Attrs, s: &Span, fallback_id: &str, batch: &mu
         client: Some(service).filter(|s| !s.is_empty()).map(str::to_owned),
         email,
         provider_request_id: response_id.map(str::to_owned),
+        reasoning_effort: a.str("gen_ai.request.reasoning.level").map(str::to_owned),
         ..ObservedRequest::default()
     };
     semconv_content(a, &mut request);

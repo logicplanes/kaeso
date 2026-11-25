@@ -435,7 +435,7 @@ pub async fn create(
         .write(&mut tx)
         .await?;
     tx.commit().await?;
-    crate::services::observed::sources_changed(project).await;
+    crate::services::observed::sources_changed(org).await;
     Ok((
         StatusCode::CREATED,
         Json(SourceCreated {
@@ -558,7 +558,7 @@ pub async fn update(
         .write(&mut tx)
         .await?;
     tx.commit().await?;
-    crate::services::observed::sources_changed(after.project_id).await;
+    crate::services::observed::sources_changed(after.org_id).await;
     let mut list = views(&state, std::slice::from_ref(&after), ctx.now).await?;
     list.pop()
         .map(Json)
@@ -635,7 +635,7 @@ pub async fn archive(
         .write(&mut tx)
         .await?;
     tx.commit().await?;
-    crate::services::observed::sources_changed(row.project_id).await;
+    crate::services::observed::sources_changed(row.org_id).await;
     let mut list = views(&state, std::slice::from_ref(&row), ctx.now).await?;
     list.pop()
         .map(Json)

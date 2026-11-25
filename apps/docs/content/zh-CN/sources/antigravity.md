@@ -60,7 +60,7 @@ exec > /dev/null 2>&1
 
 ## Kaeso 读取的内容
 
-转录中的每个 `PLANNER_RESPONSE` 步骤都会成为一个请求，包含模型、输入 Token、缓存 Token、输出 Token 和时间。Antigravity 命名模型时会在末尾加上推理强度级别，例如 `gemini-3.8-flash-low`。目录或 KPMR 中有去掉该级别后的模型时，Kaeso 按该模型计价，并根据模型确定服务商。只有 Antigravity 认识的模型（例如 `gemini-4-neon-high`）没有费用，但其 Token 仍会统计。
+转录中的每个 `PLANNER_RESPONSE` 步骤都会成为一个请求，包含模型、输入 Token、缓存 Token、输出 Token 和时间。Antigravity 命名模型时会在末尾加上推理强度级别，例如 `gemini-3.8-flash-low`。目录或 KPMR 中有去掉该级别后的模型时，Kaeso 按该模型记录并计价请求，把级别保留为其推理强度，并根据模型确定服务商，因此各个级别显示为同一个模型。只有 Antigravity 认识的模型（例如 `gemini-4-neon-high`）保留完整名称且没有费用，但其 Token 仍会统计。Antigravity 的转录不含耗时，因此其请求没有耗时，也不计入延迟数据。
 
 对 MCP 工具的调用会成为工具调用，带有服务器和工具，以及运行它的步骤是否成功。在 Kaeso 读取工具调用之前复制的脚本不会发送工具调用；请从来源详情中重新复制脚本。
 

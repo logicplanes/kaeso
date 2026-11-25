@@ -51,6 +51,7 @@ A span or a log event is a request when its `gen_ai.operation.name` is `chat`, `
 | --- | --- |
 | `gen_ai.request.model`, `gen_ai.response.model` | The model |
 | `gen_ai.provider.name`, or `gen_ai.system` | The provider |
+| `gen_ai.request.reasoning.level` | The reasoning effort it asked for, such as `high` |
 | `gen_ai.usage.input_tokens`, `gen_ai.usage.output_tokens` | Tokens, with the cache counted apart |
 | `gen_ai.usage.cache_read.input_tokens`, `gen_ai.usage.cache_write.input_tokens`, `gen_ai.usage.reasoning.output_tokens` | Cache reads and writes, and reasoning |
 | `gen_ai.response.id` | The request's id, so a call sent twice counts once |

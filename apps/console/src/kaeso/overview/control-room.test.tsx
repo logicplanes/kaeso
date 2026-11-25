@@ -242,6 +242,7 @@ describe("the analytics control room", () => {
               bucket("2026-10-13T09:00:00Z", { requests: 30, duration_p95_ms: 2400 }),
               bucket("2026-10-12T22:00:00Z", { requests: 12, duration_p95_ms: 8100 }),
               bucket("2026-10-11T03:00:00Z", { requests: 2, duration_p95_ms: 60_000 }),
+              bucket("2026-10-10T08:00:00Z", { requests: 40, duration_p50_ms: null, duration_p95_ms: null, duration_max_ms: null }),
             ],
           },
     );

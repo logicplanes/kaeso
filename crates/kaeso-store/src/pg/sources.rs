@@ -95,6 +95,17 @@ pub async fn list(
     .await?)
 }
 
+/// Whether any project of the organization has a source that is neither disabled nor archived.
+pub async fn any_active(db: impl PgExecutor<'_>, org: Uuid) -> Result<bool, StoreError> {
+    Ok(sqlx::query_scalar!(
+        r#"SELECT EXISTS (SELECT 1 FROM sources
+             WHERE org_id = $1 AND disabled_at IS NULL AND archived_at IS NULL) AS "active!""#,
+        org
+    )
+    .fetch_one(db)
+    .await?)
+}
+
 /// The organization's sources in the projects given, newest first; archived ones are left out.
 pub async fn list_org(
     db: impl PgExecutor<'_>,

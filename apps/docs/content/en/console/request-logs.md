@@ -19,7 +19,7 @@ Open a project's **Request logs** page. It lists requests newest first, from the
 - The display options choose the columns and the density. Besides the ones shown at first, they offer the request id, user agent, client IP, alias, formats (the app's, and the provider's after an arrow when Kaeso translated), the response cache's answer, the number of fallbacks and the provider's request id. The console remembers the choice.
 - **Open a request by id** finds the request whose `kaeso-request-id` header your app received.
 
-A request that a source reported, such as one Claude Code sent to Anthropic directly, has the **Observed** tag and names its source where a key would be. Its details say that Kaeso logged and counted it but couldn't route, limit or stop it ([sources](../concepts/sources.md)).
+A request that a source reported, such as one Claude Code sent to Anthropic directly, has the **Observed** tag and names its source where a key would be. Its details say that Kaeso logged and counted it but couldn't route, limit or stop it ([sources](../concepts/sources.md)). Its duration shows a dash when its source sends no timing.
 
 With the outcome set to **Failed**, **Most common errors** above the list shows the period's ten most frequent failures: requests with the same error kind, status, provider and message once its numbers and ids are left out, each with how many requests failed that way and the newest message. Choosing one sets those filters, with the message up to its first number or id.
 
@@ -37,7 +37,7 @@ Choose a request to open it:
 
 | Tab | What it shows |
 | --- | --- |
-| Overview | The outcome, the route, who sent it, the timing, the stream and the usage. The model, alias, key and sender open their sheet or route editor when you may open it, and the filter button next to them and the status shows only the requests that share that value, with the request still open |
+| Overview | The outcome, the route with the reasoning effort the request asked for, who sent it, the timing, the stream and the usage. The model, alias, key and sender open their sheet or route editor when you may open it, and the filter button next to them and the status shows only the requests that share that value, with the request still open |
 | Request | What the app sent. **Copy as curl** copies a `curl` command that sends it again, with your key read from `KAESO_API_KEY`; it shows for JSON requests whose content and media were kept whole, not for uploads or ElevenLabs calls |
 | Reply | What the app got back |
 | Raw | The log entry as the Platform API returns it |

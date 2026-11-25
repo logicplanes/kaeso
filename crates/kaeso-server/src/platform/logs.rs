@@ -981,8 +981,9 @@ pub struct LogView {
     #[doc = "Arrival."]
     #[serde(with = "time::serde::rfc3339")]
     pub started_at: OffsetDateTime,
-    #[doc = "Total time in milliseconds."]
-    pub duration_ms: u32,
+    #[doc = "Total time in milliseconds; `null` when it isn't known, for an observed request\n\
+        whose source sends no timing."]
+    pub duration_ms: Option<u32>,
     #[doc = "Time to the provider's first byte, in milliseconds."]
     pub ttfb_ms: Option<u32>,
     #[doc = "Time the app took to send the request body, in microseconds, from\n\
@@ -1020,6 +1021,12 @@ pub struct LogView {
     pub requested_model: String,
     #[doc = "The provider model called."]
     pub model: String,
+    #[doc = "The reasoning effort the request asked the model for, such as `high`: as Kaeso\n\
+        sent it to the provider, once adapted to the model, or as a source reported it,\n\
+        such as from a model named with its effort level (`gemini-3.8-flash-low`). `null`\n\
+        when the request named none, and for requests logged before Kaeso recorded it."]
+    #[schema(example = "high")]
+    pub reasoning_effort: Option<String>,
     #[doc = "Streamed."]
     pub stream: bool,
     #[doc = "The request's status: the HTTP status sent to the app; for a stream\n\
@@ -1282,7 +1289,7 @@ fn view(r: &LogRow) -> LogView {
     LogView {
         id: RequestId::from_uuid(r.request_id).to_string(),
         started_at: r.started_at,
-        duration_ms: r.duration_ms,
+        duration_ms: (r.source != "observed" || r.duration_ms > 0).then_some(r.duration_ms),
         ttfb_ms: r.ttfb_ms,
         request_upload_us: r.request_upload_us,
         overhead_us: r.overhead_us,
@@ -1297,6 +1304,7 @@ fn view(r: &LogRow) -> LogView {
         provider: r.provider.clone(),
         requested_model: r.requested_model.clone(),
         model: r.resolved_model.clone(),
+        reasoning_effort: none(&r.reasoning_effort),
         stream: r.stream,
         status: r.status,
         error_kind: none(&r.error_kind),
@@ -1578,7 +1586,7 @@ pub struct ExportParams {
     pub include_content: Option<bool>,
 }
 
-const CSV_COLUMNS: &str = "id,started_at,duration_ms,ttfb_ms,key_id,principal_kind,principal_id,endpoint,ingress_dialect,egress_dialect,provider,requested_model,model,stream,status,error_kind,input_tokens,output_tokens,cache_read_tokens,cache_write_tokens,reasoning_tokens,cost_usd,{converted}user_agent,client_ip,upstream_request_id,stream_events,stream_bytes,stream_first_byte_ms,stream_keepalives,usage_estimated,source,overhead_us,stream_processing_us,cache_breakpoints,request_upload_us,response_cache,alias,fallbacks,media_unit,media_input,media_output,media_detail,cost_known,cost_basis,tags,client,client_version,guardrails";
+const CSV_COLUMNS: &str = "id,started_at,duration_ms,ttfb_ms,key_id,principal_kind,principal_id,endpoint,ingress_dialect,egress_dialect,provider,requested_model,model,stream,status,error_kind,input_tokens,output_tokens,cache_read_tokens,cache_write_tokens,reasoning_tokens,cost_usd,{converted}user_agent,client_ip,upstream_request_id,stream_events,stream_bytes,stream_first_byte_ms,stream_keepalives,usage_estimated,source,overhead_us,stream_processing_us,cache_breakpoints,request_upload_us,response_cache,alias,fallbacks,media_unit,media_input,media_output,media_detail,cost_known,cost_basis,tags,client,client_version,guardrails,reasoning_effort";
 
 // The cost in the organization's currency follows the USD one, named after its currency.
 fn csv_header(money: &Money) -> String {
@@ -1633,7 +1641,7 @@ fn csv_line(v: &LogView, money: &Money) -> String {
     let cells = [
         Text(v.id.clone()),
         Text(v.started_at.format(&Rfc3339).unwrap_or_default()),
-        Number(v.duration_ms.to_string()),
+        number(v.duration_ms),
         number(v.ttfb_ms),
         Text(v.key_id.map(|k| k.to_string()).unwrap_or_default()),
         Text(v.principal_kind.clone()),
@@ -1713,6 +1721,7 @@ fn csv_line(v: &LogView, money: &Money) -> String {
                 .collect::<Vec<_>>()
                 .join("; "),
         ),
+        Text(v.reasoning_effort.clone().unwrap_or_default()),
     ])
     .collect::<Vec<_>>();
     let mut line = cells
