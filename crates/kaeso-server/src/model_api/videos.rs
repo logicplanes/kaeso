@@ -1373,8 +1373,10 @@ const PASSED_HEADERS: &[header::HeaderName] = &[
     header::LAST_MODIFIED,
 ];
 
+// The scheme counts: `http://host:443` would carry the provider's key to its host unencrypted.
 fn same_origin(link: &Url, base: &Url) -> bool {
-    link.host_str() == base.host_str()
+    link.scheme() == base.scheme()
+        && link.host_str() == base.host_str()
         && link.port_or_known_default() == base.port_or_known_default()
 }
 
@@ -1500,6 +1502,20 @@ mod tests {
             let link = Url::parse(link).unwrap();
             assert_eq!(link_guard(same_origin(&link, &base), &xai), guard, "{link}");
         }
+    }
+
+    #[test]
+    fn a_plain_http_link_to_an_https_provider_is_not_its_own_host() {
+        let base = Url::parse("https://api.example.com/v1").unwrap();
+        for link in [
+            "http://api.example.com:443/a.mp4",
+            "http://api.example.com/a.mp4",
+        ] {
+            assert!(!same_origin(&Url::parse(link).unwrap(), &base), "{link}");
+        }
+        let plain = Url::parse("http://10.0.0.7:8080/v1").unwrap();
+        let link = Url::parse("http://10.0.0.7:8080/files/a.mp4").unwrap();
+        assert!(same_origin(&link, &plain));
     }
 
     #[test]
