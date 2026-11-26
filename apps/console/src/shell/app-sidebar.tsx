@@ -22,7 +22,9 @@ export function AppSidebar() {
   const gone = isApiError(opened.error) && (opened.error.type === "not_found" || opened.error.type === "permission_denied");
   return (
     <Sidebar aria-label={t("shell.sidebar", "Console")}>
-      <Sidebar.Brand lead={org && project && !gone ? <ProjectSwitcher org={org} project={project} /> : org ? <OrgSwitcher org={org} /> : undefined} />
+      <Sidebar.Brand lead={org && project && !gone ? <ProjectSwitcher org={org} project={project} /> : org ? <OrgSwitcher org={org} /> : undefined}>
+        <Sidebar.CollapseToggle />
+      </Sidebar.Brand>
       <Sidebar.Content>
         <Sidebar.Group>
           <Sidebar.Item icon={icons.search} shortcut={["mod", "k"]} onClick={openPalette}>
@@ -33,7 +35,6 @@ export function AppSidebar() {
       </Sidebar.Content>
       <Sidebar.Footer>
         <AccountSwitcher />
-        <Sidebar.CollapseToggle />
       </Sidebar.Footer>
     </Sidebar>
   );
