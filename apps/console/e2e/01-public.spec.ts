@@ -41,7 +41,7 @@ test("the setup page of a set-up install says so and leads to sign-in", async ({
 test("sign out, a wrong password, then sign in", async ({ page }) => {
   await signInWithPassword(page, OWNER.email, PASSWORD);
   await expectSignedIn(page);
-  await page.getByRole("button", { name: OWNER.org, description: "Switch or open settings", exact: true }).click();
+  await page.getByRole("button", { name: OWNER.name, description: "Account and sign out", exact: true }).click();
   await page.getByRole("menuitem", { name: "Sign out" }).click();
   await expect(page).toHaveURL(/\/sign-in/);
   await enterEmail(page, OWNER.email);

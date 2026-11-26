@@ -66,7 +66,7 @@ test("a person enters their email, goes straight to the identity provider and co
 
   await page.goto("/");
   await expectSignedIn(page);
-  await page.getByRole("button", { name: ADMIN.org, description: "Switch or open settings", exact: true }).click();
+  await page.getByRole("button", { name: ADMIN.name, description: "Account and sign out", exact: true }).click();
   await page.getByRole("menuitem", { name: "Sign out" }).click();
   await expect(page).toHaveURL(/\/sign-in$/);
   await expect(toastText(page, "You're signed out")).toBeVisible();
