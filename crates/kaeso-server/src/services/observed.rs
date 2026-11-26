@@ -503,16 +503,16 @@ fn unix_ms(t: OffsetDateTime) -> i64 {
 
 // Whether an organization has an active source, kept for a short while: most have none, and
 // their requests then cost no Valkey write.
-static WITH_SOURCES: std::sync::LazyLock<moka::sync::Cache<Uuid, bool>> =
+static WITH_SOURCES: std::sync::LazyLock<moka::future::Cache<Uuid, bool>> =
     std::sync::LazyLock::new(|| {
-        moka::sync::Cache::builder()
+        moka::future::Cache::builder()
             .max_capacity(100_000)
             .time_to_live(Duration::from_secs(30))
             .build()
     });
 
 async fn has_sources(state: &AppState, org: Uuid) -> bool {
-    if let Some(known) = WITH_SOURCES.get(&org) {
+    if let Some(known) = WITH_SOURCES.get(&org).await {
         return known;
     }
     // While PostgreSQL is away, the answer is kept too, so the requests don't all ask again.
@@ -523,14 +523,14 @@ async fn has_sources(state: &AppState, org: Uuid) -> bool {
             false
         }
     };
-    WITH_SOURCES.insert(org, active);
+    WITH_SOURCES.insert(org, active).await;
     active
 }
 
 /// Forgets this instance's answer for the organization once a source is added or changed, so
 /// its gateway requests are noted from then on.
 pub async fn sources_changed(org: Uuid) {
-    WITH_SOURCES.invalidate(&org);
+    WITH_SOURCES.invalidate(&org).await;
 }
 
 /// What a source's copy of a gateway request is matched on.
@@ -569,45 +569,22 @@ impl GatewayRequest {
 
 /// Notes the request in the background, so the gateway's own work never waits on it; the reply's
 /// end waits for the answer at most `NOTE_DEADLINE`.
-///
-/// A request with nothing to match, or of an organization this instance knows has no source, is
-/// not noted at all and its reply waits for nothing: most organizations have no source, and a
-/// task for each of their requests would sit between every reply and its end.
 pub fn note_soon(state: &AppState, r: GatewayRequest) -> Noting {
-    if skipped(&r) {
-        return Noting(None);
-    }
     let (noted, rx) = tokio::sync::oneshot::channel();
     let st = state.clone();
     state.in_flight.finish(async move {
         note(&st, r).await;
         let _ = noted.send(());
     });
-    Noting(Some(rx))
+    Noting(rx)
 }
 
-pub struct Noting(Option<tokio::sync::oneshot::Receiver<()>>);
+pub struct Noting(tokio::sync::oneshot::Receiver<()>);
 
 impl Noting {
     pub async fn wait(self) {
-        if let Some(noted) = self.0 {
-            let _ = tokio::time::timeout(NOTE_DEADLINE, noted).await;
-        }
+        let _ = tokio::time::timeout(NOTE_DEADLINE, self.0).await;
     }
-}
-
-// A request no source's copy can match, which `note_soon` neither notes nor lets the reply wait
-// for: one `note` would write nothing for, or one of an organization known to have no source.
-fn skipped(r: &GatewayRequest) -> bool {
-    !worth_noting(r) || WITH_SOURCES.get(&r.org) == Some(false)
-}
-
-// What `note` writes nothing for: a successful request without usage.
-fn worth_noting(r: &GatewayRequest) -> bool {
-    r.failed
-        || r.usage
-            .as_ref()
-            .is_some_and(|u| u.input_tokens > 0 || u.output_tokens > 0)
 }
 
 /// Notes a request the gateway answered once, so a source reporting the same request doesn't
@@ -1478,28 +1455,6 @@ async fn record_call(
 
 #[cfg(test)]
 mod tests {
-
-    #[test]
-    fn a_reply_waits_for_no_note_when_its_organization_has_no_source() {
-        let org = Uuid::now_v7();
-        let request = |failed, tokens| GatewayRequest {
-            request_id: RequestId::new(),
-            org,
-            failed,
-            usage: Some(Usage::new(tokens, tokens)),
-            models: vec!["m".to_owned()],
-            started_at: OffsetDateTime::UNIX_EPOCH,
-            duration: Duration::from_millis(5),
-        };
-        assert!(skipped(&request(false, 0)), "nothing to match");
-        assert!(!skipped(&request(false, 10)), "not known yet");
-        assert!(!skipped(&request(true, 0)), "a failure is matched too");
-        WITH_SOURCES.insert(org, false);
-        assert!(skipped(&request(false, 10)));
-        assert!(skipped(&request(true, 0)));
-        WITH_SOURCES.insert(org, true);
-        assert!(!skipped(&request(false, 10)));
-    }
     use super::*;
     use time::macros::datetime;
 
