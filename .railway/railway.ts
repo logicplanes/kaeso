@@ -2,8 +2,8 @@
 // Docs: https://docs.kaeso.app/self-hosting/platforms/railway
 import { defineRailway, image, postgres, project, redis, service } from "railway/iac";
 
-const GATEWAY_IMAGE = "ghcr.io/logicplanes/kaeso-gateway:0.7.5-rc.1";
-const CONSOLE_IMAGE = "ghcr.io/logicplanes/kaeso-console:0.7.5-rc.1";
+const GATEWAY_IMAGE = "ghcr.io/logicplanes/kaeso-gateway:0.7.5-rc.2";
+const CONSOLE_IMAGE = "ghcr.io/logicplanes/kaeso-console:0.7.5-rc.2";
 
 // Railway's private network is IPv6, and also IPv4 (10.x) in environments created after October 2025,
 // so the gateway listens on every address family and trusts the edge from the private ranges.
