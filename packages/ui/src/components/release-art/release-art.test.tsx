@@ -134,7 +134,7 @@ describe("release artwork", () => {
     expect(texts).toHaveLength(1);
     expect(texts[0]).toMatchObject({ text: "Kaeso 3.1.0", attrs: { x: 320, fill: "#ffffff", textAnchor: "middle", fontWeight: 500, fontSize: 34 } });
     expect(serializeArt(drawReleaseArt(spec))).not.toContain("<text");
-    expect(serializeArt(drawReleaseArt(spec, { shape: "wide", title: "3.1.0" }))).toMatch(/viewBox="0 0 840 360".*<text x="420"[^>]*>0\.7\.5<\/text>/);
+    expect(serializeArt(drawReleaseArt(spec, { shape: "wide", title: "3.1.0" }))).toMatch(/viewBox="0 0 840 360".*<text x="420"[^>]*>3\.1\.0<\/text>/);
   });
 
   it("draws a style it doesn't know as a glow instead of failing", () => {
