@@ -416,6 +416,8 @@ test("usage: the old settings page opens analytics with its period", async ({ pa
   await expect(page).toHaveURL(new RegExp(`/orgs/${org}/analytics\\?from=2026-01-01&to=2026-01-31$`));
   await expect(page.getByRole("heading", { level: 1, name: "Analytics" })).toBeVisible();
   await expect(page.getByLabel("Usage in the period")).toBeVisible();
+  await page.getByRole("tab", { name: "Breakdown" }).click();
+  await expect(page).toHaveURL(new RegExp(`/orgs/${org}/analytics/breakdown\\?from=2026-01-01&to=2026-01-31$`));
   // Its rows open their projects, which makes the breakdown by project a grid.
   await expect(page.getByRole("grid", { name: "Usage breakdown" })).toBeVisible();
 });

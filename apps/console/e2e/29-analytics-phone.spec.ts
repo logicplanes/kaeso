@@ -103,23 +103,24 @@ test("analytics fits a phone on every view and grouping, and its chart answers a
   const orgPath = `${origin}/orgs/${org}/analytics`;
   for (const path of [
     projectPath,
-    ...["model", "key", "member", "route", "client"].map((by) => `${projectPath}?by=${by}&period=7d`),
-    ...["models", "keys", "members"].map((view) => `${projectPath}/${view}`),
+    ...["model", "key", "member", "route", "client"].map((by) => `${projectPath}/breakdown?by=${by}&period=7d`),
+    ...["reliability", "efficiency", "models", "keys", "members", "breakdown"].map((view) => `${projectPath}/${view}`),
     `${projectPath}?period=today`,
     `${projectPath}?period=12m`,
     orgPath,
-    ...["model", "member", "billed_to"].map((by) => `${orgPath}?by=${by}`),
-    ...["projects", "models", "members"].map((view) => `${orgPath}/${view}`),
+    ...["model", "member", "billed_to"].map((by) => `${orgPath}/breakdown?by=${by}`),
+    ...["reliability", "efficiency", "projects", "models", "members", "breakdown"].map((view) => `${orgPath}/${view}`),
   ])
     await fits(phone, path);
 
-  await phone.goto(projectPath);
+  await phone.goto(`${projectPath}/breakdown`);
   const groupBy = phone.getByRole("combobox", { name: "Group by" });
   await expect(groupBy).toHaveText(/By day/);
   await groupBy.tap();
   await phone.getByRole("option", { name: "By model" }).tap();
   await expect.poll(() => new URL(phone.url()).searchParams.get("by")).toBe("model");
 
+  await phone.goto(projectPath);
   await phone.getByRole("button", { description: "Period" }).tap();
   const picker = phone.getByRole("dialog", { name: "Choose a date range" });
   await expect(picker).toBeVisible();

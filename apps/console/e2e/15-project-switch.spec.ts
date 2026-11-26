@@ -59,40 +59,40 @@ test("switching projects client-side shows the new project's data, at its top, w
   const wide = await projectWithUsage(page, org, "Switch wide", ["gpt-5.4-mini", "gpt-5.4-nano"], 4);
   const narrow = await projectWithUsage(page, org, "Switch narrow", ["gpt-5.4-nano"], 1);
 
-  await page.goto(`/orgs/${org}/projects/${wide}/analytics?by=model`);
+  await page.goto(`/orgs/${org}/projects/${wide}/analytics/breakdown?by=model`);
+  await page.setViewportSize({ width: 1440, height: 220 });
   await expect(breakdownRows(page)).toHaveCount(2);
 
   const body = page.locator("main > div.overflow-y-auto");
   await body.evaluate((el) => void ((el as unknown as Scroller).scrollTop = (el as unknown as Scroller).scrollHeight));
   await expect.poll(() => body.evaluate((el) => (el as unknown as Scroller).scrollTop)).toBeGreaterThan(0);
-  await page.getByRole("button", { name: "Switch wide", description: "Switch project", exact: true }).click();
+  await page.getByRole("button", { name: /^Switch wide/, description: "Switch project" }).click();
   await page.getByRole("menuitemradio", { name: "Switch narrow" }).click();
-  await expect(page).toHaveURL(new RegExp(`/projects/${narrow}/analytics\\?by=model$`));
+  await expect(page).toHaveURL(new RegExp(`/projects/${narrow}/analytics/breakdown\\?by=model$`));
   await expect(page.getByRole("menu")).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Switch narrow", description: "Switch project", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^Switch narrow/, description: "Switch project" })).toBeVisible();
   await expect(breakdownRows(page)).toHaveCount(1);
   await expect(breakdownRows(page).first()).toContainText("gpt-5.4-nano");
-  await expect(page.getByRole("heading", { name: "Requests per day, UTC" })).toBeVisible();
   expect(await page.locator("main > div.overflow-y-auto").evaluate((el) => (el as unknown as Scroller).scrollTop)).toBe(0);
 
   await page.goBack();
-  await expect(page).toHaveURL(new RegExp(`/projects/${wide}/analytics\\?by=model$`));
+  await expect(page).toHaveURL(new RegExp(`/projects/${wide}/analytics/breakdown\\?by=model$`));
   await expect(breakdownRows(page)).toHaveCount(2);
   await expect.poll(() => body.evaluate((el) => (el as unknown as Scroller).scrollTop)).toBeGreaterThan(0);
   await page.goForward();
-  await expect(page).toHaveURL(new RegExp(`/projects/${narrow}/analytics\\?by=model$`));
+  await expect(page).toHaveURL(new RegExp(`/projects/${narrow}/analytics/breakdown\\?by=model$`));
   await expect(breakdownRows(page)).toHaveCount(1);
   expect(await body.evaluate((el) => (el as unknown as Scroller).scrollTop)).toBe(0);
 
-  await page.getByRole("button", { name: "Switch narrow", description: "Switch project", exact: true }).click();
+  await page.getByRole("button", { name: /^Switch narrow/, description: "Switch project" }).click();
   await page.getByRole("menuitemradio", { name: "Switch wide" }).click();
-  await expect(page).toHaveURL(new RegExp(`/projects/${wide}/analytics\\?by=model$`));
+  await expect(page).toHaveURL(new RegExp(`/projects/${wide}/analytics/breakdown\\?by=model$`));
   await expect(breakdownRows(page)).toHaveCount(2);
 
   await page.goto(`/orgs/${org}/projects`);
   await page.getByRole("main").getByRole("row").filter({ hasText: "Switch narrow" }).first().click();
   await expect(page).toHaveURL(new RegExp(`/projects/${narrow}`));
-  await expect(page.getByRole("button", { name: "Switch narrow", description: "Switch project", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^Switch narrow/, description: "Switch project" })).toBeVisible();
 });
 
 async function menuFrames(page: Page, shownFor: number, atLeast: number): Promise<string[]> {
@@ -145,11 +145,11 @@ test("the sidebar's switchers open whole the first time: the menu's box in its f
   const orgSwitcher = page.getByRole("button", { description: "Switch or open settings" });
 
   for (const trigger of [projectSwitcher, orgSwitcher]) {
-    await page.goto(`/orgs/${org}/projects/${project}`);
+    await page.goto(trigger === projectSwitcher ? `/orgs/${org}/projects/${project}` : `/orgs/${org}`);
     const frames = await openFrames(page, trigger);
     expect(frames.length).toBeGreaterThan(3);
     expect(new Set(frames), frames.join("\n")).toEqual(new Set([frames[0]]));
-    if (trigger === projectSwitcher) expect(frames[0]).toContain(`${projects.length + 1} items`);
+    if (trigger === projectSwitcher) expect(frames[0]).toContain(`${projects.length + 2} items`);
     await page.keyboard.press("Escape");
   }
 
@@ -161,7 +161,7 @@ test("the sidebar's switchers open whole the first time: the menu's box in its f
   const frames = await openFrames(page, projectSwitcher);
   expect(frames.length).toBeGreaterThan(3);
   expect(new Set(frames), frames.join("\n")).toEqual(new Set([frames[0]]));
-  expect(frames[0]).toContain(`${projects.length + 1} items`);
+  expect(frames[0]).toContain(`${projects.length + 2} items`);
 });
 
 test("while a project page's code and rights are still loading, its pending page holds the place", async ({ page }) => {
