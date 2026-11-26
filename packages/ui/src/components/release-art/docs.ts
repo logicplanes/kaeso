@@ -3,7 +3,7 @@ import type { ComponentDocs } from "../../component-docs.js";
 export const docs = {
   ReleaseArt: {
     description:
-      "A release's artwork, drawn from a stored art spec or a seed. Releases from Kaeso 0.7.5 on, and any release without a stored spec, glow: the eyebrow and title as one name, centred in white on a dark ground lit by one bloom of one of twelve lights. Stored specs of earlier releases draw flat geometric art in one of eight styles, with the title in a corner.",
+      "A release's artwork, drawn from a stored art spec or a seed. New releases, and any release without a stored spec, glow: the eyebrow and title as one name, centred in white on a dark ground lit by one bloom of one of twelve lights. Stored specs of earlier releases draw flat geometric art in one of eight styles, with the title in a corner.",
     props: {
       seed: "What the artwork is drawn from when there is no `art`, e.g. `0.1.0`; the same seed always draws the same picture.",
       art: "The release's stored artwork, e.g. from `nextReleaseArt`; it always draws the same picture and wins over `seed`.",

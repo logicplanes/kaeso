@@ -231,8 +231,8 @@ struct ReleaseArt {
     palette: u8,
 }
 
-// The styles the console's `ReleaseArt` draws: the flat ones of the releases up to 0.7.4, and `glow`, every
-// release's since.
+// The styles the console's `ReleaseArt` draws: the flat ones of earlier releases, and `glow`, every new
+// release's.
 const ART_STYLES: [&str; 9] = [
     "bauhaus",
     "albers",

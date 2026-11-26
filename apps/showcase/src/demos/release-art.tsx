@@ -14,7 +14,7 @@ export const examples = [{ id: "whats-new", title: "What's new", fn: "WhatsNew" 
 export function WhatsNew() {
   return (
     <div className="w-full max-w-640">
-      <ReleaseArt seed="0.7.5" art={{ version: 1, seed: 2886621037, style: "glow", palette: 1 }} label="Kaeso 0.7.5" eyebrow="Kaeso" title="0.7.5" />
+      <ReleaseArt seed="3.1.0" art={{ version: 1, seed: 2886621037, style: "glow", palette: 1 }} label="Kaeso 3.1.0" eyebrow="Kaeso" title="3.1.0" />
     </div>
   );
 }
@@ -46,19 +46,19 @@ export function States() {
         <div className="flex flex-col gap-16">
           <div className="w-320">
             <ReleaseArt
-              seed="0.7.5-rc.1"
+              seed="3.1.0-rc.1"
               art={{ version: 1, seed: 77, style: "glow", palette: 3 }}
-              label="Kaeso 0.7.5-rc.1"
+              label="Kaeso 3.1.0-rc.1"
               eyebrow="Kaeso pre-release"
-              title="0.7.5-rc.1"
+              title="3.1.0-rc.1"
             />
           </div>
           <div className="w-320">
-            <ReleaseArt seed="0.7.5" art={{ version: 1, seed: 2886621037, style: "glow", palette: 1 }} label="Kaeso 0.7.5" eyebrow="Kaeso" title="0.7.5" />
+            <ReleaseArt seed="3.1.0" art={{ version: 1, seed: 2886621037, style: "glow", palette: 1 }} label="Kaeso 3.1.0" eyebrow="Kaeso" title="3.1.0" />
           </div>
         </div>
       </StateSection>
-      <StateSection title="The eight flat styles of releases up to 0.7.4">
+      <StateSection title="The eight flat styles of earlier releases">
         <div className="grid w-full grid-cols-1 gap-16 sm:grid-cols-2">
           {RELEASE_ART_FLAT_STYLES.map((style, i) => (
             <ReleaseArt

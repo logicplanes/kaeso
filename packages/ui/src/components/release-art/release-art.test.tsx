@@ -119,9 +119,9 @@ describe("release artwork", () => {
 
   it("draws a glow on the night ground with the name centred in white, the same picture for the same spec", () => {
     const spec: ReleaseArtSpec = { version: 1, seed: 42, style: "glow", palette: 1 };
-    const tree = drawReleaseArt(spec, { eyebrow: "Kaeso", title: "0.7.5", idPrefix: "g" });
+    const tree = drawReleaseArt(spec, { eyebrow: "Kaeso", title: "3.1.0", idPrefix: "g" });
     const svg = serializeArt(tree);
-    expect(serializeArt(drawReleaseArt(spec, { eyebrow: "Kaeso", title: "0.7.5", idPrefix: "g" }))).toBe(svg);
+    expect(serializeArt(drawReleaseArt(spec, { eyebrow: "Kaeso", title: "3.1.0", idPrefix: "g" }))).toBe(svg);
     expect(serializeArt(drawReleaseArt({ ...spec, seed: 43 }, { idPrefix: "g" }))).not.toBe(serializeArt(drawReleaseArt(spec, { idPrefix: "g" })));
     expect(serializeArt(drawReleaseArt({ ...spec, palette: 2 }, { idPrefix: "g" }))).not.toBe(serializeArt(drawReleaseArt(spec, { idPrefix: "g" })));
     expect(svg).toContain('<radialGradient id="g-bloom" gradientUnits="userSpaceOnUse"');
@@ -132,9 +132,9 @@ describe("release artwork", () => {
       if (n.tag === "text") texts.push(n);
     });
     expect(texts).toHaveLength(1);
-    expect(texts[0]).toMatchObject({ text: "Kaeso 0.7.5", attrs: { x: 320, fill: "#ffffff", textAnchor: "middle", fontWeight: 500, fontSize: 34 } });
+    expect(texts[0]).toMatchObject({ text: "Kaeso 3.1.0", attrs: { x: 320, fill: "#ffffff", textAnchor: "middle", fontWeight: 500, fontSize: 34 } });
     expect(serializeArt(drawReleaseArt(spec))).not.toContain("<text");
-    expect(serializeArt(drawReleaseArt(spec, { shape: "wide", title: "0.7.5" }))).toMatch(/viewBox="0 0 840 360".*<text x="420"[^>]*>0\.7\.5<\/text>/);
+    expect(serializeArt(drawReleaseArt(spec, { shape: "wide", title: "3.1.0" }))).toMatch(/viewBox="0 0 840 360".*<text x="420"[^>]*>0\.7\.5<\/text>/);
   });
 
   it("draws a style it doesn't know as a glow instead of failing", () => {
@@ -166,10 +166,10 @@ describe("release artwork", () => {
   });
 
   it("sets a long name smaller, so it fits four fifths of the width", () => {
-    expect(releaseArtGlowText("Kaeso 0.7.5", 640, 360).size).toBe(34);
-    const long = releaseArtGlowText("Kaeso-Vorabversion 0.7.5-rc.1", 640, 360);
+    expect(releaseArtGlowText("Kaeso 3.1.0", 640, 360).size).toBe(34);
+    const long = releaseArtGlowText("Kaeso-Vorabversion 3.1.0-rc.1", 640, 360);
     expect(long.size).toBeLessThan(34);
-    expect(long.size * 0.6 * "Kaeso-Vorabversion 0.7.5-rc.1".length).toBeLessThanOrEqual(640 * 0.8 * 1.2);
+    expect(long.size * 0.6 * "Kaeso-Vorabversion 3.1.0-rc.1".length).toBeLessThanOrEqual(640 * 0.8 * 1.2);
   });
 
   it("writes attributes the SVG way and escapes text", () => {
@@ -237,22 +237,22 @@ describe("ReleaseArt", () => {
 
   it("draws a glow's name into the picture, centred, and no title in a corner", () => {
     const { container } = render(
-      <ReleaseArt seed="0.7.5" art={{ version: 1, seed: 8, style: "glow", palette: 4 }} label="Kaeso 0.7.5" eyebrow="Kaeso" title="0.7.5" />,
+      <ReleaseArt seed="3.1.0" art={{ version: 1, seed: 8, style: "glow", palette: 4 }} label="Kaeso 3.1.0" eyebrow="Kaeso" title="3.1.0" />,
     );
-    const svg = screen.getByRole("img", { name: "Kaeso 0.7.5" });
+    const svg = screen.getByRole("img", { name: "Kaeso 3.1.0" });
     const text = svg.querySelector("text");
-    expect(text).toHaveTextContent("Kaeso 0.7.5");
+    expect(text).toHaveTextContent("Kaeso 3.1.0");
     expect(text).toHaveAttribute("text-anchor", "middle");
     expect(svg.querySelector("radialGradient")).not.toBeNull();
     expect(container.querySelector("span[aria-hidden]:not(.image-outline)")).toBeNull();
   });
 
   it("shows a glow's stored image alone, and draws it with its name when the image doesn't load", () => {
-    render(<ReleaseArt seed="0.7.5" src="https://update.kaeso.app/art/0.7.5.svg" label="Kaeso 0.7.5" eyebrow="Kaeso" title="0.7.5" />);
-    const svg = screen.getByRole("img", { name: "Kaeso 0.7.5" });
+    render(<ReleaseArt seed="3.1.0" src="https://update.kaeso.app/art/3.1.0.svg" label="Kaeso 3.1.0" eyebrow="Kaeso" title="3.1.0" />);
+    const svg = screen.getByRole("img", { name: "Kaeso 3.1.0" });
     expect(svg.querySelector("text")).toBeNull();
     fireEvent.error(svg.querySelector("image") as Element);
-    expect(svg.querySelector("text")).toHaveTextContent("Kaeso 0.7.5");
+    expect(svg.querySelector("text")).toHaveTextContent("Kaeso 3.1.0");
   });
 
   it("gives every artwork on a page its own ids", () => {

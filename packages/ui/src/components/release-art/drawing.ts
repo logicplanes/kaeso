@@ -1,9 +1,9 @@
 import { art, font } from "@logicplanes/kaeso-tokens";
 
-// The flat geometric styles, drawn for releases up to Kaeso 0.7.4 and kept for their stored artwork.
+// The flat geometric styles, of earlier releases, kept for their stored artwork.
 export const RELEASE_ART_FLAT_STYLES = ["bauhaus", "albers", "stripes", "waves", "truchet", "arcs", "phyllotaxis", "spiro"] as const;
 // Every style a spec may name: the flat ones and `glow`, a release's name in white on a dark ground lit by one bloom
-// of light, the style of every release from Kaeso 0.7.5 on.
+// of light, the style of every new release.
 export const RELEASE_ART_STYLES = [...RELEASE_ART_FLAT_STYLES, "glow"] as const;
 export type ReleaseArtStyle = (typeof RELEASE_ART_STYLES)[number];
 
