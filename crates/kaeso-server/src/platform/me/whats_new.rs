@@ -45,8 +45,8 @@ pub struct ReleaseArtView {
     #[doc = "The seed of the drawing."]
     #[schema(value_type = i64, format = Int64, minimum = 0, maximum = 4_294_967_295_i64, example = 2_886_621_037_i64)]
     pub seed: u32,
-    #[doc = "The style, such as `bauhaus` or `phyllotaxis`."]
-    #[schema(example = "stripes")]
+    #[doc = "The style: `glow` for every new release, or a flat one of an earlier one such as `bauhaus` or `phyllotaxis`."]
+    #[schema(example = "glow")]
     pub style: String,
     #[doc = "The palette, by its index."]
     #[schema(example = 6, minimum = 0, maximum = 11)]
