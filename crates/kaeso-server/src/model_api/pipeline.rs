@@ -203,7 +203,11 @@ impl Recording {
             }
             let (noted, charged) = self.hand_over(o);
             // The reply ends for the app only after this: a client that reports the request to a
-            // source as soon as it has the reply must find it noted.
+            // source as soon as it has the reply must find it noted. The wait also holds in an
+            // organization without a source: the note's task runs after the request's other
+            // finishing work on this worker, so under load a reply's last write waits for that
+            // work and goes out with the others. Without it the gateway spent about a tenth more
+            // CPU per request at capacity, for about 50 µs less at one client.
             if let Some(noted) = noted {
                 noted.wait().await;
             }
