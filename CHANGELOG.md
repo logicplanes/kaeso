@@ -4,6 +4,16 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
+## [0.7.5-rc.3] - 2026-11-26
+
+This release reworks the console's navigation and Analytics. The sidebar now leads with the organization or project switcher, and Analytics is split into views. Icons are drawn from Lucide, and code blocks, diffs and Markdown draw highlighted from the first frame once a language's grammar is loaded. No change is marked as breaking.
+
+**Full changes:** [v0.7.5-rc.2...v0.7.5-rc.3](https://github.com/logicplanes/kaeso/compare/v0.7.5-rc.2...v0.7.5-rc.3)
+
+### Changed
+
+- The console sidebar shows the organization switcher in an organization and the project switcher in a project where the wordmark stood; the wordmark stays on sign-in screens and the phone bar. Analytics is split into views (Overview, Reliability, Cost and efficiency, the dimensions and Breakdown), each a route that keeps the period, with Spend folded into Cost and efficiency. Icons are drawn from Lucide, and code blocks, diffs and Markdown draw highlighted from the first frame once a language's grammar is loaded; the first block of a language still loads. ([#1520](https://github.com/logicplanes/kaeso/pull/1520))
+
 ## [0.7.5-rc.2] - 2026-11-26
 
 Kaeso 0.7.5-rc.2 fixes a gateway CPU cost increase measured in 0.7.4. A reply waits for its sources note again, which brings CPU per request at capacity back to 0.7.3's level in the benchmark. At one client, the median latency is about 50 µs higher than 0.7.4's. No change is marked as breaking.
@@ -1857,7 +1867,8 @@ The first release of Kaeso, the open-source AI gateway you run yourself: the gat
 
 - A Release workflow that runs only from `prod`: it prepares the version changes and the changelog without write access to the repository, lets only jobs that run nothing but git push the release commit and the tag, syncs the release commit back to `dev`, and pins every action by commit SHA.
 
-[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.7.5-rc.2...HEAD
+[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.7.5-rc.3...HEAD
+[0.7.5-rc.3]: https://github.com/logicplanes/kaeso/releases/tag/v0.7.5-rc.3
 [0.7.5-rc.2]: https://github.com/logicplanes/kaeso/releases/tag/v0.7.5-rc.2
 [0.7.5-rc.1]: https://github.com/logicplanes/kaeso/releases/tag/v0.7.5-rc.1
 [0.7.4]: https://github.com/logicplanes/kaeso/releases/tag/v0.7.4
