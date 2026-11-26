@@ -112,7 +112,7 @@ const groups = JSON.parse(execFileSync(join(root, "node_modules/.bin/tsx"), ["--
 const icons = [
   "# Icon vocabulary",
   "",
-  `Version ${pkg.version}. Generated from \`src/icons/vocabulary.ts\`; do not edit. Use the name, never an icon picked by look: \`icons.key\` always means a key. Hugeicons, Stroke Rounded. Rules: \`foundations/icons.md\`.`,
+  `Version ${pkg.version}. Generated from \`src/icons/vocabulary.ts\`; do not edit. Use the name, never an icon picked by look: \`icons.key\` always means a key. Lucide. Rules: \`foundations/icons.md\`.`,
   "",
   ...Object.entries(groups).flatMap(([group, names]) => [`## ${group}`, "", names.map((n) => `\`${n}\``).join(", "), ""]),
 ];

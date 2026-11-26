@@ -1,18 +1,5 @@
 import { useNavigate } from "@tanstack/react-router";
-import {
-  BarChart,
-  Button,
-  CellInset,
-  Dashboard,
-  DashboardCell,
-  RankList,
-  Readout,
-  Section,
-  ShareBar,
-  Text,
-  UsageBreakdown,
-  type RankItem,
-} from "@logicplanes/kaeso-ui";
+import { BarChart, Button, CellInset, Dashboard, DashboardCell, RankList, Readout, ShareBar, Text, UsageBreakdown, type RankItem } from "@logicplanes/kaeso-ui";
 import { formatDuration, formatNumber, formatPercent, formatTokens } from "@logicplanes/kaeso-ui/format";
 import type { UsageRow } from "~/api/generated/types";
 import { bucketLabel, spansYears } from "~/format/buckets";
@@ -166,15 +153,12 @@ function SlowestCell({ o, hours }: { o: Overview; hours: NonNullable<Overview["h
 }
 
 export function Reliability({ o }: { o: Overview }) {
-  const title = t("kaeso.overview.reliability", "Reliability");
   return (
-    <Section title={title} description={t("kaeso.overview.reliabilityHint", "How many requests failed, why, and when answers were slowest")}>
-      <Dashboard aria-label={title} busy={o.refreshing} columns={2} {...(o.hours ? { wideColumns: 3 as const } : {})}>
-        <FailedCell o={o} className={o.hours ? "lg:col-span-2 xl:col-span-1" : "lg:col-span-1"} />
-        {o.failures ? <KindsCell o={o} failures={o.failures} /> : <FailedByCell o={o} />}
-        {o.hours && <SlowestCell o={o} hours={o.hours} />}
-      </Dashboard>
-    </Section>
+    <Dashboard aria-label={t("kaeso.overview.reliability", "Reliability")} busy={o.refreshing} columns={2} {...(o.hours ? { wideColumns: 3 as const } : {})}>
+      <FailedCell o={o} className={o.hours ? "lg:col-span-2 xl:col-span-1" : "lg:col-span-1"} />
+      {o.failures ? <KindsCell o={o} failures={o.failures} /> : <FailedByCell o={o} />}
+      {o.hours && <SlowestCell o={o} hours={o.hours} />}
+    </Dashboard>
   );
 }
 
@@ -239,15 +223,17 @@ function TokenCell({ o }: { o: Overview }) {
   );
 }
 
+export const efficiencyTitle = (o: Pick<Overview, "showCost">) =>
+  o.showCost ? t("kaeso.overview.costEfficiency", "Cost and efficiency") : t("kaeso.overview.efficiency", "Efficiency");
+
 export function Efficiency({ o }: { o: Overview }) {
-  const title = t("kaeso.overview.efficiency", "Efficiency");
   return (
-    <Section title={title} description={t("kaeso.overview.efficiencyHint", "How much input came from the cache, and what a request uses")}>
-      <Dashboard aria-label={title} busy={o.refreshing} columns={2}>
-        <CacheCell o={o} />
-        <TokenCell o={o} />
-      </Dashboard>
-    </Section>
+    <Dashboard aria-label={efficiencyTitle(o)} busy={o.refreshing} columns={2}>
+      <CacheCell o={o} />
+      <TokenCell o={o} />
+      {o.showCost && <ForecastCell o={o} />}
+      {o.showCost && <CostSplitCell o={o} />}
+    </Dashboard>
   );
 }
 
@@ -320,17 +306,5 @@ function CostSplitCell({ o }: { o: Overview }) {
         </div>
       </CellInset>
     </DashboardCell>
-  );
-}
-
-export function Spend({ o }: { o: Overview }) {
-  const title = t("kaeso.overview.spend", "Spend");
-  return (
-    <Section title={title} description={t("kaeso.overview.spendHint", "Where this month is heading, and where the period's cost went")}>
-      <Dashboard aria-label={title} busy={o.refreshing} columns={2}>
-        <ForecastCell o={o} />
-        <CostSplitCell o={o} />
-      </Dashboard>
-    </Section>
   );
 }

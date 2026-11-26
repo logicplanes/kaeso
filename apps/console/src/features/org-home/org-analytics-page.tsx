@@ -10,7 +10,9 @@ import { ControlRoom } from "~/kaeso/overview/control-room";
 import { useOverview } from "~/kaeso/overview/data";
 import type { Dimension } from "~/kaeso/overview/metrics";
 import { ORG_VIEWS, type OrgAnalyticsSearch, type OrgView } from "~/kaeso/overview/views";
-import { DimensionView, dimensionTitle } from "~/kaeso/overview/dimension";
+import { DimensionView } from "~/kaeso/overview/dimension";
+import { Efficiency, Reliability } from "~/kaeso/overview/sections";
+import { viewTitle } from "~/kaeso/overview/view-title";
 import { OrgHeader } from "~/shell/org-header";
 import { PeriodPicker } from "~/kaeso/period-picker";
 import { Share } from "~/kaeso/share";
@@ -18,7 +20,7 @@ import { t } from "~/i18n";
 
 const OrgUsageBreakdown = lazy(() => import("./org-usage-breakdown").then((m) => ({ default: m.OrgUsageBreakdown })));
 
-const DIM: Record<OrgView, Dimension> = { projects: "project", models: "model", members: "member" };
+const DIM: Partial<Record<OrgView, Dimension>> = { projects: "project", models: "model", members: "member" };
 
 export function OrgAnalyticsPage({ org, search, view }: { org: string; search: OrgAnalyticsSearch; view?: OrgView | undefined }) {
   const navigate = useNavigate();
@@ -45,7 +47,7 @@ export function OrgAnalyticsPage({ org, search, view }: { org: string; search: O
         <Tabs.Tab value="overview">{t("project.analytics.overview", "Overview")}</Tabs.Tab>
         {ORG_VIEWS.map((v) => (
           <Tabs.Tab key={v} value={v}>
-            {dimensionTitle(DIM[v])}
+            {viewTitle(v, DIM[v], o)}
           </Tabs.Tab>
         ))}
       </Tabs.List>
@@ -73,24 +75,27 @@ export function OrgAnalyticsPage({ org, search, view }: { org: string; search: O
               title={t("orgHome.noUsage", "You can't see this organization's usage")}
               description={t("orgHome.noUsageHint", "An owner can give you the right to view it.")}
             />
-          ) : view ? (
+          ) : view === "reliability" ? (
+            <Reliability o={o} />
+          ) : view === "efficiency" ? (
+            <Efficiency o={o} />
+          ) : view === "breakdown" ? (
+            <Suspense fallback={null}>
+              <OrgUsageBreakdown
+                org={org}
+                from={o.from}
+                to={o.to}
+                by={by}
+                onByChange={(b) => setSearch({ by: b })}
+                projects={projects.data ?? (projects.isError ? [] : undefined)}
+                showCost={o.showCost}
+                ready={ready}
+              />
+            </Suspense>
+          ) : view && DIM[view] ? (
             <DimensionView o={o} dim={DIM[view]} />
           ) : (
-            <>
-              <ControlRoom o={o} {...(search.metric ? { initial: search.metric } : {})} />
-              <Suspense fallback={null}>
-                <OrgUsageBreakdown
-                  org={org}
-                  from={o.from}
-                  to={o.to}
-                  by={by}
-                  onByChange={(b) => setSearch({ by: b })}
-                  projects={projects.data ?? (projects.isError ? [] : undefined)}
-                  showCost={o.showCost}
-                  ready={ready}
-                />
-              </Suspense>
-            </>
+            <ControlRoom o={o} {...(search.metric ? { initial: search.metric } : {})} />
           )}
         </div>
       </AppFrame.Body>

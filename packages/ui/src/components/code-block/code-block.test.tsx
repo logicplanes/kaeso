@@ -58,6 +58,15 @@ describe("CodeBlock", () => {
     expect(container.querySelector("[style]")).toBeNull();
   });
 
+  it("draws code in colour on its first frame once its language has loaded", async () => {
+    const first = render(<CodeBlock code={'const first = "one";'} />);
+    await highlighted();
+    first.unmount();
+    render(<CodeBlock code={'const second = "two";'} />);
+    expect(screen.getByText('"two"')).toHaveClass("text-code-string");
+    expect(screen.getByText("const")).toHaveClass("text-code-keyword");
+  });
+
   it("switches between tabs", async () => {
     const { container } = render(
       <CodeBlock

@@ -3,7 +3,7 @@ import { Tabs as BaseTabs } from "@base-ui/react/tabs";
 import { cn } from "../../utils/cn.js";
 import { CopyButton } from "../copy-button/copy-button.js";
 import { SwapText } from "../swap-text/swap-text.js";
-import { highlight, type CodeLang, type CodeToken } from "./highlighter.js";
+import { highlight, highlightNow, type CodeLang, type CodeToken } from "./highlighter.js";
 import { INDENT, dropIndent } from "./indent.js";
 import { numberWidth } from "./numbers.js";
 import { splitWords, type WordPart } from "./words.js";
@@ -100,17 +100,19 @@ export const CodeBlock = forwardRef<HTMLDivElement, CodeBlockProps>(function Cod
   const lines = useMemo(() => text.split("\n"), [text]);
   const [highlighted, setHighlighted] = useState<{ text: string; lang: CodeLang; tokens: CodeToken[][] | null } | null>(null);
   const [expanded, setExpanded] = useState(false);
+  const grammar = current.lang ?? "ts";
+  const instant = useMemo(() => highlightNow(text, grammar), [text, grammar]);
   useEffect(() => {
+    if (instant !== undefined) return;
     let alive = true;
-    const lang = current.lang ?? "ts";
-    highlight(text, lang)
-      .then((tokens) => alive && setHighlighted({ text, lang, tokens }))
+    highlight(text, grammar)
+      .then((tokens) => alive && setHighlighted({ text, lang: grammar, tokens }))
       .catch(() => undefined);
     return () => {
       alive = false;
     };
-  }, [text, current.lang]);
-  const tokenLines = highlighted && highlighted.lang === (current.lang ?? "ts") && highlighted.text === text ? highlighted.tokens : null;
+  }, [text, grammar, instant]);
+  const tokenLines = instant !== undefined ? instant : highlighted && highlighted.lang === grammar && highlighted.text === text ? highlighted.tokens : null;
   const collapsed = collapseAfter > 0 && lines.length > collapseAfter && !expanded;
   const visible = collapsed ? collapseAfter : lines.length;
   const scroller = useRef<HTMLDivElement | null>(null);

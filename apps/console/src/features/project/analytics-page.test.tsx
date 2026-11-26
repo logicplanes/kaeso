@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { UsageRow } from "~/api/generated/types";
@@ -9,7 +9,11 @@ import { renderApp } from "~/test/render";
 
 const USAGE = "orgs/:org/projects/:project/usage";
 const PERIOD = "from=2026-10-01&to=2026-10-14";
-const breakdown = () => screen.findByRole("grid", { name: "Usage breakdown" });
+async function breakdown() {
+  const tab = await screen.findByRole("tab", { name: "Breakdown" });
+  if (tab.getAttribute("aria-selected") !== "true") fireEvent.click(tab);
+  return screen.findByRole("grid", { name: "Usage breakdown" });
+}
 const bodyRows = (table: HTMLElement) => within(table).getAllByRole("row").slice(1);
 
 function usage(by: Partial<Record<string, UsageRow[] | Response>> = {}): void {
@@ -53,7 +57,7 @@ describe("AnalyticsPage", () => {
     signedIn();
     projectData({ models: [catalogueModel()] });
     usage({ model: [usageRow({ key: "anthropic/claude-sonnet-4-5", requests: 120, errors: 0, cost: "2.5" })] });
-    await renderApp(projectPath(`analytics?${PERIOD}&by=model`));
+    await renderApp(projectPath(`analytics/breakdown?${PERIOD}&by=model`));
 
     const table = await breakdown();
     await waitFor(() => expect(bodyRows(table)).toHaveLength(1));
@@ -69,7 +73,7 @@ describe("AnalyticsPage", () => {
     signedIn();
     projectData({ models: [catalogueModel()] });
     usage({ model: [usageRow({ key: "anthropic/claude-sonnet-4-5" })] });
-    await renderApp(projectPath(`analytics?${PERIOD}&by=model`));
+    await renderApp(projectPath(`analytics/breakdown?${PERIOD}&by=model`));
 
     const header = within(await breakdown()).getAllByRole("row")[0] as HTMLElement;
     expect(header.style.gridTemplateColumns).toBe("minmax(200px, 1fr) 96px 88px 88px 104px 96px");
@@ -79,7 +83,7 @@ describe("AnalyticsPage", () => {
     signedIn();
     projectData({ models: [catalogueModel()] });
     usage({ model: [usageRow({ key: "anthropic/claude-sonnet-4-5", requests: 2057, input_tokens: 4_500_000, output_tokens: 10_000 })] });
-    await renderApp(projectPath(`analytics?${PERIOD}&by=model`), { locale: "de" });
+    await renderApp(projectPath(`analytics/breakdown?${PERIOD}&by=model`), { locale: "de" });
 
     const table = await screen.findByRole("grid", { name: "Aufschlüsselung der Nutzung" });
     await waitFor(() => expect(bodyRows(table)[0]).toHaveTextContent("4,51 Mio."));
@@ -91,7 +95,7 @@ describe("AnalyticsPage", () => {
     signedIn();
     projectData({ models: [catalogueModel()] });
     usage({ model: [usageRow({ key: "anthropic/claude-sonnet-4-5", requests: 12, cost: "2.5", unpriced: 3 })] });
-    await renderApp(projectPath(`analytics?${PERIOD}&by=model`));
+    await renderApp(projectPath(`analytics/breakdown?${PERIOD}&by=model`));
 
     const header = within(await breakdown()).getAllByRole("row")[0] as HTMLElement;
     expect(header.style.gridTemplateColumns).toBe("minmax(200px, 1fr) 96px 88px 88px 104px 120px");
@@ -102,7 +106,7 @@ describe("AnalyticsPage", () => {
     signedIn();
     projectData({ models: [catalogueModel()] });
     usage({ model: [usageRow({ key: "anthropic/claude-sonnet-4-5", requests: 12, cost: "2.5", unpriced: 3 })] });
-    await renderApp(projectPath(`analytics?${PERIOD}&by=model`));
+    await renderApp(projectPath(`analytics/breakdown?${PERIOD}&by=model`));
 
     const table = await breakdown();
     await waitFor(() => expect(bodyRows(table)).toHaveLength(1));
@@ -178,7 +182,7 @@ describe("AnalyticsPage", () => {
         usageRow({ key: "anthropic/", requests: 3, errors: 0, cost: "0.001" }),
       ],
     });
-    await renderApp(projectPath(`analytics?${PERIOD}&by=model`));
+    await renderApp(projectPath(`analytics/breakdown?${PERIOD}&by=model`));
 
     const table = await breakdown();
     await waitFor(() => expect(bodyRows(table)).toHaveLength(3));
@@ -193,7 +197,6 @@ describe("AnalyticsPage", () => {
     expect(within(table).getByRole("columnheader", { name: "Model" })).toBeInTheDocument();
     expect(within(table).getByRole("columnheader", { name: "Cost" })).toBeInTheDocument();
     expect(screen.getByText("Requests, errors, tokens, cache hits and cost in the period")).toBeInTheDocument();
-    expect((await screen.findAllByText("Cost by model")).length).toBeGreaterThan(0);
     expect(requests("GET", USAGE).map((r) => Object.fromEntries(r.query))).toContainEqual({ from: "2026-10-01", to: "2026-10-14", group_by: "model" });
   });
 
@@ -208,7 +211,7 @@ describe("AnalyticsPage", () => {
         usageRow({ key: "openai_embeddings:openai_embeddings:openai", requests: 3, input_tokens: 900, cache_hit_rate: null }),
       ],
     });
-    await renderApp(projectPath(`analytics?${PERIOD}&by=route`));
+    await renderApp(projectPath(`analytics/breakdown?${PERIOD}&by=route`));
 
     const table = await breakdown();
     await waitFor(() => expect(bodyRows(table)).toHaveLength(4));
@@ -239,7 +242,7 @@ describe("AnalyticsPage", () => {
         usageRow({ key: "openai_chat:openai_chat:openai", requests: 5, cost: "0.01" }),
       ],
     });
-    await renderApp(projectPath(`analytics?${PERIOD}&by=route`));
+    await renderApp(projectPath(`analytics/breakdown?${PERIOD}&by=route`));
 
     const table = await breakdown();
     await waitFor(() => expect(bodyRows(table)).toHaveLength(4));
@@ -259,7 +262,7 @@ describe("AnalyticsPage", () => {
     signedIn();
     projectData({ keys: [apiKey({ replaced_by: "key_next" }), apiKey({ id: "key_next", rotated_from: "key_web" })] });
     usage({ key: [usageRow({ key: "key_next", requests: 10 }), usageRow({ key: "key_web", requests: 3 })] });
-    await renderApp(projectPath(`analytics?${PERIOD}&by=key`));
+    await renderApp(projectPath(`analytics/breakdown?${PERIOD}&by=key`));
 
     const table = await breakdown();
     await waitFor(() =>
@@ -312,7 +315,7 @@ describe("AnalyticsPage", () => {
     click.mockRestore();
     // Requests without a user agent name no client the log can filter by.
     await user.click(bodyRows(table)[1] as HTMLElement);
-    expect(router.state.location.pathname).toBe(projectPath("analytics"));
+    expect(router.state.location.pathname).toBe(projectPath("analytics/breakdown"));
     await user.click(bodyRows(table)[0] as HTMLElement);
     await waitFor(() => expect(router.state.location.pathname).toBe(projectPath("logs")));
     expect(router.state.location.search).toEqual({ from: "2026-10-01", to: "2026-10-14", client: "codex" });
@@ -389,7 +392,7 @@ describe("AnalyticsPage", () => {
     on("GET", USAGE, ({ query }: { query: URLSearchParams }) =>
       query.get("group_by") === "key" && ++calls === 1 ? apiError(403, "permission_denied", "Usage by key is hidden.") : { data: [] },
     );
-    const { user } = await renderApp(projectPath(`analytics?${PERIOD}&by=key`));
+    const { user } = await renderApp(projectPath(`analytics/breakdown?${PERIOD}&by=key`));
 
     expect(await screen.findByText("Couldn't load these rows")).toBeInTheDocument();
     await user.click(within(await breakdown()).getByRole("button", { name: "Try again" }));
@@ -406,7 +409,7 @@ describe("AnalyticsPage", () => {
         usageRow({ key: "openai/gpt-5.4-mini", requests: 10, cost: "2", errors: 3 }),
       ],
     });
-    const { user } = await renderApp(projectPath(`analytics?${PERIOD}&by=model`));
+    const { user } = await renderApp(projectPath(`analytics/breakdown?${PERIOD}&by=model`));
     const table = await breakdown();
     await waitFor(() => expect(bodyRows(table)).toHaveLength(3));
     const order = () => bodyRows(table).map((r) => (r.textContent?.includes("Sonnet") ? "sonnet" : r.textContent?.includes("mini") ? "mini" : "x"));
@@ -456,7 +459,7 @@ describe("AnalyticsPage", () => {
     const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
     const { router } = await renderApp(projectPath(`analytics?${PERIOD}`));
     const column = async (by: string, wait: string) => {
-      if (by !== "day") await router.navigate({ to: projectPath("analytics"), search: { from: "2026-10-01", to: "2026-10-14", by } } as never);
+      if (by !== "day") await router.navigate({ to: projectPath("analytics/breakdown"), search: { from: "2026-10-01", to: "2026-10-14", by } } as never);
       await within(await breakdown()).findByText(wait);
       await userEvent.click(screen.getByRole("button", { name: "Download CSV" }));
       const lines = (await (files.at(-1) as Blob).text()).trimEnd().split("\r\n");
@@ -502,7 +505,7 @@ describe("AnalyticsPage", () => {
     created.mockRestore();
     click.mockRestore();
     await user.click(bodyRows(table)[0] as HTMLElement);
-    expect(router.state.location.pathname).toBe(projectPath("analytics"));
+    expect(router.state.location.pathname).toBe(projectPath("analytics/breakdown"));
     await user.click(bodyRows(table)[1] as HTMLElement);
     await waitFor(() => expect(router.state.location.pathname).toBe(projectPath("logs")));
     expect(router.state.location.search).toMatchObject({ source_id: "src_claude" });
@@ -512,7 +515,7 @@ describe("AnalyticsPage", () => {
     signedIn({ projectRights: without("sources.view") });
     projectData();
     usage({ day: [usageRow({ key: "2026-10-12", requests: 5 })] });
-    await renderApp(projectPath(`analytics?${PERIOD}&by=source`));
+    await renderApp(projectPath(`analytics/breakdown?${PERIOD}&by=source`));
     await breakdown();
     expect(screen.queryByRole("radio", { name: "By source" })).not.toBeInTheDocument();
     expect(screen.getByRole("radio", { name: "By day" })).toBeChecked();
@@ -527,10 +530,10 @@ describe("AnalyticsPage", () => {
       member: [usageRow({ key: "service_account:sa_deploy" }), usageRow({ key: "user:usr_grace", requests: 2 })],
       route: [usageRow({ key: "openai_chat:anthropic_messages:anthropic" }), usageRow({ key: "", requests: 1 })],
     });
-    const { user, router } = await renderApp(projectPath(`analytics?${PERIOD}&by=model`));
+    const { user, router } = await renderApp(projectPath(`analytics/breakdown?${PERIOD}&by=model`));
     const open = async (by: string | null, row: number) => {
       if (by) {
-        await router.navigate({ to: projectPath("analytics"), search: { from: "2026-10-01", to: "2026-10-14", by } } as never);
+        await router.navigate({ to: projectPath("analytics/breakdown"), search: { from: "2026-10-01", to: "2026-10-14", by } } as never);
       }
       const table = await breakdown();
       await waitFor(() => expect(bodyRows(table).length).toBeGreaterThan(row));
@@ -543,7 +546,7 @@ describe("AnalyticsPage", () => {
     await open(null, 0);
     await opened({ model: "claude-sonnet-4-5", provider: "anthropic" });
     await open("model", 1);
-    expect(router.state.location.pathname).toBe(projectPath("analytics"));
+    expect(router.state.location.pathname).toBe(projectPath("analytics/breakdown"));
     await open("key", 0);
     await opened({ key: "key_web" });
     await open("key", 1);
@@ -557,7 +560,7 @@ describe("AnalyticsPage", () => {
     await open("route", 0);
     await opened({ ingress: "openai_chat", egress: "anthropic_messages", provider: "anthropic" });
     await open("route", 1);
-    expect(router.state.location.pathname).toBe(projectPath("analytics"));
+    expect(router.state.location.pathname).toBe(projectPath("analytics/breakdown"));
   });
 
   it("opens a week's requests within the period, and offers no rows to open without the request log's right", async () => {
@@ -580,7 +583,7 @@ describe("AnalyticsPage", () => {
     signedIn({ projectRights: without("logs.metadata.view") });
     projectData();
     usage({ day: [usageRow()] });
-    await renderApp(projectPath(`analytics?${PERIOD}`));
+    await renderApp(projectPath(`analytics/breakdown?${PERIOD}`));
     expect(await screen.findByRole("table", { name: "Usage breakdown" })).toBeInTheDocument();
   });
 
@@ -588,7 +591,7 @@ describe("AnalyticsPage", () => {
     signedIn({ projectRights: without("costs.view") });
     projectData();
     usage({ model: apiError(500, "internal", "Usage is down.") });
-    await renderApp(projectPath(`analytics?${PERIOD}&by=model`));
+    await renderApp(projectPath(`analytics/breakdown?${PERIOD}&by=model`));
 
     const table = await breakdown();
     expect(await within(table).findByText("Couldn't load these rows")).toBeInTheDocument();
@@ -599,7 +602,7 @@ describe("AnalyticsPage", () => {
     signedIn({ projectRights: without("costs.view", "models.view") });
     projectData({ models: [catalogueModel()] });
     usage({ model: [usageRow({ key: "anthropic/claude-sonnet-4-5" })] });
-    await renderApp(projectPath(`analytics?${PERIOD}&by=model`));
+    await renderApp(projectPath(`analytics/breakdown?${PERIOD}&by=model`));
 
     const table = await breakdown();
     await waitFor(() => expect(bodyRows(table)[0]).toHaveTextContent("claude-sonnet-4-5"));
@@ -632,16 +635,14 @@ describe("AnalyticsPage", () => {
         ? apiError(403, "permission_denied", "Usage is hidden for now.")
         : { data: [usageRow({ key: "2026-10-13", requests: 7 })] },
     );
-    const { user } = await renderApp(projectPath(`analytics?${PERIOD}&by=day`));
+    const { user } = await renderApp(projectPath(`analytics?${PERIOD}`));
 
     const requestsChart = (await screen.findByRole("heading", { name: "Requests per day, UTC" })).closest("section") as HTMLElement;
     expect(await within(requestsChart).findByText("Couldn't load this chart")).toBeInTheDocument();
-    expect(await within(await breakdown()).findByText("Couldn't load these rows")).toBeInTheDocument();
-    expect(screen.getAllByText("Couldn't load").length).toBeGreaterThanOrEqual(3);
     failing = false;
     await user.click(within(requestsChart).getByRole("button", { name: "Try again" }));
     await waitFor(() => expect(within(requestsChart).queryByText("Couldn't load this chart")).not.toBeInTheDocument());
-    await waitFor(() => expect(bodyRows(screen.getByRole("grid", { name: "Usage breakdown" }))[0]).toHaveTextContent("13 Oct"));
+    await waitFor(async () => expect(bodyRows(await breakdown())[0]).toHaveTextContent("13 Oct"));
   });
 
   it("loads the daily rows again from the breakdown", async () => {
@@ -654,7 +655,7 @@ describe("AnalyticsPage", () => {
         ? apiError(403, "permission_denied", "Usage is hidden for now.")
         : { data: [usageRow({ key: "2026-10-13", requests: 7 })] },
     );
-    const { user } = await renderApp(projectPath(`analytics?${PERIOD}&by=day`));
+    const { user } = await renderApp(projectPath(`analytics/breakdown?${PERIOD}&by=day`));
 
     expect(await within(await breakdown()).findByText("Couldn't load these rows")).toBeInTheDocument();
     failing = false;
@@ -797,7 +798,7 @@ describe("the analytics views", () => {
     projectData();
     usage({});
     on("GET", `${USAGE}/timeline`, { data: [] });
-    const { user, router } = await renderApp(projectPath(`analytics?${PERIOD}&by=key`));
+    const { user, router } = await renderApp(projectPath(`analytics/breakdown?${PERIOD}&by=key`));
     await user.click(await screen.findByRole("tab", { name: "Members" }));
     await waitFor(() => expect(router.state.location.pathname).toBe(projectPath("analytics/members")));
     expect(router.state.location.search).toEqual({ from: "2026-10-01", to: "2026-10-14" });

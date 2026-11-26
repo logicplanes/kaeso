@@ -16,15 +16,20 @@ export interface SectionProps {
   title?: ReactNode | undefined;
   description?: ReactNode | undefined;
   actions?: ReactNode | undefined;
+  /** The 1px rule under the heading; turn it off above content that draws its own frame, such as a Dashboard. */
+  rule?: boolean | undefined;
   spacing?: keyof typeof KAESO_SECTION_VARIANTS.spacing | undefined;
   children: ReactNode;
   className?: string | undefined;
 }
 
-export const Section = forwardRef<HTMLElement, SectionProps>(function Section({ title, description, actions, spacing = "default", children, className }, ref) {
+export const Section = forwardRef<HTMLElement, SectionProps>(function Section(
+  { title, description, actions, rule, spacing = "default", children, className },
+  ref,
+) {
   return (
     <section ref={ref} className={cn(KAESO_SECTION_VARIANTS.spacing[spacing].classes, className)}>
-      {(title || actions) && <SectionHeader title={title} description={description} actions={actions} />}
+      {(title || actions) && <SectionHeader title={title} description={description} actions={actions} rule={rule} />}
       {children}
     </section>
   );

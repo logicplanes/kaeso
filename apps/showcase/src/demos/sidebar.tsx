@@ -5,7 +5,7 @@ import { StateSection, forceIn } from "~/lib/states";
 
 export const meta = {
   title: "Sidebar",
-  description: "The console navigation: the place it is in, 32px items with pill fills, groups that remember, a quiet resize edge, collapse and rail.",
+  description: "The console navigation: the place it is in, 36px rows with softly rounded fills, groups that remember, a quiet resize edge, collapse and rail.",
   group: "Layout",
   entry: "sidebar",
   import: "Sidebar",

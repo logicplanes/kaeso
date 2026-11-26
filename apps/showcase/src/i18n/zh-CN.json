@@ -19,7 +19,7 @@
   "90 days": "90 天",
   "A 1px line, for when space and tone cannot separate two regions.": "1px 分隔线，用于留白和色调无法区分两个区域时。",
   "A 4px track, an ink range and an ink thumb; a value bubble while dragging; ticks and ranges.": "4px 轨道、墨色区间和墨色滑块；拖动时显示数值气泡；支持刻度和范围。",
-  "A Hugeicons free (Stroke Rounded) icon, from `@hugeicons/core-free-icons` or `icons` in `@logicplanes/kaeso-ui`.": "Hugeicons 免费版（Stroke Rounded）图标，来自 `@hugeicons/core-free-icons` 或 `@logicplanes/kaeso-ui` 中的 `icons`。",
+  "A Lucide icon, from `lucide` or `icons` in `@logicplanes/kaeso-ui`.": "Lucide 图标，来自 `lucide` 或 `@logicplanes/kaeso-ui` 中的 `icons`。",
   "A Platform API key": "Platform API 密钥",
   "A bottom-right status area. Unused by default.": "右下角的状态区域。默认不使用。",
   "A caption in the middle of a horizontal line (\"or\").": "横线中间的说明文字（“或”）。",
@@ -275,7 +275,7 @@
   "How many images to hold room for while they are made.": "生成图片期间预留位置的图片数量。",
   "How much room each message gets.": "每条消息占用的空间。",
   "How much room each row gets.": "每行占用的空间。",
-  "Hugeicons free, Stroke Rounded, in currentColor. One icon per Kaeso concept.": "Hugeicons 免费版，Stroke Rounded 风格，使用 currentColor。每个 Kaeso 概念对应一个图标。",
+  "Lucide, in currentColor. One icon per Kaeso concept.": "Lucide，使用 currentColor。每个 Kaeso 概念对应一个图标。",
   "Icon only": "仅图标",
   "Icon, prefix and suffix": "图标、前缀和后缀",
   "Icons": "图标",
@@ -575,7 +575,7 @@
   "The composer's height.": "输入区的高度。",
   "The confirm label, the verb and object: \"Delete key\".": "确认按钮的文字，由动词和对象组成：“删除密钥”。",
   "The confirm of a destructive flow. Its trigger is usually danger-secondary.": "破坏性流程中的确认按钮。其触发按钮通常为 danger-secondary。",
-  "The console navigation: the place it is in, 32px items with pill fills, groups that remember, a quiet resize edge, collapse and rail.": "控制台导航：当前所在位置、带胶囊底色的 32px 项目、会记住状态的分组、低调的调整宽度边缘、收起与图标栏模式。",
+  "The console navigation: the place it is in, 36px rows with softly rounded fills, groups that remember, a quiet resize edge, collapse and rail.": "控制台导航：当前所在位置、带柔和圆角底色的 36px 行、会记住状态的分组、低调的调整宽度边缘、收起与图标栏模式。",
   "The console's table: a 36px header on a strong rule, 40px rows on hairlines, numbers right, sorting, resizing, selection, virtualization.": "控制台的表格：36px 表头立在一条较深的线上，40px 的行以细线分隔，数字右对齐，支持排序、调整列宽、选择和虚拟化。",
   "The content that scrolls.": "滚动的内容。",
   "The content that shows when it is open.": "打开时显示的内容。",
@@ -1277,5 +1277,6 @@
   "The name beside the tile, or the tile's accessible name; the kind's product name by default.": "图块旁的名称或图块的无障碍名称；默认是该类型的产品名称。",
   "The tile's size, as a provider's tile.": "图块的尺寸，与服务商图块相同。",
   "Shows the name beside the tile.": "在图块旁显示名称。",
-  "Hides the tile from assistive technology, where the text beside it already names the client.": "在旁边的文字已说明客户端时，对辅助技术隐藏该图块。"
+  "Hides the tile from assistive technology, where the text beside it already names the client.": "在旁边的文字已说明客户端时，对辅助技术隐藏该图块。",
+  "The 1px rule under the heading. Turn it off above content that draws its own frame, such as a Dashboard.": "标题下方的 1px 分隔线。在自带边框的内容（例如 Dashboard）上方将其关闭。"
 }

@@ -24,7 +24,7 @@ describe("Icon", () => {
       </>,
     );
     const drawn = [...container.querySelectorAll("svg")].map((svg) => {
-      const grid = Number(svg.querySelector("[stroke-width]")!.getAttribute("stroke-width"));
+      const grid = Number(svg.getAttribute("stroke-width"));
       return Math.round(((grid * Number(svg.getAttribute("width"))) / 24) * 100) / 100;
     });
     expect(drawn).toEqual([1.5, 1.5]);

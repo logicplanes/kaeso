@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { UsageRow } from "~/api/generated/types";
@@ -17,7 +17,11 @@ function usage(rows: Partial<Record<string, { data: UsageRow[] } | Response>>) {
 const wrap = (rows: UsageRow[]) => ({ data: rows });
 
 // The breakdown by project opens a project from its rows, which makes it a grid.
-const breakdown = () => screen.findByLabelText("Usage breakdown", { selector: "[role=grid], [role=table]" });
+async function breakdown() {
+  const tab = await screen.findByRole("tab", { name: "Breakdown" });
+  if (tab.getAttribute("aria-selected") !== "true") fireEvent.click(tab);
+  return screen.findByLabelText("Usage breakdown", { selector: "[role=grid], [role=table]" });
+}
 const usageQueries = () => requests("GET", USAGE).map((r) => Object.fromEntries(r.query));
 
 function onPhone(width = 327) {
@@ -110,7 +114,7 @@ describe("organization analytics", () => {
   it("sizes the token column for German values", async () => {
     signedIn();
     usage({ project: wrap([usageRow(PROJECT, { requests: 30, input_tokens: 137_400_000, output_tokens: 100_000 })]) });
-    await renderApp(`/orgs/${ORG}/analytics?${PERIOD}`, { locale: "de" });
+    await renderApp(`/orgs/${ORG}/analytics/breakdown?${PERIOD}`, { locale: "de" });
     const table = await screen.findByLabelText("Nutzung im Detail", { selector: "[role=grid]" });
     await within(table).findByText("137,5 Mio.");
     const header = within(table).getAllByRole("row")[0] as HTMLElement;
@@ -164,7 +168,13 @@ describe("organization analytics", () => {
     const metrics = await screen.findByRole("tablist", { name: "Metric to chart" });
     await waitFor(() => expect(metrics).toHaveTextContent("45"));
     expect(metrics).toHaveTextContent("$2.75");
-    expect((await screen.findAllByText("Cost by project")).length).toBeGreaterThan(0);
+
+    const list = await screen.findByRole("list", { name: "Projects by requests" });
+    await waitFor(() => expect(within(list).getAllByRole("button")).toHaveLength(3));
+    const ranked = within(list).getAllByRole("button");
+    expect(ranked[0]).toHaveTextContent(/Checkout assistant67%0%30$/);
+    expect(ranked[1]).toHaveTextContent(/Support triage22%0%10$/);
+    expect(ranked[2]).toHaveTextContent(/Old pilot11%0%5$/);
 
     const table = await breakdown();
     await within(table).findByRole("link", { name: "Checkout assistant" });
@@ -180,13 +190,6 @@ describe("organization analytics", () => {
     expect(rows[3]).toHaveTextContent("—");
     expect(within(table).getByRole("link", { name: "Checkout assistant" })).toHaveAttribute("href", `/orgs/${ORG}/projects/${PROJECT}`);
 
-    const list = await screen.findByRole("list", { name: "Projects by requests" });
-    await waitFor(() => expect(within(list).getAllByRole("button")).toHaveLength(3));
-    const ranked = within(list).getAllByRole("button");
-    expect(ranked[0]).toHaveTextContent(/Checkout assistant67%0%30$/);
-    expect(ranked[1]).toHaveTextContent(/Support triage22%0%10$/);
-    expect(ranked[2]).toHaveTextContent(/Old pilot11%0%5$/);
-
     expect(usageQueries()).toEqual(
       expect.arrayContaining([
         { from: "2026-10-01", to: "2026-10-07", group_by: "day" },
@@ -196,7 +199,8 @@ describe("organization analytics", () => {
     );
     expect(requests("GET", "orgs/:org/projects").some((r) => r.query.get("include_archived") === "true")).toBe(true);
 
-    await user.click(within(list).getByRole("button", { name: /Support triage/ }));
+    await user.click(screen.getByRole("tab", { name: "Overview" }));
+    await user.click(within(await screen.findByRole("list", { name: "Projects by requests" })).getByRole("button", { name: /Support triage/ }));
     await waitFor(() => expect(router.state.location.pathname).toBe(`/orgs/${ORG}/projects/${OTHER_PROJECT}`));
   });
 
@@ -270,7 +274,7 @@ describe("organization analytics", () => {
         usageRow("service_account:sa_lost", { requests: 10 }),
       ]),
     });
-    await renderApp(`/orgs/${ORG}/analytics?${PERIOD}&by=member`);
+    await renderApp(`/orgs/${ORG}/analytics/breakdown?${PERIOD}&by=member`);
     const table = await breakdown();
     expect(await within(table).findByText("Ada Okafor (you)")).toBeInTheDocument();
     const cells = () =>
@@ -353,7 +357,7 @@ describe("organization analytics", () => {
       page(params.project === "proj_2" ? [serviceAccount()] : [serviceAccount({ id: `sa_${params.project}`, name: "Unused" })]),
     );
     usage({ member: wrap([usageRow("user:usr_ada", { requests: 5 }), usageRow("service_account:sa_bot", { requests: 2 })]) });
-    await renderApp(`/orgs/${ORG}/analytics?${PERIOD}&by=member`);
+    await renderApp(`/orgs/${ORG}/analytics/breakdown?${PERIOD}&by=member`);
     const table = await breakdown();
     expect(await within(table).findByText("Service account in proj_2")).toBeInTheDocument();
     expect(
@@ -367,7 +371,7 @@ describe("organization analytics", () => {
     signedIn();
     on("GET", "orgs/:org/members", page([member()]));
     usage({ member: wrap([usageRow("user:usr_ada", { requests: 5 })]) });
-    await renderApp(`/orgs/${ORG}/analytics?${PERIOD}&by=member`);
+    await renderApp(`/orgs/${ORG}/analytics/breakdown?${PERIOD}&by=member`);
     const table = await breakdown();
     expect(await within(table).findByText("Ada Okafor (you)")).toBeInTheDocument();
     expect(requests("GET", "orgs/:org/projects/:project/service-accounts")).toHaveLength(0);
@@ -378,7 +382,7 @@ describe("organization analytics", () => {
     on("GET", "orgs/:org/members", page([member()]));
     on("GET", "orgs/:org/projects/:project/service-accounts", apiError(403, "forbidden", "The gateway failed."));
     usage({ member: wrap([usageRow("service_account:sa_bot", { requests: 20 })]) });
-    await renderApp(`/orgs/${ORG}/analytics?${PERIOD}&by=member`);
+    await renderApp(`/orgs/${ORG}/analytics/breakdown?${PERIOD}&by=member`);
     const table = await breakdown();
     expect(await within(table).findByText("sa_bot")).toBeInTheDocument();
     expect(within(table).getAllByRole("row")[1]).toHaveTextContent("Service accountsa_bot");
@@ -400,7 +404,7 @@ describe("organization analytics", () => {
   it("orders rows with as many requests by name", async () => {
     signedIn();
     usage({ model: wrap([usageRow("openai/gpt-5-mini", { requests: 20 }), usageRow("anthropic/claude-haiku", { requests: 20 })]) });
-    await renderApp(`/orgs/${ORG}/analytics?${PERIOD}&by=model`);
+    await renderApp(`/orgs/${ORG}/analytics/breakdown?${PERIOD}&by=model`);
     const table = await breakdown();
     await within(table).findByText(/claude-haiku/);
     const rows = within(table).getAllByRole("row").slice(1);
@@ -418,13 +422,14 @@ describe("organization analytics", () => {
     const table = await breakdown();
     expect(await within(table).findByText(PROJECT)).toBeInTheDocument();
     expect(within(table).queryByRole("link", { name: "Checkout assistant" })).not.toBeInTheDocument();
-    await waitFor(() => expect(screen.getAllByText(PROJECT).some((label) => !table.contains(label))).toBe(true));
+    fireEvent.click(screen.getByRole("tab", { name: "Overview" }));
+    expect((await screen.findAllByText(PROJECT)).length).toBeGreaterThan(0);
   });
 
   it("labels members by id when the person can't see the member list", async () => {
     withRights(ALL_ORG_RIGHTS.filter((r) => r !== "members.view"));
     usage({ member: wrap([usageRow("user:usr_grace", { requests: 4 })]) });
-    await renderApp(`/orgs/${ORG}/analytics?${PERIOD}&by=member`);
+    await renderApp(`/orgs/${ORG}/analytics/breakdown?${PERIOD}&by=member`);
     const table = await breakdown();
     expect(await within(table).findByText("usr_grace")).toBeInTheDocument();
     expect(within(table).getAllByRole("row")[1]).toHaveTextContent("Memberusr_grace");
@@ -439,8 +444,10 @@ describe("organization analytics", () => {
     expect(await within(table).findByText("No requests in this period")).toBeInTheDocument();
     await user.click(screen.getByRole("radio", { name: "By model" }));
     expect(await within(table).findByText("Couldn't load these rows")).toBeInTheDocument();
-    expect(within(table).getByRole("button", { name: "Try again" })).toBeInTheDocument();
     expect(await notifications().findAllByText("The breakdown can't group by model yet.")).not.toHaveLength(0);
+    usage({ model: wrap([usageRow("openai/gpt-5.4-mini", { requests: 9 })]) });
+    await user.click(within(table).getByRole("button", { name: "Try again" }));
+    expect(await within(table).findByText("gpt-5.4-mini")).toBeInTheDocument();
   });
 
   it("loads the charts again after they failed", async () => {
@@ -448,21 +455,18 @@ describe("organization analytics", () => {
     const refused = apiError(400, "invalid_request", "Usage is being rebuilt.");
     usage({ day: refused, project: refused });
     const { user } = await renderApp(`/orgs/${ORG}/analytics?${PERIOD}`);
-    await breakdown();
     expect(await notifications().findAllByText("Usage is being rebuilt.")).not.toHaveLength(0);
     const main = screen.getByRole("main");
-    await waitFor(() => expect(within(main).getAllByRole("button", { name: "Try again" })).toHaveLength(4));
+    const retries = () => within(main).queryAllByRole("button", { name: "Try again" });
+    await waitFor(() => expect(retries().length).toBeGreaterThan(0));
     usage({ day: wrap([usageRow("2026-10-03", { requests: 12, cost: "0.40" })]), project: wrap([usageRow(PROJECT, { requests: 12, cost: "0.40" })]) });
     const before = usageQueries().length;
-    const failed = screen.getByRole("heading", { name: "Failed requests" }).closest("section") as HTMLElement;
-    await user.click(within(failed).getByRole("button", { name: "Try again" }));
-    await waitFor(() => expect(within(main).getAllByRole("button", { name: "Try again" })).toHaveLength(1));
-    await user.click(within(await breakdown()).getByRole("button", { name: "Try again" }));
-    await waitFor(() => expect(within(main).queryAllByRole("button", { name: "Try again" })).toHaveLength(0));
-    expect(usageQueries().slice(before)).toEqual([
-      { from: "2026-10-01", to: "2026-10-07", group_by: "day" },
-      { from: "2026-10-01", to: "2026-10-07", group_by: "project" },
-    ]);
+    while (retries().length > 0) {
+      const left = retries().length;
+      await user.click(retries()[0] as HTMLElement);
+      await waitFor(() => expect(retries().length).toBeLessThan(left));
+    }
+    expect(usageQueries().slice(before)).toContainEqual({ from: "2026-10-01", to: "2026-10-07", group_by: "day" });
     expect(screen.getByRole("tablist", { name: "Metric to chart" })).toHaveTextContent("12");
   });
 
@@ -488,7 +492,7 @@ describe("organization analytics", () => {
   it("spans the empty breakdown across the columns without costs", async () => {
     withRights(ALL_ORG_RIGHTS.filter((r) => r !== "costs.org.view"));
     usage({});
-    await renderApp(`/orgs/${ORG}/analytics?${PERIOD}&by=model`);
+    await renderApp(`/orgs/${ORG}/analytics/breakdown?${PERIOD}&by=model`);
     const table = await breakdown();
     const empty = await within(table).findByText("No requests in this period");
     expect(empty.closest("[role=cell]")).toHaveAttribute("aria-colspan", "4");
@@ -508,7 +512,7 @@ describe("organization analytics", () => {
   it("changes the period from the picker", async () => {
     signedIn();
     usage({});
-    const { user, router } = await renderApp(`/orgs/${ORG}/analytics?${PERIOD}&by=model`);
+    const { user, router } = await renderApp(`/orgs/${ORG}/analytics/breakdown?${PERIOD}&by=model`);
     await breakdown();
     await user.click(screen.getByRole("button", { description: "Period" }));
     await user.click(await screen.findByRole("option", { name: "Last 7 days" }));

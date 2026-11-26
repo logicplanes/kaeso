@@ -8,7 +8,6 @@ import { projectPath } from "~/shell/pages";
 import type { Overview } from "./data";
 import { change, METRICS, metricTotal, type MetricId } from "./metrics";
 import { DayContext, hourLabel, MetricChart, PREVIOUS, rank, tabRange, useOpenRow, type Ranked } from "./parts";
-import { Efficiency, Reliability, Spend } from "./sections";
 import { RatesNote } from "~/kaeso/rates-note";
 
 const TOP = 5;
@@ -151,16 +150,13 @@ export function ControlRoom({ o, initial = "requests" }: { o: Overview; initial?
           <RatesNote money={o.money} from={o.from} />
         </div>
       )}
-      <Section title={t("kaeso.overview.top", "Top usage")} description={t("kaeso.overview.topHint", "The five with the most of the total chosen above")}>
+      <Section title={t("kaeso.overview.top", "Top usage")} rule={false}>
         <Dashboard aria-label={t("kaeso.overview.top", "Top usage")} busy={o.refreshing} columns={2}>
           {top.map((d) => (
             <TopCell key={d} o={o} dim={d} metric={metric} />
           ))}
         </Dashboard>
       </Section>
-      <Reliability o={o} />
-      <Efficiency o={o} />
-      {o.showCost && <Spend o={o} />}
     </>
   );
 }

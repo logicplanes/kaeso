@@ -27,6 +27,7 @@ export function ProjectMenu({
   listed: ProjectView[] | undefined;
 }) {
   const navigate = useNavigate();
+  const orgName = useSession().memberships.find((m) => m.org_id === org)?.org_name;
   const pathname = useLocation({ select: (l) => l.pathname });
   const tail = pathname.slice(projectPath(org, project).length);
   const section = tail.split("/")[1] ?? "";
@@ -61,16 +62,58 @@ export function ProjectMenu({
       <Menu.LinkItem icon={icons.project} href={`${orgPath(org)}/projects`}>
         {t("shell.allProjects", "All projects")}
       </Menu.LinkItem>
+      <Menu.LinkItem icon={icons.organization} href={orgPath(org)}>
+        {orgName ?? t("common.organization", "Organization")}
+      </Menu.LinkItem>
     </>
   );
 }
 
-export function OrgMenu({ org, onCreate }: { org: string | undefined; onCreate: () => void }) {
+export function OrgMenu({ org, onCreate }: { org: string; onCreate: () => void }) {
+  const session = useSession();
+  const memberships = useMemberships();
+  const navigate = useNavigate();
+  return (
+    <>
+      {(memberships.length > 1 || session.can_create_orgs) && (
+        <>
+          <Menu.Group label={t("shell.organizations", "Organizations")}>
+            <Menu.RadioGroup value={org} onValueChange={(next) => void navigate({ to: "/orgs/$org", params: { org: next } })}>
+              {memberships.map((m) => (
+                <Menu.RadioItem
+                  key={m.org_id}
+                  value={m.org_id}
+                  closeOnClick
+                  leading={<Avatar name={m.org_name} {...(m.org_avatar_url ? { src: m.org_avatar_url } : {})} kind="org" size={20} decorative />}
+                  {...(m.org_state === "scheduled_for_deletion"
+                    ? { description: deletionCaption(m.org_deletion_due_at), descriptionTone: "danger" as const }
+                    : {})}
+                >
+                  {m.org_name}
+                </Menu.RadioItem>
+              ))}
+            </Menu.RadioGroup>
+            {session.can_create_orgs && (
+              <Menu.Item icon={icons.add} onClick={onCreate}>
+                {t("shell.createOrg", "Create organization")}
+              </Menu.Item>
+            )}
+          </Menu.Group>
+          <Menu.Separator />
+        </>
+      )}
+      <Menu.LinkItem icon={icons.settings} href={`/settings/orgs/${org}/general`}>
+        {t("shell.orgSettings", "Organization settings")}
+      </Menu.LinkItem>
+    </>
+  );
+}
+
+export function AccountMenu({ onCreate }: { onCreate: () => void }) {
   const session = useSession();
   const memberships = useMemberships();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const canCreate = session.can_create_orgs;
 
   const signOut = async () => {
     try {
@@ -88,38 +131,6 @@ export function OrgMenu({ org, onCreate }: { org: string | undefined; onCreate: 
 
   return (
     <>
-      {(memberships.length > 1 || canCreate) && (
-        <>
-          <Menu.Group label={t("shell.organizations", "Organizations")}>
-            <Menu.RadioGroup value={org ?? ""} onValueChange={(next) => void navigate({ to: "/orgs/$org", params: { org: next } })}>
-              {memberships.map((m) => (
-                <Menu.RadioItem
-                  key={m.org_id}
-                  value={m.org_id}
-                  closeOnClick
-                  leading={<Avatar name={m.org_name} {...(m.org_avatar_url ? { src: m.org_avatar_url } : {})} kind="org" size={20} decorative />}
-                  {...(m.org_state === "scheduled_for_deletion"
-                    ? { description: deletionCaption(m.org_deletion_due_at), descriptionTone: "danger" as const }
-                    : {})}
-                >
-                  {m.org_name}
-                </Menu.RadioItem>
-              ))}
-            </Menu.RadioGroup>
-            {canCreate && (
-              <Menu.Item icon={icons.add} onClick={onCreate}>
-                {t("shell.createOrg", "Create organization")}
-              </Menu.Item>
-            )}
-          </Menu.Group>
-          <Menu.Separator />
-        </>
-      )}
-      {org && (
-        <Menu.LinkItem icon={icons.settings} href={`/settings/orgs/${org}/general`}>
-          {t("shell.orgSettings", "Organization settings")}
-        </Menu.LinkItem>
-      )}
       <Menu.LinkItem icon={icons.member} href="/settings/account/profile">
         {t("shell.account", "Account")}
       </Menu.LinkItem>
@@ -127,6 +138,11 @@ export function OrgMenu({ org, onCreate }: { org: string | undefined; onCreate: 
         <Menu.LinkItem icon={icons.instance} href="/settings/instance/general">
           {t("shell.instance", "Instance")}
         </Menu.LinkItem>
+      )}
+      {memberships.length === 0 && session.can_create_orgs && (
+        <Menu.Item icon={icons.add} onClick={onCreate}>
+          {t("shell.createOrg", "Create organization")}
+        </Menu.Item>
       )}
       <LegalMenuItems legal={session.legal} />
       <Menu.Separator />

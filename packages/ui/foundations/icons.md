@@ -1,6 +1,6 @@
 # Icons
 
-Hugeicons, Stroke Rounded, one icon per Kaeso concept. The same idea always looks the same. Every name: `../ai/icons.md`.
+Lucide, one icon per Kaeso concept. The same idea always looks the same. Every name: `../ai/icons.md`.
 
 ## Vocabulary
 

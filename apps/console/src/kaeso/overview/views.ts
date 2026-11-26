@@ -3,9 +3,11 @@ import type { OrgBreakdown } from "~/features/org-home/org-usage-breakdown";
 import { periodSearch, type PeriodSearch } from "~/format/period-search";
 import type { MetricId } from "./metrics";
 
-export const PROJECT_VIEWS = ["models", "keys", "members"] as const;
+export const PROJECT_DIMENSIONS = ["models", "keys", "members"] as const;
+export const PROJECT_VIEWS = ["reliability", "efficiency", ...PROJECT_DIMENSIONS, "breakdown"] as const;
 export type ProjectView = (typeof PROJECT_VIEWS)[number];
-export const ORG_VIEWS = ["projects", "models", "members"] as const;
+export const ORG_DIMENSIONS = ["projects", "models", "members"] as const;
+export const ORG_VIEWS = ["reliability", "efficiency", ...ORG_DIMENSIONS, "breakdown"] as const;
 export type OrgView = (typeof ORG_VIEWS)[number];
 
 export type AnalyticsSearch = PeriodSearch & { by?: Exclude<GroupBy, "project" | "week" | "month" | "billed_to"> | "client"; metric?: MetricId };

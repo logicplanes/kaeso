@@ -1,13 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, useParams } from "@tanstack/react-router";
-import { Button, Sidebar, icons } from "@logicplanes/kaeso-ui";
+import { Sidebar, icons } from "@logicplanes/kaeso-ui";
 import { isApiError } from "~/api/errors";
 import { orgProjectsQuery, projectQuery } from "~/api/queries/projects";
-import { useMembership, useMemberships, useOrgRights } from "~/auth/session";
+import { useMemberships, useOrgRights } from "~/auth/session";
 import { t } from "~/i18n";
 import { readLast } from "./last";
 import { openPalette } from "./palette-store";
-import { OrgSwitcher } from "./org-switcher";
+import { AccountSwitcher, OrgSwitcher } from "./org-switcher";
 import { Picture, ProjectSwitcher } from "./project-switcher";
 import { ORG_AREA_PAGES, orgPath, projectPath } from "./pages";
 import { useProjectPages } from "./project-pages";
@@ -22,22 +22,18 @@ export function AppSidebar() {
   const gone = isApiError(opened.error) && (opened.error.type === "not_found" || opened.error.type === "permission_denied");
   return (
     <Sidebar aria-label={t("shell.sidebar", "Console")}>
-      <Sidebar.Brand href={org ? orgPath(org) : "/"} label={t("shell.home", "Kaeso home")}>
-        <Button
-          variant="ghost"
-          size="sm"
-          icon={icons.search}
-          aria-label={t("common.search", "Search")}
-          aria-haspopup="dialog"
-          data-leaves-navigation=""
-          shortcut={["mod", "k"]}
-          onClick={openPalette}
-        />
-        <Sidebar.CollapseToggle />
-      </Sidebar.Brand>
-      <Sidebar.Content>{org && project && !gone ? <ProjectArea org={org} project={project} /> : org && <OrgArea org={org} />}</Sidebar.Content>
+      <Sidebar.Brand lead={org && project && !gone ? <ProjectSwitcher org={org} project={project} /> : org ? <OrgSwitcher org={org} /> : undefined} />
+      <Sidebar.Content>
+        <Sidebar.Group>
+          <Sidebar.Item icon={icons.search} shortcut={["mod", "k"]} onClick={openPalette}>
+            {t("common.search", "Search")}
+          </Sidebar.Item>
+        </Sidebar.Group>
+        {org && project && !gone ? <ProjectArea org={org} project={project} /> : org && <OrgArea org={org} />}
+      </Sidebar.Content>
       <Sidebar.Footer>
-        <OrgSwitcher org={org} />
+        <AccountSwitcher />
+        <Sidebar.CollapseToggle />
       </Sidebar.Footer>
     </Sidebar>
   );
@@ -72,26 +68,22 @@ function OrgArea({ org }: { org: string }) {
 function ProjectArea({ org, project }: { org: string; project: string }) {
   const pages = useProjectPages(org, project);
   const pathname = useLocation({ select: (l) => l.pathname });
-  const membership = useMembership(org);
   const base = projectPath(org, project);
   return (
-    <>
-      <Sidebar.BackLink href={orgPath(org)}>{membership?.org_name ?? t("common.organization", "Organization")}</Sidebar.BackLink>
-      <div className="flex flex-col gap-4">
-        <ProjectSwitcher org={org} project={project} />
-        <Sidebar.Group>
-          {pages.map((p) => {
-            const href = p.path ? `${base}/${p.path}` : base;
-            const active = p.path ? pathname === href || pathname.startsWith(`${href}/`) : pathname === base;
-            return (
-              <Sidebar.Item key={p.id} icon={p.icon} href={href} active={active} shortcut={[["g"], [p.key]]}>
-                {p.label()}
-              </Sidebar.Item>
-            );
-          })}
-        </Sidebar.Group>
-      </div>
-    </>
+    <div className="flex flex-col gap-4">
+      <Sidebar.BackLink href={`${orgPath(org)}/projects`}>{t("shell.allProjects", "All projects")}</Sidebar.BackLink>
+      <Sidebar.Group>
+        {pages.map((p) => {
+          const href = p.path ? `${base}/${p.path}` : base;
+          const active = p.path ? pathname === href || pathname.startsWith(`${href}/`) : pathname === base;
+          return (
+            <Sidebar.Item key={p.id} icon={p.icon} href={href} active={active} shortcut={[["g"], [p.key]]}>
+              {p.label()}
+            </Sidebar.Item>
+          );
+        })}
+      </Sidebar.Group>
+    </div>
   );
 }
 

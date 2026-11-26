@@ -13,7 +13,7 @@ const requestedOut = arg("--out");
 const out = resolve(requestedOut ?? mkdtempSync(join(tmpdir(), "kaeso-pack-")));
 const expected = arg("--version");
 
-const REACT_LIBRARIES = /^(react|react-dom|@base-ui\/react|@hugeicons\/react|@tanstack\/react-[\w-]+|react-day-picker)(\/|$)/;
+const REACT_LIBRARIES = /^(react|react-dom|@base-ui\/react|@tanstack\/react-[\w-]+|react-day-picker)(\/|$)/;
 const failures = [];
 const fail = (m) => failures.push(m);
 const packages = [

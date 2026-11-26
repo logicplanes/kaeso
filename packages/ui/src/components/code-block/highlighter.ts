@@ -140,9 +140,60 @@ export interface CodeToken {
   className: string;
 }
 
+const CACHE_MAX_ENTRIES = 64;
+const CACHE_MAX_CHARS = 400_000;
+const SYNC_MAX_CHARS = 40_000;
+const cache = new Map<string, CodeToken[][]>();
+let cached = 0;
+let runtime: typeof import("./shiki.js") | undefined;
+
+const keyOf = (code: string, lang: CodeLang) => `${lang}\n${code}`;
+
+function recall(key: string): CodeToken[][] | undefined {
+  const hit = cache.get(key);
+  if (hit) {
+    cache.delete(key);
+    cache.set(key, hit);
+  }
+  return hit;
+}
+
+function remember(key: string, tokens: CodeToken[][]): CodeToken[][] {
+  if (!cache.has(key)) cached += key.length;
+  cache.set(key, tokens);
+  for (const oldest of cache.keys()) {
+    if (cache.size <= CACHE_MAX_ENTRIES && cached <= CACHE_MAX_CHARS) break;
+    if (oldest === key) break;
+    cache.delete(oldest);
+    cached -= oldest.length;
+  }
+  return tokens;
+}
+
+const plain = (code: string, lang: CodeLang) => !known(lang) || code.length > HIGHLIGHT_MAX_CHARS;
+
 /** Tokens of `code` with their palette classes, one array per line; `null` for `text`, an unknown language or code over 200,000 characters. */
 export async function highlight(code: string, lang: CodeLang): Promise<CodeToken[][] | null> {
-  if (!known(lang) || code.length > HIGHLIGHT_MAX_CHARS) return null;
-  const { tokens } = await import("./shiki.js");
-  return tokens(code.replace(/\r\n?/g, "\n"), lang);
+  if (plain(code, lang)) return null;
+  const text = code.replace(/\r\n?/g, "\n");
+  const key = keyOf(text, lang);
+  const hit = recall(key);
+  if (hit) return hit;
+  runtime ??= await import("./shiki.js");
+  return remember(key, await runtime.tokens(text, lang as Exclude<CodeLang, "text">));
+}
+
+/**
+ * The tokens without waiting: `null` where `highlight` gives `null`, the tokens when this code was highlighted before or its language has
+ * loaded, and `undefined` while the language is still on its way. Code that was seen before, a second block in a language and a reply
+ * that grows as it streams are so drawn in colour on their first frame.
+ */
+export function highlightNow(code: string, lang: CodeLang): CodeToken[][] | null | undefined {
+  if (plain(code, lang)) return null;
+  const text = code.replace(/\r\n?/g, "\n");
+  const key = keyOf(text, lang);
+  const hit = recall(key);
+  if (hit || text.length > SYNC_MAX_CHARS) return hit;
+  const tokens = runtime?.tokensNow(text, lang as Exclude<CodeLang, "text">);
+  return tokens && remember(key, tokens);
 }

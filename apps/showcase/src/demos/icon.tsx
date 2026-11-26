@@ -3,7 +3,7 @@ import { StateSection } from "~/lib/states";
 
 export const meta = {
   title: "Icon",
-  description: "Hugeicons free, Stroke Rounded, in currentColor. One icon per Kaeso concept.",
+  description: "Lucide, in currentColor. One icon per Kaeso concept.",
   group: "Components",
   entry: "icon",
   import: "Icon, icons",

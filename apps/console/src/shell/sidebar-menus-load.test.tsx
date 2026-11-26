@@ -23,7 +23,7 @@ describe("a switcher whose menu is still downloading", () => {
     on("GET", "orgs/:org/projects/:project/limits", page([]));
     const { user } = await renderApp(`/orgs/${ORG}/projects/${PROJECT}/limits`);
     const switcher = await within(screen.getByRole("navigation", { name: "Console" })).findByRole("button", {
-      name: "Checkout assistant",
+      name: /^Checkout assistant/,
       description: "Switch project",
     });
     act(() => switcher.focus());

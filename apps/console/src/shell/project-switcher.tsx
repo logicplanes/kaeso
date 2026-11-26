@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Avatar, Sidebar } from "@logicplanes/kaeso-ui";
 import type { ProjectView } from "~/api/generated/types";
 import { orgProjectsQuery, projectQuery } from "~/api/queries/projects";
+import { useSession } from "~/auth/session";
 import { t } from "~/i18n";
 import { preloadPictures } from "./pictures";
 import { OpensWhenReady, useSidebarMenus } from "./sidebar-menus-load";
@@ -13,13 +14,20 @@ export function ProjectSwitcher({ org, project }: { org: string; project: string
   const listed = projects.data;
   const known = current.data ?? listed?.find((p) => p.id === project);
   const name = known?.name ?? "";
+  const orgName = useSession().memberships.find((m) => m.org_id === org)?.org_name;
   const menus = useSidebarMenus();
   useEffect(() => preloadPictures(listed?.map((p) => p.avatar_url) ?? []), [listed]);
   return (
     <OpensWhenReady ready={!!menus && !projects.isPending}>
-      <Sidebar.Place avatar={<Picture project={known} />} label={name} aria-label={t("shell.switchProject", "Switch project")}>
+      <Sidebar.Switcher
+        side="bottom"
+        avatar={<Picture project={known} />}
+        label={name}
+        {...(orgName ? { caption: orgName } : {})}
+        aria-label={t("shell.switchProject", "Switch project")}
+      >
         {menus ? <menus.ProjectMenu org={org} project={project} known={known} listed={listed} /> : <></>}
-      </Sidebar.Place>
+      </Sidebar.Switcher>
     </OpensWhenReady>
   );
 }
