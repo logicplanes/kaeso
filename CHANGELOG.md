@@ -4,6 +4,18 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
+## [0.7.5-rc.1] - 2026-11-26
+
+Kaeso 0.7.5-rc.1 adds a new release artwork style, `glow`, and the gateway accepts it in the feed's `art`. Stored specs of earlier releases still draw their flat style as before. No change is marked as breaking.
+
+**Contributors:** @dvnold
+
+**Full changes:** [v0.7.4...v0.7.5-rc.1](https://github.com/logicplanes/kaeso/compare/v0.7.4...v0.7.5-rc.1)
+
+### Added
+
+- Release artwork has a new `glow` style, the look of the release articles' covers: the release's name in white on a near-black ground, lit by one bloom of light. `nextReleaseArt` always picks a glow in a light the last four releases didn't have, and `releaseArtFor`, the console's fallback when a release has no stored artwork, draws a glow. A style the UI library doesn't know draws as a glow instead of throwing, and stored specs of earlier releases still draw their flat style as before. The gateway accepts `glow` in the feed's `art` and keeps it; a gateway before this one keeps no artwork for a glow release and draws one from the version until it is updated, when it takes the feed's. ([#1519](https://github.com/logicplanes/kaeso/pull/1519))
+
 ## [0.7.4] - 2026-11-25
 
 Kaeso 0.7.4 closes a CPU exhaustion problem in the merge of a tool schema's root union: each definition is now expanded once, and a merge stops after 4096 schemas. It also removes a wait that every reply had in organizations without a source since the previous release. The performance page now shows the 0.7.3 benchmark run. No change is marked as breaking.
@@ -1831,7 +1843,8 @@ The first release of Kaeso, the open-source AI gateway you run yourself: the gat
 
 - A Release workflow that runs only from `prod`: it prepares the version changes and the changelog without write access to the repository, lets only jobs that run nothing but git push the release commit and the tag, syncs the release commit back to `dev`, and pins every action by commit SHA.
 
-[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.7.4...HEAD
+[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.7.5-rc.1...HEAD
+[0.7.5-rc.1]: https://github.com/logicplanes/kaeso/releases/tag/v0.7.5-rc.1
 [0.7.4]: https://github.com/logicplanes/kaeso/releases/tag/v0.7.4
 [0.7.3]: https://github.com/logicplanes/kaeso/releases/tag/v0.7.3
 [0.7.2]: https://github.com/logicplanes/kaeso/releases/tag/v0.7.2

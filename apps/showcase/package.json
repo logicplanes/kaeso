@@ -1,6 +1,6 @@
 {
   "name": "kaeso-showcase",
-  "version": "0.7.4",
+  "version": "0.7.5-rc.1",
   "private": true,
   "type": "module",
   "description": "The showcase of the Kaeso UI library at ui.kaeso.app.",
