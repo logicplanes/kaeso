@@ -4,6 +4,20 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
+## [0.7.5-rc.2] - 2026-11-26
+
+Kaeso 0.7.5-rc.2 fixes a gateway CPU cost increase measured in 0.7.4. A reply waits for its sources note again, which brings CPU per request at capacity back to 0.7.3's level in the benchmark. At one client, the median latency is about 50 µs higher than 0.7.4's. No change is marked as breaking.
+
+**Contributors:** @dvnold
+
+**Full changes:** [v0.7.5-rc.1...v0.7.5-rc.2](https://github.com/logicplanes/kaeso/compare/v0.7.5-rc.1...v0.7.5-rc.2)
+
+### Fixed
+
+#### Gateway
+
+- A reply waits for its sources note again, which reverts the earlier change that removed this wait. In the benchmark at capacity (64 closed-loop clients, gateway on 2 pinned cores), CPU per request is 210 µs, against 229–236 µs in 0.7.4 and 211–214 µs in 0.7.3. At one client the median is about 50 µs higher than 0.7.4's, which is 0.7.3's latency again. ([#1521](https://github.com/logicplanes/kaeso/pull/1521))
+
 ## [0.7.5-rc.1] - 2026-11-26
 
 Kaeso 0.7.5-rc.1 adds a new release artwork style, `glow`, and the gateway accepts it in the feed's `art`. Stored specs of earlier releases still draw their flat style as before. No change is marked as breaking.
@@ -1843,7 +1857,8 @@ The first release of Kaeso, the open-source AI gateway you run yourself: the gat
 
 - A Release workflow that runs only from `prod`: it prepares the version changes and the changelog without write access to the repository, lets only jobs that run nothing but git push the release commit and the tag, syncs the release commit back to `dev`, and pins every action by commit SHA.
 
-[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.7.5-rc.1...HEAD
+[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.7.5-rc.2...HEAD
+[0.7.5-rc.2]: https://github.com/logicplanes/kaeso/releases/tag/v0.7.5-rc.2
 [0.7.5-rc.1]: https://github.com/logicplanes/kaeso/releases/tag/v0.7.5-rc.1
 [0.7.4]: https://github.com/logicplanes/kaeso/releases/tag/v0.7.4
 [0.7.3]: https://github.com/logicplanes/kaeso/releases/tag/v0.7.3
