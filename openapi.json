@@ -45935,8 +45935,8 @@
           },
           "style": {
             "type": "string",
-            "description": "The style, such as `bauhaus` or `phyllotaxis`.",
-            "example": "stripes"
+            "description": "The style: `glow` for every release since 0.7.5, or a flat one such as `bauhaus` or `phyllotaxis`.",
+            "example": "glow"
           },
           "version": {
             "type": "integer",

@@ -1,9 +1,10 @@
-import { ReleaseArt, RELEASE_ART_STYLES } from "@logicplanes/kaeso-ui";
+import { ReleaseArt, RELEASE_ART_FLAT_STYLES } from "@logicplanes/kaeso-ui";
 import { StateSection } from "~/lib/states";
 
 export const meta = {
   title: "ReleaseArt",
-  description: "Flat geometric artwork for a release, from a stored spec or a seed: the same picture every time, a new one for every release.",
+  description:
+    "Artwork for a release, from a stored spec or a seed: its name in white on a dark ground lit by one bloom of light, the same picture every time and a new one for every release.",
   group: "Components",
   entry: "release-art",
   import: "ReleaseArt",
@@ -13,29 +14,53 @@ export const examples = [{ id: "whats-new", title: "What's new", fn: "WhatsNew" 
 export function WhatsNew() {
   return (
     <div className="w-full max-w-640">
-      <ReleaseArt
-        seed="0.3.0"
-        art={{ version: 1, seed: 2886621037, style: "stripes", palette: 6 }}
-        label="Kaeso 0.3.0"
-        eyebrow="What's new in Kaeso"
-        title="0.3.0"
-      />
+      <ReleaseArt seed="0.7.5" art={{ version: 1, seed: 2886621037, style: "glow", palette: 1 }} label="Kaeso 0.7.5" eyebrow="Kaeso" title="0.7.5" />
     </div>
   );
 }
 export function States() {
   return (
     <>
-      <StateSection title="Every release draws its own">
+      <StateSection title="Every release glows in its own light">
         <div className="grid w-full grid-cols-1 gap-16 sm:grid-cols-3">
-          {["0.2.1", "0.3.0", "1.0.0"].map((v) => (
-            <ReleaseArt key={v} seed={v} label={`Kaeso ${v}`} title={v} />
+          {[0, 2, 3, 5, 7, 9].map((palette, i) => (
+            <ReleaseArt
+              key={palette}
+              seed={`0.${8 + i}.0`}
+              art={{ version: 1, seed: 4021 + i * 977, style: "glow", palette }}
+              label={`Kaeso 0.${8 + i}.0`}
+              eyebrow="Kaeso"
+              title={`0.${8 + i}.0`}
+            />
           ))}
         </div>
       </StateSection>
-      <StateSection title="Eight styles">
+      <StateSection title="Drawn from the version when a release has no stored artwork">
+        <div className="grid w-full grid-cols-1 gap-16 sm:grid-cols-3">
+          {["0.7.6", "0.9.1", "1.0.0"].map((v) => (
+            <ReleaseArt key={v} seed={v} label={`Kaeso ${v}`} eyebrow="Kaeso" title={v} />
+          ))}
+        </div>
+      </StateSection>
+      <StateSection title="A pre-release, and 320px">
+        <div className="flex flex-col gap-16">
+          <div className="w-320">
+            <ReleaseArt
+              seed="0.7.5-rc.1"
+              art={{ version: 1, seed: 77, style: "glow", palette: 3 }}
+              label="Kaeso 0.7.5-rc.1"
+              eyebrow="Kaeso pre-release"
+              title="0.7.5-rc.1"
+            />
+          </div>
+          <div className="w-320">
+            <ReleaseArt seed="0.7.5" art={{ version: 1, seed: 2886621037, style: "glow", palette: 1 }} label="Kaeso 0.7.5" eyebrow="Kaeso" title="0.7.5" />
+          </div>
+        </div>
+      </StateSection>
+      <StateSection title="The eight flat styles of releases up to 0.7.4">
         <div className="grid w-full grid-cols-1 gap-16 sm:grid-cols-2">
-          {RELEASE_ART_STYLES.map((style, i) => (
+          {RELEASE_ART_FLAT_STYLES.map((style, i) => (
             <ReleaseArt
               key={style}
               seed={style}
@@ -46,26 +71,15 @@ export function States() {
           ))}
         </div>
       </StateSection>
-      <StateSection title="320px, and a long title in German">
-        <div className="flex flex-col gap-16">
-          <div className="w-320">
-            <ReleaseArt
-              seed="0.3.0"
-              art={{ version: 1, seed: 2886621037, style: "stripes", palette: 6 }}
-              label="Kaeso 0.3.0"
-              eyebrow="What's new in Kaeso"
-              title="0.3.0"
-            />
-          </div>
-          <div className="w-320">
-            <ReleaseArt
-              seed="0.3.0"
-              art={{ version: 1, seed: 2886621037, style: "stripes", palette: 6 }}
-              label="Kaeso 0.3.0"
-              eyebrow="Neuigkeiten in Kaeso"
-              title="Veröffentlichung 0.3.0"
-            />
-          </div>
+      <StateSection title="A flat style at 320px, with a long title in German">
+        <div className="w-320">
+          <ReleaseArt
+            seed="0.3.0"
+            art={{ version: 1, seed: 2886621037, style: "stripes", palette: 6 }}
+            label="Kaeso 0.3.0"
+            eyebrow="Neuigkeiten in Kaeso"
+            title="Veröffentlichung 0.3.0"
+          />
         </div>
       </StateSection>
       <StateSection title="Wide, without text">

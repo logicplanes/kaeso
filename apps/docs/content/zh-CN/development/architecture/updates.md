@@ -39,7 +39,7 @@ flowchart TD
 
 `update.kaeso.app` 是在本仓库之外运行的服务，读取 GitHub 上的版本。`v1/releases.json` 以 GitHub 版本 API 的格式列出最新的版本，并始终包含最新的稳定版。该服务把说明截断到 64 KiB，并让整个文件小于 3 MiB，因为网关最多读取 4 MiB。每个版本的 `release.json` 逐字节镜像到 `download/v<version>/` 下，因为网关只从其版本源自身的源获取清单。
 
-每个条目还带有 `art`，即 update.kaeso.app 为该版本一次性选定并永久保留的配图。它由一种风格、一套调色板和一个种子组成，由 UI 库的 `ReleaseArt` 绘制。网关把它为某个版本看到的第一个 `art` 存入 `update_releases.art`，之后从不替换。`me/whats-new` 返回它，版本没有配图时控制台根据版本号绘制一幅。
+每个条目还带有 `art`，即 update.kaeso.app 为该版本一次性选定并永久保留的配图。它由一种风格、一套调色板和一个种子组成，由 UI 库的 `ReleaseArt` 绘制。从 0.7.5 起，每个版本都以 `glow` 风格绘制：深色背景上的白色版本名，由十二种光色之一的一团光照亮，与 kaeso.app 上的版本文章一致。更早的版本保留它们已有的扁平几何配图。0.7.5 之前的网关不认识 `glow`，不会为这样的版本保存配图，在升级之前会根据版本号绘制一幅扁平配图。网关把它为某个版本看到的第一个 `art` 存入 `update_releases.art`，之后从不替换。`me/whats-new` 返回它，版本没有配图时控制台根据版本号绘制一幅。
 
 `v1/releases.json` 的每个响应（包括 `304`）都带有 `Kaeso-Stars` 头，即 logicplanes/kaeso 在 GitHub 上的星标数。网关在内存中保留最近一次成功检查得到的数字，并在 `instance/updates` 中以 `github_stars` 返回。没有该头时（例如来自镜像站点），它为 `null`。**实例** › **更新**从 100 个星标起在**在 GitHub 上加星标**旁显示它。
 

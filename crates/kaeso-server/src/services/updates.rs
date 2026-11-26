@@ -231,7 +231,9 @@ struct ReleaseArt {
     palette: u8,
 }
 
-const ART_STYLES: [&str; 8] = [
+// The styles the console's `ReleaseArt` draws: the flat ones of the releases up to 0.7.4, and `glow`, every
+// release's since.
+const ART_STYLES: [&str; 9] = [
     "bauhaus",
     "albers",
     "stripes",
@@ -240,6 +242,7 @@ const ART_STYLES: [&str; 8] = [
     "arcs",
     "phyllotaxis",
     "spiro",
+    "glow",
 ];
 const ART_PALETTES: u8 = 12;
 
@@ -1106,6 +1109,8 @@ mod tests {
     fn only_artwork_the_console_can_draw_is_kept() {
         let ok = json!({ "version": 1, "seed": 7, "style": "spiro", "palette": 11 });
         assert_eq!(art_of(Some(ok.clone())), Some(ok));
+        let glow = json!({ "version": 1, "seed": 7, "style": "glow", "palette": 0 });
+        assert_eq!(art_of(Some(glow.clone())), Some(glow));
         for bad in [
             json!({ "version": 2, "seed": 7, "style": "spiro", "palette": 0 }),
             json!({ "version": 1, "seed": 7, "style": "future", "palette": 0 }),

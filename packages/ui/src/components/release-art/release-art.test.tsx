@@ -3,12 +3,16 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { art } from "@logicplanes/kaeso-tokens";
 import { ReleaseArt, releaseArtSvg } from "./release-art.js";
 import {
+  GLOW_LEAST,
   drawReleaseArt,
   isReleaseArtSpec,
   nextReleaseArt,
   randomReleaseArt,
   releaseArtFor,
+  releaseArtGlowLight,
+  releaseArtGlowText,
   serializeArt,
+  RELEASE_ART_FLAT_STYLES,
   RELEASE_ART_STYLES,
   type ArtNode,
   type ReleaseArtSpec,
@@ -38,8 +42,8 @@ describe("release artwork", () => {
     expect(serializeArt(drawReleaseArt({ ...spec, palette: 1 }))).not.toBe(a);
   });
 
-  it("draws every style in every palette on the ground of its palette, without blur or gradients", () => {
-    for (const style of RELEASE_ART_STYLES) {
+  it("draws every flat style in every palette on the ground of its palette, without blur or gradients", () => {
+    for (const style of RELEASE_ART_FLAT_STYLES) {
       for (let palette = 0; palette < art.palettes.length; palette++) {
         const tree = drawReleaseArt({ version: 1, seed: 7 + palette, style, palette }, { shape: palette % 2 ? "wide" : "banner" });
         const svg = serializeArt(tree);
@@ -55,8 +59,8 @@ describe("release artwork", () => {
     }
   });
 
-  it("keeps the corner under the title open in every style", () => {
-    for (const style of RELEASE_ART_STYLES) {
+  it("keeps the corner under the title open in every flat style", () => {
+    for (const style of RELEASE_ART_FLAT_STYLES) {
       for (let seed = 0; seed < 40; seed++) {
         const tree = drawReleaseArt({ version: 1, seed, style, palette: seed % art.palettes.length });
         const ground = art.grounds[art.palettes[seed % art.palettes.length]?.ground ?? "paper"].fill;
@@ -80,7 +84,8 @@ describe("release artwork", () => {
     expect(isReleaseArtSpec({ version: 2, seed: 1, style: "spiro", palette: 0 })).toBe(false);
     expect(isReleaseArtSpec({ version: 1, seed: -1, style: "spiro", palette: 0 })).toBe(false);
     expect(isReleaseArtSpec({ version: 1, seed: 1.5, style: "spiro", palette: 0 })).toBe(false);
-    expect(isReleaseArtSpec({ version: 1, seed: 1, style: "glow", palette: 0 })).toBe(false);
+    expect(isReleaseArtSpec({ version: 1, seed: 1, style: "glow", palette: 11 })).toBe(true);
+    expect(isReleaseArtSpec({ version: 1, seed: 1, style: "future", palette: 0 })).toBe(false);
     expect(isReleaseArtSpec({ version: 1, seed: 1, style: "spiro", palette: art.palettes.length })).toBe(false);
     expect(isReleaseArtSpec(null)).toBe(false);
     expect(isReleaseArtSpec("spiro")).toBe(false);
@@ -88,23 +93,83 @@ describe("release artwork", () => {
 
   it("picks random specs and a fixed one for a version", () => {
     expect(randomReleaseArt(sequence(0))).toEqual({ version: 1, seed: 0, style: "bauhaus", palette: 0 });
-    expect(randomReleaseArt(sequence(0.99999999999))).toEqual({ version: 1, seed: 4294967295, style: "spiro", palette: art.palettes.length - 1 });
+    expect(randomReleaseArt(sequence(0.99999999999))).toEqual({ version: 1, seed: 4294967295, style: "glow", palette: art.palettes.length - 1 });
     expect(releaseArtFor("0.1.0")).toEqual(releaseArtFor("0.1.0"));
+    expect(releaseArtFor("0.1.0").style).toBe("glow");
     expect(isReleaseArtSpec(releaseArtFor("0.1.0"))).toBe(true);
+    expect(RELEASE_ART_STYLES).toEqual([...RELEASE_ART_FLAT_STYLES, "glow"]);
   });
 
-  it("never repeats a recent style, palette or any earlier seed", () => {
-    const history: ReleaseArtSpec[] = [];
+  it("gives every new release a glow, never in a recent light or with an earlier seed", () => {
+    const history: ReleaseArtSpec[] = [
+      { version: 1, seed: 11, style: "spiro", palette: 2 },
+      { version: 1, seed: 12, style: "arcs", palette: 5 },
+    ];
     const next = sequence(0.13, 0.71, 0.42, 0.05, 0.88, 0.37, 0.64);
     for (let i = 0; i < 60; i++) {
       const spec = nextReleaseArt(history, next);
       expect(isReleaseArtSpec(spec)).toBe(true);
-      expect(history.slice(-3).map((s) => s.style)).not.toContain(spec.style);
+      expect(spec.style).toBe("glow");
       expect(history.slice(-4).map((s) => s.palette)).not.toContain(spec.palette);
       expect(history.map((s) => s.seed)).not.toContain(spec.seed);
       history.push(spec);
     }
     expect(nextReleaseArt([{ version: 1, seed: 0, style: "bauhaus", palette: 0 }], sequence(0)).seed).toBe(1);
+  });
+
+  it("draws a glow on the night ground with the name centred in white, the same picture for the same spec", () => {
+    const spec: ReleaseArtSpec = { version: 1, seed: 42, style: "glow", palette: 1 };
+    const tree = drawReleaseArt(spec, { eyebrow: "Kaeso", title: "0.7.5", idPrefix: "g" });
+    const svg = serializeArt(tree);
+    expect(serializeArt(drawReleaseArt(spec, { eyebrow: "Kaeso", title: "0.7.5", idPrefix: "g" }))).toBe(svg);
+    expect(serializeArt(drawReleaseArt({ ...spec, seed: 43 }, { idPrefix: "g" }))).not.toBe(serializeArt(drawReleaseArt(spec, { idPrefix: "g" })));
+    expect(serializeArt(drawReleaseArt({ ...spec, palette: 2 }, { idPrefix: "g" }))).not.toBe(serializeArt(drawReleaseArt(spec, { idPrefix: "g" })));
+    expect(svg).toContain('<radialGradient id="g-bloom" gradientUnits="userSpaceOnUse"');
+    expect(svg).toContain('<feTurbulence type="fractalNoise"');
+    expect(svg).toContain('filter="url(#g-grain)"');
+    const texts: ArtNode[] = [];
+    walk(tree, (n) => {
+      if (n.tag === "text") texts.push(n);
+    });
+    expect(texts).toHaveLength(1);
+    expect(texts[0]).toMatchObject({ text: "Kaeso 0.7.5", attrs: { x: 320, fill: "#ffffff", textAnchor: "middle", fontWeight: 500, fontSize: 34 } });
+    expect(serializeArt(drawReleaseArt(spec))).not.toContain("<text");
+    expect(serializeArt(drawReleaseArt(spec, { shape: "wide", title: "0.7.5" }))).toMatch(/viewBox="0 0 840 360".*<text x="420"[^>]*>0\.7\.5<\/text>/);
+  });
+
+  it("draws a style it doesn't know as a glow instead of failing", () => {
+    const unknown = { version: 1, seed: 42, style: "future", palette: 1 } as unknown as ReleaseArtSpec;
+    const svg = serializeArt(drawReleaseArt(unknown, { eyebrow: "Kaeso", title: "9.0.0" }));
+    expect(svg).toBe(serializeArt(drawReleaseArt({ ...unknown, style: "glow" }, { eyebrow: "Kaeso", title: "9.0.0" })));
+    render(<ReleaseArt seed="9.0.0" art={unknown} label="Kaeso 9.0.0" eyebrow="Kaeso" title="9.0.0" />);
+    expect(screen.getByRole("img", { name: "Kaeso 9.0.0" }).querySelector("text")).toHaveTextContent("Kaeso 9.0.0");
+  });
+
+  it("lights every glow so white stands out at 7:1 behind the name, and brightly enough to read as light", () => {
+    for (let palette = 0; palette < art.palettes.length; palette++) {
+      for (let seed = 0; seed < 60; seed++) {
+        for (const shape of ["banner", "wide"] as const) {
+          const light = releaseArtGlowLight({ version: 1, seed: seed * 7919 + palette, style: "glow", palette }, shape);
+          expect(light.contrast, `${palette} ${seed} ${shape}`).toBeGreaterThanOrEqual(7);
+          expect(light.brightest, `${palette} ${seed} ${shape}`).toBeGreaterThanOrEqual(GLOW_LEAST);
+        }
+      }
+    }
+  });
+
+  it("gives each palette's glow a light of its own", () => {
+    const hearts = art.palettes.map((_, palette) => {
+      const svg = serializeArt(drawReleaseArt({ version: 1, seed: 5, style: "glow", palette }));
+      return /stop-color="(#[0-9a-f]{6})"/.exec(svg)?.[1];
+    });
+    expect(new Set(hearts).size).toBe(art.palettes.length);
+  });
+
+  it("sets a long name smaller, so it fits four fifths of the width", () => {
+    expect(releaseArtGlowText("Kaeso 0.7.5", 640, 360).size).toBe(34);
+    const long = releaseArtGlowText("Kaeso-Vorabversion 0.7.5-rc.1", 640, 360);
+    expect(long.size).toBeLessThan(34);
+    expect(long.size * 0.6 * "Kaeso-Vorabversion 0.7.5-rc.1".length).toBeLessThanOrEqual(640 * 0.8 * 1.2);
   });
 
   it("writes attributes the SVG way and escapes text", () => {
@@ -117,7 +182,8 @@ describe("release artwork", () => {
 
 describe("ReleaseArt", () => {
   it("is an image with a label that shows its title and eyebrow", () => {
-    const { container } = render(<ReleaseArt seed="0.1.0" label="Kaeso 0.1.0" title="0.1.0" eyebrow="What's new in Kaeso" shape="wide" />);
+    const flat: ReleaseArtSpec = { version: 1, seed: 9, style: "albers", palette: 2 };
+    const { container } = render(<ReleaseArt seed="0.1.0" art={flat} label="Kaeso 0.1.0" title="0.1.0" eyebrow="What's new in Kaeso" shape="wide" />);
     const img = screen.getByRole("img", { name: "Kaeso 0.1.0" });
     expect(img).toHaveAttribute("viewBox", "0 0 840 360");
     const text = container.querySelector<HTMLElement>("span[aria-hidden]:not(.image-outline)")!;
@@ -133,7 +199,9 @@ describe("ReleaseArt", () => {
       return /text-(display|title-lg)\b/.test(this.className) ? 500 : 100;
     });
     vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(200);
-    const { container } = render(<ReleaseArt seed="0.3.0" label="Kaeso 0.3.0" title="Veröffentlichung 0.3.0" />);
+    const { container } = render(
+      <ReleaseArt seed="0.3.0" art={{ version: 1, seed: 3, style: "stripes", palette: 6 }} label="Kaeso 0.3.0" title="Veröffentlichung 0.3.0" />,
+    );
     const title = container.querySelector("span.font-semibold")!;
     expect(title).toHaveClass("text-title", "whitespace-nowrap");
     wide.mockRestore();
@@ -151,7 +219,10 @@ describe("ReleaseArt", () => {
   });
 
   it("shows the stored artwork's image in the frame, and draws the picture when the image doesn't load", () => {
-    const { container } = render(<ReleaseArt seed="0.1.0" src="https://update.kaeso.app/art/0.1.0.svg" label="Kaeso 0.1.0" title="0.1.0" shape="wide" />);
+    const flat: ReleaseArtSpec = { version: 1, seed: 9, style: "albers", palette: 2 };
+    const { container } = render(
+      <ReleaseArt seed="0.1.0" art={flat} src="https://update.kaeso.app/art/0.1.0.svg" label="Kaeso 0.1.0" title="0.1.0" shape="wide" />,
+    );
     const svg = screen.getByRole("img", { name: "Kaeso 0.1.0" });
     const image = svg.querySelector("image");
     expect(image).toHaveAttribute("href", "https://update.kaeso.app/art/0.1.0.svg");
@@ -164,12 +235,34 @@ describe("ReleaseArt", () => {
     expect(container.querySelectorAll("rect").length).toBeGreaterThan(0);
   });
 
+  it("draws a glow's name into the picture, centred, and no title in a corner", () => {
+    const { container } = render(
+      <ReleaseArt seed="0.7.5" art={{ version: 1, seed: 8, style: "glow", palette: 4 }} label="Kaeso 0.7.5" eyebrow="Kaeso" title="0.7.5" />,
+    );
+    const svg = screen.getByRole("img", { name: "Kaeso 0.7.5" });
+    const text = svg.querySelector("text");
+    expect(text).toHaveTextContent("Kaeso 0.7.5");
+    expect(text).toHaveAttribute("text-anchor", "middle");
+    expect(svg.querySelector("radialGradient")).not.toBeNull();
+    expect(container.querySelector("span[aria-hidden]:not(.image-outline)")).toBeNull();
+  });
+
+  it("shows a glow's stored image alone, and draws it with its name when the image doesn't load", () => {
+    render(<ReleaseArt seed="0.7.5" src="https://update.kaeso.app/art/0.7.5.svg" label="Kaeso 0.7.5" eyebrow="Kaeso" title="0.7.5" />);
+    const svg = screen.getByRole("img", { name: "Kaeso 0.7.5" });
+    expect(svg.querySelector("text")).toBeNull();
+    fireEvent.error(svg.querySelector("image") as Element);
+    expect(svg.querySelector("text")).toHaveTextContent("Kaeso 0.7.5");
+  });
+
   it("gives every artwork on a page its own ids", () => {
     const spec: ReleaseArtSpec = { version: 1, seed: 3, style: "stripes", palette: 1 };
     const { container } = render(
       <>
         <ReleaseArt seed="a" art={spec} label="One" />
         <ReleaseArt seed="b" art={spec} label="Two" />
+        <ReleaseArt seed="c" label="Three" />
+        <ReleaseArt seed="d" label="Four" />
       </>,
     );
     const ids = [...container.querySelectorAll("[id]")].map((n) => n.id);

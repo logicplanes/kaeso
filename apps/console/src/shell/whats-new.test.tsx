@@ -19,7 +19,8 @@ describe("what's new", () => {
     signedIn();
     const stored = { ...release("40.5.0"), art: { version: 1, seed: 42, style: "albers", palette: 3 } };
     const unknown = { ...release("40.4.0"), art: { version: 9, seed: 42, style: "glow", palette: 3 } };
-    on("GET", "me/whats-new", { current: "40.5.0", seen: "40.3.0", releases: [stored, unknown] });
+    const glow = { ...release("40.3.0"), art: { version: 1, seed: 42, style: "glow", palette: 3 } };
+    on("GET", "me/whats-new", { current: "40.5.0", seen: "40.2.0", releases: [stored, unknown, glow] });
     const { user } = await renderApp(PATH);
     const dialog = await screen.findByRole("dialog", { name: "What's new in Kaeso" });
     const albers = within(dialog).getByRole("img", { name: "Kaeso 40.5.0" });
@@ -29,7 +30,14 @@ describe("what's new", () => {
     await user.click(within(dialog).getByRole("button", { name: "Next" }));
     const fallback = within(dialog).getByRole("img", { name: "Kaeso 40.4.0" });
     expect(fallback.innerHTML).not.toBe(drawn);
-    expect(fallback.querySelectorAll("rect, circle, path").length).toBeGreaterThan(3);
+    expect(fallback.querySelector("radialGradient")).not.toBeNull();
+    expect(fallback.querySelector("text")).toHaveTextContent("Kaeso 40.4.0");
+    const fromVersion = fallback.innerHTML;
+    await user.click(within(dialog).getByRole("button", { name: "Next" }));
+    const lit = within(dialog).getByRole("img", { name: "Kaeso 40.3.0" });
+    expect(lit.querySelector("text")).toHaveTextContent("Kaeso 40.3.0");
+    expect(lit.querySelector("text")).toHaveAttribute("text-anchor", "middle");
+    expect(lit.innerHTML).not.toBe(fromVersion);
   });
 
   it("marks a pre-release as one", async () => {
@@ -37,7 +45,7 @@ describe("what's new", () => {
     on("GET", "me/whats-new", { current: "40.5.0-rc.1", seen: "40.4.0", releases: [{ ...release("40.5.0-rc.1"), prerelease: true }] });
     await renderApp(PATH);
     const dialog = await screen.findByRole("dialog", { name: "What's new in Kaeso" });
-    expect(within(dialog).getByText("Kaeso pre-release")).toBeInTheDocument();
+    expect(within(dialog).getByRole("img", { name: "Kaeso 40.5.0-rc.1" }).querySelector("text")).toHaveTextContent("Kaeso pre-release 40.5.0-rc.1");
   });
 
   it("walks through every release since the last visit and records it as seen", async () => {

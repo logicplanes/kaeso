@@ -1,9 +1,29 @@
 import { createElement, forwardRef, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useLayoutWidth } from "../../hooks/use-layout-width.js";
 import { cn } from "../../utils/cn.js";
-import { drawReleaseArt, releaseArtFor, releaseArtText, serializeArt, RELEASE_ART_VIEW, type ArtNode, type ReleaseArtSpec } from "./drawing.js";
+import {
+  drawReleaseArt,
+  releaseArtFor,
+  releaseArtText,
+  serializeArt,
+  RELEASE_ART_FLAT_STYLES,
+  RELEASE_ART_VIEW,
+  type ArtNode,
+  type ReleaseArtSpec,
+} from "./drawing.js";
 
-export { RELEASE_ART_STYLES, isReleaseArtSpec, nextReleaseArt, randomReleaseArt, releaseArtFor, type ReleaseArtSpec, type ReleaseArtStyle } from "./drawing.js";
+export {
+  RELEASE_ART_FLAT_STYLES,
+  RELEASE_ART_STYLES,
+  isReleaseArtSpec,
+  nextReleaseArt,
+  releaseArtGlowName,
+  releaseArtGlowText,
+  randomReleaseArt,
+  releaseArtFor,
+  type ReleaseArtSpec,
+  type ReleaseArtStyle,
+} from "./drawing.js";
 
 export const KAESO_RELEASE_ART_VARIANTS = {
   shape: {
@@ -53,7 +73,14 @@ export const ReleaseArt = forwardRef<SVGSVGElement, ReleaseArtProps>(function Re
   const [failed, setFailed] = useState<string | null>(null);
   const prefix = `art${useId().replace(/[^a-zA-Z0-9]/g, "")}`;
   const spec = art ?? releaseArtFor(seed);
-  const drawn = useMemo(() => drawReleaseArt(spec, { shape, idPrefix: prefix }), [spec, shape, prefix]);
+  // A glow carries its name in the picture, centred, as the served artwork does; the flat styles set it in a corner.
+  const glow = !(RELEASE_ART_FLAT_STYLES as readonly string[]).includes(spec.style);
+  const name = glow ? [eyebrow, title].map((part) => (typeof part === "string" || typeof part === "number" ? String(part) : undefined)) : [];
+  const [nameEyebrow, nameTitle] = name;
+  const drawn = useMemo(
+    () => drawReleaseArt(spec, { shape, idPrefix: prefix, eyebrow: nameEyebrow, title: nameTitle }),
+    [spec, shape, prefix, nameEyebrow, nameTitle],
+  );
   const text = releaseArtText(spec);
   const clear = 236;
   const frame = useRef<HTMLSpanElement | null>(null);
@@ -76,7 +103,7 @@ export const ReleaseArt = forwardRef<SVGSVGElement, ReleaseArtProps>(function Re
           drawn.children?.map(toElement)
         )}
       </svg>
-      {(eyebrow || title) && (
+      {!glow && (eyebrow || title) && (
         <span
           aria-hidden
           className="pointer-events-none absolute flex flex-col items-start gap-4 text-balance"
