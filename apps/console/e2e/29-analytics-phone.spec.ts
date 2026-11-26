@@ -49,6 +49,7 @@ const overflow = (page: Page) => page.evaluate(OVERFLOW) as Promise<string[]>;
 async function fits(page: Page, path: string): Promise<void> {
   await page.goto(path);
   await expect(page.getByRole("heading", { level: 1, name: "Analytics" })).toBeVisible({ timeout: 20_000 });
+  if (path.includes("/breakdown")) await expect(page.getByRole("combobox", { name: "Group by" })).toBeVisible({ timeout: 20_000 });
   await expect(page.locator("[aria-busy=true]")).toHaveCount(0, { timeout: 20_000 });
   await page.evaluate(TO_THE_FOOT);
   expect(await overflow(page), path).toEqual([]);
