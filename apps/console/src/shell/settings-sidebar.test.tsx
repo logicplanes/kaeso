@@ -39,7 +39,7 @@ describe("the settings sidebar", () => {
     on("GET", "me", me());
     await renderApp(PROFILE);
     const nav = await sidebar();
-    const collapse = within(nav).getByRole("button", { name: "Collapse sidebar" });
+    const collapse = await within(nav).findByRole("button", { name: "Collapse sidebar" });
     const profile = await within(nav).findByRole("link", { name: "Profile" });
     expect(collapse.compareDocumentPosition(profile) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
