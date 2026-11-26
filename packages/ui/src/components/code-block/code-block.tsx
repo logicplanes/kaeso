@@ -12,6 +12,7 @@ import { Icon } from "../icon/icon.js";
 import { icons } from "../../icons/vocabulary.js";
 import { useUiText } from "../../i18n/context.js";
 import { useScrollFadeX } from "../../hooks/use-scroll-fade.js";
+import { useHydrating } from "../../hooks/use-hydrating.js";
 
 export const KAESO_CODE_BLOCK_VARIANTS = {
   surface: {
@@ -101,7 +102,8 @@ export const CodeBlock = forwardRef<HTMLDivElement, CodeBlockProps>(function Cod
   const [highlighted, setHighlighted] = useState<{ text: string; lang: CodeLang; tokens: CodeToken[][] | null } | null>(null);
   const [expanded, setExpanded] = useState(false);
   const grammar = current.lang ?? "ts";
-  const instant = useMemo(() => highlightNow(text, grammar), [text, grammar]);
+  const hydrating = useHydrating();
+  const instant = useMemo(() => (hydrating ? undefined : highlightNow(text, grammar)), [hydrating, text, grammar]);
   useEffect(() => {
     if (instant !== undefined) return;
     let alive = true;

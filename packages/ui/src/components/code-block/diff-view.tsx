@@ -3,6 +3,7 @@ import { cn } from "../../utils/cn.js";
 import { icons } from "../../icons/vocabulary.js";
 import { Icon } from "../icon/icon.js";
 import { CopyButton } from "../copy-button/copy-button.js";
+import { useHydrating } from "../../hooks/use-hydrating.js";
 import { useUiText } from "../../i18n/context.js";
 import { useScrollFadeX } from "../../hooks/use-scroll-fade.js";
 import { Text } from "../text/text.js";
@@ -112,11 +113,13 @@ export const DiffView = forwardRef<HTMLDivElement, DiffViewProps>(function DiffV
   const lines = useMemo(() => diffLines(before, after), [before, after]);
   const stats = useMemo(() => diffStats(lines), [lines]);
   const [tokens, setTokens] = useState<{ before: string; after: string; lang: CodeLang; old: CodeToken[][] | null; new: CodeToken[][] | null } | null>(null);
+  const hydrating = useHydrating();
   const instant = useMemo(() => {
+    if (hydrating) return undefined;
     const o = highlightNow(before.replace(/\n$/, ""), lang);
     const n = highlightNow(after.replace(/\n$/, ""), lang);
     return o === undefined || n === undefined ? undefined : { old: o, new: n };
-  }, [before, after, lang]);
+  }, [hydrating, before, after, lang]);
   useEffect(() => {
     if (instant) return;
     let alive = true;

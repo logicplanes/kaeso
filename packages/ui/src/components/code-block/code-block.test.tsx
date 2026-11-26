@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { renderToString } from "react-dom/server";
+import { hydrateRoot } from "react-dom/client";
 import { CodeBlock } from "./code-block.js";
 
 const highlights = vi.hoisted(() => new Set<Promise<unknown>>());
@@ -65,6 +67,22 @@ describe("CodeBlock", () => {
     render(<CodeBlock code={'const second = "two";'} />);
     expect(screen.getByText('"two"')).toHaveClass("text-code-string");
     expect(screen.getByText("const")).toHaveClass("text-code-keyword");
+  });
+
+  it("hydrates a server-drawn block without a mismatch when its language has already loaded", async () => {
+    const first = render(<CodeBlock code={'const first = "one";'} />);
+    await highlighted();
+    first.unmount();
+    const block = <CodeBlock code={'const second = "two";'} />;
+    const container = document.createElement("div");
+    container.innerHTML = renderToString(block);
+    document.body.append(container);
+    const onRecoverableError = vi.fn();
+    const root = await act(async () => hydrateRoot(container, block, { onRecoverableError }));
+    expect(onRecoverableError).not.toHaveBeenCalled();
+    expect(within(container).getByText('"two"')).toHaveClass("text-code-string");
+    act(() => root.unmount());
+    container.remove();
   });
 
   it("switches between tabs", async () => {
