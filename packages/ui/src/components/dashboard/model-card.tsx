@@ -1,6 +1,9 @@
 import { forwardRef, type ReactNode } from "react";
 import { cn } from "../../utils/cn.js";
 import { figures } from "../../utils/figures.js";
+import { Icon } from "../icon/icon.js";
+import { icons } from "../../icons/vocabulary.js";
+import { useUiText } from "../../i18n/context.js";
 
 export interface ModelCardProps {
   mark: ReactNode;
@@ -47,19 +50,34 @@ export const Announcement = forwardRef<
     description?: ReactNode | undefined;
     actions?: ReactNode | undefined;
     art?: ReactNode | undefined;
+    scheme?: "light" | "dark" | undefined;
+    onDismiss?: (() => void) | undefined;
     className?: string | undefined;
   }
->(function Announcement({ eyebrow, title, description, actions, art, className }, ref) {
+>(function Announcement({ eyebrow, title, description, actions, art, scheme, onDismiss, className }, ref) {
+  const t = useUiText();
   return (
-    <section ref={ref} className={cn("relative flex min-w-0 flex-col overflow-hidden bg-raised md:flex-row", className)}>
-      <div className="flex min-w-0 flex-1 flex-col justify-center px-20 py-24">
-        <h2 className="text-title-lg font-semibold text-pretty text-fg">{title}</h2>
-        {eyebrow && <p className="mt-6 text-small font-medium text-fg-secondary">{eyebrow}</p>}
-        {/* Two lines' room whatever the text, so the news keeps its size while it loads and whatever its line says. */}
-        {description && <p className="mt-12 line-clamp-2 min-h-40 max-w-640 text-body text-fg-secondary">{description}</p>}
-        {actions && <div className="mt-16 flex flex-wrap items-center gap-8">{actions}</div>}
-      </div>
-      {art && <div className="hidden aspect-video w-320 shrink-0 md:block">{art}</div>}
+    <section
+      ref={ref}
+      {...(art && scheme ? { "data-theme": scheme } : {})}
+      className={cn("relative flex min-w-0 flex-col justify-center overflow-hidden bg-raised px-20 py-24", className)}
+    >
+      {art && <div className="absolute inset-0">{art}</div>}
+      <h2 className={cn("relative text-title-lg font-semibold text-pretty text-fg", onDismiss && "pr-32")}>{title}</h2>
+      {eyebrow && <p className="relative mt-6 text-small font-medium text-fg-secondary">{eyebrow}</p>}
+      {/* Two lines' room whatever the text, so the news keeps its size while it loads and whatever its line says. */}
+      {description && <p className="relative mt-12 line-clamp-2 min-h-40 max-w-480 text-body text-fg-secondary">{description}</p>}
+      {actions && <div className="relative mt-16 flex flex-wrap items-center gap-8">{actions}</div>}
+      {onDismiss && (
+        <button
+          type="button"
+          aria-label={t("banner.dismiss", "Dismiss")}
+          onClick={onDismiss}
+          className="absolute top-12 right-12 inline-flex size-24 cursor-pointer items-center justify-center rounded-pill text-fg-secondary transition-control tap-target hover:bg-fill-2 hover:text-fg active:bg-fill-3 focus-ring"
+        >
+          <Icon icon={icons.close} size="xs" />
+        </button>
+      )}
     </section>
   );
 });

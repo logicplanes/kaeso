@@ -21,11 +21,12 @@ export interface ArtNode {
   text?: string | undefined;
 }
 
-export const RELEASE_ART_VIEW = { banner: { w: 640, h: 360 }, wide: { w: 840, h: 360 } } as const;
+export const RELEASE_ART_VIEW = { banner: { w: 640, h: 360 }, wide: { w: 840, h: 360 }, strip: { w: 1200, h: 240 } } as const;
 export type ReleaseArtShape = keyof typeof RELEASE_ART_VIEW;
 
 const U = 40;
-const CLEAR = { rx: U * 7.5, ry: U * 7.5 };
+// The corner kept clear for words: a title on a cover, and on a strip the whole text of the surface the art lies behind.
+const CLEAR = { banner: { rx: U * 7.5, ry: U * 7.5 }, wide: { rx: U * 7.5, ry: U * 7.5 }, strip: { rx: U * 18, ry: U * 18 } } as const;
 
 function hash(text: string): number {
   let h = 2166136261;
@@ -104,14 +105,15 @@ interface Canvas {
   int: (lo: number, hi: number) => number;
   chance: (p: number) => boolean;
   ground: string;
+  clear: { rx: number; ry: number };
   color: (i: number) => string;
   id: (name: string) => string;
 }
 
-const open = (c: Canvas, x: number, y: number) => (x / CLEAR.rx) ** 2 + ((c.h - y) / CLEAR.ry) ** 2 < 1;
+const open = (c: Canvas, x: number, y: number) => (x / c.clear.rx) ** 2 + ((c.h - y) / c.clear.ry) ** 2 < 1;
 const clearEdge = (c: Canvas, y: number) => {
-  const dy = (c.h - y) / CLEAR.ry;
-  return dy >= 1 ? 0 : CLEAR.rx * Math.sqrt(1 - dy * dy);
+  const dy = (c.h - y) / c.clear.ry;
+  return dy >= 1 ? 0 : c.clear.rx * Math.sqrt(1 - dy * dy);
 };
 const masked = (c: Canvas, children: ArtNode[]) => node("g", { mask: `url(#${c.id("clear")})` }, children);
 
@@ -184,7 +186,7 @@ function bauhaus(c: Canvas): ArtNode[] {
 function albers(c: Canvas): ArtNode[] {
   const side = U * 6;
   const margin = (c.h - side) / 2;
-  const lo = CLEAR.rx - U / 2;
+  const lo = c.clear.rx - U / 2;
   const hi = c.w - margin - side;
   const x0 = lo + Math.round((c.next() * Math.max(0, hi - lo)) / (U / 2)) * (U / 2);
   const unit = side / 20;
@@ -218,7 +220,7 @@ function stripes(c: Canvas): ArtNode[] {
   const widths = Array.from({ length: c.int(5, 9) }, () => (U / 2) * c.int(1, 5));
   const clip = c.id("disc");
   const r = U * c.int(2, 3) + U / 2;
-  const cx = U * c.int(Math.ceil((CLEAR.rx + r) / U), c.cols - 2);
+  const cx = U * c.int(Math.ceil((c.clear.rx + r) / U), c.cols - 2);
   const cy = U * c.int(3, c.rows - 3);
   return [
     node("defs", {}, [node("clipPath", { id: clip }, [node("circle", { cx, cy, r })])]),
@@ -288,7 +290,7 @@ function clearance(c: Canvas, cx: number, cy: number): number {
   let best = Infinity;
   for (let i = 0; i <= 90; i++) {
     const a = (i / 90) * (Math.PI / 2);
-    best = Math.min(best, Math.hypot(cx - CLEAR.rx * Math.cos(a), cy - (c.h - CLEAR.ry * Math.sin(a))));
+    best = Math.min(best, Math.hypot(cx - c.clear.rx * Math.cos(a), cy - (c.h - c.clear.ry * Math.sin(a))));
   }
   return open(c, cx, cy) ? 0 : best;
 }
@@ -394,6 +396,12 @@ export interface DrawOptions {
 
 const paletteOf = (spec: ReleaseArtSpec) => art.palettes[spec.palette % art.palettes.length] ?? art.palettes[0];
 
+// Which of the interface's two modes reads on the artwork's ground: paper takes dark text, ink and a glow light text.
+export function releaseArtScheme(spec: ReleaseArtSpec): "light" | "dark" {
+  if (spec.style === "glow" || !Object.hasOwn(STYLE, spec.style)) return "dark";
+  return paletteOf(spec).ground === "paper" ? "light" : "dark";
+}
+
 export function releaseArtText(spec: ReleaseArtSpec) {
   if (spec.style === "glow" || !Object.hasOwn(STYLE, spec.style)) return { color: "#ffffff", eyebrow: { x: U, bottom: 96 }, title: { x: U - 2, bottom: U } };
   return { color: art.grounds[paletteOf(spec).ground].text, eyebrow: { x: U, bottom: 96 }, title: { x: U - 2, bottom: U } };
@@ -486,20 +494,24 @@ export function releaseArtGlowLight(spec: ReleaseArtSpec, shape: ReleaseArtShape
   // enough somewhere to read as light, not as a stain.
   for (let attempt = 0; ; attempt++) {
     const top = next() < 0.5;
+    // A strip's light rises on its right, large enough to fill its low height, and its fainter one on its left.
+    const strip = shape === "strip";
     const main: Bloom = {
-      x: w * (0.15 + next() * 0.7),
+      x: w * (strip ? 0.68 + next() * 0.22 : 0.15 + next() * 0.7),
       y: h * (top ? -0.18 - next() * 0.15 : 1.18 + next() * 0.15),
-      r: h * (0.42 + next() * 0.2),
+      r: h * (strip ? 0.7 + next() * 0.25 : 0.42 + next() * 0.2),
       strength: 1,
     };
-    const second: Bloom = { x: w * next(), y: h * (next() < 0.5 ? -0.3 : 1.3), r: h * (0.3 + next() * 0.2), strength: 0.3 };
+    const second: Bloom = { x: w * next() * (strip ? 0.3 : 1), y: h * (next() < 0.5 ? -0.3 : 1.3), r: h * (0.3 + next() * 0.2), strength: 0.3 };
     const at = (x: number, y: number) => {
       const a = bloomLight(ramp, main, Math.hypot(x - main.x, y - main.y));
       const b = bloomLight(ramp, second, Math.hypot(x - second.x, y - second.y));
       return luminance([NIGHT[0] + a[0] + b[0], NIGHT[1] + a[1] + b[1], NIGHT[2] + a[2] + b[2]]);
     };
+    // A strip lies behind a surface's words, which fill its left; a cover carries its name in its middle.
+    const [x0, x1, y0, y1] = strip ? [0, 0.5, 0, 1] : [0.25, 0.75, 0.38, 0.62];
     let behindName = 0;
-    for (let x = w * 0.25; x <= w * 0.75; x += w / 40) for (let y = h * 0.38; y <= h * 0.62; y += h / 40) behindName = Math.max(behindName, at(x, y));
+    for (let x = w * x0; x <= w * x1; x += w / 40) for (let y = h * y0; y <= h * y1; y += h / 40) behindName = Math.max(behindName, at(x, y));
     let brightest = 0;
     for (let x = 0; x <= w; x += w / 32) for (const y of [0, h]) brightest = Math.max(brightest, at(x, y));
     const contrast = 1.05 / (behindName + 0.05);
@@ -607,6 +619,7 @@ export function drawReleaseArt(spec: ReleaseArtSpec, options: DrawOptions = {}):
     int,
     chance: (p) => next() < p,
     ground: ground.fill,
+    clear: CLEAR[options.shape ?? "banner"],
     color: (i) => colors[((i % colors.length) + colors.length) % colors.length] ?? ground.text,
     id: (name) => `${prefix}-${name}`,
   };
@@ -638,7 +651,7 @@ export function drawReleaseArt(spec: ReleaseArtSpec, options: DrawOptions = {}):
     node("defs", {}, [
       node("mask", { id: mask, maskUnits: "userSpaceOnUse", x: 0, y: 0, width: w, height: h }, [
         node("rect", { width: w, height: h, fill: "white" }),
-        node("ellipse", { cx: 0, cy: h, rx: CLEAR.rx, ry: CLEAR.ry, fill: "black" }),
+        node("ellipse", { cx: 0, cy: h, rx: canvas.clear.rx, ry: canvas.clear.ry, fill: "black" }),
       ]),
     ]),
     node("rect", { width: w, height: h, fill: ground.fill }),
