@@ -793,7 +793,7 @@ describe("the analytics views", () => {
     expect(header.style.gridTemplateColumns).toBe("minmax(220px, 1fr) 96px 96px 88px 120px 104px 112px 128px 96px 112px");
   });
 
-  it("keeps the period when it moves between views", async () => {
+  it("keeps the period and the breakdown's grouping when it moves between views", async () => {
     signedIn();
     projectData();
     usage({});
@@ -801,6 +801,6 @@ describe("the analytics views", () => {
     const { user, router } = await renderApp(projectPath(`analytics/breakdown?${PERIOD}&by=key`));
     await user.click(await screen.findByRole("tab", { name: "Members" }));
     await waitFor(() => expect(router.state.location.pathname).toBe(projectPath("analytics/members")));
-    expect(router.state.location.search).toEqual({ from: "2026-10-01", to: "2026-10-14" });
+    expect(router.state.location.search).toEqual({ from: "2026-10-01", to: "2026-10-14", by: "key" });
   });
 });

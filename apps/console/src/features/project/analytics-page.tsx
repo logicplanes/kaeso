@@ -47,11 +47,12 @@ export function AnalyticsPage({ org, project, search, view }: { org: string; pro
     ...(search.from ? { from: search.from } : {}),
     ...(search.to ? { to: search.to } : {}),
   };
+  const kept = { ...period, ...(search.by ? { by: search.by } : {}) };
   const goTo = (next: string) =>
     void navigate(
       next === "overview"
-        ? { to: "/orgs/$org/projects/$project/analytics", params: { org, project }, search: period }
-        : { to: "/orgs/$org/projects/$project/analytics/$view", params: { org, project, view: next }, search: period },
+        ? { to: "/orgs/$org/projects/$project/analytics", params: { org, project }, search: kept }
+        : { to: "/orgs/$org/projects/$project/analytics/$view", params: { org, project, view: next }, search: kept },
     );
   const tabs = (
     <Tabs variant="pill" value={view ?? "overview"} onValueChange={goTo}>

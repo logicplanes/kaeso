@@ -770,7 +770,7 @@ async fn the_weekly_summary_names_each_organization_and_the_week_and_links_to_us
         "Acme\n- Checkout: 9,120 requests, $30.10\n".to_owned(),
         "Globex\n- Research: 2,400 requests, $8.60\n".to_owned(),
         format!(
-            "Open usage:\n{base}orgs/{}/analytics?from={from}&to={to}&by=project\n",
+            "Open usage:\n{base}orgs/{}/analytics/breakdown?from={from}&to={to}&by=project\n",
             owner.org_id
         ),
     ] {

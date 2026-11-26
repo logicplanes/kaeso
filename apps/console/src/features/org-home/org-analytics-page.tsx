@@ -35,11 +35,12 @@ export function OrgAnalyticsPage({ org, search, view }: { org: string; search: O
     ...(search.from ? { from: search.from } : {}),
     ...(search.to ? { to: search.to } : {}),
   };
+  const kept = { ...period, ...(search.by ? { by: search.by } : {}) };
   const goTo = (next: string) =>
     void navigate(
       next === "overview"
-        ? { to: "/orgs/$org/analytics", params: { org }, search: period }
-        : { to: "/orgs/$org/analytics/$view", params: { org, view: next }, search: period },
+        ? { to: "/orgs/$org/analytics", params: { org }, search: kept }
+        : { to: "/orgs/$org/analytics/$view", params: { org, view: next }, search: kept },
     );
   const tabs = o.canUsage ? (
     <Tabs variant="pill" value={view ?? "overview"} onValueChange={goTo}>
