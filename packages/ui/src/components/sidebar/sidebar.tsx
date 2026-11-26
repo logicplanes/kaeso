@@ -321,7 +321,7 @@ const Brand = forwardRef<HTMLDivElement, SidebarBrandProps>(function SidebarBran
   const { rail } = useSidebar();
   if (lead) {
     return (
-      <Header ref={ref} className={cn(rail ? "justify-center" : "gap-0 px-12", className)}>
+      <Header ref={ref} className={cn(rail ? "justify-center" : "gap-4 px-12", className)}>
         <span className={cn("flex min-w-0", !rail && "flex-1")}>{lead}</span>
         {children && <span className="flex shrink-0 items-center">{children}</span>}
       </Header>

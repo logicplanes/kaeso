@@ -34,6 +34,16 @@ describe("the settings sidebar", () => {
     expect(within(nav).getAllByRole("link", { name: "Audit log" })).toHaveLength(2);
   });
 
+  it("keeps the collapse button in its head, beside the way back", async () => {
+    signedIn();
+    on("GET", "me", me());
+    await renderApp(PROFILE);
+    const nav = await sidebar();
+    const collapse = within(nav).getByRole("button", { name: "Collapse sidebar" });
+    const profile = await within(nav).findByRole("link", { name: "Profile" });
+    expect(collapse.compareDocumentPosition(profile) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it("stays on the person's own organization while an instance admin looks at another one", async () => {
     signedIn();
     const other = "org_01k7c0nt0s0c0nt0s0c0nt0s00";

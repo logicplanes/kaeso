@@ -59,7 +59,9 @@ export function SettingsSidebar() {
   };
   return (
     <Sidebar aria-label={t("common.settings", "Settings")}>
-      <Sidebar.Brand lead={<Sidebar.BackLink href={back}>{t("shell.backToApp", "Back to app")}</Sidebar.BackLink>} />
+      <Sidebar.Brand lead={<Sidebar.BackLink href={back}>{t("shell.backToApp", "Back to app")}</Sidebar.BackLink>}>
+        <Sidebar.CollapseToggle />
+      </Sidebar.Brand>
       <Sidebar.Content onPointerOver={prefetch} onFocus={prefetch}>
         <div className="flex flex-col gap-8">
           <Input
@@ -81,9 +83,6 @@ export function SettingsSidebar() {
           </Text>
         )}
       </Sidebar.Content>
-      <Sidebar.Footer>
-        <Sidebar.CollapseToggle />
-      </Sidebar.Footer>
     </Sidebar>
   );
 }

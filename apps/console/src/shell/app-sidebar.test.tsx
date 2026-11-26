@@ -238,6 +238,18 @@ describe("the organization switcher", () => {
   });
 });
 
+describe("the collapse button", () => {
+  it("sits in the sidebar's head, above the pages and the account", async () => {
+    signedIn();
+    await renderApp(`/orgs/${ORG}/projects`);
+    const collapse = await screen.findByRole("button", { name: "Collapse sidebar" });
+    const account = await screen.findByRole("button", { name: "Ada Okafor", description: "Account and sign out" });
+    const search = screen.getByRole("button", { name: "Search" });
+    expect(collapse.compareDocumentPosition(search) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(collapse.compareDocumentPosition(account) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+});
+
 describe("the account switcher", () => {
   it("names the person and links to the account and the instance", async () => {
     signedIn();
