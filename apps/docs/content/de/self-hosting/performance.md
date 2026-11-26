@@ -71,12 +71,12 @@ Kaeso 0.7.0, 0.7.1, 0.7.2, 0.7.3 und 0.7.4 liefen in diesem Lauf jeweils als eig
 | Kaeso 0.7.1 | 4.413 | 3.781 | +0,96 / +0,99 / +0,83 ms | +1,90 ms | 453 µs | 110 + 565 MB |
 | Kaeso 0.7.0 | 4.748 | 3.891 | +0,98 / +0,99 / +0,84 ms | +2,03 ms | 421 µs | 113 + 283 MB |
 
-- **0.7.3 zu 0.7.4:** 0.7.4 nimmt das Warten zurück, das 0.7.3 jeder Antwort hinzugefügt hatte, und der Median, den es bei 1 und 4 Clients hinzufügt, liegt wieder unter dem von 0.7.3. 0.7.3 schaffte in jeder Runde die meisten Anfragen aller Versionen; 0.7.4 schaffte 13 % weniger, mit 14 % mehr CPU pro Anfrage, und liegt damit innerhalb der Runden von 0.7.2. Sein höchster Speicher unter Volllast stieg von 102 auf 163 MB.
+- **0.7.3 zu 0.7.4:** 0.7.4 nimmt das Warten zurück, das 0.7.3 jeder Antwort hinzugefügt hatte, und der Median, den es bei 1 und 4 Clients hinzufügt, liegt wieder unter dem von 0.7.3. 0.7.3 schaffte in jeder Runde die meisten Anfragen aller Versionen; 0.7.4 schaffte 13 % weniger, mit 14 % mehr CPU pro Anfrage, und liegt damit innerhalb der Runden von 0.7.2. Sein höchster Speicher unter Volllast stieg von 102 auf 163 MB. Die Ursache ist bekannt: 0.7.4 ließ ein Warten am Ende jeder Antwort weg, das die CPU pro Anfrage unter Last niedriger gehalten hatte. [#1521](https://github.com/logicplanes/kaeso/pull/1521) stellt es mit dem nächsten Release wieder her; in einem lokalen A/B-Test mit den Release-Binaries bei 64 Clients lag 0.7.4 mit der Korrektur wieder bei der CPU pro Anfrage von 0.7.3, etwa ein Zehntel niedriger, und bei einem Client fügt sie im Median etwa 50 µs hinzu.
 - **0.7.2 zu 0.7.3:** mehr Anfragen pro Sekunde und weniger CPU pro Anfrage, ein höherer Median bei 1, 4 und 16 Clients und weniger höchster Speicher, 102 statt 178 MB.
 - **0.7.1 zu 0.7.2:** mehr Anfragen pro Sekunde, mit und ohne Anfrageprotokolle, ein niedrigerer Median bei 1 und 4 Clients und mehr höchster Speicher, 178 statt 110 MB.
 - **0.7.0 zu 0.7.1:** 7 % weniger Anfragen pro Sekunde, und der höchste Speicher der Datenbanken verdoppelte sich; dort blieb er in jeder späteren Version.
 
-Die Runden zeigen jede Änderung, nicht ihre Ursache. Die früheren Läufe, [0.7.3](https://kaeso.app/de/benchmarks/0.7.3), [0.7.2](https://kaeso.app/de/benchmarks/0.7.2) und [0.7.0](https://kaeso.app/de/benchmarks/0.7.0), liefen auf anderen Maschinen desselben Typs und bleiben mit ihren Skripten und Rohdaten veröffentlicht.
+Die Runden zeigen nicht die Ursache einer Änderung; wo sie bekannt ist, nennt sie ihr Schritt. Die früheren Läufe, [0.7.3](https://kaeso.app/de/benchmarks/0.7.3), [0.7.2](https://kaeso.app/de/benchmarks/0.7.2) und [0.7.0](https://kaeso.app/de/benchmarks/0.7.0), liefen auf anderen Maschinen desselben Typs und bleiben mit ihren Skripten und Rohdaten veröffentlicht.
 ## Was jedes Gateway tat
 
 Jedes Gateway lief so, wie sein Projekt es ausliefert, gegen den Mock im Format Anthropic Messages:

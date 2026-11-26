@@ -71,12 +71,12 @@ Kaeso 0.7.0, 0.7.1, 0.7.2, 0.7.3 and 0.7.4 each ran as a gateway of its own in t
 | Kaeso 0.7.1 | 4,413 | 3,781 | +0.96 / +0.99 / +0.83 ms | +1.90 ms | 453 µs | 110 + 565 MB |
 | Kaeso 0.7.0 | 4,748 | 3,891 | +0.98 / +0.99 / +0.84 ms | +2.03 ms | 421 µs | 113 + 283 MB |
 
-- **0.7.3 to 0.7.4:** 0.7.4 takes back the wait 0.7.3 added to every reply, and the median it adds at 1 and 4 clients is below 0.7.3's again. 0.7.3 served the most requests of any version in every round; 0.7.4 served 13% fewer, with 14% more CPU per request, which puts it within the rounds of 0.7.2. Its peak memory at full load rose from 102 to 163 MB.
+- **0.7.3 to 0.7.4:** 0.7.4 takes back the wait 0.7.3 added to every reply, and the median it adds at 1 and 4 clients is below 0.7.3's again. 0.7.3 served the most requests of any version in every round; 0.7.4 served 13% fewer, with 14% more CPU per request, which puts it within the rounds of 0.7.2. Its peak memory at full load rose from 102 to 163 MB. The cause is known: 0.7.4 dropped a wait at the end of each reply that had kept CPU per request lower under load. [#1521](https://github.com/logicplanes/kaeso/pull/1521) restores it in the next release; in a local A/B test with the release binaries at 64 clients, 0.7.4 with the fix was back at 0.7.3's CPU per request, about a tenth lower, and it adds about 50 µs at the median with one client.
 - **0.7.2 to 0.7.3:** more requests a second and less CPU per request, a higher median at 1, 4 and 16 clients, and peak memory down from 178 to 102 MB.
 - **0.7.1 to 0.7.2:** more requests a second, with and without request logs, a lower median at 1 and 4 clients, and peak memory up from 110 to 178 MB.
 - **0.7.0 to 0.7.1:** 7% fewer requests a second, and the databases' peak memory doubled; it stayed there in every later version.
 
-The rounds show each change; they don't show its cause. The earlier runs, [0.7.3](https://kaeso.app/benchmarks/0.7.3), [0.7.2](https://kaeso.app/benchmarks/0.7.2) and [0.7.0](https://kaeso.app/benchmarks/0.7.0), ran on other machines of the same type and stay published with their scripts and raw results.
+The rounds don't show a change's cause; where it is known, its step says so. The earlier runs, [0.7.3](https://kaeso.app/benchmarks/0.7.3), [0.7.2](https://kaeso.app/benchmarks/0.7.2) and [0.7.0](https://kaeso.app/benchmarks/0.7.0), ran on other machines of the same type and stay published with their scripts and raw results.
 ## What each gateway did
 
 Every gateway ran as its project ships it, against the mock in the Anthropic Messages format:
