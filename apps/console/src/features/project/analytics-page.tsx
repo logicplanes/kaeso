@@ -9,7 +9,9 @@ import { ControlRoom } from "~/kaeso/overview/control-room";
 import { useOverview } from "~/kaeso/overview/data";
 import type { Dimension } from "~/kaeso/overview/metrics";
 import { PROJECT_VIEWS, type AnalyticsSearch, type ProjectView } from "~/kaeso/overview/views";
-import { DimensionView, dimensionTitle } from "~/kaeso/overview/dimension";
+import { DimensionView } from "~/kaeso/overview/dimension";
+import { Efficiency, Reliability } from "~/kaeso/overview/sections";
+import { viewTitle } from "~/kaeso/overview/view-title";
 import { ProjectHeader } from "~/shell/project-header";
 import { useQuery } from "@tanstack/react-query";
 import { usageSpanQuery } from "~/api/queries/usage";
@@ -23,7 +25,7 @@ import { Share } from "~/kaeso/share";
 const loadParts = () => import("./analytics-breakdown");
 const Breakdown = lazy(() => loadParts().then((m) => ({ default: m.Breakdown })));
 
-const DIM: Record<ProjectView, Dimension> = { models: "model", keys: "key", members: "member" };
+const DIM: Partial<Record<ProjectView, Dimension>> = { models: "model", keys: "key", members: "member" };
 
 export function AnalyticsPage({ org, project, search, view }: { org: string; project: string; search: AnalyticsSearch; view?: ProjectView | undefined }) {
   const navigate = useNavigate();
@@ -45,11 +47,12 @@ export function AnalyticsPage({ org, project, search, view }: { org: string; pro
     ...(search.from ? { from: search.from } : {}),
     ...(search.to ? { to: search.to } : {}),
   };
+  const kept = { ...period, ...(search.by ? { by: search.by } : {}) };
   const goTo = (next: string) =>
     void navigate(
       next === "overview"
-        ? { to: "/orgs/$org/projects/$project/analytics", params: { org, project }, search: period }
-        : { to: "/orgs/$org/projects/$project/analytics/$view", params: { org, project, view: next }, search: period },
+        ? { to: "/orgs/$org/projects/$project/analytics", params: { org, project }, search: kept }
+        : { to: "/orgs/$org/projects/$project/analytics/$view", params: { org, project, view: next }, search: kept },
     );
   const tabs = (
     <Tabs variant="pill" value={view ?? "overview"} onValueChange={goTo}>
@@ -57,7 +60,7 @@ export function AnalyticsPage({ org, project, search, view }: { org: string; pro
         <Tabs.Tab value="overview">{t("project.analytics.overview", "Overview")}</Tabs.Tab>
         {PROJECT_VIEWS.map((v) => (
           <Tabs.Tab key={v} value={v}>
-            {dimensionTitle(DIM[v])}
+            {viewTitle(v, DIM[v], o)}
           </Tabs.Tab>
         ))}
       </Tabs.List>
@@ -82,31 +85,34 @@ export function AnalyticsPage({ org, project, search, view }: { org: string; pro
       />
       <AppFrame.Body padding="page">
         <div className="flex flex-col">
-          {view ? (
+          {view === "reliability" ? (
+            <Reliability o={o} />
+          ) : view === "efficiency" ? (
+            <Efficiency o={o} />
+          ) : view === "breakdown" ? (
+            <Suspense fallback={null}>
+              <Breakdown
+                rows={table.data ?? []}
+                by={by}
+                granularity={o.g}
+                withYear={spansYears(o.from, o.to, o.g)}
+                showCost={o.showCost}
+                org={org}
+                project={project}
+                from={o.from}
+                to={o.to}
+                clients={o.hourly}
+                modelName={o.modelName}
+                loading={table.isPending || (by === "model" && o.namesLoading)}
+                failed={table.isError}
+                onRetry={() => void table.refetch()}
+                onByChange={(next) => setSearch({ by: next })}
+              />
+            </Suspense>
+          ) : view && DIM[view] ? (
             <DimensionView o={o} dim={DIM[view]} />
           ) : (
-            <>
-              <ControlRoom o={o} {...(search.metric ? { initial: search.metric } : {})} />
-              <Suspense fallback={null}>
-                <Breakdown
-                  rows={table.data ?? []}
-                  by={by}
-                  granularity={o.g}
-                  withYear={spansYears(o.from, o.to, o.g)}
-                  showCost={o.showCost}
-                  org={org}
-                  project={project}
-                  from={o.from}
-                  to={o.to}
-                  clients={o.hourly}
-                  modelName={o.modelName}
-                  loading={table.isPending || (by === "model" && o.namesLoading)}
-                  failed={table.isError}
-                  onRetry={() => void table.refetch()}
-                  onByChange={(next) => setSearch({ by: next })}
-                />
-              </Suspense>
-            </>
+            <ControlRoom o={o} {...(search.metric ? { initial: search.metric } : {})} />
           )}
         </div>
       </AppFrame.Body>

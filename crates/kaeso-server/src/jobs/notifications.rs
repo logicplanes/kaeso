@@ -288,7 +288,7 @@ async fn cost_report(
         place: Some(&place),
         subject: format!("cost:{org}:{month}"),
         open: format!(
-            "{}/analytics?from={from}&to={to}&by=project&metric=cost",
+            "{}/analytics?from={from}&to={to}&metric=cost",
             org_path(org)
         ),
         actor: None,
@@ -428,7 +428,7 @@ async fn weekly_summary(
     top.sort_by_key(|m| std::cmp::Reverse(m.1));
     let open = projects.first().map_or_else(String::new, |(_, org, _)| {
         format!(
-            "{}/analytics?from={from}&to={to}&by=project",
+            "{}/analytics/breakdown?from={from}&to={to}&by=project",
             org_path(*org)
         )
     });

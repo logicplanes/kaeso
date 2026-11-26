@@ -5,7 +5,7 @@ Kaeso's UI library: React 19 components on Base UI, styled with Tailwind CSS v4 
 ## Install
 
 ```bash
-pnpm add @logicplanes/kaeso-ui react react-dom @hugeicons/react @hugeicons/core-free-icons
+pnpm add @logicplanes/kaeso-ui react react-dom lucide
 ```
 
 With Tailwind CSS v4:

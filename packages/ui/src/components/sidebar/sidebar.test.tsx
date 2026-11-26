@@ -124,6 +124,27 @@ describe("Sidebar", () => {
     expect(screen.getByRole("button", { name: "Collapse sidebar" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Kaeso home" })).toHaveClass("relative", "tap-target");
   });
+  it("gives the wordmark's place to the switcher of the place the app is in", () => {
+    render(
+      <Sidebar.Provider shortcut={false}>
+        <Sidebar aria-label="Console" resizable={false}>
+          <Sidebar.Brand
+            lead={
+              <Sidebar.Switcher avatar={null} label="Northwind Labs">
+                <Menu.Item>Organization settings</Menu.Item>
+              </Sidebar.Switcher>
+            }
+          />
+          <Sidebar.Footer>
+            <Sidebar.CollapseToggle />
+          </Sidebar.Footer>
+        </Sidebar>
+      </Sidebar.Provider>,
+    );
+    expect(screen.getByRole("button", { name: "Northwind Labs" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Kaeso" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Collapse sidebar" })).toBeInTheDocument();
+  });
   it("opens the switcher's menu", async () => {
     render(
       <Sidebar.Provider shortcut={false}>
@@ -230,9 +251,9 @@ describe("Sidebar", () => {
       </Sidebar.Provider>,
     );
     const place = screen.getByRole("button", { name: "Checkout assistant", description: "Switch project" });
-    expect(place).toHaveClass("h-36", "px-12", "gap-8", "font-medium", "text-fg");
+    expect(place).toHaveClass("h-36", "px-16", "gap-8", "font-medium", "text-fg");
     expect(screen.getByTestId("picture").parentElement).toHaveClass("size-18");
-    expect(screen.getByRole("link", { name: "Northwind Labs" })).toHaveClass("px-12", "gap-8");
+    expect(screen.getByRole("link", { name: "Northwind Labs" })).toHaveClass("px-16", "gap-8");
     fireEvent.click(place);
     await waitFor(() => expect(screen.getByRole("menuitemradio", { name: /Checkout assistant/ })).toHaveAttribute("aria-checked", "true"));
     expect(screen.getByTestId("menu-picture").parentElement).toHaveClass("size-16");

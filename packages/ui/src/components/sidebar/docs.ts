@@ -2,7 +2,8 @@ import type { ComponentDocs } from "../../component-docs.js";
 
 export const docs = {
   Sidebar: {
-    description: "The app's navigation: the wordmark, groups of links, an account menu at the foot, collapsible and resizable.",
+    description:
+      "The app's navigation: the wordmark or the switcher of the place the app is in, groups of links, an account menu at the foot, collapsible and resizable.",
     props: {
       "aria-label": "Defines a string value that labels the current element.",
       resizable: "Draggable right edge (232–280px), remembered.",

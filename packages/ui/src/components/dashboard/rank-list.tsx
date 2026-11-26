@@ -9,7 +9,7 @@ export interface RankItem {
   id: string;
   label: ReactNode;
   value?: ReactNode | undefined;
-  /** Draws the row's share of the largest row behind it; leave it out for a plain row. */
+  /** Draws the row's share of the largest row as a thin bar under it; leave it out for a plain row. */
   share?: number | undefined;
   secondary?: ReactNode | undefined;
   /** The row's change against the previous period, in a column of its own; a word such as "New" where there is nothing to compare with. */
@@ -87,11 +87,9 @@ export const RankList = forwardRef<
         const body = (
           <>
             {item.share !== undefined && max > 0 && (
-              <span
-                aria-hidden
-                className="width-motion absolute inset-y-0 left-0 rounded-cell bg-fill-2"
-                style={{ width: `${Math.max(1, (item.share / max) * 100)}%` }}
-              />
+              <span aria-hidden className="absolute inset-x-12 bottom-0 h-2 overflow-hidden rounded-pill bg-fill-1">
+                <span className="width-motion block h-full rounded-pill bg-fg-tertiary" style={{ width: `${Math.max(1, (item.share / max) * 100)}%` }} />
+              </span>
             )}
             <span className="relative flex min-w-0 flex-1 items-center gap-8 text-body text-fg">{item.label}</span>
             {item.secondary !== undefined && (

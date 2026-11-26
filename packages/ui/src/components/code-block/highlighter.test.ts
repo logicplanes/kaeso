@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CODE_LANGS, HIGHLIGHT_MAX_CHARS, highlight, resolveCodeLang, type CodeLang } from "./highlighter.js";
+import { CODE_LANGS, HIGHLIGHT_MAX_CHARS, highlight, highlightNow, resolveCodeLang, type CodeLang } from "./highlighter.js";
 
 const keyword = "text-code-keyword";
 const string = "text-code-string";
@@ -81,6 +81,18 @@ describe("highlight", () => {
   it("leaves plain text alone and refuses an unknown language", async () => {
     expect(await highlight("hello", "text")).toBeNull();
     expect(await highlight("puts 1", "brainfuck" as CodeLang)).toBeNull();
+  });
+
+  it("answers at once for plain text, for code it has seen and for a language that has loaded", async () => {
+    expect(highlightNow("hello", "text")).toBeNull();
+    expect(highlightNow("puts 1", "brainfuck" as CodeLang)).toBeNull();
+    expect(highlightNow("local seen = 1", "lua")).toBeUndefined();
+    const seen = await highlight("local seen = 1", "lua");
+    expect(highlightNow("local seen = 1", "lua")).toBe(seen);
+    expect(await highlight("local seen = 1", "lua")).toBe(seen);
+    const fresh = highlightNow('local fresh = "new"\r\nreturn fresh', "lua");
+    expect(fresh?.map((line) => line.map((t) => t.content).join(""))).toEqual(['local fresh = "new"', "return fresh"]);
+    expect(fresh?.[0]?.find((t) => t.content === "local")?.className).toBe(keyword);
   });
 
   it("loads every language it offers on demand and keeps the code as written", async () => {

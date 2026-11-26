@@ -19,7 +19,7 @@
   "90 days": "90 Tage",
   "A 1px line, for when space and tone cannot separate two regions.": "Eine 1px-Linie, wenn Raum und Tonwert zwei Bereiche nicht trennen können.",
   "A 4px track, an ink range and an ink thumb; a value bubble while dragging; ticks and ranges.": "Eine 4px-Spur, ein Ink-Bereich und ein Ink-Griff; eine Wertblase beim Ziehen; Marken und Bereiche.",
-  "A Hugeicons free (Stroke Rounded) icon, from `@hugeicons/core-free-icons` or `icons` in `@logicplanes/kaeso-ui`.": "Ein Symbol aus Hugeicons free (Stroke Rounded), aus `@hugeicons/core-free-icons` oder `icons` in `@logicplanes/kaeso-ui`.",
+  "A Lucide icon, from `lucide` or `icons` in `@logicplanes/kaeso-ui`.": "Ein Lucide-Symbol, aus `lucide` oder `icons` in `@logicplanes/kaeso-ui`.",
   "A Platform API key": "Ein Platform-API-Schlüssel",
   "A bottom-right status area. Unused by default.": "Ein Statusbereich unten rechts. Standardmäßig ungenutzt.",
   "A caption in the middle of a horizontal line (\"or\").": "Eine Beschriftung in der Mitte einer waagerechten Linie („oder“).",
@@ -275,7 +275,7 @@
   "How many images to hold room for while they are made.": "Für wie viele Bilder Platz freigehalten wird, während sie entstehen.",
   "How much room each message gets.": "Wie viel Platz jede Nachricht bekommt.",
   "How much room each row gets.": "Wie viel Platz jede Zeile bekommt.",
-  "Hugeicons free, Stroke Rounded, in currentColor. One icon per Kaeso concept.": "Hugeicons free, Stroke Rounded, in currentColor. Ein Symbol pro Kaeso-Begriff.",
+  "Lucide, in currentColor. One icon per Kaeso concept.": "Lucide, in currentColor. Ein Symbol pro Kaeso-Begriff.",
   "Icon only": "Nur Symbol",
   "Icon, prefix and suffix": "Symbol, Präfix und Suffix",
   "Icons": "Symbole",
@@ -575,7 +575,7 @@
   "The composer's height.": "Die Höhe des Composers.",
   "The confirm label, the verb and object: \"Delete key\".": "Die Beschriftung der Bestätigung, Verb und Objekt: „Schlüssel löschen“.",
   "The confirm of a destructive flow. Its trigger is usually danger-secondary.": "Die Bestätigung eines zerstörerischen Ablaufs. Ihr Auslöser ist meist danger-secondary.",
-  "The console navigation: the place it is in, 32px items with pill fills, groups that remember, a quiet resize edge, collapse and rail.": "Die Navigation der Konsole: der Ort, an dem sie ist, 32px-Einträge mit Pill-Flächen, Gruppen, die sich ihren Zustand merken, eine leise Kante zum Ändern der Breite, Einklappen und Leiste.",
+  "The console navigation: the place it is in, 36px rows with softly rounded fills, groups that remember, a quiet resize edge, collapse and rail.": "Die Navigation der Konsole: der Ort, an dem sie ist, 36px-Zeilen mit weich gerundeten Flächen, Gruppen, die sich ihren Zustand merken, eine leise Kante zum Ändern der Breite, Einklappen und Leiste.",
   "The console's table: a 36px header on a strong rule, 40px rows on hairlines, numbers right, sorting, resizing, selection, virtualization.": "Die Tabelle der Konsole: 36px Kopf auf einer kräftigen Linie, 40px Zeilen auf Haarlinien, Zahlen rechts, Sortieren, Größe ändern, Auswahl, Virtualisierung.",
   "The content that scrolls.": "Der Inhalt, der scrollt.",
   "The content that shows when it is open.": "Der Inhalt, der im geöffneten Zustand erscheint.",
@@ -1277,5 +1277,6 @@
   "The name beside the tile, or the tile's accessible name; the kind's product name by default.": "Der Name neben der Kachel oder ihr barrierefreier Name; standardmäßig der Produktname der Art.",
   "The tile's size, as a provider's tile.": "Die Größe der Kachel, wie bei einem Anbieter.",
   "Shows the name beside the tile.": "Zeigt den Namen neben der Kachel.",
-  "Hides the tile from assistive technology, where the text beside it already names the client.": "Verbirgt die Kachel vor Hilfstechnologien, wo der Text daneben den Client schon nennt."
+  "Hides the tile from assistive technology, where the text beside it already names the client.": "Verbirgt die Kachel vor Hilfstechnologien, wo der Text daneben den Client schon nennt.",
+  "The 1px rule under the heading. Turn it off above content that draws its own frame, such as a Dashboard.": "Die 1px-Linie unter der Überschrift. Schalte sie über Inhalten aus, die ihren eigenen Rahmen zeichnen, etwa einem Dashboard."
 }

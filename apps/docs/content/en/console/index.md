@@ -8,7 +8,7 @@ The console runs at your install's domain, such as `https://kaeso.example.com`. 
 
 ## Find your way around
 
-The sidebar shows the organization's pages, or a project's when you work in one. The menu at its foot switches organization and opens **Organization settings**, your **Account** and, for instance admins, **Instance**. What the sidebar lists depends on your [rights](members-and-roles.md).
+The sidebar shows the organization's pages, or a project's when you work in one. The menu at its top switches organization and opens **Organization settings**; in a project it switches project and leads back to the organization. The menu at its foot opens your **Account** and, for instance admins, **Instance**. What the sidebar lists depends on your [rights](members-and-roles.md).
 
 Press ⌘K, or Ctrl+K, to search pages, keys, models and members, to create things, or to switch organization or project. Paste a request's id, `req_…` from its `kaeso-request-id` header, to open it in the current project's request log. When no field has focus, single keys work too, such as `c` to create on the current page or `g` `k` to go to API keys. Every page of a project has its own `g` key, such as `g` `y` for the playground. Press `?` to list every shortcut that works where you are, with the keys of the request logs, tool calls and route editor.
 

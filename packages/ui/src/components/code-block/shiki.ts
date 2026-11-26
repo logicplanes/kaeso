@@ -11,13 +11,15 @@ type Highlighter = {
   loadLanguage: (...l: unknown[]) => Promise<void>;
 };
 let instance: Promise<Highlighter> | null = null;
+let ready: Highlighter | null = null;
 
 const HIGHLIGHT_MAX_LINE = 2_000;
 
 export function getHighlighter(): Promise<Highlighter> {
   instance ??= (async () => {
     const [{ createHighlighterCore }, { createJavaScriptRegexEngine }] = await Promise.all([import("shiki/core"), import("shiki/engine/javascript")]);
-    return (await createHighlighterCore({ themes: [kaesoShikiTheme as never], langs: [], engine: createJavaScriptRegexEngine() })) as unknown as Highlighter;
+    ready = (await createHighlighterCore({ themes: [kaesoShikiTheme as never], langs: [], engine: createJavaScriptRegexEngine() })) as unknown as Highlighter;
+    return ready;
   })().catch((error: unknown) => {
     instance = null;
     throw error;
@@ -71,19 +73,20 @@ const LOADERS: Record<Exclude<CodeLang, "text">, Loader> = {
 };
 
 const grammars: Partial<Record<CodeLang, Promise<string>>> = {};
+const loaded: Partial<Record<CodeLang, string>> = {};
 
-function grammar(h: Highlighter, lang: Exclude<CodeLang, "text">): Promise<string> {
-  let loaded = grammars[lang];
-  if (!loaded) {
-    // A language module lists the grammars it embeds first and its own grammar last.
-    loaded = LOADERS[lang]().then(async ({ default: list }) => {
+function grammar(lang: Exclude<CodeLang, "text">): Promise<string> {
+  let pending = grammars[lang];
+  if (!pending) {
+    // The grammar's chunk is asked for together with the highlighter's, not after it. A language module lists the grammars it embeds first and its own grammar last.
+    pending = Promise.all([getHighlighter(), LOADERS[lang]()]).then(async ([h, { default: list }]) => {
       await h.loadLanguage(list);
-      return list[list.length - 1]?.name ?? lang;
+      return (loaded[lang] = list[list.length - 1]?.name ?? lang);
     });
-    loaded.catch(() => delete grammars[lang]);
-    grammars[lang] = loaded;
+    pending.catch(() => delete grammars[lang]);
+    grammars[lang] = pending;
   }
-  return loaded;
+  return pending;
 }
 
 const PROMPT = /^(?:\(\S+\)\s*)?(?:[\w.-]+@[\w.-]+(?::\S*)?|~\S*)?[$#%❯➜] /;
@@ -111,8 +114,16 @@ function session(h: Highlighter, code: string, id: string): CodeToken[][] {
   });
 }
 
+const run = (h: Highlighter, code: string, lang: Exclude<CodeLang, "text">, id: string) =>
+  lang === "shellsession" ? session(h, code, id) : tokenize(h, code, id);
+
 export async function tokens(code: string, lang: Exclude<CodeLang, "text">): Promise<CodeToken[][]> {
-  const h = await getHighlighter();
-  const id = await grammar(h, lang);
-  return lang === "shellsession" ? session(h, code, id) : tokenize(h, code, id);
+  const id = await grammar(lang);
+  return run(await getHighlighter(), code, lang, id);
+}
+
+/** The tokens at once when the language has loaded, so code that changes or appears later is drawn in colour on its first frame. */
+export function tokensNow(code: string, lang: Exclude<CodeLang, "text">): CodeToken[][] | undefined {
+  const id = loaded[lang];
+  return ready && id !== undefined ? run(ready, code, lang, id) : undefined;
 }

@@ -52,8 +52,11 @@ export const KAESO_SIDEBAR_VARIANTS = {
     rail: { classes: "w-60", description: "60px: icons only, labels in tooltips" },
   },
   item: {
-    default: { classes: "text-fg hover:bg-fill-1 active:bg-fill-2", description: "A navigation item: a pill that fills under the pointer" },
-    active: { classes: "bg-fill-2 text-fg", description: "The current page, a filled pill" },
+    default: {
+      classes: "text-fg-secondary hover:bg-fill-1 hover:text-fg active:bg-fill-2",
+      description: "A navigation item: a quiet rounded row that darkens and fills under the pointer",
+    },
+    active: { classes: "bg-fill-2 text-fg", description: "The current page, a filled row" },
   },
   caption: {
     secondary: { classes: "text-fg-secondary", description: "A quiet second line under the switcher's label (default)" },
@@ -306,14 +309,24 @@ const Header = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(functi
 Header.displayName = "Sidebar.Header";
 
 export interface SidebarBrandProps {
+  /** What stands in the wordmark's place, such as the switcher of the place the app is in. */
+  lead?: ReactNode | undefined;
   href?: string | undefined;
   label?: string | undefined;
   children?: ReactNode | undefined;
   className?: string | undefined;
 }
 
-const Brand = forwardRef<HTMLDivElement, SidebarBrandProps>(function SidebarBrand({ href, label = "Kaeso", children, className }, ref) {
+const Brand = forwardRef<HTMLDivElement, SidebarBrandProps>(function SidebarBrand({ lead, href, label = "Kaeso", children, className }, ref) {
   const { rail } = useSidebar();
+  if (lead) {
+    return (
+      <Header ref={ref} className={cn(rail ? "justify-center" : "gap-0 px-12", className)}>
+        <span className={cn("flex min-w-0", !rail && "flex-1")}>{lead}</span>
+        {children && <span className="flex shrink-0 items-center">{children}</span>}
+      </Header>
+    );
+  }
   if (rail) {
     return (
       <Header ref={ref} className={cn("justify-center px-0", className)}>
@@ -446,13 +459,28 @@ export interface SidebarSwitcherProps {
   children: ReactNode;
   header?: ReactNode | undefined;
   footer?: ReactNode | undefined;
+  /** Where the menu opens: above a switcher at the foot, below one at the top. */
+  side?: "top" | "bottom" | undefined;
   "aria-label"?: string | undefined;
   className?: string | undefined;
   "data-force"?: string | undefined;
 }
 
 const Switcher = forwardRef<HTMLButtonElement, SidebarSwitcherProps>(function SidebarSwitcher(
-  { avatar, label, trailing, caption, captionTone = "secondary", children, header, footer, "aria-label": ariaLabel, className, "data-force": force },
+  {
+    avatar,
+    label,
+    trailing,
+    caption,
+    captionTone = "secondary",
+    children,
+    header,
+    footer,
+    side = "top",
+    "aria-label": ariaLabel,
+    className,
+    "data-force": force,
+  },
   ref,
 ) {
   const { rail } = useSidebar();
@@ -464,7 +492,7 @@ const Switcher = forwardRef<HTMLButtonElement, SidebarSwitcherProps>(function Si
   return (
     <>
       <LazyMenu
-        side="top"
+        side={side}
         header={header}
         footer={footer}
         trigger={
@@ -474,7 +502,7 @@ const Switcher = forwardRef<HTMLButtonElement, SidebarSwitcherProps>(function Si
             {...(named ? { "aria-describedby": purpose.id } : { "aria-label": hint })}
             {...(force ? { "data-force": force } : {})}
             className={cn(
-              "group/sw flex h-36 w-full min-w-0 cursor-pointer items-center gap-8 rounded-pill px-12 text-left text-body font-medium text-fg transition-control hover:bg-fill-1 active:bg-fill-2 open:bg-fill-2 focus-ring-inset coarse:h-44",
+              "group/sw flex h-36 w-full min-w-0 cursor-pointer items-center gap-8 rounded-sidebar px-16 text-left text-body font-medium text-fg transition-control hover:bg-fill-1 active:bg-fill-2 open:bg-fill-2 focus-ring-inset coarse:h-44",
               rail && "justify-center px-0",
               className,
             )}
@@ -533,7 +561,7 @@ const Place = forwardRef<HTMLElement, SidebarPlaceProps>(function SidebarPlace(
   const purpose = useHiddenDescription(named ? hint : undefined);
   const naming = named ? (purpose.id ? { "aria-describedby": purpose.id } : {}) : hint ? { "aria-label": hint } : {};
   const classes = cn(
-    "group/place flex h-36 w-full min-w-0 items-center gap-8 rounded-pill px-12 text-left text-body font-medium text-fg",
+    "group/place flex h-36 w-full min-w-0 items-center gap-8 rounded-sidebar px-16 text-left text-body font-medium text-fg",
     (children || href) && "cursor-pointer transition-control hover:bg-fill-1 active:bg-fill-2 open:bg-fill-2 focus-ring-inset coarse:h-44",
     rail && "justify-center px-0",
     className,
@@ -638,7 +666,7 @@ const Content = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(funct
   return (
     <div
       ref={refs}
-      className={cn("flex min-h-0 flex-1 flex-col gap-16 overflow-y-auto overscroll-contain pt-8 pb-16 scrollbar-quiet", rail ? "px-8" : "px-16", className)}
+      className={cn("flex min-h-0 flex-1 flex-col gap-16 overflow-y-auto overscroll-contain pt-8 pb-16 scrollbar-quiet", rail ? "px-8" : "px-12", className)}
       {...props}
     />
   );
@@ -652,7 +680,7 @@ const Footer = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(functi
       ref={ref}
       className={cn(
         "mb-8 flex min-h-52 shrink-0 items-center gap-8 transition-control sidebar-foot group-data-scrolled-under/sidebar:hairline-t-strong",
-        rail ? "px-8" : "px-16",
+        rail ? "flex-col-reverse justify-center gap-4 px-8 py-8" : "px-12",
         className,
       )}
       {...props}
@@ -682,7 +710,7 @@ const Group = forwardRef<HTMLDivElement, SidebarGroupProps>(function SidebarGrou
     return (
       <div ref={ref} {...(named ? { role: "group", "aria-labelledby": labelId } : {})} className={cn("flex flex-col", className)}>
         {named && (
-          <div id={labelId} className="flex h-32 items-center px-12 text-caption font-medium text-fg-secondary">
+          <div id={labelId} className="flex h-32 items-center px-16 text-caption font-medium text-fg-secondary">
             {label}
           </div>
         )}
@@ -693,7 +721,10 @@ const Group = forwardRef<HTMLDivElement, SidebarGroupProps>(function SidebarGrou
   return (
     <Collapsible.Root ref={ref} open={open} onOpenChange={(o: boolean) => setOpen(o)} className={cn("flex flex-col", className)}>
       <Collapsible.Trigger
-        className={cn(DISCLOSURE_TRIGGER, "h-32 text-caption font-medium text-fg-secondary hover:bg-fill-1 hover:text-fg active:bg-fill-2 coarse:h-44")}
+        className={cn(
+          DISCLOSURE_TRIGGER,
+          "h-32 rounded-sidebar px-16 text-caption font-medium text-fg-secondary hover:bg-fill-1 hover:text-fg active:bg-fill-2 coarse:h-44",
+        )}
       >
         <span className="min-w-0 flex-1 truncate">{label}</span>
         <DisclosureChevron />
@@ -721,7 +752,7 @@ export interface SidebarItemProps {
   "data-force"?: string | undefined;
 }
 
-const DEPTH = ["", "pl-36", "pl-60"] as const;
+const DEPTH = ["", "pl-40", "pl-64"] as const;
 
 const Item = forwardRef<HTMLElement, SidebarItemProps>(function SidebarItem(
   { children, icon, leading, href, onClick, active, count, trailing, depth = 0, shortcut, className, "data-force": force },
@@ -737,7 +768,7 @@ const Item = forwardRef<HTMLElement, SidebarItemProps>(function SidebarItem(
     if (sheet && !sheet.peek && !href && !e.defaultPrevented) sheet.close();
   };
   const classes = cn(
-    "group/si flex h-32 w-full min-w-0 cursor-pointer items-center gap-8 rounded-pill px-12 text-left text-body font-medium transition-control focus-ring-inset coarse:h-44",
+    "group/si flex h-36 w-full min-w-0 cursor-pointer items-center gap-8 rounded-sidebar px-16 text-left text-body font-medium transition-control focus-ring-inset coarse:h-44",
     active ? KAESO_SIDEBAR_VARIANTS.item.active.classes : KAESO_SIDEBAR_VARIANTS.item.default.classes,
     !rail && DEPTH[depth],
     rail && "justify-center px-0",
@@ -796,7 +827,7 @@ const BackLink = forwardRef<HTMLAnchorElement, { href: string; children?: ReactN
       ref={ref}
       href={href}
       className={cn(
-        "flex h-32 items-center gap-8 rounded-pill px-12 text-body font-medium text-fg-secondary transition-control hover:bg-fill-1 hover:text-fg active:bg-fill-2 focus-ring-inset coarse:h-44",
+        "flex h-36 items-center gap-8 rounded-sidebar px-16 text-body font-medium text-fg-secondary transition-control hover:bg-fill-1 hover:text-fg active:bg-fill-2 focus-ring-inset coarse:h-44",
         className,
       )}
     >
@@ -812,7 +843,7 @@ const Loading = forwardRef<HTMLDivElement, { rows?: number | undefined }>(functi
   return (
     <div ref={ref} role="status" aria-label={t("sidebar.loading", "Loading navigation")} aria-busy className="flex flex-col gap-2">
       {Array.from({ length: rows }, (_, i) => (
-        <div key={i} className="flex h-32 items-center gap-8 px-12">
+        <div key={i} className="flex h-36 items-center gap-8 px-16">
           <Skeleton className="size-18 rounded-pill" />
           <Skeleton className="h-12 rounded-pill" style={{ width: `${48 + ((i * 37) % 40)}%` }} />
         </div>
@@ -848,7 +879,7 @@ const CollapseToggle = forwardRef<HTMLButtonElement, { className?: string | unde
         {...(sheet ? {} : { "aria-expanded": !collapsed })}
         onClick={onClick}
         className={cn(
-          "relative inline-flex size-32 cursor-pointer items-center justify-center rounded-pill text-fg-secondary transition-control tap-target hover:bg-fill-1 hover:text-fg active:bg-fill-2 focus-ring",
+          "relative inline-flex size-32 cursor-pointer items-center justify-center rounded-sidebar text-fg-secondary transition-control tap-target hover:bg-fill-1 hover:text-fg active:bg-fill-2 focus-ring",
           className,
         )}
       >
@@ -872,7 +903,7 @@ const RailToggle = forwardRef<HTMLButtonElement, { className?: string | undefine
         aria-pressed={rail}
         onClick={() => setRail(!rail)}
         className={cn(
-          "relative inline-flex size-32 cursor-pointer items-center justify-center rounded-pill text-fg-secondary transition-control tap-target hover:bg-fill-1 hover:text-fg active:bg-fill-2 aria-pressed:bg-fill-2 aria-pressed:text-fg focus-ring",
+          "relative inline-flex size-32 cursor-pointer items-center justify-center rounded-sidebar text-fg-secondary transition-control tap-target hover:bg-fill-1 hover:text-fg active:bg-fill-2 aria-pressed:bg-fill-2 aria-pressed:text-fg focus-ring",
           className,
         )}
       >

@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import type { TimelineBucket, UsageRow } from "~/api/generated/types";
 import { atFixtureTime } from "~/test/clock";
@@ -46,6 +46,7 @@ function usage(path: string, now: Rows, before: Rows = {}, from = "2026-10-01"):
 
 const cell = (title: string | RegExp) => screen.getByRole("heading", { name: title }).closest("section") as HTMLElement;
 const tab = (name: RegExp) => screen.getByRole("tab", { name });
+const view = async (name: string) => fireEvent.click(await screen.findByRole("tab", { name }));
 
 const THIS_PERIOD: Rows = {
   day: [
@@ -153,10 +154,10 @@ describe("the analytics control room", () => {
     expect(await screen.findByRole("heading", { name: "Tokens per day, UTC" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Models by tokens" })).toBeInTheDocument();
 
-    await user.click(tab(/^Cost/));
+    await user.click(tab(/^Cost(?! and)/));
     expect(await screen.findByRole("heading", { name: "Models by cost" })).toBeInTheDocument();
     expect(cell("Models by cost")).toHaveTextContent(/Claude Sonnet 4\.5.*75%.*\$1\.50/);
-    expect(tab(/^Cost/)).not.toHaveTextContent(/better|worse/);
+    expect(tab(/^Cost(?! and)/)).not.toHaveTextContent(/better|worse/);
 
     await user.click(tab(/^Error rate/));
     expect(await screen.findByRole("heading", { name: "Error rate per day, UTC" })).toBeInTheDocument();
@@ -179,8 +180,9 @@ describe("the analytics control room", () => {
     on("GET", `${USAGE}/timeline`, () => ({ data: [bucket("2026-10-13T09:00:00Z")] }));
     await renderApp(projectPath(`analytics?${PERIOD}`));
 
-    await waitFor(() => expect(tab(/^Cost/)).toHaveTextContent(/\$2\.00.*3 requests unknown/));
-    expect(cell("Cost by model")).toHaveTextContent("3 requests without a price aren't included.");
+    await waitFor(() => expect(tab(/^Cost(?! and)/)).toHaveTextContent(/\$2\.00.*3 requests unknown/));
+    await view("Cost and efficiency");
+    expect(await waitFor(() => cell("Cost by model"))).toHaveTextContent("3 requests without a price aren't included.");
   });
 
   it("names a source among the keys and opens what it reported", async () => {
@@ -248,8 +250,8 @@ describe("the analytics control room", () => {
     );
     const { user, router } = await renderApp(projectPath(`analytics?${PERIOD}`));
 
-    expect(await screen.findByRole("heading", { name: "Reliability" })).toBeInTheDocument();
-    const failed = cell("Failed requests");
+    await view("Reliability");
+    const failed = await waitFor(() => cell("Failed requests"));
     await waitFor(() => expect(failed).toHaveTextContent(/4↑300% worse10% of requests/));
     expect(within(failed).getByRole("link", { name: "Failed requests" })).toHaveAttribute(
       "href",
@@ -268,10 +270,10 @@ describe("the analytics control room", () => {
 
     await user.click(kinds[0] as HTMLElement);
     await waitFor(() => expect(router.state.location.searchStr).toBe("?failed=true&error=rate_limited&from=2026-10-01&to=2026-10-14&utc=true"));
-    await router.navigate({ href: projectPath(`analytics?${PERIOD}`) });
+    await router.navigate({ href: projectPath(`analytics/reliability?${PERIOD}`) });
     await user.click(await within(await screen.findByRole("list", { name: "Failures by kind" })).findByRole("button", { name: /Other failures/ }));
     await waitFor(() => expect(router.state.location.searchStr).toBe("?failed=true&from=2026-10-01&to=2026-10-14&utc=true"));
-    await router.navigate({ href: projectPath(`analytics?${PERIOD}`) });
+    await router.navigate({ href: projectPath(`analytics/reliability?${PERIOD}`) });
     await user.click(await within(await screen.findByRole("list", { name: "Slowest hours, 95th percentile" })).findByRole("button", { name: /Oct 12/ }));
     await waitFor(() => expect(router.state.location.searchStr).toBe("?from=2026-10-12&to=2026-10-12&utc=true&min_duration_ms=8100"));
   });
@@ -286,9 +288,10 @@ describe("the analytics control room", () => {
     }));
     await renderApp(projectPath(`analytics?${PERIOD}`));
 
-    expect(await screen.findByRole("heading", { name: "Efficiency" })).toBeInTheDocument();
+    await view("Reliability");
     await waitFor(() => expect(within(cell("Slowest hours, 95th percentile")).getByRole("button")).toHaveTextContent(/Oct 11.*2 requests1 min/));
     expect(cell("Failures by kind")).toHaveTextContent("No failed requests.");
+    await view("Cost and efficiency");
     await waitFor(() => expect(cell("Cache hit")).toHaveTextContent(/%↑\d+% better.*500 input tokens from cache/));
     expect(cell("Tokens per request")).toHaveTextContent(/ in, .* out/);
   });
@@ -307,6 +310,10 @@ describe("the analytics control room", () => {
       expect(await screen.findByRole("heading", { name: "Requests per hour, UTC" })).toBeInTheDocument();
       await waitFor(() => expect(tab(/^Requests/)).toHaveTextContent(/40.*So far today/));
       expect(new Set(requests("GET", `${USAGE}/timeline`).map((r) => r.query.get("step")))).toEqual(new Set(["hour"]));
+      await view("Reliability");
+      expect(await screen.findByRole("heading", { name: "Failed requests" })).toBeInTheDocument();
+      await view("Cost and efficiency");
+      expect(await screen.findByRole("heading", { name: "Cache hit" })).toBeInTheDocument();
     });
 
     it("sets today against the 13 days before when request logs are off, and ranks the failures by model", async () => {
@@ -322,11 +329,15 @@ describe("the analytics control room", () => {
 
       expect(await screen.findByRole("heading", { name: "Requests per day, the last 14 days, UTC" })).toBeInTheDocument();
       expect(requests("GET", `${USAGE}/timeline`)).toHaveLength(0);
+      await view("Reliability");
       await waitFor(() => expect(cell("Failed requests by model")).toHaveTextContent(/gpt-5\.4-mini.*25%.*2/));
       expect(within(cell("Failed requests by model")).queryByRole("button")).not.toBeInTheDocument();
       expect(screen.queryByRole("heading", { name: "Slowest hours, 95th percentile" })).not.toBeInTheDocument();
       expect(screen.queryByRole("link", { name: "Failed requests" })).not.toBeInTheDocument();
-      await user.click(tab(/^Tokens/));
+      await view("Cost and efficiency");
+      expect(await screen.findByRole("heading", { name: "Cache hit" })).toBeInTheDocument();
+      await view("Overview");
+      await user.click(await screen.findByRole("tab", { name: /^Tokens/ }));
       expect(await screen.findByRole("heading", { name: "Tokens per day, the last 14 days, UTC" })).toBeInTheDocument();
     });
 
@@ -338,6 +349,7 @@ describe("the analytics control room", () => {
       on("GET", `${USAGE}/timeline`, () => apiError(500, "api_error", "ClickHouse is down."));
       await renderApp(projectPath("analytics?period=7d"));
       expect(await screen.findByRole("heading", { name: "Requests per day, UTC" })).toBeInTheDocument();
+      await view("Reliability");
       expect(await screen.findByRole("heading", { name: "Failed requests by model" })).toBeInTheDocument();
     });
 
@@ -356,12 +368,17 @@ describe("the analytics control room", () => {
 
       expect(await screen.findByRole("heading", { name: "Requests per week, UTC" })).toBeInTheDocument();
       expect(requests("GET", `${USAGE}/timeline`)).toHaveLength(0);
+      await view("Cost and efficiency");
       const spend = (await screen.findByRole("heading", { name: "Forecast for October" })).closest("section") as HTMLElement;
       await waitFor(() => expect(spend).toHaveTextContent("$11.00 so far, at the last 7 days' pace"));
       expect(spend).toHaveTextContent("$12.50 of $50.00");
       expect(within(spend).getByRole("link", { name: "Limits" })).toHaveAttribute("href", projectPath("limits"));
       expect(screen.getByRole("img", { name: /^Cost by model:/ })).toHaveAccessibleName(/model-a.*model-b.*model-c.*model-d.*Other \$1\.00/);
-      expect(within(cell("Models by requests")).getByRole("link", { name: "Show all" })).toHaveAttribute("href", projectPath("analytics/models?period=6m"));
+      await view("Overview");
+      expect(within(await waitFor(() => cell("Models by requests"))).getByRole("link", { name: "Show all" })).toHaveAttribute(
+        "href",
+        projectPath("analytics/models?period=6m"),
+      );
     });
   });
 
@@ -376,10 +393,12 @@ describe("the analytics control room", () => {
     on("GET", `${USAGE}/timeline`, { data: [] });
     await renderApp(projectPath(`analytics?${PERIOD}`));
 
-    expect(await screen.findByText("No cost in this period")).toBeInTheDocument();
-    expect(await within(cell("Models by requests")).findByRole("link", { name: "Show all 6" })).toBeInTheDocument();
+    expect(await within(await waitFor(() => cell("Models by requests"))).findByRole("link", { name: "Show all 6" })).toBeInTheDocument();
     expect(within(cell("Models by requests")).getAllByRole("listitem")).toHaveLength(5);
-    expect(cell("Slowest hours, 95th percentile")).toHaveTextContent("Nothing in this period");
+    await view("Cost and efficiency");
+    expect(await screen.findByText("No cost in this period")).toBeInTheDocument();
+    await view("Reliability");
+    await waitFor(() => expect(cell("Slowest hours, 95th percentile")).toHaveTextContent("Nothing in this period"));
   });
 
   it("keeps a noun's capital in a German heading", async () => {
@@ -403,19 +422,20 @@ describe("the analytics control room", () => {
 
     expect(await screen.findByRole("heading", { name: "Projects by failed requests" })).toBeInTheDocument();
     await user.click(tab(/^Requests/));
-    const failed = await waitFor(() => cell("Failed requests by project"));
-    await waitFor(() => expect(within(failed).getAllByRole("button")[0]).toHaveTextContent(/Checkout assistant.*10%/));
-    expect(within(cell("Projects by requests")).getAllByRole("button")[2]).toHaveTextContent("proj_gone");
+    await waitFor(() => expect(within(cell("Projects by requests")).getAllByRole("button")[2]).toHaveTextContent("proj_gone"));
     expect(within(cell("Projects by requests")).getByRole("link", { name: "Show all" })).toHaveAttribute(
       "href",
       `/orgs/${ORG}/analytics/projects?from=2026-10-01&to=2026-10-14`,
     );
     expect(within(cell("Models by requests")).queryByRole("button")).not.toBeInTheDocument();
+    await view("Reliability");
+    const failed = await waitFor(() => cell("Failed requests by project"));
+    await waitFor(() => expect(within(failed).getAllByRole("button")[0]).toHaveTextContent(/Checkout assistant.*10%/));
     await user.click(within(failed).getByRole("button", { name: /Support triage/ }));
     await waitFor(() => expect(router.state.location.pathname).toBe(`/orgs/${ORG}/projects/${OTHER_PROJECT}`));
 
     await router.navigate({ href: `/orgs/${ORG}/analytics?${PERIOD}` });
-    await user.click(await within(cell("Projects by requests")).findByRole("button", { name: /Checkout assistant/ }));
+    await user.click(await within(await waitFor(() => cell("Projects by requests"))).findByRole("button", { name: /Checkout assistant/ }));
     await waitFor(() => expect(router.state.location.pathname).toBe(`/orgs/${ORG}/projects/${PROJECT}`));
   });
 
@@ -425,7 +445,7 @@ describe("the analytics control room", () => {
     on("GET", `${ORG_USAGE}/timeline`, ({ query }: { query: URLSearchParams }) => ({
       data: [bucket("2026-10-13T09:00:00Z", query.get("group_by") ? { key: "provider_error", requests: 3 } : { requests: 30 })],
     }));
-    await renderApp(`/orgs/${ORG}/analytics?${PERIOD}`);
+    await renderApp(`/orgs/${ORG}/analytics/reliability?${PERIOD}`);
 
     await waitFor(() => expect(cell("Failures by kind")).toHaveTextContent(/Provider error100%3/));
     expect(within(cell("Failures by kind")).queryByRole("button")).not.toBeInTheDocument();
@@ -674,6 +694,46 @@ describe("the analytics views", () => {
     fail = false;
     await user.click(retry);
     expect(await screen.findByRole("row", { name: /gpt-5\.4-mini/ })).toBeInTheDocument();
+  });
+
+  it("splits an organization's cost by project on its own view, naming a project that's gone by its id", async () => {
+    signedIn();
+    usage(ORG_USAGE, {
+      project: [orgRow(PROJECT, { requests: 30, cost: "3" }), orgRow("proj_gone", { requests: 1, cost: "1" })],
+    });
+    on("GET", `${ORG_USAGE}/timeline`, { data: [] });
+    await renderApp(`/orgs/${ORG}/analytics/efficiency?${PERIOD}`);
+
+    expect(await screen.findByRole("img", { name: /^Cost by project:/ })).toHaveAccessibleName(/Checkout assistant.*proj_gone/);
+    expect(screen.queryByRole("heading", { name: "Failed requests" })).not.toBeInTheDocument();
+  });
+
+  it("shows a dash for the cache of a period without requests", async () => {
+    signedIn();
+    projectData();
+    on("GET", "orgs/:org/projects/:project/logs", listed([]));
+    usage(USAGE, {});
+    on("GET", `${USAGE}/timeline`, { data: [] });
+    await renderApp(projectPath(`analytics/efficiency?${PERIOD}`));
+
+    await waitFor(() => expect(cell("Cache hit")).toHaveTextContent("—"));
+    expect(cell("Tokens per request")).toHaveTextContent("0");
+  });
+
+  it("loads the failed requests again after their chart failed", async () => {
+    signedIn();
+    projectData();
+    on("GET", "orgs/:org/projects/:project/logs", listed([]));
+    let fail = true;
+    on("GET", USAGE, () => (fail ? apiError(500, "api_error", "ClickHouse is down.") : { data: [usageRow({ key: "2026-10-13", requests: 40, errors: 4 })] }));
+    on("GET", `${USAGE}/timeline`, { data: [] });
+    const { user } = await renderApp(projectPath(`analytics/reliability?${PERIOD}`));
+
+    const failed = await waitFor(() => cell("Failed requests"));
+    expect(await within(failed).findByText("Couldn't load this chart")).toBeInTheDocument();
+    fail = false;
+    await user.click(within(failed).getByRole("button", { name: "Try again" }));
+    await waitFor(() => expect(failed).toHaveTextContent("10% of requests"));
   });
 
   it("says when a project's view doesn't exist", async () => {

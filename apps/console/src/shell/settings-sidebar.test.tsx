@@ -27,7 +27,6 @@ describe("the settings sidebar", () => {
     await within(nav).findByRole("link", { name: "Profile" });
     expect(within(nav).getByRole("link", { name: "Profile" })).toHaveAttribute("aria-current", "page");
     expect(within(nav).getByRole("link", { name: "Back to app" })).toHaveAttribute("href", `/orgs/${ORG}/projects/${PROJECT}`);
-    expect(within(nav).getByRole("link", { name: "Back to the console" })).toHaveAttribute("href", `/orgs/${ORG}/projects/${PROJECT}`);
     expect(within(nav).getByText("Northwind Labs")).toBeInTheDocument();
     expect(within(nav).getByRole("link", { name: "Platform keys" })).toHaveAttribute("href", `/settings/orgs/${ORG}/platform-keys`);
     expect(within(nav).getByRole("link", { name: "System" })).toHaveAttribute("href", "/settings/instance/system");
@@ -71,7 +70,6 @@ describe("the settings sidebar", () => {
     const nav = await sidebar();
     await within(nav).findByRole("link", { name: "General" });
     expect(links(nav)).toEqual([
-      "Back to the console",
       "Back to app",
       "Profile",
       "Security",
@@ -99,7 +97,7 @@ describe("the settings sidebar", () => {
     expect(within(nav).getByText("No settings match")).toBeInTheDocument();
     await user.clear(search);
     await user.type(search, "  sess  ");
-    expect(links(nav)).toEqual(["Back to the console", "Back to app", "Sessions"]);
+    expect(links(nav)).toEqual(["Back to app", "Sessions"]);
     await user.type(search, "{Enter}");
     await waitFor(() => expect(router.state.location.pathname).toBe("/settings/account/sessions"));
   });

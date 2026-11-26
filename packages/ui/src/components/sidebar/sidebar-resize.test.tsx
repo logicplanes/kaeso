@@ -416,7 +416,7 @@ describe("Sidebar groups and loading", () => {
       </Sidebar.Provider>,
     );
     const trigger = screen.getByRole("button", { name: "Settings" });
-    expect(trigger).toHaveClass("h-32", "coarse:h-44", "rounded-pill", "px-12", "focus-ring-inset");
+    expect(trigger).toHaveClass("h-32", "coarse:h-44", "rounded-sidebar", "px-16", "focus-ring-inset");
     expect(trigger.lastElementChild?.querySelector("svg")).not.toBeNull();
     expect(trigger).toHaveAttribute("aria-expanded", "true");
     await userEvent.click(trigger);

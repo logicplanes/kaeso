@@ -1,8 +1,8 @@
-import { forwardRef, useState, type SVGAttributes } from "react";
-import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
+import { createElement, forwardRef, useState, type Ref, type SVGAttributes } from "react";
 import { cn } from "../../utils/cn.js";
 
-export type IconData = IconSvgElement;
+/** An icon's shapes on a 24px grid, as Lucide exports them: each element's tag and its attributes. */
+export type IconData = readonly (readonly [tag: string, attrs: Readonly<Record<string, string | number | undefined>>])[];
 
 export const KAESO_ICON_VARIANTS = {
   size: {
@@ -17,7 +17,8 @@ export const KAESO_ICON_DEFAULT_VARIANTS = { size: "sm" } as const;
 export type IconSize = keyof typeof KAESO_ICON_VARIANTS.size;
 
 const PX: Record<IconSize, number> = { xs: 14, sm: 16, md: 18, lg: 20, xl: 24 };
-const STROKE = 1.5;
+// A 1.5px line at every size: the stroke is set in the 24-unit grid the shapes are drawn on.
+const STROKE = 36;
 
 export interface IconProps extends Omit<SVGAttributes<SVGSVGElement>, "children" | "strokeWidth" | "color"> {
   icon: IconData;
@@ -31,21 +32,38 @@ interface Swap {
   turn: number;
 }
 
+type GlyphProps = Omit<SVGAttributes<SVGSVGElement>, "children" | "strokeWidth" | "color"> & { key?: number | undefined; ref?: Ref<SVGSVGElement> | undefined };
+
+const glyph = (icon: IconData, px: number, props: GlyphProps) =>
+  createElement(
+    "svg",
+    {
+      width: px,
+      height: px,
+      viewBox: "0 0 24 24",
+      fill: "none",
+      stroke: "currentColor",
+      strokeWidth: STROKE / px,
+      strokeLinecap: "round",
+      strokeLinejoin: "round",
+      "aria-hidden": true,
+      focusable: false,
+      ...props,
+    },
+    ...icon.map(([tag, attrs]) => createElement(tag, attrs)),
+  );
+
 export const Icon = forwardRef<SVGSVGElement, IconProps>(function Icon({ icon, size = KAESO_ICON_DEFAULT_VARIANTS.size, label, className, ...props }, ref) {
   const [swap, setSwap] = useState<Swap>({ icon, last: null, turn: 0 });
   if (swap.icon !== icon) setSwap({ icon, last: swap.icon, turn: swap.turn + 1 });
-  const named = label ? { role: "img", "aria-label": label, "aria-hidden": undefined } : { "aria-hidden": props["aria-hidden"] ?? true, focusable: false };
-  const draw = (data: IconData) => ({ icon: data, size: PX[size], strokeWidth: STROKE, absoluteStrokeWidth: true, color: "currentColor" });
-  if (!swap.last) {
-    return <HugeiconsIcon ref={ref} {...draw(icon)} {...props} className={cn("shrink-0", KAESO_ICON_VARIANTS.size[size].classes, className)} {...named} />;
-  }
+  const named = label ? { role: "img", "aria-label": label } : { "aria-hidden": true };
+  const px = PX[size];
+  const box = cn("shrink-0", KAESO_ICON_VARIANTS.size[size].classes, className);
+  if (!swap.last) return glyph(icon, px, { ref, ...props, className: box, ...(label && { ...named, "aria-hidden": undefined }) });
   return (
-    <span
-      className={cn("relative inline-flex shrink-0", KAESO_ICON_VARIANTS.size[size].classes, className)}
-      {...(label ? { role: "img", "aria-label": label } : { "aria-hidden": true })}
-    >
-      <HugeiconsIcon key={`out-${swap.turn}`} {...draw(swap.last)} aria-hidden focusable={false} className="absolute inset-0 size-full icon-swap-out" />
-      <HugeiconsIcon key={`in-${swap.turn}`} ref={ref} {...draw(icon)} {...props} aria-hidden focusable={false} className="size-full icon-swap-in" />
+    <span className={cn("relative inline-flex", box)} {...named}>
+      {glyph(swap.last, px, { key: -swap.turn, className: "absolute inset-0 size-full icon-swap-out" })}
+      {glyph(icon, px, { ref, ...props, key: swap.turn, "aria-hidden": true, className: "size-full icon-swap-in" })}
     </span>
   );
 });

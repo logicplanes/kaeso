@@ -1,5 +1,7 @@
-import { describe, expect, it } from "vitest";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
+import { renderToString } from "react-dom/server";
+import { hydrateRoot } from "react-dom/client";
 import userEvent from "@testing-library/user-event";
 import { DiffView } from "./diff-view.js";
 
@@ -18,6 +20,22 @@ describe("DiffView", () => {
     expect(removed).toHaveTextContent('Removed "name": "Sub Experiment",');
     expect(added).toHaveTextContent('Added "name": "Agents",');
     expect(screen.getByText("1 line added, 1 removed")).toHaveClass("sr-only");
+  });
+
+  it("hydrates a server-drawn diff without a mismatch when its language has already loaded", async () => {
+    const first = render(<DiffView before={before} after={after} lang="json" />);
+    await waitFor(() => expect(first.container.querySelector(".text-code-string")).not.toBeNull());
+    first.unmount();
+    const diff = <DiffView before={before} after={after} lang="json" />;
+    const container = document.createElement("div");
+    container.innerHTML = renderToString(diff);
+    document.body.append(container);
+    const onRecoverableError = vi.fn();
+    const root = await act(async () => hydrateRoot(container, diff, { onRecoverableError }));
+    expect(onRecoverableError).not.toHaveBeenCalled();
+    expect(container.querySelector(".text-code-string")).not.toBeNull();
+    act(() => root.unmount());
+    container.remove();
   });
 
   it("marks the changed words inside a changed line", () => {

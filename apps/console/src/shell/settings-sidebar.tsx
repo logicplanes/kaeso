@@ -59,12 +59,9 @@ export function SettingsSidebar() {
   };
   return (
     <Sidebar aria-label={t("common.settings", "Settings")}>
-      <Sidebar.Brand href={back} label={t("shell.backToConsole", "Back to the console")}>
-        <Sidebar.CollapseToggle />
-      </Sidebar.Brand>
+      <Sidebar.Brand lead={<Sidebar.BackLink href={back}>{t("shell.backToApp", "Back to app")}</Sidebar.BackLink>} />
       <Sidebar.Content onPointerOver={prefetch} onFocus={prefetch}>
         <div className="flex flex-col gap-8">
-          <Sidebar.BackLink href={back}>{t("shell.backToApp", "Back to app")}</Sidebar.BackLink>
           <Input
             type="search"
             aria-label={t("shell.searchSettings", "Search settings")}
@@ -84,6 +81,9 @@ export function SettingsSidebar() {
           </Text>
         )}
       </Sidebar.Content>
+      <Sidebar.Footer>
+        <Sidebar.CollapseToggle />
+      </Sidebar.Footer>
     </Sidebar>
   );
 }

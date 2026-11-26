@@ -15,32 +15,44 @@ export function deletionCaption(iso: string | null | undefined, now = new Date()
   return t("shell.deletion.on", "Deletion on {day}", { day: date });
 }
 
-export function OrgSwitcher({ org }: { org: string | undefined }) {
+export function OrgSwitcher({ org }: { org: string }) {
   const session = useSession();
   const current = session.memberships.find((m) => m.org_id === org);
-  const name = org ? (current?.org_name ?? t("common.organization", "Organization")) : session.user.name;
+  const name = current?.org_name ?? t("common.organization", "Organization");
   const caption = current?.org_state === "scheduled_for_deletion" ? deletionCaption(current.org_deletion_due_at) : null;
-  const avatar = org ? (
-    <Avatar name={name} {...(current?.org_avatar_url ? { src: current.org_avatar_url } : {})} kind="org" size={24} decorative />
-  ) : (
-    <Avatar name={name} {...(session.user.avatar_url ? { src: session.user.avatar_url } : {})} size={24} decorative />
-  );
   const menus = useSidebarMenus();
-  useEffect(
-    () => preloadPictures([session.user.avatar_url, ...session.memberships.map((m) => m.org_avatar_url)]),
-    [session.user.avatar_url, session.memberships],
-  );
+  useEffect(() => preloadPictures(session.memberships.map((m) => m.org_avatar_url)), [session.memberships]);
 
   return (
     <OpensWhenReady ready={!!menus}>
       <Sidebar.Switcher
-        avatar={avatar}
+        side="bottom"
+        avatar={<Avatar name={name} {...(current?.org_avatar_url ? { src: current.org_avatar_url } : {})} kind="org" size={20} decorative />}
         label={name}
         {...(caption ? { caption, captionTone: "danger" as const } : {})}
-        aria-label={org ? t("shell.orgSwitcher.description", "Switch or open settings") : t("shell.orgSwitcher.personDescription", "Account and sign out")}
+        aria-label={t("shell.orgSwitcher.description", "Switch or open settings")}
+      >
+        {menus && <menus.OrgMenu org={org} onCreate={openCreateOrg} />}
+      </Sidebar.Switcher>
+    </OpensWhenReady>
+  );
+}
+
+export function AccountSwitcher() {
+  const session = useSession();
+  const picture = session.user.avatar_url ? { src: session.user.avatar_url } : {};
+  const menus = useSidebarMenus();
+  useEffect(() => preloadPictures([session.user.avatar_url]), [session.user.avatar_url]);
+
+  return (
+    <OpensWhenReady ready={!!menus}>
+      <Sidebar.Switcher
+        avatar={<Avatar name={session.user.name} {...picture} size={24} decorative />}
+        label={session.user.name}
+        aria-label={t("shell.orgSwitcher.personDescription", "Account and sign out")}
         header={
           <div className="flex min-w-0 items-center gap-10">
-            <Avatar name={session.user.name} {...(session.user.avatar_url ? { src: session.user.avatar_url } : {})} size={32} decorative />
+            <Avatar name={session.user.name} {...picture} size={32} decorative />
             <div className="flex min-w-0 flex-col">
               <Text weight="medium" truncate>
                 {session.user.name}
@@ -52,7 +64,7 @@ export function OrgSwitcher({ org }: { org: string | undefined }) {
           </div>
         }
       >
-        {menus && <menus.OrgMenu org={org} onCreate={openCreateOrg} />}
+        {menus && <menus.AccountMenu onCreate={openCreateOrg} />}
       </Sidebar.Switcher>
     </OpensWhenReady>
   );

@@ -3,10 +3,11 @@ import { cn } from "../../utils/cn.js";
 import { icons } from "../../icons/vocabulary.js";
 import { Icon } from "../icon/icon.js";
 import { CopyButton } from "../copy-button/copy-button.js";
+import { useHydrating } from "../../hooks/use-hydrating.js";
 import { useUiText } from "../../i18n/context.js";
 import { useScrollFadeX } from "../../hooks/use-scroll-fade.js";
 import { Text } from "../text/text.js";
-import { highlight, type CodeLang, type CodeToken } from "./highlighter.js";
+import { highlight, highlightNow, type CodeLang, type CodeToken } from "./highlighter.js";
 import { codeToneClass } from "./tones.js";
 import { INDENT } from "./indent.js";
 import { numberWidth } from "./numbers.js";
@@ -112,7 +113,15 @@ export const DiffView = forwardRef<HTMLDivElement, DiffViewProps>(function DiffV
   const lines = useMemo(() => diffLines(before, after), [before, after]);
   const stats = useMemo(() => diffStats(lines), [lines]);
   const [tokens, setTokens] = useState<{ before: string; after: string; lang: CodeLang; old: CodeToken[][] | null; new: CodeToken[][] | null } | null>(null);
+  const hydrating = useHydrating();
+  const instant = useMemo(() => {
+    if (hydrating) return undefined;
+    const o = highlightNow(before.replace(/\n$/, ""), lang);
+    const n = highlightNow(after.replace(/\n$/, ""), lang);
+    return o === undefined || n === undefined ? undefined : { old: o, new: n };
+  }, [hydrating, before, after, lang]);
   useEffect(() => {
+    if (instant) return;
     let alive = true;
     Promise.all([highlight(before.replace(/\n$/, ""), lang), highlight(after.replace(/\n$/, ""), lang)])
       .then(([o, n]) => alive && setTokens({ before, after, lang, old: o, new: n }))
@@ -120,8 +129,8 @@ export const DiffView = forwardRef<HTMLDivElement, DiffViewProps>(function DiffV
     return () => {
       alive = false;
     };
-  }, [before, after, lang]);
-  const current = tokens && tokens.before === before && tokens.after === after && tokens.lang === lang ? tokens : null;
+  }, [before, after, lang, instant]);
+  const current = instant ?? (tokens && tokens.before === before && tokens.after === after && tokens.lang === lang ? tokens : null);
   const [open, setOpen] = useState<{ lines: DiffLine[]; at: ReadonlySet<number> }>({ lines, at: new Set() });
   const opened = open.lines === lines ? open.at : NONE_OPEN;
   const unchanged = stats.added === 0 && stats.removed === 0;

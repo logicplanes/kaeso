@@ -18,6 +18,7 @@ export const docs = {
       actions: "Actions at the end of the heading row.",
       children: "The section's content.",
       description: "One sentence under the heading.",
+      rule: "The 1px rule under the heading. Turn it off above content that draws its own frame, such as a Dashboard.",
       spacing: "The space above the section: the default, or none.",
       title: "The section's heading.",
     },

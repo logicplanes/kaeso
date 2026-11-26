@@ -57,7 +57,6 @@ test("a preset stays itself in the address, through a reload", async ({ page }) 
   expect(search(page).get("period")).toBe("6m");
   await expect(trigger(page)).toHaveText("Last 6 months");
   await expect(page.getByText("Requests per week, UTC")).toBeVisible();
-  await expect(page.getByText("Tokens per request")).toBeVisible();
   await openPicker(page);
   await expect(popover(page).getByRole("grid").last()).toHaveAccessibleName(thisMonth());
   await page.keyboard.press("Escape");

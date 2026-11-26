@@ -62,7 +62,13 @@ function stripVariantDescriptions() {
 function directIcons() {
   const vocabulary = readFileSync(resolve(src, "icons/vocabulary.ts"), "utf8");
   const body = vocabulary.slice(vocabulary.indexOf("export const icons"));
-  const meaning = new Map([...body.matchAll(/^\s+(\w+): (\w+Icon),/gm)].map((m) => [m[1]!, m[2]!]));
+  const lucide = new Set(
+    /import \{([^}]*)\} from "lucide";/
+      .exec(vocabulary)![1]!
+      .split(",")
+      .map((name) => name.trim()),
+  );
+  const meaning = new Map([...body.matchAll(/^\s+(\w+): (\w+),/gm)].map((m) => [m[1]!, m[2]!]));
   return {
     name: "kaeso-direct-icons",
     enforce: "pre" as const,
@@ -70,15 +76,20 @@ function directIcons() {
       if (!id.includes("/src/components/")) return null;
       if (!/import \{ icons \} from "\.\.\/\.\.\/icons\/vocabulary\.js";/.test(code)) return null;
       const used = new Set<string>();
+      let own = false;
       let out = code.replace(/\bicons\.(\w+)\b/g, (whole, name: string) => {
         const icon = meaning.get(name);
         if (!icon) throw new Error(`${id}: icons.${name} is not in the vocabulary`);
+        if (!lucide.has(icon)) {
+          own = true;
+          return whole;
+        }
         used.add(icon);
         return `__icon_${icon}`;
       });
       out = out.replace(
         /import \{ icons \} from "\.\.\/\.\.\/icons\/vocabulary\.js";/,
-        `import { ${[...used].map((i) => `${i} as __icon_${i}`).join(", ")} } from "@hugeicons/core-free-icons";`,
+        (whole) => `${own ? `${whole}\n` : ""}import { ${[...used].map((i) => `${i} as __icon_${i}`).join(", ")} } from "lucide";`,
       );
       return { code: out, map: null };
     },
@@ -138,7 +149,7 @@ function inlineTokenNames() {
   };
 }
 
-const CLIENT_LIBRARIES = /^(react|react-dom|@base-ui\/react|@hugeicons\/react|@tanstack\/react-[\w-]+|react-day-picker)(\/|$)/;
+const CLIENT_LIBRARIES = /^(react|react-dom|@base-ui\/react|@tanstack\/react-[\w-]+|react-day-picker)(\/|$)/;
 const clientModules = new Set<string>();
 function clientDirective(): Plugin {
   return {
