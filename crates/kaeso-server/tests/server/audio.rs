@@ -1120,7 +1120,10 @@ async fn a_transcription_model_refuses_chat_and_keeps_its_availability() {
             &format!("/orgs/{}/projects/{}/models", env.owner.org_id, env.project),
             json!({
                 "provider": "openai", "model_id": "unserved-ears", "custom": true,
-                "overrides": { "input_modalities": ["audio"], "output_modalities": ["text"] }
+                "overrides": {
+                    "input_modalities": ["audio"], "output_modalities": ["text"],
+                    "unit_prices": [{ "per": "minute", "of": "input", "usd": "0.006" }]
+                }
             }),
             Some(&env.owner.cookie),
         )
