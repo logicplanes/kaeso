@@ -655,10 +655,14 @@ impl Catalogue {
         let (models, setting) = self.stands_for(provider, id);
         let model = models.first()?;
         // The provider's listing decides the setting; any listing of the same model may name it.
+        // An id without a setting already has every listing.
+        let others = match setting {
+            Some(_) => self.listed(provider, &model.id),
+            None => Vec::new(),
+        };
         let names: Vec<(&str, &str)> = models
             .iter()
-            .copied()
-            .chain(self.listed(provider, &model.id))
+            .chain(&others)
             .filter_map(|m| {
                 let name = m.name.as_deref().map(str::trim)?;
                 (!name.is_empty()).then_some((name, m.id.as_str()))
