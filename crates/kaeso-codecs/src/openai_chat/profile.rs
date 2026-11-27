@@ -66,6 +66,9 @@ pub struct RequestProfile {
     /// the request sets `separate_reasoning: true`, as Novita AI does; Kaeso then sets it, so
     /// the reasoning comes back in its own field.
     pub separate_reasoning: bool,
+    /// Whether a model of the provider can't think while a tool is forced, as DeepSeek's
+    /// models can't; Kaeso then sends such a request with thinking off.
+    pub forced_tool_without_thinking: bool,
     /// Keys the encoder writes into a provider's own option objects when the request doesn't
     /// set them, such as Venice's `venice_parameters.include_venice_system_prompt: false`.
     pub option_defaults: &'static [OptionDefault],
@@ -161,6 +164,7 @@ impl RequestProfile {
         path: super::CHAT_COMPLETIONS_PATH,
         stream_options: true,
         separate_reasoning: false,
+        forced_tool_without_thinking: false,
         option_defaults: &[],
     };
 }
@@ -395,6 +399,14 @@ impl ChatProfile {
     #[must_use]
     pub const fn separate_reasoning(mut self) -> Self {
         self.request.separate_reasoning = true;
+        self
+    }
+
+    /// A model of the provider can't think while a tool is forced
+    /// ([`RequestProfile::forced_tool_without_thinking`]).
+    #[must_use]
+    pub const fn forced_tool_without_thinking(mut self) -> Self {
+        self.request.forced_tool_without_thinking = true;
         self
     }
 

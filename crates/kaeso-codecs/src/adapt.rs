@@ -13,7 +13,10 @@ use crate::cross::{
 use crate::openai_chat::ChatProfile;
 use crate::openai_responses::{InputItems, ReasoningReplay, history, namespaces, replay};
 use crate::wire::VERBATIM_FORM_KEY;
-use crate::{inline_tools, neutral, tool_patterns, tool_roots, tool_search, verbosity, web_search};
+use crate::{
+    inline_tools, neutral, tool_patterns, tool_roots, tool_search, tool_thinking, verbosity,
+    web_search,
+};
 
 const INPUT: &str = "input";
 
@@ -121,6 +124,9 @@ pub(crate) fn for_target<'a>(
     inline_tools::for_foreign(&mut draft, target)?;
     match target {
         DialectId::AnthropicMessages => {
+            if ctx.messages_profile.forced_tool_without_thinking {
+                tool_thinking::off_for_forced_tools(&mut draft, target);
+            }
             web_search::for_anthropic(&mut draft)?;
             web_search::for_claude(&mut draft);
             history::agent_messages(&mut draft, "Anthropic")?;
@@ -130,6 +136,9 @@ pub(crate) fn for_target<'a>(
             crate::anthropic_messages::apply_profile(&mut draft, &ctx.messages_profile)?;
         }
         DialectId::OpenAiChat => {
+            if ctx.chat_profile.request.forced_tool_without_thinking {
+                tool_thinking::off_for_forced_tools(&mut draft, target);
+            }
             web_search::for_chat(&mut draft)?;
             history::agent_messages(&mut draft, ctx.chat_profile.provider)?;
             history::as_function_calls(&mut draft)?;
