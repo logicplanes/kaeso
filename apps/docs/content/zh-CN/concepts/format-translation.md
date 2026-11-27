@@ -151,6 +151,12 @@ Chat Completions 没有推理字段。当 Claude，或经由 Responses 的 OpenA
 
 Gemini 应用收不到其他服务商的推理，因为思考 part 无法承载它：`google-genai` 会把 `thoughtSignature` 当作 base64 读取。当 Claude，或经由 Responses 的 OpenAI 模型，为 Gemini 应用提供服务时，网关会按工具调用的 ID 保存每次工具调用之前的推理，并像对 Chat Completions 一样把它放回。当 Gemini 模型为 Gemini 应用提供服务时，它的思考签名会按 Gemini 写出的原样到达应用并返回。
 
+### 保持 `store` 开启的 Responses 应用
+
+保持 `store` 开启的 Responses 应用（Vercel AI SDK 默认如此）会把回复中的推理作为指向其 ID 的 `item_reference` 发回，而不是发回 item 本身。Kaeso 不保留回复，因此网关会像对 Chat Completions 一样，为这类应用保留每次工具调用之前的推理，并把它放回引用所指的位置。没有工具调用的轮次中的引用会被省略并在 `kaeso-left-out` 中注明，因为没有模型需要取回那里的推理。
+
+当推理已不在时（已过期、由另一个密钥发送该轮次，或应用此前发送了 `store: false`），Kaeso 会以 `400` 拒绝请求，并要求直接发送这些 item，就像 SDK 在 `store: false` 时那样。指向推理以外内容的引用仍会被拒绝（[存储的回复](../console/organizations-and-projects.md#存储的回复)）。
+
 ### 可读的推理
 
 应用能看到哪些推理内容，取决于它在自身格式中请求了什么：

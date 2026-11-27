@@ -151,6 +151,12 @@ Die Metrik `kaeso_reasoning_continuity_total` zählt behaltenes, wiederhergestel
 
 Eine Gemini-App erhält kein Reasoning von einem anderen Anbieter, weil ein Thought-Part es nicht tragen kann: `google-genai` liest `thoughtSignature` als Base64. Bedient Claude oder ein OpenAI-Modell über Responses eine Gemini-App, behält das Gateway das Reasoning vor jedem Tool-Aufruf anhand der ID des Aufrufs und fügt es wieder ein, wie bei Chat Completions. Bedient ein Gemini-Modell eine Gemini-App, erreichen seine Thought Signatures die App und kommen so zurück, wie Gemini sie geschrieben hat.
 
+### Responses-Apps, die `store` anlassen
+
+Eine Responses-App, die `store` anlässt, wie das Vercel AI SDK standardmäßig, sendet das Reasoning der Antwort als `item_reference` auf seine ID zurück statt als Item selbst. Kaeso bewahrt keine Antworten auf, deshalb bewahrt das Gateway für eine solche App das Reasoning vor jedem Tool-Aufruf auf, wie für Chat Completions, und setzt es dort ein, wo der Verweis hinzeigt. Ein Verweis in einem Zug ohne Tool-Aufrufe, wo kein Modell das Reasoning zurück braucht, wird weggelassen und in `kaeso-left-out` genannt.
+
+Ist das Reasoning weg, weil es abgelaufen ist, ein anderer Schlüssel den Zug sendet oder die App vorher `store: false` gesendet hat, lehnt Kaeso die Anfrage mit `400` ab und verlangt die Items selbst, wie SDKs sie mit `store: false` senden. Ein Verweis auf etwas anderes als Reasoning bleibt abgelehnt ([gespeicherte Antworten](../console/organizations-and-projects.md#gespeicherte-antworten)).
+
 ### Lesbares Reasoning
 
 Was eine App vom Reasoning sieht, folgt dem, was sie in ihrem eigenen Format anfordert:

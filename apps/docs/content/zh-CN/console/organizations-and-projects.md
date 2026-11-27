@@ -192,7 +192,7 @@ Kaeso 只会归档项目，不会删除，因此其用量和日志会保留。�
 - `GET /v1/responses/{response_id}` 读取存储的回复，`DELETE /v1/responses/{response_id}` 在 OpenAI 删除它，检查规则相同。
 - 限额也会预留之前对话的 Token，因为 OpenAI 会把它们作为输入计费；响应缓存会让这些请求直接通过。
 
-当任一开关关闭、模型以其他格式调用或所在服务商不保留回复，或项目的密钥是 ChatGPT 套餐等账户登录时，Kaeso 会以 `400` 拒绝 `store: true` 和 `previous_response_id`，并注明字段；任一开关关闭时，Kaeso 会发送 `store: false`，使 OpenAI 默认不保留任何内容。别名会从无法继续该回复的步骤转到下一个步骤。`conversation`、`background: true` 和 `item_reference` 项在任何情况下都会被拒绝，`/v1/responses` 批处理文件同样遵循这些规则。关闭开关后，OpenAI 已保留的回复会一直保留到过期；如有需要，请先删除它们。
+当任一开关关闭、模型以其他格式调用或所在服务商不保留回复，或项目的密钥是 ChatGPT 套餐等账户登录时，Kaeso 会以 `400` 拒绝 `store: true` 和 `previous_response_id`，并注明字段；任一开关关闭时，Kaeso 会发送 `store: false`，使 OpenAI 默认不保留任何内容。别名会从无法继续该回复的步骤转到下一个步骤。`conversation`、`background: true` 和 `item_reference` 项在任何情况下都会被拒绝，但指向 Kaeso 所返回推理的引用除外，Kaeso 会用其保留的内容补回（[格式转换](../concepts/format-translation.md#保持-store-开启的-responses-应用)）；`/v1/responses` 批处理文件同样遵循这些规则，也会拒绝这类引用。关闭开关后，OpenAI 已保留的回复会一直保留到过期；如有需要，请先删除它们。
 
 ## 下一步
 

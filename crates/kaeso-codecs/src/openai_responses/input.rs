@@ -87,6 +87,9 @@ fn decode_item(raw: &RawValue, origin: &Origin) -> Item {
         Some("reasoning") => decode_reasoning(raw, origin)
             .map(|r| Item::Reasoning(Block::Reasoning(r)))
             .unwrap_or_else(raw_item),
+        Some("item_reference") => super::stored::decode_reasoning_reference(raw, origin)
+            .map(|r| Item::Reasoning(Block::Reasoning(r)))
+            .unwrap_or_else(raw_item),
         _ => raw_item(),
     }
 }
@@ -418,6 +421,15 @@ pub(super) fn encode_messages(
                     let mut node = function_call_output_item(&call_id, result, &mut names.media);
                     apply(&result.extras, DIALECT, "", &[], &mut node);
                     items.push(node);
+                }
+                Block::Reasoning(r) if super::stored::reasoning_reference(r).is_some() => {
+                    if let Some(id) = super::stored::reasoning_reference(r) {
+                        items.push(
+                            Node::obj()
+                                .with("type", Node::str("item_reference"))
+                                .with("id", Node::str(id)),
+                        );
+                    }
                 }
                 Block::Reasoning(r)
                     if reasoning_replayable(r, target)

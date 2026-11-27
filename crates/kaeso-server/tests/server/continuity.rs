@@ -256,3 +256,144 @@ async fn without_valkey_or_when_off_the_tool_loop_goes_on_without_thinking() {
     .await;
     assert_eq!(r.status, StatusCode::OK, "{}", r.text());
 }
+
+fn responses_tools() -> Value {
+    json!([{ "type": "function", "name": "get_weather", "description": "Weather in a city", "parameters": { "type": "object", "properties": { "city": { "type": "string" } }, "required": ["city"] } }])
+}
+
+fn responses_first_turn(store: Option<bool>) -> Value {
+    let mut body = json!({
+        "model": "claude-haiku-4-5",
+        "reasoning": { "effort": "low" },
+        "tools": responses_tools(),
+        "input": "Weather in Paris? [mock:fixture=thinking-interleaved-tools]",
+    });
+    if let Some(store) = store {
+        body["store"] = json!(store);
+    }
+    body
+}
+
+// The step an SDK that leaves `store` on sends after a tool call: the reply's reasoning as an
+// `item_reference`, the call and its output.
+fn responses_second_turn(reasoning: &str, call_id: &str) -> Value {
+    json!({
+        "model": "claude-haiku-4-5",
+        "reasoning": { "effort": "low" },
+        "tools": responses_tools(),
+        "input": [
+            { "role": "user", "content": "Weather in Paris?" },
+            { "type": "item_reference", "id": reasoning },
+            { "type": "function_call", "call_id": call_id, "name": "get_weather", "arguments": "{\"city\":\"Paris\"}" },
+            { "type": "function_call_output", "call_id": call_id, "output": "18 °C, sunny" },
+        ],
+    })
+}
+
+fn responses(env: &Env, key: &str, body: Value) -> impl Future<Output = Answer> {
+    let key = key.to_owned();
+    async move { call(env, "/v1/responses", Some(&key), false, Some(body)).await }
+}
+
+fn reasoning_and_call(r: &Answer) -> (String, String) {
+    let output = r.json()["output"].as_array().unwrap().clone();
+    let id = |ty: &str, field: &str| {
+        output
+            .iter()
+            .find(|i| i["type"] == ty)
+            .unwrap_or_else(|| panic!("no {ty} in {output:?}"))[field]
+            .as_str()
+            .unwrap()
+            .to_owned()
+    };
+    (id("reasoning", "id"), id("function_call", "call_id"))
+}
+
+#[tokio::test]
+async fn a_responses_app_that_references_its_reasoning_keeps_claudes_thinking() {
+    let env = env(&[]).await;
+    let first = responses(&env, &env.key, responses_first_turn(None)).await;
+    assert_eq!(first.status, StatusCode::OK, "{}", first.text());
+    let (reasoning, call_id) = reasoning_and_call(&first);
+    assert!(reasoning.starts_with("rs_"), "{reasoning}");
+
+    let second = responses(&env, &env.key, responses_second_turn(&reasoning, &call_id)).await;
+    assert_eq!(second.status, StatusCode::OK, "{}", second.text());
+    assert_eq!(second.header("kaeso-left-out"), None);
+    let turn = sent_assistant_turn(&env);
+    let blocks = turn["content"].as_array().unwrap();
+    assert_eq!(blocks[0]["type"], "thinking", "{turn}");
+    assert!(
+        blocks[0]["signature"]
+            .as_str()
+            .unwrap()
+            .starts_with("EqEvMLy0mgL4Jn097PRt"),
+        "{turn}"
+    );
+    assert_eq!(blocks.last().unwrap()["type"], "tool_use");
+    assert_eq!(blocks.last().unwrap()["id"], call_id.as_str());
+
+    let other = env
+        .app
+        .post(
+            &format!("/orgs/{}/projects/{}/keys", env.owner.org_id, env.project),
+            json!({ "name": "other" }),
+            Some(&env.owner.cookie),
+        )
+        .await
+        .body["secret"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let before = env.mock.received().len();
+    let r = responses(&env, &other, responses_second_turn(&reasoning, &call_id)).await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert_eq!(
+        r.json()["error"]["message"],
+        format!(
+            "Kaeso no longer keeps the reasoning `{reasoning}` points to; send the items themselves in `input`, as SDKs do with `store: false`."
+        )
+    );
+    assert_eq!(r.json()["error"]["param"], "input");
+    assert_eq!(env.mock.received().len(), before, "nothing was sent");
+}
+
+#[tokio::test]
+async fn a_responses_reference_in_a_turn_without_tool_calls_is_left_out() {
+    let env = env(&[]).await;
+    let r = responses(
+        &env,
+        &env.key,
+        json!({
+            "model": "claude-haiku-4-5",
+            "input": [
+                { "role": "user", "content": "Hi" },
+                { "type": "item_reference", "id": "rs_kaeso_earlier_0" },
+                { "type": "message", "role": "assistant", "content": [{ "type": "output_text", "text": "Hello." }] },
+                { "role": "user", "content": "Tell me more." },
+            ],
+        }),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.header("kaeso-left-out"), Some("item_reference"));
+    let sent = env.mock.last().unwrap().json();
+    assert_eq!(sent["messages"].as_array().unwrap().len(), 3, "{sent}");
+}
+
+#[tokio::test]
+async fn a_responses_app_that_sends_store_false_gets_no_reasoning_kept() {
+    let env = env(&[]).await;
+    let first = responses(&env, &env.key, responses_first_turn(Some(false))).await;
+    assert_eq!(first.status, StatusCode::OK, "{}", first.text());
+    let (reasoning, call_id) = reasoning_and_call(&first);
+    let mut conn = env.app.state.valkey.conn();
+    let keys: Vec<String> = redis::cmd("KEYS")
+        .arg(env.app.state.valkey.key("reasoning:*"))
+        .query_async(&mut conn)
+        .await
+        .unwrap();
+    assert!(keys.is_empty(), "{keys:?}");
+    let r = responses(&env, &env.key, responses_second_turn(&reasoning, &call_id)).await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+}

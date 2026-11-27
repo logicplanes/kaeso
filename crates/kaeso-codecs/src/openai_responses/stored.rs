@@ -91,6 +91,47 @@ fn raw_is_item_reference(text: &str) -> bool {
     serde::Deserializer::deserialize_map(&mut de, AnyItemRef).unwrap_or(false)
 }
 
+/// The form key of a reasoning block that stands for an `item_reference` item pointing to
+/// earlier reasoning: its value is the referenced id.
+pub(crate) const REFERENCE: &str = "item_reference";
+
+/// The id of the earlier reasoning a Responses app pointed to with an `item_reference` item,
+/// which this reasoning block stands for; such a block carries nothing else.
+pub fn reasoning_reference(block: &kaeso_kpp::ReasoningBlock) -> Option<&str> {
+    block.extras.form_str(DIALECT, REFERENCE)
+}
+
+/// Whether a Responses-format request points to earlier reasoning with `item_reference` items.
+pub fn has_reasoning_reference(req: &GenerateRequest) -> bool {
+    req.all_blocks().any(|block| match block {
+        kaeso_kpp::Block::Reasoning(r) => reasoning_reference(r).is_some(),
+        _ => false,
+    })
+}
+
+// An `item_reference` item whose id is a reasoning item's (`rs_`, as OpenAI and Kaeso name
+// them) and that has no other field; any other reference stays an unknown item.
+pub(super) fn decode_reasoning_reference(
+    raw: &serde_json::value::RawValue,
+    origin: &kaeso_kpp::Origin,
+) -> Option<kaeso_kpp::ReasoningBlock> {
+    #[derive(serde::Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct Reference {
+        #[serde(rename = "type")]
+        _ty: String,
+        id: String,
+    }
+    let r: Reference = serde_json::from_str(raw.get()).ok()?;
+    if !r.id.starts_with("rs_") {
+        return None;
+    }
+    let mut block = kaeso_kpp::ReasoningBlock::new(origin.clone());
+    block.extras = kaeso_kpp::Extras::new(origin.clone());
+    block.extras.form.insert(REFERENCE.to_owned(), r.id.into());
+    Some(block)
+}
+
 /// Whether a Responses-format request carries an `item_reference` item in `input`.
 pub fn has_item_reference(req: &GenerateRequest) -> bool {
     if !req.extras.is_from(DIALECT) {
@@ -193,5 +234,83 @@ mod tests {
                 previous: Some("resp_9".into()),
             }
         );
+    }
+
+    const TOOL_LOOP: &[u8] = br#"{"model":"deepseek-flash","input":[
+        {"role":"user","content":[{"type":"input_text","text":"Weather in Paris? Use the tool."}]},
+        {"type":"item_reference","id":"rs_kaeso_0123_0"},
+        {"type":"function_call","call_id":"call_1","name":"weather","arguments":"{\"city\":\"Paris\"}"},
+        {"type":"function_call_output","call_id":"call_1","output":"Sunny 21C"}]}"#;
+
+    fn decoded(body: &[u8]) -> GenerateRequest {
+        let Request::Generate(g) = super::super::OpenAiResponses::decode_request(
+            RequestKind::Generate,
+            body,
+            &HeaderList::new(),
+        )
+        .unwrap() else {
+            panic!()
+        };
+        g
+    }
+
+    #[test]
+    fn a_reference_to_reasoning_stands_in_the_turn_of_its_tool_call_and_is_written_back() {
+        let g = decoded(TOOL_LOOP);
+        assert!(has_reasoning_reference(&g));
+        assert!(!has_item_reference(&g));
+        let turn = g
+            .messages
+            .iter()
+            .find(|m| m.role == kaeso_kpp::Role::Assistant)
+            .unwrap();
+        match turn.blocks.as_slice() {
+            [
+                kaeso_kpp::Block::Reasoning(r),
+                kaeso_kpp::Block::ToolCall(c),
+            ] => {
+                assert_eq!(reasoning_reference(r), Some("rs_kaeso_0123_0"));
+                assert!(r.text.is_empty() && r.summary.is_empty() && r.opaque.is_empty());
+                assert_eq!(c.id, "call_1");
+            }
+            other => panic!("{other:?}"),
+        }
+        let req = Request::Generate(g);
+        let mut ctx = EgressCtx::new(&req);
+        let enc = super::super::OpenAiResponses::encode_request(&req, &mut ctx).unwrap();
+        let sent: serde_json::Value = serde_json::from_slice(&enc.body).unwrap();
+        let input: serde_json::Value =
+            serde_json::from_slice::<serde_json::Value>(TOOL_LOOP).unwrap()["input"].clone();
+        assert_eq!(sent["input"], input);
+    }
+
+    #[test]
+    fn other_references_stay_unknown_items() {
+        for item in [
+            r#"{"type":"item_reference","id":"msg_1"}"#,
+            r#"{"type":"item_reference","id":"fc_kaeso_1"}"#,
+            r#"{"type":"item_reference","id":"rs_1","extra":true}"#,
+            r#"{"type":"item_reference","id":7}"#,
+        ] {
+            let body = format!(r#"{{"model":"m","input":[{item}]}}"#);
+            let g = decoded(body.as_bytes());
+            assert!(!has_reasoning_reference(&g), "{item}");
+            assert!(has_item_reference(&g), "{item}");
+        }
+    }
+
+    #[test]
+    fn a_reference_to_reasoning_has_no_equivalent_in_another_format() {
+        let req = Request::Generate(decoded(TOOL_LOOP));
+        let target = kaeso_kpp::Origin::new(kaeso_kpp::DialectId::AnthropicMessages);
+        let err = crate::cross::check_foreign(&req, &target).unwrap_err();
+        assert!(
+            err.message.starts_with(
+                "`item_reference` `rs_kaeso_0123_0` comes from an OpenAI Responses request and has no equivalent in Anthropic Messages."
+            ),
+            "{}",
+            err.message
+        );
+        assert!(err.message.contains("`store: false`"), "{}", err.message);
     }
 }
