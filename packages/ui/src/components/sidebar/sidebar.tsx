@@ -864,13 +864,18 @@ export type SidebarActionProps = {
 
 const Action = forwardRef<HTMLButtonElement, SidebarActionProps>(function SidebarAction({ icon, label, shortcut, onClick, className }, ref) {
   const { rail } = useSidebar();
+  const sheet = useContext(SidebarSheetContext);
+  const activate = () => {
+    onClick?.();
+    if (sheet && !sheet.peek) sheet.close();
+  };
   return (
     <Tooltip content={label} {...(shortcut ? { shortcut } : {})} {...(rail ? { side: "right" as const } : {})}>
       <button
         ref={ref}
         type="button"
         aria-label={label}
-        onClick={onClick}
+        onClick={activate}
         className={cn(
           "relative inline-flex size-32 shrink-0 cursor-pointer items-center justify-center rounded-sidebar text-fg-secondary transition-control tap-target hover:bg-fill-1 hover:text-fg active:bg-fill-2 focus-ring",
           className,

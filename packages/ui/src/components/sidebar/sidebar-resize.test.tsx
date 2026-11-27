@@ -251,6 +251,28 @@ describe("Sidebar parts", () => {
     await userEvent.click(screen.getByRole("button", { name: "Keep sidebar open" }));
     expect(screen.getByRole("status")).toHaveTextContent("expanded");
   });
+  it("closes the phone's navigation when an action at the foot is pressed, and keeps a peeking sidebar", () => {
+    let closed = 0;
+    const view = render(
+      <Sidebar.Provider shortcut={false}>
+        <SidebarSheetContext.Provider value={{ close: () => (closed += 1), peek: false }}>
+          <Sidebar.Action icon={icons.search} label="Search" />
+        </SidebarSheetContext.Provider>
+      </Sidebar.Provider>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Search" }));
+    expect(closed).toBe(1);
+    view.unmount();
+    render(
+      <Sidebar.Provider shortcut={false}>
+        <SidebarSheetContext.Provider value={{ close: () => (closed += 1), peek: true }}>
+          <Sidebar.Action icon={icons.search} label="Search" />
+        </SidebarSheetContext.Provider>
+      </Sidebar.Provider>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Search" }));
+    expect(closed).toBe(1);
+  });
 
   it("shows a back link, a loading state and a brand without a link", () => {
     render(
