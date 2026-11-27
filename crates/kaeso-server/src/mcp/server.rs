@@ -645,39 +645,47 @@ async fn stats_of(
         q.push(("group_by", "day".to_owned()));
         rows_of(platform_get(c, &usage, &q).await?)
     };
-    let mut key_names = std::collections::HashMap::new();
+    let (mut key_names, mut source_names) = Default::default();
     if ask.group == stats::Group::Key && ask.project.is_some() {
-        let keys = platform_get(
-            c,
-            &format!("{base}/keys"),
-            &[
-                ("limit", "100".to_owned()),
-                ("include_archived", "true".to_owned()),
-            ],
-        )
-        .await
-        .map(rows_of)
-        .unwrap_or_default();
-        for k in keys {
-            if let (Some(id), Some(name)) = (
-                k.get("id").and_then(Value::as_str),
-                k.get("name").and_then(Value::as_str),
-            ) {
-                key_names.insert(id.to_owned(), name.to_owned());
-            }
-        }
+        key_names = names_of(c, &format!("{base}/keys")).await;
+        source_names = names_of(c, &format!("{base}/sources")).await;
     }
     let data = stats::Data {
         hours: &hours,
         days: &days,
         grouped: &grouped,
         key_names: &key_names,
+        source_names: &source_names,
     };
     let scope = json!({ "org": { "id": org, "name": org_name }, "project": project_scope });
     let (structured, groups, totals) =
         stats::structured(ask, &w, &data, scope, oauth::endpoint(c.state, &console));
     let text = stats::summary(ask, &scope_name, &totals, &groups);
     Ok(text_result(text, Some(structured), false))
+}
+
+// Archived keys and sources too, so past requests keep their names; a list the user may not see
+// leaves its names out, and the breakdown says "A source" as the console does.
+async fn names_of(c: &Call<'_>, list: &str) -> std::collections::HashMap<String, String> {
+    let rows = platform_get(
+        c,
+        list,
+        &[
+            ("limit", "100".to_owned()),
+            ("include_archived", "true".to_owned()),
+        ],
+    )
+    .await
+    .map(rows_of)
+    .unwrap_or_default();
+    rows.iter()
+        .filter_map(|r| {
+            Some((
+                r.get("id")?.as_str()?.to_owned(),
+                r.get("name")?.as_str()?.to_owned(),
+            ))
+        })
+        .collect()
 }
 
 fn arguments(params: &Map<String, Value>) -> Map<String, Value> {

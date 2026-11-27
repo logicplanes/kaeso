@@ -61,9 +61,10 @@ export function formatValue(metric: Metric, v: Value): string {
 
 const chartValue = (metric: Metric) => (v: number) => (metric === "cost" ? formatUSD(String(v), { decimals: 2 }) : formatValue(metric, v));
 
-function groupName(row: { key: string; label: string }): string {
+function groupName(row: { key: string; label: string; source?: string | null }): string {
   if (row.key === "playground") return t("stats.playground", "Playground");
   if (row.key === "") return t("stats.unknown", "Unknown");
+  if (row.key.startsWith("source:")) return row.source ? t("stats.sourceKey", "{name} (source)", { name: row.source }) : t("stats.aSource", "A source");
   return row.label;
 }
 
