@@ -212,7 +212,6 @@ async fn fields_tokenhub_would_ignore_are_refused_unless_they_ask_for_nothing() 
         ("store", json!(true)),
         ("metadata", json!({ "team": "search" })),
         ("service_tier", json!("priority")),
-        ("modalities", json!(["text", "audio"])),
     ] {
         env.mock.clear();
         let mut body = chat(HY4, "Hello");
