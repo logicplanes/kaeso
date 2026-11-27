@@ -2492,13 +2492,13 @@ fn agent_platform_models_go_in_the_format_of_their_family_and_count_where_it_cou
         Some(DialectId::Gemini)
     );
     let mut count = Request::CountTokens(GenerateRequest::new("meta/llama"));
-    assert!(prepare(&mut count, DialectId::AnthropicMessages, &llama).is_err());
+    let plan = prepare(&mut count, DialectId::AnthropicMessages, &llama).unwrap();
+    assert_eq!(plan.estimated_count, Some(0), "Kaeso estimates, here an empty request");
     let mut count = Request::CountTokens(GenerateRequest::new("claude-opus-4-5@20251101"));
+    let plan = prepare(&mut count, DialectId::AnthropicMessages, &claude).unwrap();
     assert_eq!(
-        prepare(&mut count, DialectId::AnthropicMessages, &claude)
-            .unwrap()
-            .dialect,
-        DialectId::AnthropicMessages
+        (plan.dialect, plan.estimated_count),
+        (DialectId::AnthropicMessages, None)
     );
     let mut sent_as = entry("gemini-agent-platform", "claude-opus-4-5@20251101");
     sent_as.overrides.egress_dialect = Some(DialectId::OpenAiChat);
