@@ -548,11 +548,13 @@ impl ChatState {
         }
         let frame = parse_frame(raw);
         if frame.comment_only {
+            self.release_held(false, out);
             out.extend_from_slice(raw);
             step.events = step.events.saturating_add(1);
             return;
         }
         if frame.has_data && frame.event == Some("error") {
+            self.release_held(true, out);
             let err = crate::openai_chat::error::with_detail(
                 crate::openai_chat::error::decode_body(None, frame.data.as_bytes()),
                 self.error_detail,
@@ -565,6 +567,7 @@ impl ChatState {
         let plain =
             frame.event.is_none() && !(frame.has_non_plain_framing && frame.data == "[DONE]");
         if !plain || self.done || frame.data.is_empty() {
+            self.release_held(false, out);
             out.extend_from_slice(raw);
             step.events = step.events.saturating_add(1);
             return;
@@ -937,16 +940,11 @@ fn write_usage(
         for (line, eol) in split_sse_lines(text) {
             if line == "data" || line.starts_with("data:") {
                 if !wrote_data {
-                    out.extend_from_slice(b"data: ");
-                    if serde_json::to_writer(&mut *out, &map).is_err() {
+                    let Ok(json) = serde_json::to_string(&map) else {
                         out.truncate(start);
                         return false;
-                    }
-                    out.extend_from_slice(if eol.is_empty() {
-                        b"\n"
-                    } else {
-                        eol.as_bytes()
-                    });
+                    };
+                    write_data_lines(&json, if eol.is_empty() { "\n" } else { eol }, out);
                     wrote_data = true;
                 }
             } else {
@@ -959,13 +957,23 @@ fn write_usage(
         }
         return wrote_data;
     }
-    out.extend_from_slice(b"data: ");
-    if serde_json::to_writer(&mut *out, &map).is_err() {
+    let Ok(json) = serde_json::to_string(&map) else {
         out.truncate(start);
         return false;
-    }
-    out.extend_from_slice(b"\n\n");
+    };
+    write_data_lines(&json, "\n", out);
+    out.extend_from_slice(b"\n");
     true
+}
+
+// A raw value the provider split across `data:` lines keeps its line breaks; each line needs a
+// `data:` of its own again, or the client reads the rest as other fields.
+fn write_data_lines(json: &str, eol: &str, out: &mut Vec<u8>) {
+    for line in json.split('\n') {
+        out.extend_from_slice(b"data: ");
+        out.extend_from_slice(line.strip_suffix('\r').unwrap_or(line).as_bytes());
+        out.extend_from_slice(eol.as_bytes());
+    }
 }
 
 // The usage chunk OpenAI sends last: the chunk's other keys, `choices: []` and its `usage`.
@@ -973,9 +981,9 @@ fn usage_chunk(data: &str) -> Option<Vec<u8>> {
     let mut map = serde_json::from_str::<IndexMap<String, &RawValue>>(data).ok()?;
     let empty: &RawValue = serde_json::from_str("[]").ok()?;
     *map.get_mut("choices")? = empty;
-    let mut out = b"data: ".to_vec();
-    serde_json::to_writer(&mut out, &map).ok()?;
-    out.extend_from_slice(b"\n\n");
+    let mut out = Vec::new();
+    write_data_lines(&serde_json::to_string(&map).ok()?, "\n", &mut out);
+    out.extend_from_slice(b"\n");
     Some(out)
 }
 
@@ -1036,12 +1044,14 @@ impl StreamPassthrough for ChatPassthrough {
     }
 
     fn flush_eof_error(&mut self, out: &mut Vec<u8>) -> PassthroughStep {
+        self.state.release_held(true, out);
         flush_eof_framer(&mut self.framer, &mut self.state, out)
     }
 
     fn encode_error(&mut self, err: &KppError) -> Vec<u8> {
         let body = crate::openai_chat::error::error_body(err);
         let mut out = Vec::new();
+        self.state.release_held(true, &mut out);
         out.extend_from_slice(b"data: ");
         let _ = serde_json::to_writer(&mut out, &body);
         out.extend_from_slice(b"\n\n");
@@ -1891,6 +1901,75 @@ mod tests {
             assert!(errs.is_empty() && ended, "{rel}: {errs:?}");
             assert_eq!(out, bytes, "{rel} goes as sent");
         }
+    }
+
+    #[test]
+    fn a_held_finish_chunk_survives_split_data_errors_and_comments() {
+        let ectx = EgressCtx::for_kind(RequestKind::Generate, StreamMode::on(true));
+        let enc = EncodeCtx::new(RequestKind::Generate, StreamMode::on(true));
+        let head = "data: {\"id\":\"c\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"Hi\"},\"finish_reason\":null}]}\n\n";
+        let finish = "data: {\"id\":\"c\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"!\"},\"finish_reason\":\"stop\"}],\"usage\":{\"prompt_tokens\":5,\"completion_tokens\":2,\"total_tokens\":7}}\n\n";
+        let run = |bytes: &str| {
+            let mut pass = for_stream(DialectId::OpenAiChat, &ectx, &enc).unwrap();
+            let (out, errors, _) = feed_chunked(pass.as_mut(), bytes.as_bytes(), 9);
+            (pass, String::from_utf8(out).unwrap(), errors)
+        };
+        let data = |out: &str| -> Vec<Value> {
+            crate::sse::parse_all(out.as_bytes())
+                .unwrap()
+                .into_iter()
+                .filter_map(|i| match i {
+                    crate::sse::SseItem::Event(e) if e.data != "[DONE]" => {
+                        Some(serde_json::from_str(&e.data).unwrap())
+                    }
+                    _ => None,
+                })
+                .collect()
+        };
+
+        // A usage object the provider split across `data:` lines.
+        let split = finish.replace("\"prompt_tokens\":5,", "\"prompt_tokens\":5,\ndata: ");
+        let (_, out, errors) = run(&format!("{head}{split}data: [DONE]\n\n"));
+        assert!(errors.is_empty(), "{errors:?}");
+        let chunks = data(&out);
+        assert_eq!(chunks.len(), 3, "{out}");
+        assert_eq!(chunks[1]["usage"], Value::Null, "{out}");
+        assert_eq!(chunks[1]["choices"][0]["delta"]["content"], "!", "{out}");
+        assert_eq!(chunks[2]["choices"], serde_json::json!([]), "{out}");
+        assert_eq!(chunks[2]["usage"]["total_tokens"], 7, "{out}");
+
+        // A named error right after it: the chunk goes as the provider sent it.
+        let (_, out, errors) = run(&format!(
+            "{head}{finish}event: error\ndata: {{\"error\":{{\"message\":\"boom\"}}}}\n\n"
+        ));
+        assert_eq!(errors.len(), 1);
+        assert!(out.ends_with(finish), "{out}");
+
+        // A transport error: the gateway writes the error after the chunk.
+        let mut pass = for_stream(DialectId::OpenAiChat, &ectx, &enc).unwrap();
+        let mut out = Vec::new();
+        assert!(
+            pass.feed(format!("{head}{finish}").as_bytes(), &mut out)
+                .error
+                .is_none()
+        );
+        let error = pass.encode_error(&KppError::provider("The connection to the provider broke."));
+        assert!(
+            String::from_utf8(error).unwrap().starts_with(finish),
+            "the held chunk comes first"
+        );
+
+        // A comment between it and the provider's own usage chunk.
+        let own = "data: {\"id\":\"c\",\"choices\":[],\"usage\":{\"prompt_tokens\":5,\"completion_tokens\":2,\"total_tokens\":7}}\n\n";
+        let (_, out, errors) = run(&format!(
+            "{head}{finish}: keepalive\n\n{own}data: [DONE]\n\n"
+        ));
+        assert!(errors.is_empty(), "{errors:?}");
+        let chunks = data(&out);
+        assert_eq!(chunks.len(), 3, "{out}");
+        assert_eq!(chunks[1]["usage"], Value::Null, "{out}");
+        assert_eq!(chunks[2]["usage"]["total_tokens"], 7, "{out}");
+        assert!(out.contains(": keepalive\n\n"), "{out}");
     }
 
     #[test]

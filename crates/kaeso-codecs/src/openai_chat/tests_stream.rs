@@ -1382,3 +1382,23 @@ data: [DONE]\n\n";
     );
     assert_eq!(frames(&out.into_bytes()), frames(split.as_bytes()));
 }
+
+#[test]
+fn a_comment_between_the_finish_and_the_usage_chunk_ends_both_paths_alike() {
+    let stream = concat!(
+        "data: {\"id\":\"c\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"m\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"Hi\"},\"finish_reason\":null}]}\n\n",
+        "data: {\"id\":\"c\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"m\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"stop\"}],\"usage\":{\"prompt_tokens\":5,\"completion_tokens\":2,\"total_tokens\":7}}\n\n",
+        ": keepalive\n\n",
+        "data: {\"id\":\"c\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"m\",\"choices\":[],\"usage\":{\"prompt_tokens\":5,\"completion_tokens\":2,\"total_tokens\":7}}\n\n",
+        "data: [DONE]\n\n",
+    );
+    let out = encode(&decode_whole(stream.as_bytes()), true);
+    let expected = chat_usage_in_its_own_chunk(stream.as_bytes());
+    assert_sse_eq("comment", &expected, &out);
+    let usage: Vec<Value> = frames(&out)
+        .into_iter()
+        .filter(|f| f.get("usage").is_some_and(|u| !u.is_null()))
+        .collect();
+    assert_eq!(usage.len(), 1, "{}", String::from_utf8_lossy(&out));
+    assert_eq!(usage[0]["choices"], json!([]));
+}
