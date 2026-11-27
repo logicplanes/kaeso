@@ -1956,24 +1956,6 @@ fn the_catalogue_description_reaches_openai_apps_in_openrouters_fields() {
 }
 
 #[test]
-fn models_that_make_no_content_name_their_output_as_openrouter_does() {
-    let recorded = json_of(&fixture(
-        "openai_chat",
-        "providers/openrouter/list-recorded-output-modalities",
-    ));
-    let theirs: Vec<&str> = recorded["data"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .flat_map(|m| m["architecture"]["output_modalities"].as_array().unwrap())
-        .map(|v| v.as_str().unwrap())
-        .collect();
-    for ours in ["embeddings", "rerank", "decisions"] {
-        assert!(theirs.contains(&ours), "{ours} is not in {theirs:?}");
-    }
-}
-
-#[test]
 fn prices_per_million_tokens_become_exact_prices_per_token() {
     for (per_million, per_token) in [
         ("3", "0.000003"),

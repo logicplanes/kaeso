@@ -1753,6 +1753,35 @@ fn duties_fill_what_kpp_cannot_know() {
             .contains(&kaeso_kpp::ModelFeature::ReasoningEffort),
         "grok-4.7 lists effort levels"
     );
+    // OpenRouter's own list, asked with `?output_modalities=all`, names these outputs so.
+    let recorded: serde_json::Value = serde_json::from_str(
+        &std::fs::read_to_string(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../kaeso-codecs/fixtures/openai_chat/providers/openrouter/models/list-recorded-output-modalities.json"
+        ))
+        .unwrap(),
+    )
+    .unwrap();
+    let theirs: Vec<&str> = recorded["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .flat_map(|m| m["architecture"]["output_modalities"].as_array().unwrap())
+        .filter_map(serde_json::Value::as_str)
+        .collect();
+    for (provider, model) in [
+        ("openai", "text-embedding-3-small"),
+        ("cohere", "rerank-v5.0-fast"),
+        ("cloudflare-ai-gateway", "@cf/cloudflare/clef"),
+    ] {
+        let outputs = model_info(model, &eff(&entry(provider, model)))
+            .output_modalities
+            .unwrap();
+        assert!(
+            matches!(outputs.as_slice(), [o] if theirs.contains(&o.as_str())),
+            "{model}: {outputs:?} against {theirs:?}"
+        );
+    }
     let mut no_levels = eff(&entry("xai", "grok-4.7"));
     no_levels.fields.efforts = None;
     let features = model_info("grok-4.7", &no_levels).features.unwrap();
