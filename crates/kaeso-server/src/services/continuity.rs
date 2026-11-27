@@ -184,13 +184,14 @@ pub async fn resolve_references(
     state: &AppState,
     key_id: Option<Uuid>,
     req: &mut GenerateRequest,
+    stateless: bool,
 ) -> Result<Resolved, String> {
     let ids = referenced_tool_calls(req);
     let kept = match key_id {
         Some(key_id) if enabled(state) && !ids.is_empty() => lookup(state, key_id, ids).await,
         _ => Vec::new(),
     };
-    let resolved = resolve_reasoning_references(req, &kept)?;
+    let resolved = resolve_reasoning_references(req, &kept, stateless)?;
     if resolved.restored > 0 {
         count("restored", kept.len());
     }

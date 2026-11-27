@@ -254,7 +254,7 @@ pub fn restore_reasoning(req: &mut GenerateRequest, kept: &[CarriedReasoning]) -
         if message.role != Role::Assistant || carries_reasoning(message) {
             continue;
         }
-        inserted += put_back(message, &by_call).0;
+        inserted += put_back(message, &by_call, false).0;
     }
     inserted
 }
@@ -288,10 +288,13 @@ pub struct Resolved {
 /// Puts the reasoning kept for each turn's tool calls where an OpenAI Responses app's
 /// `item_reference` points to it, in place of the references, and leaves out references in
 /// turns without tool calls. The error is the id of the first reference in a turn with tool
-/// calls that has nothing kept.
+/// calls that has nothing kept. For a Responses provider that keeps nothing (`stateless`), kept
+/// reasoning without its encrypted content answers the reference but isn't sent: the provider
+/// could only look it up by id.
 pub fn resolve_reasoning_references(
     req: &mut GenerateRequest,
     kept: &[CarriedReasoning],
+    stateless: bool,
 ) -> Result<Resolved, String> {
     let by_call = by_call(kept);
     let mut resolved = Resolved::default();
@@ -306,7 +309,7 @@ pub fn resolve_reasoning_references(
             .iter()
             .any(|b| matches!(b, Block::ToolCall(_)));
         if calls {
-            let (put, bytes) = put_back(message, &by_call);
+            let (put, bytes) = put_back(message, &by_call, stateless);
             if put < asked {
                 return Err(first);
             }
@@ -368,6 +371,7 @@ fn by_call(kept: &[CarriedReasoning]) -> HashMap<&str, &CarriedReasoning> {
 fn put_back(
     message: &mut kaeso_kpp::Message,
     by_call: &HashMap<&str, &CarriedReasoning>,
+    stateless: bool,
 ) -> (usize, usize) {
     let turn: HashSet<&str> = message
         .blocks
@@ -426,6 +430,9 @@ fn put_back(
                         continue;
                     }
                     inserted += 1;
+                    if stateless && r.opaque_of(OpaqueKind::OpenAiEncryptedReasoning).is_none() {
+                        continue;
+                    }
                     bytes = bytes.saturating_add(size(&r));
                     blocks.push(Block::Reasoning(r));
                 }
@@ -771,7 +778,7 @@ mod tests {
             Message::new(Role::User, vec![Block::tool_result("c1", vec![], false)]),
         ];
         assert_eq!(referenced_tool_calls(&req), ["c1"]);
-        let resolved = resolve_reasoning_references(&mut req, &kept).unwrap();
+        let resolved = resolve_reasoning_references(&mut req, &kept, false).unwrap();
         assert_eq!((resolved.restored, resolved.left_out), (1, 1));
         assert_eq!(req.messages[1].blocks, [Block::text("Hi.")]);
         assert_eq!(
@@ -785,7 +792,7 @@ mod tests {
             Message::new(Role::Assistant, vec![reference("rs_x")]),
             Message::user("again"),
         ];
-        let resolved = resolve_reasoning_references(&mut only, &[]).unwrap();
+        let resolved = resolve_reasoning_references(&mut only, &[], false).unwrap();
         assert_eq!(resolved.left_out, 1);
         assert_eq!(
             only.messages.len(),
@@ -799,7 +806,7 @@ mod tests {
             Message::new(Role::Assistant, vec![reference("rs_z"), call("c9")]),
         ];
         assert_eq!(
-            resolve_reasoning_references(&mut unkept, &kept),
+            resolve_reasoning_references(&mut unkept, &kept, false),
             Err("rs_z".to_owned())
         );
     }
@@ -815,7 +822,7 @@ mod tests {
                 vec![Block::Reasoning(signed("a")), reference("rs_b"), call("c1")],
             ),
         ];
-        let resolved = resolve_reasoning_references(&mut req, &kept).unwrap();
+        let resolved = resolve_reasoning_references(&mut req, &kept, false).unwrap();
         assert_eq!(resolved.restored, 1);
         assert_eq!(
             resolved.restored_bytes,
@@ -839,7 +846,7 @@ mod tests {
         )];
         let one = [CarriedReasoning::new("c1", vec![signed("a")])];
         assert_eq!(
-            resolve_reasoning_references(&mut more, &one),
+            resolve_reasoning_references(&mut more, &one, false),
             Err("rs_1".to_owned())
         );
     }
@@ -856,11 +863,42 @@ mod tests {
             Message::new(Role::Assistant, vec![reference("rs_x")]),
             Message::user("again"),
         ];
-        resolve_reasoning_references(&mut req, &[]).unwrap();
+        resolve_reasoning_references(&mut req, &[], false).unwrap();
         assert_eq!(
             req.messages,
             [Message::user("q"), empty, Message::user("again")],
             "the app's own empty message stays"
         );
+    }
+
+    #[test]
+    fn a_stateless_responses_provider_gets_only_reasoning_it_can_read() {
+        let r = DialectId::OpenAiResponses;
+        let mut id_only = ReasoningBlock::new(r);
+        id_only
+            .opaque
+            .push(Opaque::new(r, OpaqueKind::OpenAiReasoningItemId, "rs_1"));
+        let mut encrypted = id_only.clone();
+        encrypted.opaque.push(Opaque::new(
+            r,
+            OpaqueKind::OpenAiEncryptedReasoning,
+            "gAAAA",
+        ));
+        for (block, sent) in [(id_only, false), (encrypted, true)] {
+            let kept = [CarriedReasoning::new("c1", vec![block.clone()])];
+            let mut req = GenerateRequest::new("m");
+            req.messages = vec![
+                Message::user("q"),
+                Message::new(Role::Assistant, vec![reference("rs_1"), call("c1")]),
+            ];
+            let resolved = resolve_reasoning_references(&mut req, &kept, true).unwrap();
+            assert_eq!(resolved.restored, 1, "the reference is answered");
+            let want = if sent {
+                vec![Block::Reasoning(block), call("c1")]
+            } else {
+                vec![call("c1")]
+            };
+            assert_eq!(req.messages[1].blocks, want);
+        }
     }
 }
