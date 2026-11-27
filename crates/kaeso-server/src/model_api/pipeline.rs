@@ -3822,7 +3822,7 @@ async fn keep_and_answer(
     rec: &mut Recording,
     reply: Reply,
     out: Result<Vec<u8>, KppError>,
-    carry: Option<uuid::Uuid>,
+    carry: Option<continuity::Carry>,
     served: &Served,
 ) -> Result<Done, KppError> {
     let out = out?;
