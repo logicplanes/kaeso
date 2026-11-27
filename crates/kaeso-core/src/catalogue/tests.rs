@@ -1692,6 +1692,22 @@ fn transcription_models_refuse_every_generation_request_before_it_is_sent() {
         .unwrap_or_else(|u| panic!("QwenCloud transcribes at chat completions: {}", u.message));
     let mut text_only = Request::Generate(user(vec![Block::text("hi")]));
     assert!(prepare(&mut text_only, DialectId::OpenAiChat, &qwen).is_err());
+    // QwenCloud documents `input_audio` without `format`, which Chat decodes as an unknown part.
+    let Request::Generate(g) = kaeso_codecs::dispatch::decode_request(
+        DialectId::OpenAiChat,
+        kaeso_kpp::RequestKind::Generate,
+        br#"{"model":"qwen3-asr-flash","messages":[{"role":"user","content":[{"type":"input_audio","input_audio":{"data":"https://example.com/memo.mp3"}}]}]}"#,
+        &kaeso_codecs::HeaderList::new(),
+    )
+    .unwrap() else {
+        panic!()
+    };
+    assert!(
+        g.all_blocks()
+            .any(|b| matches!(b, kaeso_kpp::Block::Unknown(_)))
+    );
+    prepare(&mut Request::Generate(g), DialectId::OpenAiChat, &qwen)
+        .unwrap_or_else(|u| panic!("QwenCloud's own audio part: {}", u.message));
 }
 
 #[test]

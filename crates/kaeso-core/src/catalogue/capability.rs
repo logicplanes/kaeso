@@ -521,11 +521,8 @@ fn refuse_decision_only(eff: &Effective) -> Result<(), Unsupported> {
     ))
 }
 
-// A transcription model isn't served on the provider's generation endpoint, and a request there
-// comes back as a 404. Gemini's are, at `generateContent`, where Kaeso sends transcriptions too.
-// A transcription model serves only transcriptions. One its provider serves at the generation
-// endpoint, as Google serves Gemini's at `generateContent`, takes a generation there that has
-// audio to transcribe; a token count is no transcription anywhere.
+// Providers answer a generation for a transcription model with a 404, apart from those that serve
+// it at their generation endpoint (Gemini, QwenCloud), and those need audio to transcribe.
 fn refuse_transcriber(
     eff: &Effective,
     generation: Option<&GenerateRequest>,
@@ -538,7 +535,12 @@ fn refuse_transcriber(
         .transcriptions(&eff.model_id)
         .is_some_and(|t| t.dialect == eff.dialect);
     if let Some(g) = generation.filter(|_| at_generation) {
-        if g.required_capabilities().audio_input {
+        // A part the decoder doesn't know, such as QwenCloud's `input_audio` without `format`,
+        // may be audio; the provider judges it.
+        let audio = g.required_capabilities().audio_input
+            || g.all_blocks()
+                .any(|b| matches!(b, kaeso_kpp::Block::Unknown(_)));
+        if audio {
             return Ok(());
         }
         return Err(refuse(
