@@ -164,6 +164,9 @@ describe("decisions", () => {
     expect(draftProblem(embeddings, true)).toBeNull();
     expect(draftProblem({ ...embeddings, context_limit: "" }, true)).toBe("A custom embeddings model needs its context limit.");
     expect(draftProblem({ ...embeddings, egress_dialect: "openai_chat" }, true)).toBe("A custom model needs its context and output limits.");
+    expect(draftProblem({ ...embeddings, output_modalities: ["embedding"], egress_dialect: "openai_chat", output_limit: "1" }, true)).toBe(
+      "An embeddings model needs an embeddings format, such as OpenAI Embeddings.",
+    );
   });
 });
 

@@ -213,6 +213,7 @@
   "models.priceWithCache": "{unit}; {cache}",
   "models.problem.contextLimit": "A custom embeddings model needs its context limit.",
   "models.problem.decisionPrice": "A custom decision model needs its input price.",
+  "models.problem.embeddingsFormat": "An embeddings model needs an embeddings format, such as OpenAI Embeddings.",
   "models.problem.format": "A custom model needs the format Kaeso sends it.",
   "models.problem.limits": "A custom model needs its context and output limits.",
   "models.problem.modalities": "A custom model needs its inputs and outputs.",

@@ -615,6 +615,11 @@ fn values_are_checked() {
     };
     assert_eq!(embeddings.validate_custom(), Ok(()));
     assert_eq!(embeddings.validate(openai), Ok(()));
+    let mixed = Fields {
+        egress_dialect: Some(DialectId::OpenAiChat),
+        ..embeddings.clone()
+    };
+    assert_eq!(mixed.validate(openai).unwrap_err().field, "egress_dialect");
     let chat = Fields {
         output_limit: None,
         ..custom

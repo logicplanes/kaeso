@@ -94,6 +94,7 @@
   "errors.fieldUnknown": "`{name}` ist kein Feld dieser Anfrage.",
   "errors.fieldWholeNumber": "`{name}` muss eine ganze Zahl sein.",
   "errors.fieldWrongType": "`{name}` hat einen Wert mit falschem Typ oder Format.",
+  "errors.model.embeddingsFormat": "Ein Embedding-Modell braucht ein Embedding-Format, etwa `openai_embeddings`.",
   "errors.fieldArray": "`{name}` muss ein Array sein.",
   "errors.fieldObject": "`{name}` muss ein Objekt sein.",
   "errors.fieldOneOf": "`{name}` muss {values} sein.",

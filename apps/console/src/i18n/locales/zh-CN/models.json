@@ -140,6 +140,7 @@
   "models.problem.format": "自定义模型需要指定 Kaeso 发送的格式。",
   "models.problem.contextLimit": "自定义嵌入模型需要上下文上限。",
   "models.problem.limits": "自定义模型需要上下文和输出上限。",
+  "models.problem.embeddingsFormat": "嵌入模型需要嵌入格式，例如 OpenAI Embeddings。",
   "models.problem.modalities": "自定义模型需要指定输入和输出。",
   "models.problem.price": "价格须为小数金额，如 3.00。",
   "models.problem.prices": "自定义模型需要输入和输出价格。",

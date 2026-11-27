@@ -107,12 +107,21 @@ pub(crate) fn read<T: DeserializeOwned>(json: &str) -> Result<T, ApiError> {
     };
     // serde_json refuses a value of the wrong JSON type where an enum goes as a syntax error
     // that names nothing it takes; a string that is no variant makes it list the variants.
-    let refused = |value: Value| -> Option<PathError> {
-        let mut doc: Value = serde_json::from_str(json).ok()?;
-        *slot(&mut doc, e.path())? = value;
-        serde_path_to_error::deserialize::<_, T>(&doc)
-            .err()
-            .filter(|again| at(again).as_deref() == Some(p.as_str()))
+    // `Value` sorts the keys of an object, so the probe can stop at another wrong field first;
+    // that says nothing about this one.
+    let probe = |value: Value| -> Probe {
+        let Ok(mut doc) = serde_json::from_str::<Value>(json) else {
+            return Probe::Unknown;
+        };
+        let Some(field) = slot(&mut doc, e.path()) else {
+            return Probe::Unknown;
+        };
+        *field = value;
+        match serde_path_to_error::deserialize::<_, T>(&doc) {
+            Ok(_) => Probe::Taken,
+            Err(again) if at(&again).as_deref() == Some(p.as_str()) => Probe::Refused(again),
+            Err(_) => Probe::Unknown,
+        }
     };
     let variants = |detail: &str| -> Option<Vec<String>> {
         let list = detail
@@ -125,13 +134,16 @@ pub(crate) fn read<T: DeserializeOwned>(json: &str) -> Result<T, ApiError> {
             .step_by(2)
             .map(|n| format!("`{n}`"))
             .collect();
-        if refused(Value::Null).is_none() {
+        if matches!(probe(Value::Null), Probe::Taken) {
             names.push("`null`".to_owned());
         }
         Some(names)
     };
     let names = if e.inner().classify() == Category::Syntax {
-        refused(Value::String(String::new())).and_then(|again| variants(&again.inner().to_string()))
+        match probe(Value::String(String::new())) {
+            Probe::Refused(again) => variants(&again.inner().to_string()),
+            Probe::Taken | Probe::Unknown => None,
+        }
     } else {
         variants(detail)
     };
@@ -142,6 +154,11 @@ pub(crate) fn read<T: DeserializeOwned>(json: &str) -> Result<T, ApiError> {
         (None, Some("a sequence")) => format!("`{p}` must be an array."),
         (None, Some(x)) if x == "a map" || x.starts_with("struct ") => {
             format!("`{p}` must be an object.")
+        }
+        (None, Some(x))
+            if INTEGERS.contains(&x) && detail.starts_with("invalid value: integer ") =>
+        {
+            format!("`{p}` is out of range.")
         }
         (None, Some(x)) if INTEGERS.contains(&x) => format!("`{p}` must be a whole number."),
         _ => String::new(),
@@ -157,6 +174,12 @@ pub(crate) fn read<T: DeserializeOwned>(json: &str) -> Result<T, ApiError> {
 }
 
 type PathError = serde_path_to_error::Error<serde_json::Error>;
+
+enum Probe {
+    Taken,
+    Refused(PathError),
+    Unknown,
+}
 
 const INTEGERS: [&str; 10] = [
     "u8", "u16", "u32", "u64", "usize", "i8", "i16", "i32", "i64", "isize",
@@ -351,8 +374,18 @@ mod tests {
             ),
             (
                 r#"{"name": "a", "max": -1}"#,
-                "`max` must be a whole number.",
+                "`max` is out of range.",
                 Some("max"),
+            ),
+            (
+                r#"{"name": "a", "max": 5000000000}"#,
+                "`max` is out of range.",
+                Some("max"),
+            ),
+            (
+                r#"{"name": "a", "auth": 5, "embeddings": true}"#,
+                "`auth` must be one of `bearer`, `x_api_key`, `none`.",
+                Some("auth"),
             ),
             (
                 r#"{"name": "a", "max": 1.5}"#,

@@ -813,6 +813,20 @@ impl Fields {
                 "`unit_prices` takes up to 32 prices of 0 to 1,000,000 USD per known unit.",
             ));
         }
+        let embeds = self
+            .output_modalities
+            .as_ref()
+            .is_some_and(|o| o.iter().any(|m| m == "embedding"));
+        if embeds
+            && self
+                .egress_dialect
+                .is_some_and(|d| !EMBEDDINGS.contains(&d))
+        {
+            return Err(FieldError::new(
+                "egress_dialect",
+                "An embeddings model needs an embeddings format, such as `openai_embeddings`.",
+            ));
+        }
         // A rerank model goes to the provider's rerank API, whose format is a dialect too.
         let rerank = provider.rerank().map(|r| r.dialect);
         if let Some(d) = self.egress_dialect
