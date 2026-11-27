@@ -1,6 +1,6 @@
 # caddy:2.11.7-alpine is built with Go 1.26.8 and x/net 0.59.0; Go 1.26.9 and x/net 0.60.0 fix
 # GO-2026-6603, GO-2026-6609, GO-2026-6610, GO-2026-6611, GO-2026-6612 and GO-2026-6617.
-FROM golang:1.27.3-alpine@sha256:fa3d596898d9f126af7c01d14ee7597bab3f39cccf392ef36b69fe77cd681f18 AS caddy
+FROM golang:1.27.4-alpine@sha256:70bd7ddea8b6cbe5d6943cde279d6b67feb10cc924fb9100d1d8757c1575b280 AS caddy
 ENV CGO_ENABLED=0 GOTOOLCHAIN=local XCADDY_GO_BUILD_FLAGS="-trimpath -ldflags=-buildid="
 RUN go install github.com/caddyserver/xcaddy/cmd/xcaddy@v0.4.7 \
   && xcaddy build v2.11.7 --output /caddy --replace golang.org/x/net=golang.org/x/net@v0.60.0 \
