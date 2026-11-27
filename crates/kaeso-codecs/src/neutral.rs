@@ -285,7 +285,11 @@ mod tests {
         }
         let (body, left_out) = sent(A, &req).unwrap();
         assert!(left_out.is_empty(), "{left_out:?}");
-        assert_eq!(body["thread"], json!(null), "Anthropic gets it as written");
+        assert_eq!(
+            body.get("thread"),
+            Some(&json!(null)),
+            "Anthropic gets it as written"
+        );
     }
 
     #[test]

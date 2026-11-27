@@ -45,9 +45,9 @@ Chat apps such as NextChat send OpenAI's sampling fields on every request, at th
 | `logit_bias`, `metadata` | `{}` | the same |
 | `store` | `false` | the same; a Responses target gets Kaeso's own `store: false`, so it isn't named there |
 | `service_tier`, from Chat and from Anthropic | `"auto"` | the same, and Anthropic providers that refuse it |
-| `thread`, from Anthropic | `null` | every other format; it asks for no message thread, as leaving it out does |
 | `verbosity` | `"medium"` | the same |
 | `modalities` | `["text"]` | Chat providers that refuse it; other formats write text anyway |
+| `thread`, from Anthropic | `null` | every other format; it asks for no message thread, as leaving it out does |
 
 Each value is the field's `default` in OpenAI's OpenAPI document and Anthropic's API reference; an empty `logit_bias` or `metadata` means the same as their default, `null`. `service_tier: "default"` isn't neutral: it asks for standard processing where a project's setting could choose another tier. `web_search_options: {}` isn't either: it makes a search model search. A field sent as `null` is form, which other formats never get; a Chat provider that refuses the field doesn't get the `null` either.
 

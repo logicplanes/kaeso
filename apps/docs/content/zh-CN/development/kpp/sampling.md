@@ -45,9 +45,9 @@ NextChat 等聊天应用在每个请求中都会发送 OpenAI 的采样字段，
 | `logit_bias`、`metadata` | `{}` | 同上 |
 | `store` | `false` | 同上；Responses 目标会收到 Kaeso 自己的 `store: false`，因此那里不列出 |
 | `service_tier`，来自 Chat 和 Anthropic | `"auto"` | 同上，以及拒绝它的 Anthropic 提供商 |
-| `thread`，来自 Anthropic | `null` | 其他所有格式；它与省略该字段一样，不要求消息线程 |
 | `verbosity` | `"medium"` | 同上 |
 | `modalities` | `["text"]` | 拒绝它的 Chat 提供商；其他格式本来就输出文本 |
+| `thread`，来自 Anthropic | `null` | 其他所有格式；它与省略该字段一样，不要求消息线程 |
 
 每个值都是该字段在 OpenAI 的 OpenAPI 文档和 Anthropic 的 API 参考中的 `default`；空的 `logit_bias` 或 `metadata` 与其默认值 `null` 含义相同。`service_tier: "default"` 不是中性值：它要求标准处理，而项目设置可能会选择其他层级。`web_search_options: {}` 也不是：它会让搜索模型进行搜索。以 `null` 发送的字段属于 form，其他格式永远不会收到；拒绝该字段的 Chat 提供商也不会收到这个 `null`。
 
