@@ -2206,6 +2206,11 @@ async fn a_budget_used_up_exactly_refuses_the_next_request() {
 async fn a_used_up_total_budget_says_no_retry_without_a_reset_time() {
     let env = common::v1::env(None, None).await;
     let (secret, id) = key_of(&env, "k", json!({})).await;
+    assert_eq!(ask(&env, &secret).await.status, StatusCode::OK);
+    env.app.state.in_flight.settled().await;
+    kaeso_server::services::usage::flush(&env.app.state)
+        .await
+        .unwrap();
     let lim = limit(&env, json!({ "level": "key", "key": id, "kind": "token_budget", "period": "total", "amount": TOKENS })).await;
     used(&env, lim["id"].as_str().unwrap(), &TOKENS.to_string()).await;
     let r = ask(&env, &secret).await;
