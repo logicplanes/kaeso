@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { Avatar, Button, CellInset, Dashboard, DashboardCell, ModelLabel, RankList, StatusCode, Text, type RankItem } from "@logicplanes/kaeso-ui";
 import { formatDuration, formatPercent, formatRelative } from "@logicplanes/kaeso-ui/format";
+import type { LogView } from "~/api/generated/types";
 import { allKeysQuery } from "~/api/queries/keys";
 import { limitsQuery } from "~/api/queries/limits";
 import { newestLogsQuery } from "~/api/queries/logs";
@@ -20,6 +21,7 @@ import { useProviders } from "~/kaeso/providers";
 import { projectPath } from "~/shell/pages";
 import { usePhone } from "~/shell/use-phone";
 import { keyLabel, usePartyName } from "./keys/party";
+import { useSourceNames } from "./sources/names";
 
 const LIVE_EVERY = 5_000;
 const FEED_ROWS = 7;
@@ -217,12 +219,16 @@ function LiveCell({ org, project, className }: { org: string; project: string; c
       <ModelLabel className="min-w-0" provider={provider} providerName={providers.name(provider)} model={model} {...(name && name !== model ? { name } : {})} />
     );
   };
-  const keyName = (id: string | null | undefined) => {
-    if (!id) return t("project.overview.playground", "Playground");
-    const k = keys.data?.find((x) => x.id === id);
+  const rows = (logs.data?.rows ?? []).slice(0, FEED_ROWS);
+  const sources = useSourceNames(org, project, !phone && rows.some((l) => !!l.source_id));
+  // Neither a Playground request nor a reported one has a key, so the source field tells them apart.
+  const sentWith = (l: LogView) => {
+    if (l.source_id) return sources.loading ? "" : sources.asKey(l.source_id);
+    if (l.source === "playground") return t("project.overview.playground", "Playground");
+    const k = l.key_id ? keys.data?.find((x) => x.id === l.key_id) : undefined;
     return k ? keyLabel(k) : "";
   };
-  const items: RankItem[] = (logs.data?.rows ?? []).slice(0, FEED_ROWS).map((l) => ({
+  const items: RankItem[] = rows.map((l) => ({
     id: l.id,
     label: (
       <>
@@ -230,7 +236,7 @@ function LiveCell({ org, project, className }: { org: string; project: string; c
         {modelOf(l.provider, l.model, l.requested_model)}
         {!phone && (
           <Text variant="small" tone="tertiary" truncate>
-            {keyName(l.key_id)}
+            {sentWith(l)}
           </Text>
         )}
       </>

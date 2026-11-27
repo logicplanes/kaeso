@@ -995,7 +995,8 @@ pub struct LogView {
         and encoding, without the request upload; `null` when the request\n\
         ended before reaching the provider."]
     pub overhead_us: Option<u32>,
-    #[doc = "The key; `null` for requests from the Playground, which have none."]
+    #[doc = "The key; `null` for requests without one: those from the Playground\n\
+        (`source` `playground`) and those a source reported (`observed`)."]
     pub key_id: Option<ApiKeyId>,
     #[doc = "Where the request came from: `api` (the model API, with a key),\n\
         `playground` (the console's Playground, as the member) or `observed` (a source\n\
