@@ -2060,7 +2060,8 @@ mod tests {
             ),
         ] {
             let mut pass = for_stream(DialectId::OpenAiChat, &ectx, &enc).unwrap();
-            let (_, errors, _) = feed_chunked(pass.as_mut(), chunk.as_bytes(), 64);
+            let (out, errors, _) = feed_chunked(pass.as_mut(), chunk.as_bytes(), 64);
+            assert!(out.is_empty(), "{}", String::from_utf8_lossy(&out));
             assert_eq!(errors.len(), 1, "{chunk}");
             assert_eq!(errors[0].unsupported_feature(), Some("n"));
             assert_eq!(errors[0].message, message);
