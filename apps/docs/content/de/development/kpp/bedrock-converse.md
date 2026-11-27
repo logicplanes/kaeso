@@ -17,7 +17,7 @@ Schlagen Sie hier nach, wie eine Generierungsanfrage die Converse-API von Amazon
 - **Nur ausgehend.** Keine App schickt Converse an Kaeso; der Codec dekodiert keine Anfrage und schreibt keine Antwort darin.
 - **Welche Modelle.** KPMR nennt `bedrock_converse` als ausgehenden Dialekt der Chat-Modelle von Bedrock, die weder Chat Completions noch Messages beantworten, etwa Amazon Nova, Meta Llama und Mistral Pixtral. Claude-Modelle, die Messages bedient, bleiben bei Messages.
 - **Schlüssel.** Converse nimmt einen Bedrock-API-Schlüssel als Bearer-Token an, und AWS-Anmeldedaten, mit Signature Version 4 signiert.
-- **Was eine Modellfamilie eigens braucht, wird noch nicht geschrieben.** Reasoning-Einstellungen, JSON-Ausgabeformate und andere Felder, die in `additionalModelRequestFields` gehören, sind `Unsupported` und werden nie verworfen. `top_k`, ein Hinweis, wird weggelassen und in `kaeso-left-out` genannt ([Top K](sampling.md#top-k)).
+- **Was eine Modellfamilie eigens braucht, wird noch nicht geschrieben.** Reasoning-Einstellungen, ein JSON-Schema als Ausgabeformat und andere Felder, die in `additionalModelRequestFields` gehören, sind `Unsupported` und werden nie verworfen; der JSON-Modus geht als Satz im System-Prompt mit. `top_k`, ein Hinweis, wird weggelassen und in `kaeso-left-out` genannt ([Top K](sampling.md#top-k)).
 
 ## Anfrage
 

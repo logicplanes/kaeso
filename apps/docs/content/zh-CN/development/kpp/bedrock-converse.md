@@ -17,7 +17,7 @@ order: 9
 - **仅用于出站。**没有应用向 Kaeso 发送 Converse；该编解码器不解码 Converse 请求，也不以它写回复。
 - **哪些模型。**KPMR 把 `bedrock_converse` 设为 Bedrock 中既不支持 Chat Completions 也不支持 Messages 的聊天模型的出站方言，例如 Amazon Nova、Meta Llama 和 Mistral Pixtral。Messages 支持的 Claude 模型仍走 Messages。
 - **密钥。**Converse 接受作为 Bearer 令牌的 Bedrock API 密钥，以及用 Signature Version 4 签名的 AWS 凭证。
-- **模型系列特有的字段暂不写入。**推理设置、JSON 输出格式以及其他放在 `additionalModelRequestFields` 中的字段为 `Unsupported`，绝不丢弃。提示字段 `top_k` 会被省略，并在 `kaeso-left-out` 中注明（[top K](sampling.md#top-k)）。
+- **模型系列特有的字段暂不写入。**推理设置、JSON schema 输出格式以及其他放在 `additionalModelRequestFields` 中的字段为 `Unsupported`，绝不丢弃；JSON 模式以系统提示词中的一句话发送。提示字段 `top_k` 会被省略，并在 `kaeso-left-out` 中注明（[top K](sampling.md#top-k)）。
 
 ## 请求
 

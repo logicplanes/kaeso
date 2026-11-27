@@ -17,7 +17,7 @@ Look up how a generation request reaches Amazon Bedrock's Converse API here: whi
 - **Egress only.** No app sends Converse to Kaeso; the codec refuses to decode a request or write a reply in it.
 - **Which models.** KPMR names `bedrock_converse` as the egress dialect of the Bedrock chat models that answer neither Chat Completions nor Messages, such as Amazon Nova, Meta Llama and Mistral Pixtral. Claude models that Messages serves stay on Messages.
 - **Keys.** Converse takes a Bedrock API key as a bearer token, and AWS credentials signed with Signature Version 4.
-- **What a family needs of its own isn't written yet.** Reasoning settings, JSON output formats and other fields that go in `additionalModelRequestFields` are `Unsupported`, never dropped. `top_k`, a hint, is left out and named in `kaeso-left-out` ([top K](sampling.md#top-k)).
+- **What a family needs of its own isn't written yet.** Reasoning settings, a JSON schema output format and other fields that go in `additionalModelRequestFields` are `Unsupported`, never dropped; JSON mode goes as a sentence in the system prompt. `top_k`, a hint, is left out and named in `kaeso-left-out` ([top K](sampling.md#top-k)).
 
 ## Request
 
