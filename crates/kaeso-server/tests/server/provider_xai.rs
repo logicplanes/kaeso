@@ -340,6 +340,22 @@ async fn token_counts_for_xai_models_are_estimated_in_each_apps_format() {
     )
     .await;
     assert!(r.estimated_count() > 0);
+
+    // Stop sequences and a limit under 16 tokens, which Kaeso fits to OpenAI Responses when
+    // it generates, are fine in a count too.
+    let r = call(
+        &env,
+        "/v1beta/models/grok-4.3:countTokens",
+        Some(&env.key),
+        false,
+        Some(json!({ "generateContentRequest": {
+            "model": "models/grok-4.3",
+            "contents": [{ "role": "user", "parts": [{ "text": "Hello" }] }],
+            "generationConfig": { "stopSequences": ["END"], "maxOutputTokens": 5 },
+        } })),
+    )
+    .await;
+    assert!(r.estimated_count() > 0);
     assert!(env.mock.received().is_empty());
 }
 

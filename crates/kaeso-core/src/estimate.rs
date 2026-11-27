@@ -103,9 +103,9 @@ fn text_tokens(text: &str) -> u64 {
 }
 
 // A PDF's pages: its page objects (`/Type /Page`) or its page tree's `/Count`, whichever is more.
-// Both may sit in compressed object streams; such a file counts a page for every 50 kB.
+// Only a `/Type /Pages` dictionary's `/Count` counts pages; an outline's counts bookmarks.
 fn pdf_pages(data: &[u8]) -> u64 {
-    let (mut pages, mut count) = (0u64, 0u64);
+    let mut pages = 0u64;
     let mut rest = data;
     while let Some(at) = find(rest, b"/Type") {
         let after = rest.get(at.saturating_add(5)..).unwrap_or_default();
@@ -115,30 +115,66 @@ fn pdf_pages(data: &[u8]) -> u64 {
         }
         rest = after;
     }
-    let mut rest = data;
-    while let Some(at) = find(rest, b"/Count") {
-        let after = rest.get(at.saturating_add(6)..).unwrap_or_default();
-        let digits: Vec<u8> = after
-            .trim_ascii_start()
-            .iter()
-            .copied()
-            .take_while(u8::is_ascii_digit)
-            .collect();
-        if let Some(n) = std::str::from_utf8(&digits)
-            .ok()
-            .and_then(|d| d.parse().ok())
-        {
-            count = count.max(n);
-        }
-        rest = after;
-    }
-    let found = pages.max(count);
+    let found = pages.max(page_tree_count(data));
     if found <= 1 && find(data, b"/ObjStm").is_some() {
         return u64::try_from(data.len().div_ceil(50_000))
             .unwrap_or(u64::MAX)
             .max(1);
     }
     found.max(1)
+}
+
+fn page_tree_count(data: &[u8]) -> u64 {
+    let mut count = 0u64;
+    let mut from = 0usize;
+    while let Some(at) = data.get(from..).and_then(|rest| find(rest, b"/Count")) {
+        let at = from.saturating_add(at);
+        let after = at.saturating_add(6);
+        let start = data
+            .get(..at)
+            .and_then(|before| rfind(before, b"<<"))
+            .unwrap_or(0);
+        let end = data
+            .get(after..)
+            .and_then(|rest| find(rest, b">>"))
+            .map_or(data.len(), |e| after.saturating_add(e));
+        let dict = data.get(start..end).unwrap_or_default();
+        if is_page_tree(dict) {
+            let digits: Vec<u8> = data
+                .get(after..)
+                .unwrap_or_default()
+                .trim_ascii_start()
+                .iter()
+                .copied()
+                .take_while(u8::is_ascii_digit)
+                .collect();
+            if let Some(n) = std::str::from_utf8(&digits)
+                .ok()
+                .and_then(|d| d.parse().ok())
+            {
+                count = count.max(n);
+            }
+        }
+        from = after;
+    }
+    count
+}
+
+fn is_page_tree(dict: &[u8]) -> bool {
+    let mut rest = dict;
+    while let Some(at) = find(rest, b"/Type") {
+        let after = rest.get(at.saturating_add(5)..).unwrap_or_default();
+        let name = after.trim_ascii_start();
+        if name.starts_with(b"/Pages") {
+            return true;
+        }
+        rest = after;
+    }
+    false
+}
+
+fn rfind(haystack: &[u8], needle: &[u8]) -> Option<usize> {
+    haystack.windows(needle.len()).rposition(|w| w == needle)
 }
 
 fn find(haystack: &[u8], needle: &[u8]) -> Option<usize> {
@@ -776,6 +812,15 @@ mod tests {
         assert_eq!(
             pdf_pages(b"%PDF-1.7 1 0 obj << /Count 12 /Type /Pages /Kids [] >>"),
             12
+        );
+        assert_eq!(
+            pdf_pages(
+                b"%PDF-1.7 1 0 obj << /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 >> \
+                  2 0 obj << /Type /Outlines /First 5 0 R /Last 6 0 R /Count 40 >> \
+                  7 0 obj << /Title (Intro) /Parent 2 0 R /Count 12 >>"
+            ),
+            2,
+            "an outline's bookmarks are no pages"
         );
         let mut packed = b"%PDF-1.7 5 0 obj << /Type /ObjStm /N 40 >>".to_vec();
         packed.resize(120_000, b'x');

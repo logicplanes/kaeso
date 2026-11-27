@@ -2488,12 +2488,25 @@ async fn attempt(
                 &eff.model_id,
                 ModelFlags::of(&plan),
             );
-            // Checked as the generation it counts, which needs an output limit in some formats,
-            // and one of at least 16 tokens in OpenAI Responses.
+            // Checked as the generation it counts would be sent: with an output limit, which
+            // some formats need, and fitted to OpenAI Responses as a generation is.
             let mut generate = g.clone();
             generate.sampling.max_output_tokens.get_or_insert(16);
-            dispatch::check(plan.dialect, &Request::Generate(generate), &ectx)
-                .map_err(fail(Stage::Capability))?;
+            if plan.dialect == DialectId::OpenAiResponses {
+                kaeso_core::catalogue::capability::fit_responses(
+                    &mut generate,
+                    ingress,
+                    &eff,
+                    None,
+                );
+            }
+            let dialect = plan.dialect;
+            off_thread(request_bytes, move || {
+                dispatch::check(dialect, &Request::Generate(generate), &ectx)
+            })
+            .await
+            .and_then(|checked| checked)
+            .map_err(fail(Stage::Capability))?;
         }
         tracing::info!(
             adapted = capability::COUNT_ESTIMATED,
