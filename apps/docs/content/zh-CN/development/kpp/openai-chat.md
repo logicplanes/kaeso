@@ -84,7 +84,11 @@ nav: OpenAI Chat
 
 ### 参与者名称
 
-消息的 `name` 用于区分同一角色的不同参与者，多智能体框架会设置它：AutoGen 设在 user 消息上，CrewAI 设在 tool 消息上。其他格式都没有这个字段，OpenAI 自己的 Responses API 也没有。因此，对于其他所有格式，以及配置拒绝 system、user 和 assistant 消息上 `name` 的 Chat 服务商，Kaeso 会省略它，并在 `kaeso-left-out` 中按应用发送的消息列出，例如 `messages[1].name`（`openai_chat::names`）。消息的其余部分照常发送，其他 Chat 服务商会按原样收到名称。以 `null` 发送的 `name` 属于形式标记，这类服务商同样不会收到。Fixtures：`requests/autogen-user-name.json`、`requests/crewai-tool-name.json`。
+消息的 `name` 用于区分同一角色的不同参与者。多智能体框架会设置它：AutoGen 设在 user 消息上，CrewAI 设在 tool 消息上。其他格式都没有这个字段，OpenAI 自己的 Responses API 也没有。
+
+因此，对于其他所有格式，以及配置拒绝 system、user 和 assistant 消息上 `name` 的 Chat 服务商（例如 Groq），Kaeso 会省略它。回复的 `kaeso-left-out` 响应头按应用发送的消息列出它，例如 `messages[1].name`（`openai_chat::names`）。
+
+tool 消息会保留其名称，Mistral 录制的回复表明这是允许的。其他 Chat 服务商会按原样收到名称，以 `null` 发送的 `name` 属于形式标记。Fixtures：`requests/autogen-user-name.json`、`requests/crewai-tool-name.json`。
 
 ### 内容部分
 

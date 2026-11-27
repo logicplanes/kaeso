@@ -362,7 +362,7 @@ API 不在 `/v1` 下的服务商在 `Provider::api_root` 中指定其 API 根路
 | `video_url` 部分 | `Block::Video` | `with_video_url()`。 |
 | `user`、`safety_identifier`、Responses 应用的 `prompt_cache_key` | 省略 | 参考没有终端用户或缓存键字段，StepFun 会自行缓存提示（`without_end_user()`、`without_cache_key()`）。 |
 | `stream_options` | 省略 | 每个块都会主动带上累计用量（`without_stream_options()`、`streams/text-doc`）。 |
-| `presence_penalty`、`seed`、`logprobs`、`logit_bias`、`parallel_tool_calls`、`prompt_cache_key`、`store` 以及参考中没有的其他字段，消息中的 `name` | 拒绝 | 文档没有说明 StepFun 会拒绝还是丢弃未声明的字段，因此配置会在发送前拒绝它们；`parallel_tool_calls: true` 只是允许并行调用，会被省略，`store: false` 这样的[中性值](sampling.md#中性值)和消息中的 `name`（[参与者名称](openai-chat.md#参与者名称)）也一样。StepFun 指南中发送的 `tool_choice` 会照常发送。 |
+| `presence_penalty`、`seed`、`logprobs`、`logit_bias`、`parallel_tool_calls`、`prompt_cache_key`、`store` 以及参考中没有的其他字段 | 拒绝 | 文档没有说明 StepFun 会拒绝还是丢弃未声明的字段，因此配置会在发送前拒绝它们；`parallel_tool_calls: true` 只是允许并行调用，会被省略，`store: false` 这样的[中性值](sampling.md#中性值)和消息中的 `name`（[参与者名称](openai-chat.md#参与者名称)）也一样。StepFun 指南中发送的 `tool_choice` 会照常发送。 |
 | 最后一个块之前的 `finish_reason: ""` 和 `role: ""` | 无 | 与其他服务商一样，按没有值读取。 |
 | 带 `finish_reason: "stop"` 的工具调用 | `StopReason::EndTurn` | 文档中的两个工具调用回复都这样结束（`responses/tools-doc`）。Chat 映射把 `stop` 读作一轮结束，因此 Anthropic 应用会收到带 `stop_reason: "end_turn"` 的 `tool_use` 块。 |
 | 没有 `code` 的 `{"error": {"message", "type"}}` 错误 | `KppError` | 错误类型取决于状态码，StepFun 的标识位于 `type`。中国服务的 429 `project_credit_limit_exceeded` 和 `member_project_credit_limit_exceeded` 属于计费拒绝，而不是速率限制。 |

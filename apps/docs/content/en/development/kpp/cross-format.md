@@ -8,7 +8,7 @@ An app may speak one API format while the provider speaks another. These are the
 
 | Data from another format | In a request | In a reply |
 | --- | --- | --- |
-| Extras fields | `Unsupported`, unless [allowlisted](#extras) or [neutral](sampling.md#neutral-values) | Left out |
+| Extras fields | `Unsupported`, unless [allowlisted](#extras), [neutral](sampling.md#neutral-values) or a Chat message's [participant name](openai-chat.md#participant-names) | Left out |
 | Unknown blocks, tools and tool choices | `Unsupported`, except [tool namespaces](#tool-namespaces), [tool search](#tool-search), [hosted web search](#hosted-web-search) and [Codex tool history](#codex-tool-history) | Unknown blocks left out, except web searches |
 | Citations | `Unsupported` | Left out |
 | Provider file ids | `Unsupported` unless the target provider issued them | — |

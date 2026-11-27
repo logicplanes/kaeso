@@ -8,7 +8,7 @@ Eine App kann ein API-Format sprechen, während der Anbieter ein anderes spricht
 
 | Daten aus einem anderen Format | In einer Anfrage | In einer Antwort |
 | --- | --- | --- |
-| Extras-Felder | `Unsupported`, außer sie stehen auf der [Allowlist](#extras) oder sind [neutral](sampling.md#neutrale-werte) | Weggelassen |
+| Extras-Felder | `Unsupported`, außer sie stehen auf der [Allowlist](#extras), sind [neutral](sampling.md#neutrale-werte) oder der [Name eines Teilnehmers](openai-chat.md#namen-von-teilnehmern) einer Chat-Nachricht | Weggelassen |
 | Unbekannte Blöcke, Tools und Tool-Auswahlen | `Unsupported`, außer [Tool-Namespaces](#tool-namespaces), [Tool-Suche](#tool-suche), [gehosteter Websuche](#gehostete-websuche) und dem [Tool-Verlauf von Codex](#tool-verlauf-von-codex) | Unbekannte Blöcke weggelassen, außer Websuchen |
 | Zitate | `Unsupported` | Weggelassen |
 | Datei-IDs eines Anbieters | `Unsupported`, außer der Zielanbieter hat sie ausgegeben | — |

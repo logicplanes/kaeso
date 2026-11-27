@@ -56,9 +56,8 @@ fn tool_results(m: &Message) -> bool {
         && m.blocks.iter().all(|b| matches!(b, Block::ToolResult(_)))
 }
 
-// The decoder keeps a Chat request's leading system messages in `system`, one group of blocks
-// per message, and its tool messages as results in user messages, so each place is paired with
-// the index of the message the app wrote.
+// The decoder folds leading system messages into `system` and tool messages into user messages,
+// so each place is paired with the index of the message the app wrote.
 fn places(r: &GenerateRequest) -> Vec<(Place, usize)> {
     let mut out = Vec::new();
     let mut app = 0;
@@ -102,9 +101,8 @@ fn holds_name(r: &GenerateRequest, place: Place) -> (bool, bool) {
     (extras.fields.contains_key(place.key()), null)
 }
 
-// OpenAI Chat's `name` tells apart participants of one role, and multi-agent frameworks such as
-// AutoGen and CrewAI set it on their messages. No other format has the field, and OpenAI's own
-// Responses API dropped it, so it is left out and named instead of refusing every such app.
+// Multi-agent apps such as AutoGen and CrewAI set `name`, which no other format has (Responses
+// dropped it), so it is left out and named instead of refusing every such app.
 pub(crate) fn left_out(d: &mut Draft<'_>, target: DialectId, ctx: &EgressCtx) {
     if !d.get().extras.is_from(DIALECT) {
         return;

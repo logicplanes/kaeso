@@ -8,7 +8,7 @@ order: 2
 
 | 来自其他格式的数据 | 在请求中 | 在回复中 |
 | --- | --- | --- |
-| extras 字段 | `Unsupported`，除非在[允许列表](#extras)中或为[中性值](sampling.md#中性值) | 省略 |
+| extras 字段 | `Unsupported`，除非在[允许列表](#extras)中、为[中性值](sampling.md#中性值)或是 Chat 消息的[参与者名称](openai-chat.md#参与者名称) | 省略 |
 | 未知块、工具和工具选择 | `Unsupported`，[工具命名空间](#工具命名空间)、[工具搜索](#工具搜索)、[托管网页搜索](#托管网页搜索)和 [Codex 工具历史](#codex-工具历史)除外 | 省略未知块，网页搜索除外 |
 | 引用 | `Unsupported` | 省略 |
 | 服务商文件 ID | `Unsupported`，除非由目标服务商签发 | — |
