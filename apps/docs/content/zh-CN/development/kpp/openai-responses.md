@@ -94,7 +94,7 @@ order: 7
 
 对于来自任何方言的请求，`check()` 还会拒绝：
 
-- `seed`、`frequency_penalty`、`presence_penalty` 和停止序列，Responses API 没有这些参数（参见[采样参数](sampling.md)）；值为 `0` 的惩罚参数会被省略（[中性值](sampling.md#中性值)），`sampling.top_k` 也一样（[top K](sampling.md#top-k)）；
+- `seed`、`frequency_penalty`、`presence_penalty` 和停止序列，Responses API 没有这些参数（参见[采样参数](sampling.md)）；值为 `0` 的惩罚参数会被省略（[中性值](sampling.md#中性值)）；
 - 未知的推理模式，以其线路值命名；
 - 文本文档、文档的 `title`/`context`/`citations`，以及文本形式的图像来源；
 - 音频块和视频块，因为 `InputContent` 只有 `input_text`、`input_image` 和 `input_file`（`audio block`、`video block`）；OpenRouter 的 `input_audio` 和 `input_video` 部分不属于 OpenAI，保持为 `Block::Unknown`；
