@@ -205,9 +205,11 @@ fn a_response_schema_reaches_every_format_as_json_schema_and_gemini_as_written()
     );
     assert!(schema.get("property_ordering").is_none(), "{schema}");
     let chat = sent::<OpenAiChat>(&req);
+    let mut closed = chat["response_format"]["json_schema"]["schema"].clone();
+    closed["additionalProperties"] = json!(false);
     assert_eq!(
-        &chat["response_format"]["json_schema"]["schema"], schema,
-        "{chat}"
+        &closed, schema,
+        "Claude gets the same schema, closed: {chat}"
     );
     let gemini = sent::<super::Gemini>(&req);
     assert_eq!(
