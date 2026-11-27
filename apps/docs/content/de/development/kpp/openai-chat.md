@@ -254,7 +254,7 @@ Der Fehler-Body ist `{error: {message, type, param, code}}`.
 | 403 | `PermissionDenied` | 403 `request_forbidden` |
 | 404 | `NotFound` | 404 `invalid_request_error` |
 | 413 | `RequestTooLarge` | 413 `invalid_request_error` |
-| 429 | `RateLimited` | 429 `rate_limit_error`, Code `rate_limit_exceeded`; mit `retryable: false`, ein bis zum Zurücksetzen aufgebrauchtes Kontingent, 429 `insufficient_quota`, Code `insufficient_quota` |
+| 429 | `RateLimited` | 429 `rate_limit_error`, Code `rate_limit_exceeded`; mit `retry: after_reset`, ein bis zum Zurücksetzen aufgebrauchtes Kontingent, 429 `insufficient_quota`, Code `insufficient_quota` |
 | 503 | `Overloaded` | 503 `service_unavailable_error`, Code `server_is_overloaded` |
 | 408, 504, `code` `vector_store_timeout` | `Timeout` | 504 `server_error`, Code `timeout` |
 | andere | `ProviderError` | sein 5xx-Status (außer 503) oder 500, `server_error` |

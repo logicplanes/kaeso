@@ -710,9 +710,7 @@ pub(super) fn limited(refusal: super::hooks::Refusal) -> KppError {
     if let Some(r) = refusal.retry_after {
         e = e.with_retry_after(r);
     }
-    if refusal.lasting {
-        e = e.with_retryable(false);
-    }
+    e.retry = refusal.retry;
     if let Some(p) = refusal.param {
         e = e.with_param(p);
     }
@@ -822,7 +820,7 @@ pub(crate) fn upstream_error_from(e: &UpstreamError, provider: &ProviderRef) -> 
                 "The custom provider `{id}` is at an address this install does not allow; ask its operator."
             ),
         )
-        .with_retryable(false),
+        .with_retry(kaeso_kpp::Retry::Futile),
         other => upstream_error(other),
     }
 }
@@ -844,7 +842,7 @@ fn refused_custom_key(err: &KppError, provider: &ProviderRef, keyless: bool) -> 
             "The custom provider `{id}` refused this project's key; ask an organization admin to check it under Providers."
         )
     };
-    Some(error(ErrorKind::ProviderError, 502, message).with_retryable(false))
+    Some(error(ErrorKind::ProviderError, 502, message).with_retry(kaeso_kpp::Retry::Futile))
 }
 
 fn unreadable(err: KppError, provider: &ProviderRef, dialect: DialectId) -> KppError {
@@ -901,7 +899,8 @@ async fn entra_token(
             crate::services::notifications::system::account_signed_out(state, org, id).await;
             Err((
                 Stage::SignedOut(crate::services::credentials::ENTRA_ID),
-                error(ErrorKind::ProviderError, 502, ENTRA_REFUSED).with_retryable(false),
+                error(ErrorKind::ProviderError, 502, ENTRA_REFUSED)
+                    .with_retry(kaeso_kpp::Retry::Futile),
             ))
         }
         Err(e) => {
@@ -923,7 +922,7 @@ pub(crate) fn refused_key(err: &KppError) -> Option<KppError> {
         ErrorKind::Billing => ACCOUNT_REFUSED,
         _ => return None,
     };
-    Some(error(ErrorKind::ProviderError, 502, message).with_retryable(false))
+    Some(error(ErrorKind::ProviderError, 502, message).with_retry(kaeso_kpp::Retry::Futile))
 }
 
 fn redacted(mut err: KppError) -> KppError {
@@ -2195,7 +2194,7 @@ async fn attempt(
                         entry.provider
                     ),
                 )
-                .with_retryable(false),
+                .with_retry(kaeso_kpp::Retry::Futile),
                 Stage::CustomProvidersOff,
             );
         }
@@ -2205,7 +2204,7 @@ async fn attempt(
                 500,
                 format!("The provider `{}` is not available.", entry.provider),
             )
-            .with_retryable(false),
+            .with_retry(kaeso_kpp::Retry::Futile),
             Stage::Setup,
         )
     })?;
@@ -2331,28 +2330,28 @@ async fn attempt(
     )
     .await
     .map_err(|e| match e {
-        CredentialError::Missing { .. } => fail(Stage::MissingCredential(eff.provider.name().to_owned()))(error(ErrorKind::ProviderError, 502, e.to_string()).with_retryable(false)),
+        CredentialError::Missing { .. } => fail(Stage::MissingCredential(eff.provider.name().to_owned()))(error(ErrorKind::ProviderError, 502, e.to_string()).with_retry(kaeso_kpp::Retry::Futile)),
         CredentialError::Crypto(_) => {
             tracing::error!(provider = eff.provider.id(), "a provider credential cannot be decrypted");
-            fail(Stage::Credential)(error(ErrorKind::ProviderError, 500, "Kaeso cannot decrypt the provider credential. The operator must check the configured master keys.").with_retryable(false))
+            fail(Stage::Credential)(error(ErrorKind::ProviderError, 500, "Kaeso cannot decrypt the provider credential. The operator must check the configured master keys.").with_retry(kaeso_kpp::Retry::Futile))
         }
         CredentialError::Store(err) => {
             tracing::error!(error = %err, "cannot load a provider credential");
             fail(Stage::Credential)(error(ErrorKind::ProviderError, 503, "Kaeso cannot load the provider credential right now. Try again shortly."))
         }
         CredentialError::SignedOut { product } if product == crate::services::credentials::ENTRA_ID => {
-            fail(Stage::SignedOut(product))(error(ErrorKind::ProviderError, 502, ENTRA_REFUSED).with_retryable(false))
+            fail(Stage::SignedOut(product))(error(ErrorKind::ProviderError, 502, ENTRA_REFUSED).with_retry(kaeso_kpp::Retry::Futile))
         }
         CredentialError::SignedOut { product } => fail(Stage::SignedOut(product))(error(
             ErrorKind::ProviderError,
             502,
             format!("The {product} account of this project's {provider} key is signed out. Ask an organization admin to sign in again under Providers.", provider = eff.provider.name()),
-        ).with_retryable(false)),
+        ).with_retry(kaeso_kpp::Retry::Futile)),
         CredentialError::NoApiAccess { product } => fail(Stage::NoApiAccess(product))(error(
             ErrorKind::ProviderError,
             502,
             format!("The {product} plan of this project's {provider} key has no API access. Ask an organization admin to add an API key under Providers.", provider = eff.provider.name()),
-        ).with_retryable(false)),
+        ).with_retry(kaeso_kpp::Retry::Futile)),
         CredentialError::Unrenewed { product } => fail(Stage::Credential)(error(
             ErrorKind::ProviderError,
             503,
@@ -2699,7 +2698,7 @@ async fn attempt(
                             500,
                             "No base URL is configured for this provider.",
                         )
-                        .with_retryable(false),
+                        .with_retry(kaeso_kpp::Retry::Futile),
                     )
                 })?,
         ),
@@ -2718,7 +2717,7 @@ async fn attempt(
                         500,
                         "No base URL is configured for this provider.",
                     )
-                    .with_retryable(false),
+                    .with_retry(kaeso_kpp::Retry::Futile),
                 )
             })?,
         },
@@ -3201,22 +3200,23 @@ async fn attempt(
                         Probe::Inconclusive(_) | Probe::Failed(_) => {}
                     }
                 }
-                if let Some(refused) =
+                if let Some(mut refused) =
                     refused_custom_key(&err, &eff.provider, credential.is_keyless())
                         .or_else(|| refused_key(&err))
                         .map(|r| {
                             if credential.method == AuthMethod::AzureServicePrincipal {
                                 error(ErrorKind::ProviderError, 502, AZURE_ROLE_REFUSED)
-                                    .with_retryable(false)
+                                    .with_retry(kaeso_kpp::Retry::Futile)
                             } else {
                                 r
                             }
                         })
                 {
                     // Temporary AWS credentials AWS refused, expired ones included, are fetched
-                    // again for the next request.
+                    // again for the next request, so a retry may pass.
                     if credential.method == kaeso_core::provider::AuthMethod::AwsRole {
                         crate::services::aws_auth::forget(&credential);
+                        refused.retry = None;
                     }
                     let said = redacted(err);
                     tracing::warn!(provider, status, kind = said.kind.as_str(), upstream = %said.message, "the provider refused the project's provider key");
@@ -4246,7 +4246,7 @@ mod tests {
             status,
             message: "m".into(),
             retry_after: Some(Duration::from_secs(5)),
-            lasting: false,
+            retry: None,
             param: None,
             left: None,
         };
@@ -4265,12 +4265,12 @@ mod tests {
         );
         assert_eq!(limited(refusal(403)).kind, ErrorKind::PermissionDenied);
         assert_eq!(limited(refusal(429)).kind, ErrorKind::RateLimited);
-        assert_eq!(limited(refusal(429)).retryable, None);
+        assert_eq!(limited(refusal(429)).retry, None);
         let used_up = limited(super::super::hooks::Refusal {
-            lasting: true,
+            retry: Some(kaeso_kpp::Retry::AfterReset),
             ..refusal(429)
         });
-        assert_eq!(used_up.retryable, Some(false));
+        assert_eq!(used_up.retry, Some(kaeso_kpp::Retry::AfterReset));
         assert_eq!(used_up.retry_after, Some(Duration::from_secs(5)));
     }
 

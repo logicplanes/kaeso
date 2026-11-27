@@ -136,7 +136,7 @@ async fn relay_voices(
     .await
     .map_err(|e| match e {
         crate::services::credentials::ResolveError::Missing { .. } => {
-            error(ErrorKind::ProviderError, 502, e.to_string()).with_retryable(false)
+            error(ErrorKind::ProviderError, 502, e.to_string()).with_retry(kaeso_kpp::Retry::Futile)
         }
         other => {
             tracing::error!(error = %other, "cannot load the ElevenLabs credential");

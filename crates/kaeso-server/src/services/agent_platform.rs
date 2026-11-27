@@ -100,7 +100,7 @@ fn base(state: &AppState, provider: &ProviderRef, location: &str) -> Result<Url,
                     500,
                     "No base URL is configured for this provider.",
                 )
-                .with_retryable(false),
+                .with_retry(kaeso_kpp::Retry::Futile),
             )
         }),
     }
@@ -175,7 +175,7 @@ pub async fn egress(
 pub fn token_error(e: &TokenError) -> KppError {
     match e {
         TokenError::Refused { .. } | TokenError::Sign => {
-            error(ErrorKind::ProviderError, 502, KEY_REFUSED).with_retryable(false)
+            error(ErrorKind::ProviderError, 502, KEY_REFUSED).with_retry(kaeso_kpp::Retry::Futile)
         }
         TokenError::Unavailable { status } => {
             tracing::warn!(status, "Google's token endpoint is unavailable");

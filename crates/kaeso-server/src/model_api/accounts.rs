@@ -93,7 +93,7 @@ pub(super) fn plan_limit(account: Option<AccountSignIn>, err: &KppError) -> Opti
                 429,
                 format!("Your {product} plan's usage limit is reached. Review it at {url}."),
             )
-            .with_retryable(false);
+            .with_retry(kaeso_kpp::Retry::AfterReset);
             limited.retry_after = err.retry_after;
             Some(limited)
         }
@@ -189,7 +189,10 @@ mod tests {
             "{}",
             err.message
         );
-        assert_eq!((err.retryable, err.retry_after), (Some(false), None));
+        assert_eq!(
+            (err.retry, err.retry_after),
+            (Some(kaeso_kpp::Retry::AfterReset), None)
+        );
         let stated = account_error(
             Some(CHATGPT),
             KppError::new(ErrorKind::Billing, "usage_limit_reached")

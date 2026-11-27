@@ -764,7 +764,7 @@ fn refusal(l: &Limit, now: OffsetDateTime, why: Why) -> Refusal {
                 l.describe()
             ),
             retry_after: Some(Duration::from_secs(1)),
-            lasting: false,
+            retry: None,
             param: None,
             left: None,
         },
@@ -776,7 +776,7 @@ fn refusal(l: &Limit, now: OffsetDateTime, why: Why) -> Refusal {
                 l.describe()
             ),
             retry_after: Some(JOB_RETRY),
-            lasting: false,
+            retry: None,
             param: None,
             left: None,
         },
@@ -788,7 +788,7 @@ fn refusal(l: &Limit, now: OffsetDateTime, why: Why) -> Refusal {
                 l.describe()
             ),
             retry_after: None,
-            lasting: true,
+            retry: Some(kaeso_kpp::Retry::Futile),
             param: None,
             left: None,
         },
@@ -800,7 +800,7 @@ fn refusal(l: &Limit, now: OffsetDateTime, why: Why) -> Refusal {
                 l.describe()
             ),
             retry_after: None,
-            lasting: true,
+            retry: Some(kaeso_kpp::Retry::Futile),
             param: None,
             left: None,
         },
@@ -815,7 +815,7 @@ fn refusal(l: &Limit, now: OffsetDateTime, why: Why) -> Refusal {
                     crate::auth::throttle::wait(secs)
                 ),
                 retry_after: Some(Duration::from_secs(secs)),
-                lasting: false,
+                retry: None,
                 param: None,
                 left: None,
             }
@@ -840,7 +840,7 @@ fn refusal(l: &Limit, now: OffsetDateTime, why: Why) -> Refusal {
                     l.describe()
                 ),
                 retry_after: reset_at.map(|t| until(now, t)),
-                lasting: true,
+                retry: Some(kaeso_kpp::Retry::AfterReset),
                 param: None,
                 left: None,
             }
@@ -873,7 +873,7 @@ fn unpriced_refusal(subject: Subject, u: &Unpriced) -> Refusal {
         status: 403,
         message,
         retry_after: None,
-        lasting: false,
+        retry: None,
         param: Some(u.param),
         left: None,
     }
@@ -966,7 +966,7 @@ impl Limits for ValkeyLimits {
                             "Kaeso cannot check this project's limits right now; try again shortly."
                                 .into(),
                         retry_after: Some(RECHECK_AFTER),
-                        lasting: false,
+                        retry: None,
                         param: None,
                         left: None,
                     });
@@ -1079,7 +1079,7 @@ fn unavailable() -> Refusal {
         message: "Kaeso cannot check this project's hard budgets right now; try again shortly."
             .into(),
         retry_after: Some(RECHECK_AFTER),
-        lasting: false,
+        retry: None,
         param: None,
         left: None,
     }

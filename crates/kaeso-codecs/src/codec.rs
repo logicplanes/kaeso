@@ -14,7 +14,7 @@ use crate::system_one::SystemOneProfile;
 use indexmap::IndexMap;
 use kaeso_kpp::{
     AudioFormat, DialectId, ErrorKind, KppError, ModelInfo, ModelList, ModelsQuery, Origin, Reply,
-    Request, RequestKind, Source, StreamEvent, StreamMode, TranscriptFormat, VideoJob,
+    Request, RequestKind, Retry, Source, StreamEvent, StreamMode, TranscriptFormat, VideoJob,
 };
 
 pub trait Codec: sealed::Sealed {
@@ -683,8 +683,10 @@ const LONGEST_CLIENT_WAIT: std::time::Duration = std::time::Duration::from_secs(
 /// and server errors, and errors sent as 408 or 409, which clients retry by their status, get
 /// none.
 pub fn should_retry(err: &KppError, status: u16) -> Option<bool> {
-    if let Some(stated) = err.retryable {
-        return Some(stated);
+    match err.retry {
+        Some(Retry::Helps) => return Some(true),
+        Some(Retry::Futile | Retry::AfterReset) => return Some(false),
+        _ => {}
     }
     if err
         .retry_after

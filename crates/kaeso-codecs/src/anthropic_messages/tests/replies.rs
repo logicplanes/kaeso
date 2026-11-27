@@ -494,3 +494,24 @@ fn embeddings_are_not_an_anthropic_reply() {
     let ctx = EgressCtx::for_kind(RequestKind::Embed, StreamMode::Off);
     assert!(AnthropicMessages::decode_response(200, &HeaderList::new(), b"{}", &ctx).is_err());
 }
+
+#[test]
+fn a_spend_cap_lasts_until_it_resets_and_is_a_used_up_quota_for_openai_apps() {
+    let (_, body) = fixtures(DIALECT, "errors", "json")
+        .into_iter()
+        .find(|(n, _)| n == "rate-limit-spend-cap")
+        .unwrap();
+    let err = AnthropicMessages::decode_error(429, &HeaderList::new(), &body);
+    assert_eq!(err.kind, kaeso_kpp::ErrorKind::RateLimited);
+    assert_eq!(err.retry, Some(kaeso_kpp::Retry::AfterReset));
+    let sent = crate::dispatch::encode_error(DialectId::OpenAiChat, &err);
+    assert_eq!(sent.headers.get(crate::SHOULD_RETRY_HEADER), Some("false"));
+    let v: Value = serde_json::from_slice(&sent.body).unwrap();
+    assert_eq!(v["error"]["code"], "insufficient_quota");
+    let (_, plain) = fixtures(DIALECT, "errors", "json")
+        .into_iter()
+        .find(|(n, _)| n == "rate-limit")
+        .unwrap();
+    let limited = AnthropicMessages::decode_error(429, &HeaderList::new(), &plain);
+    assert_eq!(limited.retry, None);
+}

@@ -306,7 +306,7 @@ order: 7
 | `PermissionDenied` | 403 | `request_forbidden` | `null` |
 | `NotFound` | 404 | `invalid_request_error` | `null` |
 | `RequestTooLarge` | 413 | `invalid_request_error` | `null` |
-| `RateLimited` | 429 | `rate_limit_error`；带 `retryable: false` 时为 `insufficient_quota` | `rate_limit_exceeded`；`insufficient_quota` |
+| `RateLimited` | 429 | `rate_limit_error`；带 `retry: after_reset` 时为 `insufficient_quota` | `rate_limit_exceeded`；`insufficient_quota` |
 | `Billing` | 429 | `insufficient_quota` | `insufficient_quota` |
 | `Overloaded` | 503 | `service_unavailable_error` | `server_is_overloaded` |
 | `Timeout` | 504 | `server_error` | `timeout` |

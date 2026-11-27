@@ -190,7 +190,7 @@ pub(crate) fn wire_for_kind(err: &KppError) -> (u16, &'static str, Option<&'stat
         ErrorKind::RequestTooLarge => (413, "invalid_request_error", None),
         // A limit that lasts until a budget or plan resets is a used-up quota, which OpenAI
         // answers with `insufficient_quota` and its clients don't retry.
-        ErrorKind::RateLimited if err.retryable == Some(false) => {
+        ErrorKind::RateLimited if err.retry == Some(kaeso_kpp::Retry::AfterReset) => {
             (429, "insufficient_quota", Some("insufficient_quota"))
         }
         ErrorKind::RateLimited => (429, "rate_limit_error", Some("rate_limit_exceeded")),

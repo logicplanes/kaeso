@@ -348,7 +348,7 @@ Die SDKs von OpenAI und Anthropic und die Coding-Agents, die auf ihnen aufbauen,
 
 - einer Anfrage, die es so nicht annehmen kann: jedem 400, 401, 403, 404, 405, 410, 413 und 415 sowie einem 402 des Anbieters;
 - einem Budget, das bis zu seinem Zurücksetzen aufgebraucht ist, oder einer Anfrage, die mehr kosten könnte, als davon übrig ist;
-- dem Nutzungslimit eines Abos, das bis zum Zurücksetzen des Abos gilt;
+- dem Nutzungslimit eines Abos, das bis zum Zurücksetzen des Abos gilt, und der Ausgabengrenze eines Anbieters, etwa der monatlichen von Anthropic;
 - einem Anbieter-Schlüssel, den der Anbieter abgelehnt hat, einem Projekt ohne Anbieter-Schlüssel, einem abgemeldeten Konto und anderen Problemen, die nur ein Organisations-Admin beheben kann, jeweils mit 500 oder 502;
 - jedem Fehler, dessen `Retry-After` länger als eine Minute ist, also länger, als die SDKs von selbst warten.
 

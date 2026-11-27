@@ -348,7 +348,7 @@ The OpenAI and Anthropic SDKs, and the coding agents built on them, retry a 429,
 
 - a request it can't take as it is: every 400, 401, 403, 404, 405, 410, 413 and 415, and a provider's 402;
 - a budget used up until it resets, or a request that could cost more than what's left of one;
-- a plan's usage limit, which lasts until the plan resets;
+- a plan's usage limit, which lasts until the plan resets, and a provider's spend cap, such as Anthropic's monthly one;
 - a provider key the provider refused, a project without a provider key, a signed-out account and other problems only an organization admin can fix, each a 500 or 502;
 - any error whose `Retry-After` is longer than a minute, which is longer than the SDKs wait by themselves.
 
