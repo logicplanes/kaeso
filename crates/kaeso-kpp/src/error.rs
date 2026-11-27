@@ -127,7 +127,9 @@ pub enum Retry {
     Helps,
     /// It can't until someone changes the request, a key or a setting.
     Futile,
-    /// A quota or budget is used up; it can once that resets, at `retry_after` when known.
+    /// A quota or budget is used up, which OpenAI calls `insufficient_quota`: a retry can pass
+    /// once it resets or someone raises it. `retry_after` says when it resets, for one that
+    /// resets on its own; a total budget never does.
     AfterReset,
 }
 

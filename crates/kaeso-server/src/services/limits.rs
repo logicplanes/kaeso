@@ -839,6 +839,8 @@ fn refusal(l: &Limit, now: OffsetDateTime, why: Why) -> Refusal {
                     noun(l.subject),
                     l.describe()
                 ),
+                // A total budget has no reset and so no `Retry-After`; it is still a used-up
+                // quota, which only a raised limit lifts.
                 retry_after: reset_at.map(|t| until(now, t)),
                 retry: Some(kaeso_kpp::Retry::AfterReset),
                 param: None,

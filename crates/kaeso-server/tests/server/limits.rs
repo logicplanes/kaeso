@@ -2203,6 +2203,36 @@ async fn a_budget_used_up_exactly_refuses_the_next_request() {
 }
 
 #[tokio::test]
+async fn a_used_up_total_budget_says_no_retry_without_a_reset_time() {
+    let env = common::v1::env(None, None).await;
+    let (secret, id) = key_of(&env, "k", json!({})).await;
+    let lim = limit(&env, json!({ "level": "key", "key": id, "kind": "token_budget", "period": "total", "amount": TOKENS })).await;
+    used(&env, lim["id"].as_str().unwrap(), &TOKENS.to_string()).await;
+    let r = ask(&env, &secret).await;
+    assert_eq!(r.status, StatusCode::TOO_MANY_REQUESTS, "{}", r.text());
+    assert!(
+        r.json()["error"]["message"]
+            .as_str()
+            .unwrap()
+            .ends_with("it does not reset, so raise the limit to continue."),
+        "{}",
+        r.text()
+    );
+    assert_eq!(r.header("x-should-retry"), Some("false"));
+    assert_eq!(r.header("retry-after"), None, "no reset to wait for");
+    let openai = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&secret),
+        false,
+        Some(chat("claude-haiku-4-5", "Hi")),
+    )
+    .await;
+    assert_eq!(openai.header("x-should-retry"), Some("false"));
+    assert_eq!(openai.json()["error"]["code"], "insufficient_quota");
+}
+
+#[tokio::test]
 async fn a_request_rate_limit_lets_clients_retry_after_its_window() {
     let env = common::v1::env(None, None).await;
     let (secret, id) = key_of(&env, "k", json!({})).await;
