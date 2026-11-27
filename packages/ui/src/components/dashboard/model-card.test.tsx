@@ -72,6 +72,14 @@ describe("Announcement", () => {
     expect(screen.queryByRole("button", { name: "Dismiss" })).not.toBeInTheDocument();
   });
 
+  it("raises its close button off its artwork, so it reads over any shape, and keeps it quiet without artwork", () => {
+    const { rerender } = render(<Announcement title="Kaeso 40.5.0" scheme="light" art={<svg />} onDismiss={() => {}} />);
+    expect(screen.getByRole("button", { name: "Dismiss" })).toHaveClass("material-secondary");
+    rerender(<Announcement title="Kaeso 40.5.0" onDismiss={() => {}} />);
+    expect(screen.getByRole("button", { name: "Dismiss" })).not.toHaveClass("material-secondary");
+    expect(screen.getByRole("button", { name: "Dismiss" })).toHaveClass("text-fg-secondary");
+  });
+
   it("takes its artwork's mode for its words, and the page's without artwork", () => {
     const { rerender } = render(<Announcement title="Kaeso 40.5.0" scheme="dark" art={<svg />} />);
     const section = () => screen.getByRole("heading", { name: "Kaeso 40.5.0" }).closest("section") as HTMLElement;

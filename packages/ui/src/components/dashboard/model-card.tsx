@@ -73,7 +73,11 @@ export const Announcement = forwardRef<
           type="button"
           aria-label={t("banner.dismiss", "Dismiss")}
           onClick={onDismiss}
-          className="absolute top-12 right-12 inline-flex size-24 cursor-pointer items-center justify-center rounded-pill text-fg-secondary transition-control tap-target hover:bg-fill-2 hover:text-fg active:bg-fill-3 focus-ring"
+          className={cn(
+            "absolute top-12 right-12 inline-flex size-24 cursor-pointer items-center justify-center rounded-pill transition-control tap-target focus-ring",
+            // On artwork it sits on its own raised surface, like the actions' buttons, so it reads over any shape or light.
+            art ? "material-secondary" : "text-fg-secondary hover:bg-fill-2 hover:text-fg active:bg-fill-3",
+          )}
         >
           <Icon icon={icons.close} size="xs" />
         </button>
