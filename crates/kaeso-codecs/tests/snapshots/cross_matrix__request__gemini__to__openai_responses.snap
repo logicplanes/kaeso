@@ -379,6 +379,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -410,6 +411,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -1136,6 +1138,7 @@ expression: outcomes
             "properties": {},
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         },
         {
@@ -1145,6 +1148,7 @@ expression: outcomes
             "properties": {},
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         },
         {
@@ -1176,6 +1180,7 @@ expression: outcomes
               }
             ]
           },
+          "strict": false,
           "type": "function"
         }
       ]
