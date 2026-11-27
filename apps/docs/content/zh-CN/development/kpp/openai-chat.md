@@ -233,7 +233,7 @@ Anthropic 和 Responses 在块开始时就要给出两者，因此解码器按�
 
 来自其他方言的事件各自成为一个 chunk，排在开头的角色 chunk 之后，带有 `logprobs: null` 和 `finish_reason`。工具索引按工具调用开始的顺序分配。引用、不透明数据、未知块和其他方言的 extras 会被省略（[回复](cross-format.md#回复)）；推理也会被省略，除非请求发送了 OpenRouter 的 `reasoning` 对象且未设 `exclude: true`，此时推理文本和摘要以 `delta.reasoning` 流式输出。设置 `exclude: true` 时，所有方言的推理增量都会隐藏，同时用量保留 `reasoning_tokens`。
 
-在这些被省略的内容到达期间，编码器会按节奏写入 SSE 注释（`: keepalive`），SSE 规范和 SDK 的解析器都会忽略它们。其他方言的每个额外事件（例如 Anthropic `ping`）对应一条，每 1,024 字节隐藏文本对应一条（[保活消息](cross-format.md#保活消息)）。`StreamEncoder::keepalive` 为网关提供同样的帧，用于上游静默的情况。
+在这些被省略的内容到达期间，编码器会按节奏写入 SSE 注释（`: keepalive`），SSE 规范和 SDK 的解析器都会忽略它们。隐藏文本和其他方言的额外事件（例如 Anthropic `ping`）按大小计算，每 1,024 字节对应一条（[保活消息](cross-format.md#保活消息)）。`StreamEncoder::keepalive` 为网关提供同样的帧，用于上游静默的情况。
 
 只有应用请求了用量时才会写入用量（`EncodeCtx::stream` 带 `include_usage`）。此时每个 chunk 都有 `usage: null`，最后一个 `choices: []` 的 chunk 携带用量。来自其他方言时，这是最新的用量；后面的报告没有输入计数时，输入计数取自 `ResponseStart`。
 

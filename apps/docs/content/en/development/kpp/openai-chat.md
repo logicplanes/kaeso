@@ -233,7 +233,7 @@ Anthropic and Responses announce both when a block starts, so the decoder holds 
 
 Events from other dialects become one chunk each, after the opening role chunk, with `logprobs: null` and `finish_reason`. Tool indexes are assigned in the order tool calls start. Citations, opaque data, unknown blocks and extras of other dialects are left out ([replies](cross-format.md#replies)); reasoning is left out too unless the request sent OpenRouter's `reasoning` object without `exclude: true`, in which case reasoning text and summaries stream as `delta.reasoning`. With `exclude: true`, reasoning deltas are hidden for every dialect while usage keeps `reasoning_tokens`.
 
-While such left-out content arrives, the encoder writes paced SSE comments (`: keepalive`), which the SSE spec and the SDK parsers ignore. It writes one for each extra event of another dialect, such as Anthropic `ping`, and one per 1,024 bytes of hidden text ([keepalives](cross-format.md#keepalives)). `StreamEncoder::keepalive` gives the gateway the same frame for silence upstream.
+While such left-out content arrives, the encoder writes paced SSE comments (`: keepalive`), which the SSE spec and the SDK parsers ignore. It writes one per 1,024 bytes of hidden text and of extra events from another dialect, such as Anthropic `ping`, by their size ([keepalives](cross-format.md#keepalives)). `StreamEncoder::keepalive` gives the gateway the same frame for silence upstream.
 
 Usage is written only when the app asked for it (`EncodeCtx::stream` with `include_usage`). Every chunk then has `usage: null`, and a final `choices: []` chunk carries the usage. From other dialects this is the latest usage, with the input counts from `ResponseStart` when the later report has none.
 
