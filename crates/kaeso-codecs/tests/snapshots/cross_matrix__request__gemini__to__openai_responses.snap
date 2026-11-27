@@ -194,6 +194,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -486,6 +487,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -596,6 +598,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -783,6 +786,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -836,6 +840,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -901,6 +906,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -937,6 +943,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         },
         {
@@ -954,6 +961,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -997,6 +1005,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -1030,6 +1039,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]

@@ -437,3 +437,50 @@ fn output_limits_below_the_responses_minimum_are_refused_not_raised() {
         OpenAiResponses::check(&Request::Generate(req), &crate::test_support::egress()).is_ok()
     );
 }
+
+#[test]
+fn tools_of_other_formats_without_strict_go_non_strict() {
+    let tool = |origin: Option<DialectId>, strict: Option<bool>| {
+        let mut f = FunctionTool::new(
+            "get_weather",
+            Some(raw(
+                r#"{"type":"object","properties":{"city":{"type":"string"},"days":{"type":"integer"}},"required":["city"]}"#,
+            )),
+        );
+        f.strict = strict;
+        if let Some(origin) = origin {
+            f.extras = Extras::new(Origin::new(origin));
+        }
+        ToolDef::Function(f)
+    };
+    let mut req = GenerateRequest::new("gpt-5.5").with_message(Message::user("Weather?"));
+    req.tools = vec![
+        tool(Some(DialectId::OpenAiChat), None),
+        tool(Some(DialectId::AnthropicMessages), None),
+        tool(Some(DialectId::Gemini), None),
+        tool(Some(DialectId::OpenAiChat), Some(true)),
+        tool(Some(DialectId::OpenAiResponses), None),
+        tool(None, None),
+    ];
+    let req = Request::Generate(req);
+    let mut ctx = EgressCtx::new(&req);
+    let out = OpenAiResponses::encode_request(&req, &mut ctx).unwrap();
+    let body: serde_json::Value = serde_json::from_slice(&out.body).unwrap();
+    let strict: Vec<_> = body["tools"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|t| t.get("strict").cloned())
+        .collect();
+    assert_eq!(
+        strict,
+        [
+            Some(json!(false)),
+            Some(json!(false)),
+            Some(json!(false)),
+            Some(json!(true)),
+            None,
+            None
+        ]
+    );
+}

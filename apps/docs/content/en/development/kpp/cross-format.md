@@ -268,6 +268,10 @@ When Codex runs subagents, the agents write to each other with `agent_message` i
 
 An `encrypted_content` that is ciphertext, one unbroken run of base64, can be read only at OpenAI, so it is `Unsupported` everywhere else, as is a part of another type. Fixtures: `openai_responses/providers/xai/requests/codex-multi-agent.json` (a subagent's first request) and `codex-multi-agent-root.json` (the root agent's later turn).
 
+## Strict tools
+
+A function tool from Chat Completions, Anthropic or Gemini is non-strict unless it says otherwise, while Responses tries strict mode for a tool without `strict`, which makes every argument required ([function calling](https://developers.openai.com/api/docs/guides/function-calling#strict-mode)). The Responses encoder therefore sends a tool from another dialect without `strict` with `strict: false`, so the model can leave optional arguments out.
+
 ## Tool call arguments
 
 A tool call's arguments are a JSON object in every format. Chat Completions and Responses carry them as a string, so a call can arrive with text that is not one. Kaeso treats such text the same way on every route:
