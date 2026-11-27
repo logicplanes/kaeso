@@ -357,7 +357,9 @@ fn a_foreign_request_encodes_from_typed_fields() {
     r.tools.push(ToolDef::Function(f));
     r.tool_choice = Some(ToolChoice::Tool("get.weather".into()));
     r.parallel_tool_calls = Some(false);
-    let mut schema = JsonSchemaSpec::new(raw(r#"{"type":"object"}"#));
+    let mut schema = JsonSchemaSpec::new(raw(
+        r#"{"type":"object","properties":{"a":{"type":"string"}}}"#,
+    ));
     schema.name = Some("answer".into());
     schema.strict = Some(true);
     r.output = OutputSpec::JsonSchema(schema);
@@ -377,7 +379,7 @@ fn a_foreign_request_encodes_from_typed_fields() {
             "stop_sequences": ["\n\n"],
             "stream": true,
             "metadata": {"user_id": "user-42"},
-            "output_config": {"effort": "high", "format": {"type": "json_schema", "schema": {"type": "object"}}},
+            "output_config": {"effort": "high", "format": {"type": "json_schema", "schema": {"type": "object", "properties": {"a": {"type": "string"}}, "additionalProperties": false}}},
             "thinking": {"type": "adaptive"},
             "tool_choice": {"type": "tool", "name": name, "disable_parallel_tool_use": true},
             "tools": [{"name": name, "description": "Weather", "input_schema": {"type": "object", "properties": {}},

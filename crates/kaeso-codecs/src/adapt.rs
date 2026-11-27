@@ -15,8 +15,8 @@ use crate::openai_chat::ChatProfile;
 use crate::openai_responses::{InputItems, ReasoningReplay, history, namespaces, replay};
 use crate::wire::VERBATIM_FORM_KEY;
 use crate::{
-    inline_tools, neutral, tool_patterns, tool_roots, tool_search, tool_thinking, verbosity,
-    web_search,
+    inline_tools, neutral, output_schema, tool_patterns, tool_roots, tool_search, tool_thinking,
+    verbosity, web_search,
 };
 
 const INPUT: &str = "input";
@@ -193,6 +193,11 @@ pub(crate) fn for_target<'a>(
         namespaces::flatten(&mut draft, target)?;
     }
     tool_roots::for_target(&mut draft, target, ctx)?;
+    match target {
+        DialectId::AnthropicMessages => output_schema::for_claude(&mut draft)?,
+        DialectId::Gemini => output_schema::for_gemini(&mut draft)?,
+        _ => {}
+    }
     tool_patterns::for_chat(&mut draft, target, &ctx.chat_profile)?;
     if !(target == DialectId::OpenAiResponses && profile.tool_choice_without_tools) {
         tool_choice_without_tools(&mut draft)?;
