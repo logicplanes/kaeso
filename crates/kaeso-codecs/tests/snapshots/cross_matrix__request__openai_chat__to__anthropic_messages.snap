@@ -532,6 +532,60 @@ expression: outcomes
   "n-2": {
     "rejected_by_source": "n"
   },
+  "neutral-defaults": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Name three rivers in Europe.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-5.5"
+    },
+    "path": "/v1/messages"
+  },
+  "nextchat-defaults": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Say hi",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-4o-mini",
+      "stream": true,
+      "system": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "text": "\nYou are ChatGPT, a large language model trained by OpenAI.\nKnowledge cutoff: 2023-10\nCurrent model: gpt-4o-mini\nCurrent time: 11/27/2026, 9:41:00 AM\nLatex inline: \\(x^2\\) \nLatex block: $$e=mc^2$$\n\n",
+          "type": "text"
+        }
+      ],
+      "temperature": 0.5,
+      "top_p": 1.0
+    },
+    "path": "/v1/messages"
+  },
   "openrouter-reasoning": {
     "body": {
       "max_tokens": 4096,
@@ -1834,9 +1888,31 @@ expression: outcomes
     "unsupported": "seed"
   },
   "providers/cerebras/store-field": {
-    "message": "`store` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
-    "param": null,
-    "unsupported": "store"
+    "body": {
+      "max_tokens": 100,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Say hello in two words.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-oss-120b",
+      "output_config": {
+        "effort": "low"
+      },
+      "thinking": {
+        "type": "adaptive"
+      }
+    },
+    "path": "/v1/messages"
   },
   "providers/cerebras/stream": {
     "body": {
@@ -2285,9 +2361,34 @@ expression: outcomes
     "path": "/v1/messages"
   },
   "providers/cerebras/user-hints": {
-    "message": "`service_tier` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
-    "param": null,
-    "unsupported": "service_tier"
+    "body": {
+      "max_tokens": 200,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Say hello in two words.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "metadata": {
+        "user_id": "user-1234"
+      },
+      "model": "gpt-oss-120b",
+      "output_config": {
+        "effort": "low"
+      },
+      "thinking": {
+        "type": "adaptive"
+      }
+    },
+    "path": "/v1/messages"
   },
   "providers/cerebras/verbosity-field": {
     "message": "`verbosity` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
@@ -2874,9 +2975,25 @@ expression: outcomes
     "unsupported": "seed"
   },
   "providers/cohere/service-tier-field": {
-    "message": "`service_tier` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
-    "param": null,
-    "unsupported": "service_tier"
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Hello",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "command-a-03-2025"
+    },
+    "path": "/v1/messages"
   },
   "providers/cohere/stop-string": {
     "body": {
@@ -4541,9 +4658,25 @@ expression: outcomes
     "path": "/v1/messages"
   },
   "providers/mistral/store-field": {
-    "message": "`store` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
-    "param": null,
-    "unsupported": "store"
+    "body": {
+      "max_tokens": 10,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Say hello.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "mistral-small-latest"
+    },
+    "path": "/v1/messages"
   },
   "providers/mistral/stream-no-options": {
     "body": {
@@ -6225,9 +6358,25 @@ expression: outcomes
     "path": "/v1/messages"
   },
   "providers/ovhcloud/recorded-service-tier": {
-    "message": "`service_tier` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
-    "param": null,
-    "unsupported": "service_tier"
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Hi",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-oss-20b"
+    },
+    "path": "/v1/messages"
   },
   "providers/ovhcloud/recorded-thinking-length": {
     "body": {

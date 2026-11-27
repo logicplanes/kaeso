@@ -8,7 +8,7 @@ Eine App kann ein API-Format sprechen, während der Anbieter ein anderes spricht
 
 | Daten aus einem anderen Format | In einer Anfrage | In einer Antwort |
 | --- | --- | --- |
-| Extras-Felder | `Unsupported`, außer sie stehen auf der [Allowlist](#extras) | Weggelassen |
+| Extras-Felder | `Unsupported`, außer sie stehen auf der [Allowlist](#extras) oder sind [neutral](sampling.md#neutrale-werte) | Weggelassen |
 | Unbekannte Blöcke, Tools und Tool-Auswahlen | `Unsupported`, außer [Tool-Namespaces](#tool-namespaces), [Tool-Suche](#tool-suche), [gehosteter Websuche](#gehostete-websuche) und dem [Tool-Verlauf von Codex](#tool-verlauf-von-codex) | Unbekannte Blöcke weggelassen, außer Websuchen |
 | Zitate | `Unsupported` | Weggelassen |
 | Datei-IDs eines Anbieters | `Unsupported`, außer der Zielanbieter hat sie ausgegeben | — |
@@ -17,7 +17,7 @@ Eine App kann ein API-Format sprechen, während der Anbieter ein anderes spricht
 | Cache-Hinweise | Weggelassen, wo das Ziel selbst cacht | — |
 | Audio und Video | Gesendet, wo Format und Anbieter des Ziels sie nehmen, sonst `Unsupported` ([Audio und Video](#audio-und-video)) | Weggelassen, wo das Format der App sie nicht tragen kann |
 | Audio- und Bildausgabe | Verlangt, wo das Ziel sie schreibt, sonst `Unsupported` ([Audio- und Bildantworten](#audio--und-bildantworten)) | Audio für Chat- und Gemini-Apps, Bilder für Gemini-Apps; sonst weggelassen |
-| Sampling-Einstellungen, die das Ziel nicht hat | `Unsupported` | — |
+| Sampling-Einstellungen, die das Ziel nicht hat | `Unsupported`, außer eine Penalty von 0 ([neutrale Werte](sampling.md#neutrale-werte)) | — |
 | Stoppgründe, die das Format der App nicht hat | — | Der nächstliegende, den es hat |
 | Abgeschaltetes Thinking für ein Modell, das immer Reasoning nutzt | Die niedrigste Aufwandsstufe des Modells, genannt in `kaeso-adapted` ([Modelle, die immer Reasoning nutzen](reasoning.md#modelle-die-immer-reasoning-nutzen)) | — |
 | Entscheidungsanfragen und Antworten | Abgebildet oder abgelehnt, wie [Entscheidungen über Formate hinweg](decisions-across-formats.md) beschreibt | Ebenso abgebildet |
@@ -359,22 +359,6 @@ Strukturierte Ausgabe an Anthropic nutzt die nativen Structured Outputs von Anth
 - Schemas, die von Anthropic an OpenAI gehen, bekommen den Namen `response`, weil OpenAI einen verlangt.
 - Gemini bekommt ein Schema als `responseJsonSchema` und `json_object` als `responseMimeType: "application/json"` allein; wie bei Anthropic entfällt der `name` eines Schemas, und eine `description` oder `strict: false` ist `Unsupported`.
 - Amazon Bedrock Converse bekommt noch kein Ausgabeformat: `json_object` und Schemas sind `Unsupported`.
-
-## Sampling
-
-Sampling-Einstellungen, die ein Ziel nicht einhalten kann, sind `Unsupported` und werden nie weggelassen oder umskaliert:
-
-| Ziel | Abgelehnt |
-| --- | --- |
-| Anthropic | `seed`, Frequency- und Presence-Penalties und eine `temperature` außerhalb von 0 bis 1, dem Bereich bei Anthropic |
-| OpenAI Chat Completions | `top_k` und mehr als vier Stoppsequenzen |
-| OpenAI Responses | `top_k`, `seed`, die Penalties und Stoppsequenzen, die es bei Responses nicht gibt, und ein Ausgabelimit unter 16 Token, dem Minimum von `CreateResponse` |
-| Gemini API | Mehr als fünf Stoppsequenzen (`GenerationConfig.stopSequences`) |
-| Amazon Bedrock Converse | `top_k`, `seed` und die Penalties, die in die eigenen Felder einer Modellfamilie gehören |
-
-Zahlen behalten ihre Schreibweise innerhalb eines Dialekts: `temperature: 1` kommt als `1` zurück und `1.0` als `1.0`, solange der Wert unverändert ist. Über Dialekte hinweg gilt die eigene Schreibweise des Ziels, daher erreicht `temperature: 1` aus Chat Anthropic als `1.0`.
-
-KPP hat kein `n`: Eine Chat-Anfrage mit `n` über 1 wird schon beim Dekodieren abgelehnt, unabhängig vom Ziel. `logprobs`, `logit_bias` und `top_logprobs` von Chat sind Extras, die jeder andere Dialekt ablehnt ([Extras](#extras)).
 
 ## Zustandsbehaftete Responses-Funktionen
 

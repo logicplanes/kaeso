@@ -155,7 +155,7 @@ async fn anthropic_apps_get_sambanova_reasoning_as_thinking_and_the_usage_of_its
 }
 
 #[tokio::test]
-async fn penalties_sambanova_ignores_are_refused_before_anything_is_sent() {
+async fn penalties_sambanova_ignores_are_refused_before_anything_is_sent_unless_they_are_0() {
     let env = env().await;
     for field in ["frequency_penalty", "presence_penalty"] {
         env.mock.clear();
@@ -176,6 +176,25 @@ async fn penalties_sambanova_ignores_are_refused_before_anything_is_sent() {
         );
         assert!(env.mock.received().is_empty(), "{field}");
     }
+    let mut body = chat(GPT_OSS, "Hello");
+    body["frequency_penalty"] = json!(0);
+    body["presence_penalty"] = json!(0);
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(body),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(
+        r.header("kaeso-left-out"),
+        Some("frequency_penalty, presence_penalty"),
+        "a penalty of 0 asks for nothing"
+    );
+    let sent = env.mock.last().unwrap().json();
+    assert!(sent.get("frequency_penalty").is_none(), "{sent}");
 }
 
 #[tokio::test]

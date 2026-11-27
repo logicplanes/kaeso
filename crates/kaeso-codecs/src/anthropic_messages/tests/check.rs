@@ -4,7 +4,7 @@ use crate::EgressCtx;
 #[test]
 fn check_refuses_foreign_extras_blocks_and_headers() {
     let mut r = chat_request();
-    r.extras = Extras::new(CHAT).with_field("logit_bias", raw("{}"));
+    r.extras = Extras::new(CHAT).with_field("logit_bias", raw(r#"{"50256":-100}"#));
     assert_eq!(feature(r), "logit_bias");
 
     let mut r = chat_request();

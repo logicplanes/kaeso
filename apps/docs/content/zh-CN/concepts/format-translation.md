@@ -28,7 +28,7 @@ KPP（Kaeso Provider Protocol）为每种 API 格式都提供一个编解码器�
 ## 三条规则
 
 1. **格式相同，没有损失。** 以原格式到达服务商的请求与发送时完全一致。只有模型名称会改为服务商的模型 ID。流始终会请求用量，但只有应用自己请求时才会看到。例外有三个。对于服务商在任何形式下都不接受其 schema 的工具，其参数根部的联合会变为一个对象，回复的 `kaeso-adapted` 响应头会注明它；没有 `type` 的根部会加上 `type: "object"`（[联合类型的工具 schema](../development/kpp/cross-format.md#联合类型的工具-schema)）。发给没有推理强度等级的模型的推理强度，以及发给不支持推理的模型的自适应思考会被省略（[没有推理强度等级的模型](../development/kpp/reasoning.md#没有推理强度等级的模型)）。Claude Opus 4.7 及更新的模型只接受默认采样设置，因此 Kaeso 会省略 `temperature`、`top_p` 和 `top_k`，思考预算则会变为自适应思考。
-2. **拒绝，而不丢弃。** 请求跨格式转换时，如果目标格式无法支持某个字段，Kaeso 会拒绝请求，并在错误中注明该字段。只有不改变模型输出内容的提示信息、目标缺少的少数可选工具，以及模型无法接受的推理设置会被省略；回复的 `kaeso-left-out` 响应头会注明这些内容（[省略的工具](../development/kpp/cross-format.md#省略的工具)）。
+2. **拒绝，而不丢弃。** 请求跨格式转换时，如果目标格式无法支持某个字段，Kaeso 会拒绝请求，并在错误中注明该字段。只有不改变模型输出内容的提示信息、目标缺少的少数可选工具、模型无法接受的推理设置，以及取值本就是 API 所用值的设置会被省略；回复的 `kaeso-left-out` 响应头会注明这些内容（[省略的工具](../development/kpp/cross-format.md#省略的工具)、[中性值](../development/kpp/sampling.md#中性值)）。
 3. **签名的推理只回到原处。** Kaeso 只会把加密或签名的推理内容发回签发它的格式和服务商。
 
 ## 能够保留的内容
@@ -49,7 +49,7 @@ KPP（Kaeso Provider Protocol）为每种 API 格式都提供一个编解码器�
 
 ### 发往 Anthropic 的请求
 
-- `seed`、频率惩罚和存在惩罚，以及大于 1 的温度
+- `seed`、不为 0 的频率惩罚和存在惩罚，以及大于 1 的温度
 - `json_object` 输出格式，以及带有描述或带有 `strict: false` 的 JSON schema
 - 历史中的拒绝回复
 - JPEG、PNG、GIF 和 WebP 以外的图像，以及 PDF 和纯文本以外的文档
@@ -67,7 +67,7 @@ KPP（Kaeso Provider Protocol）为每种 API 格式都提供一个编解码器�
 
 ### 发往 OpenAI Responses 的请求
 
-- `top_k`、`seed`、惩罚参数和停止序列
+- `top_k`、`seed`、不为 0 的惩罚参数和停止序列
 - 文本文档、文档标题、上下文和引用
 - 音频和视频，以及音频和图像输出
 
@@ -80,7 +80,7 @@ KPP（Kaeso Provider Protocol）为每种 API 格式都提供一个编解码器�
 
 ### 跨格式的请求
 
-- KPP 中没有对应位置的应用格式字段，例如 Chat Completions 的 `logprobs`、`logit_bias` 和 `service_tier`
+- KPP 中没有对应位置的应用格式字段，例如 Chat Completions 的 `logprobs`、`logit_bias` 和 `service_tier`，除非它们取 API 在没有该字段时使用的值
 - Chat Completions 已弃用的函数调用：`functions`、`function_call` 和 `function` 消息
 - 其他格式的内置工具（例如网页搜索）及其结果
 - 引用，以及来自其他服务商的文件 ID
@@ -106,6 +106,7 @@ KPP（Kaeso Provider Protocol）为每种 API 格式都提供一个编解码器�
 - 图像细节和文件名
 - Anthropic 的 `thinking.display`，以及只清除先前思考内容的 Anthropic 上下文管理
 - OpenAI 没有的工具结果错误标记；工具结果的文本仍会说明失败的内容
+- 取值就是 API 在没有该字段时所用值的设置，例如 `frequency_penalty: 0`、`logprobs: false` 或 `store: false`，NextChat 等聊天应用会在每个请求中发送它们；回复的 `kaeso-left-out` 响应头会列出它们（[中性值](../development/kpp/sampling.md#中性值)）
 
 转换为 Responses 的请求带有 `store: false`，因此 OpenAI 不会保存任何内容。
 

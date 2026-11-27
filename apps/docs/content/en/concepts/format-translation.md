@@ -28,7 +28,7 @@ KPP, the Kaeso Provider Protocol, has a codec for each API format: OpenAI Chat C
 ## Three rules
 
 1. **Same format, no loss.** A request that reaches the provider in the format it came in arrives as it was sent. Only the model name becomes the provider's model id. A stream always asks for usage, but the app sees it only if it asked. There are three exceptions. For a tool whose schema the provider takes in no form, a union at the root of its parameters becomes one object, which the reply's `kaeso-adapted` header names, and a root without `type` gets `type: "object"` ([union tool schemas](../development/kpp/cross-format.md#union-tool-schemas)). An effort for a model without effort levels, and adaptive thinking for a model that doesn't reason, are left out ([models without effort levels](../development/kpp/reasoning.md#models-without-effort-levels)). Claude Opus 4.7 and later take only their default sampling, so Kaeso leaves out `temperature`, `top_p` and `top_k`, and a thinking budget becomes adaptive thinking.
-2. **Refuse, never drop.** When a request crosses formats, Kaeso refuses a field the target can't honor, with an error that names it. It leaves out only hints that don't change what the model writes, the few optional tools the target lacks, and reasoning settings the model can't take, which the reply's `kaeso-left-out` header names ([tools left out](../development/kpp/cross-format.md#tools-left-out)).
+2. **Refuse, never drop.** When a request crosses formats, Kaeso refuses a field the target can't honor, with an error that names it. It leaves out only hints that don't change what the model writes, the few optional tools the target lacks, reasoning settings the model can't take, and settings sent at the value the API uses anyway, which the reply's `kaeso-left-out` header names ([tools left out](../development/kpp/cross-format.md#tools-left-out), [neutral values](../development/kpp/sampling.md#neutral-values)).
 3. **Signed reasoning goes home only.** Kaeso sends encrypted or signed reasoning back only to the format and provider that issued it.
 
 ## What carries across
@@ -49,7 +49,7 @@ When a request crosses formats, Kaeso refuses these with an error that names the
 
 ### Requests to Anthropic
 
-- `seed`, frequency and presence penalties, and a temperature above 1
+- `seed`, frequency and presence penalties other than 0, and a temperature above 1
 - the `json_object` output format, and a JSON schema with a description or with `strict: false`
 - refusals in the history
 - images other than JPEG, PNG, GIF and WebP, and documents other than PDF and plain text
@@ -67,7 +67,7 @@ When a request crosses formats, Kaeso refuses these with an error that names the
 
 ### Requests to OpenAI Responses
 
-- `top_k`, `seed`, penalties and stop sequences
+- `top_k`, `seed`, penalties other than 0 and stop sequences
 - text documents, document titles, context and citations
 - audio and video, and audio and image output
 
@@ -80,7 +80,7 @@ Kaeso refuses these in every format, even when the format stays the same:
 
 ### Requests across formats
 
-- fields of the app's format that KPP has no place for, such as Chat Completions' `logprobs`, `logit_bias` and `service_tier`
+- fields of the app's format that KPP has no place for, such as Chat Completions' `logprobs`, `logit_bias` and `service_tier`, unless they hold the value the API uses when they are absent
 - Chat Completions' deprecated function calling: `functions`, `function_call` and `function` messages
 - another format's built-in tools, such as web search, and their results
 - citations, and file ids from another provider
@@ -106,6 +106,7 @@ When the target has no place for them, Kaeso leaves out hints that don't change 
 - image detail and file names
 - Anthropic's `thinking.display`, and Anthropic context management that only clears earlier thinking
 - the error flag of a tool result, which OpenAI doesn't have; the result's text still says what failed
+- settings sent at the value the API uses when they are absent, such as `frequency_penalty: 0`, `logprobs: false` or `store: false`, which chat apps such as NextChat send with every request; the reply's `kaeso-left-out` header names them ([neutral values](../development/kpp/sampling.md#neutral-values))
 
 Requests translated into Responses carry `store: false`, so OpenAI keeps nothing.
 

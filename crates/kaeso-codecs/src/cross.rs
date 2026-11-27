@@ -313,6 +313,41 @@ pub fn is_droppable_value(origin: DialectId, scope: &str, key: &str, value: &Raw
     }
 }
 
+/// Request fields that ask for nothing at these values, by origin, key and value as JSON text:
+/// each is the value the API uses when the field is absent, as its specification states. A
+/// target or provider that would refuse the field leaves it out instead and names it in
+/// `kaeso-left-out`; a penalty of `0` is left out the same way.
+pub const NEUTRAL_VALUES: &[(DialectId, &str, &str)] = &[
+    (DialectId::OpenAiChat, "logprobs", "false"),
+    (DialectId::OpenAiChat, "top_logprobs", "0"),
+    (DialectId::OpenAiChat, "logit_bias", "{}"),
+    (DialectId::OpenAiChat, "metadata", "{}"),
+    (DialectId::OpenAiChat, "store", "false"),
+    (DialectId::OpenAiChat, "service_tier", "\"auto\""),
+    (DialectId::OpenAiChat, "verbosity", "\"medium\""),
+    (DialectId::AnthropicMessages, "service_tier", "\"auto\""),
+];
+
+/// Whether `value` of the request field `key` from `origin` is on [`NEUTRAL_VALUES`].
+pub fn is_neutral_value(origin: DialectId, key: &str, value: &RawJson) -> bool {
+    let Ok(sent) = value.to_value() else {
+        return false;
+    };
+    NEUTRAL_VALUES.iter().any(|(d, k, neutral)| {
+        *d == origin
+            && *k == key
+            && serde_json::from_str::<Value>(neutral).is_ok_and(|n| same_value(&n, &sent))
+    })
+}
+
+// `0` and `0.0` are different `Value`s; an app may write either.
+fn same_value(a: &Value, b: &Value) -> bool {
+    match (a, b) {
+        (Value::Number(x), Value::Number(y)) => x.as_f64() == y.as_f64(),
+        _ => a == b,
+    }
+}
+
 pub(crate) const OPENAI_CACHE_KEY: &str = "prompt_cache_key";
 
 pub(crate) const OPENAI_CACHE_SETTINGS: &[&str] =
@@ -490,6 +525,8 @@ pub(crate) enum Setting {
     Modalities,
     Voice,
     AudioFormat,
+    FrequencyPenalty,
+    PresencePenalty,
 }
 
 pub(crate) fn app_field(r: &GenerateRequest, setting: Setting, target: DialectId) -> &'static str {
@@ -525,6 +562,10 @@ pub(crate) fn app_field(r: &GenerateRequest, setting: Setting, target: DialectId
         (Setting::Voice, _) => "audio.voice",
         (Setting::AudioFormat, G) => "generationConfig.responseFormat.audio",
         (Setting::AudioFormat, _) => "audio.format",
+        (Setting::FrequencyPenalty, G) => "generationConfig.frequencyPenalty",
+        (Setting::FrequencyPenalty, _) => "frequency_penalty",
+        (Setting::PresencePenalty, G) => "generationConfig.presencePenalty",
+        (Setting::PresencePenalty, _) => "presence_penalty",
     }
 }
 

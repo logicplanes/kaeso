@@ -13,7 +13,7 @@ use crate::cross::{
 use crate::openai_chat::ChatProfile;
 use crate::openai_responses::{InputItems, ReasoningReplay, history, namespaces, replay};
 use crate::wire::VERBATIM_FORM_KEY;
-use crate::{inline_tools, tool_patterns, tool_roots, tool_search, verbosity, web_search};
+use crate::{inline_tools, neutral, tool_patterns, tool_roots, tool_search, verbosity, web_search};
 
 const INPUT: &str = "input";
 
@@ -117,6 +117,7 @@ pub(crate) fn for_target<'a>(
     };
     let profile = ctx.responses_profile;
     let mut draft = Draft::new(r);
+    neutral::left_out(&mut draft, target, ctx);
     inline_tools::for_foreign(&mut draft, target)?;
     match target {
         DialectId::AnthropicMessages => {
