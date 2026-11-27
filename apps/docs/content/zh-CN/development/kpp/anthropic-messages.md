@@ -133,7 +133,8 @@ Schema `CreateMessageParams` 和 `CountMessageTokensParams`。
 | 来自其他方言的 `reasoning.include_encrypted` | 丢弃 | 它只说明要返回哪些推理（Codex 总是发送它）；Anthropic 总是返回已签名的思考。 |
 | `thinking` `enabled`，且最后一条消息（不计其后的系统消息）返回工具结果，而最后一个助手轮次发起了工具调用，却没有以可回放的思考块（已签名的 `thinking` 或 `redacted_thinking`）开头（例如该轮次来自另一个服务商） | 请求不带 `thinking` 和 `output_config.effort` 发送 | Anthropic 会拒绝这样的请求（“a final assistant message must start with a thinking block”）；见[没有思考的工具轮次](reasoning.md#没有思考的工具轮次)。`adaptive` 思考会保留：自适应思考的文档说明它不需要开头的思考块。除此之外不做任何记录。这种情况很少见，因为 Claude 产生的思考会从 Responses 和 Anthropic 应用以[推理数据块](reasoning.md#推理数据块)的形式返回，从 Chat 应用则经由[网关的存储](reasoning.md#由网关保存的推理)返回，所以该轮次会以可回放的思考开头。该规则同样适用于来自 Anthropic 应用的请求。 |
 | `output = JsonObject` | `Unsupported`（`json_object output`） | [结构化输出](cross-format.md#结构化输出)。 |
-| `output = JsonSchema` | `output_config.format` | 丢弃 `name`；`description` 和 `strict: false` → `Unsupported`。 |
+| `output = JsonSchema` | `output_config.format` | 丢弃 `name`；`description` 放在 schema 自身的 `description` 之前，`strict: false` 按严格处理，因为 Claude 总会强制执行 schema。schema 会像 Anthropic 的 SDK 那样改写为 Claude 接受的子集：每个对象都加上 `additionalProperties: false`，`oneOf` 改为 `anyOf`，没有 `type` 的 `properties` 加上 `type: "object"`，Claude 拒绝的关键字（`minimum`、`maximum`、`exclusiveMinimum`、`exclusiveMaximum`、`multipleOf`、`maxItems`、大于 1 的 `minItems`、`uniqueItems`、`prefixItems`、`contains`、`minContains`、`maxContains`、`minProperties`、`maxProperties`、`patternProperties`、`propertyNames`、`dependentRequired`、`dependentSchemas`、`not`，以及 `date-time`、`time`、`date`、`duration`、`email`、`hostname`、`uri`、`ipv4`、`ipv6` 和 `uuid` 以外的字符串格式）以 `{minimum: 1}` 的形式移入描述，模型仍能读到它们。任何改动都会在 `kaeso-adapted` 中按应用的字段注明。没有列出任何键的根对象 → `Unsupported`（`output schema without keys`），因为 Claude 只能回答 `{}`。该列表来自 Anthropic 的 [JSON Schema 限制](https://platform.claude.com/docs/en/build-with-claude/structured-outputs#json-schema-limitations)，并于 2026-11-27 针对 Claude 实测（`minLength`、`maxLength` 和 `pattern` 可以使用）。 |
+| `strict: true` 的 `FunctionTool.parameters` | `input_schema`，按同样方式改写 | 严格工具受同样的限制；在 `kaeso-adapted` 中按工具注明，例如 `tools[0]`。其他工具接受任意 schema。 |
 | `sampling.seed`、`.frequency_penalty`、`.presence_penalty` | `Unsupported` | [采样参数](sampling.md)；不适用于 Token 计数，因为计数时会省略采样参数。值为 `0` 的惩罚参数会被省略（[中性值](sampling.md#中性值)）。 |
 | 超出 0 到 1 范围的 `sampling.temperature` | `Unsupported` | Anthropic 的范围是 0 到 1（OpenAI 允许到 2）；不会重新缩放。不适用于 Token 计数。 |
 | `user` | `metadata.user_id` | |
@@ -145,7 +146,7 @@ Schema `CreateMessageParams` 和 `CountMessageTokensParams`。
 | 来自其他方言、不是对象的工具调用参数 | 一个对象：文本为 `{"input": text}`，其他值为 `{"input": value}`，`null` 为 `{}`；在 `kaeso-adapted` 中注明 | 否则 Anthropic 会拒绝整个请求（[工具调用参数](cross-format.md#工具调用参数)）。 |
 | 来自 Anthropic 应用、不是对象的 `tool_use.input`；不是对象的工具参数定义 | `Unsupported` | `input` 和 `input_schema` 都是对象。 |
 | 来自其他方言的 `Request::CountTokens` | 不带 `max_tokens`、采样参数、`metadata` 和 `stream` 的 `/v1/messages/count_tokens` | 它们不改变输入 Token 数，而且该端点会拒绝它们。Anthropic 应用自己的 Token 计数请求按收到时的原样发送。 |
-| `check()` 在生成请求中会拒绝的 `Request::CountTokens` 输出和推理设置（JSON 模式、schema 描述、`strict: false`、推理强度 `minimal` 等） | 省略，不拒绝 | 只拒绝会改变所计数输入的内容。 |
+| `check()` 在生成请求中会拒绝的 `Request::CountTokens` 输出和推理设置（JSON 模式、没有列出任何键的 schema、推理强度 `minimal` 等） | 省略，不拒绝 | 只拒绝会改变所计数输入的内容。 |
 | `Request::Embed` | `Unsupported` | |
 | OpenAI Responses 的 `web_search` 工具 | `{type: web_search_20250305, name: web_search}` | 设置了 `allowed_domains` 和 `user_location` 时一并写入；带 `external_web_access: false` 时省略；对话中 Responses 的 `web_search_call` 项会被丢弃（参见[托管网页搜索](cross-format.md#托管网页搜索)）。 |
 | OpenAI Responses 的 `custom_tool_call`、`local_shell_call` 及其输出 | `tool_use` 和 `tool_result` 块 | [Codex 工具历史](cross-format.md#codex-工具历史)。 |

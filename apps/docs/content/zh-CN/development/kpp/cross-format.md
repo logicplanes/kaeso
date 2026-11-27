@@ -355,9 +355,9 @@ OpenAI Chat 编码器还会在响应一开始就发送它的角色 chunk，而�
 发往 Anthropic 的结构化输出使用 Anthropic 原生的结构化输出，从不通过强制工具来模拟。
 
 - 输出格式 `json_object` 在 Anthropic 中没有对应项，为 `Unsupported`。
-- Anthropic 的输出格式只有一个 schema：schema 的 `name` 会被丢弃，而 `description` 或 `strict: false` 为 `Unsupported`。
+- Anthropic 的输出格式只有一个 schema：schema 的 `name` 会被丢弃，其 `description` 放在 schema 自身的描述之前，`strict: false` 按严格处理。来自其他格式的 schema 会像 Anthropic 的 SDK 那样改写为 Claude 接受的子集（[来自其他方言的请求](anthropic-messages.md#来自其他方言的请求)）。
 - 从 Anthropic 发往 OpenAI 的 schema 会得到名称 `response`，因为 OpenAI 要求必须有名称。
-- Gemini 以 `responseJsonSchema` 接收 schema，以单独的 `responseMimeType: "application/json"` 接收 `json_object`；与 Anthropic 一样，schema 的 `name` 会被丢弃，`description` 或 `strict: false` 为 `Unsupported`。
+- Gemini 以 `responseJsonSchema` 接收 schema，以单独的 `responseMimeType: "application/json"` 接收 `json_object`；与 Anthropic 一样，schema 的 `name` 会被丢弃，其 `description` 放在 schema 自身的描述之前，`strict: false` 按严格处理。
 - Amazon Bedrock Converse 暂不接收输出格式：`json_object` 和 schema 均为 `Unsupported`。
 
 ## 有状态的 Responses 功能
