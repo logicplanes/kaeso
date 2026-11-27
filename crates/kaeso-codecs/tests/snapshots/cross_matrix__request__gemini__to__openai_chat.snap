@@ -351,6 +351,75 @@ expression: outcomes
     "param": null,
     "unsupported": "safetySettings"
   },
+  "sdk-automatic-function-calling": {
+    "body": {
+      "max_completion_tokens": 800,
+      "messages": [
+        {
+          "content": "Weather in Paris? Use the tool, then answer in one sentence.",
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "tools": [
+        {
+          "function": {
+            "description": "Weather for a city.\n\nArgs:\n  city: The city name.\n  unit: celsius or fahrenheit.",
+            "name": "get_weather",
+            "parameters": {
+              "properties": {
+                "city": {
+                  "type": "string"
+                },
+                "unit": {
+                  "default": "celsius",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "city"
+              ],
+              "type": "object"
+            }
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/chat/completions"
+  },
+  "sdk-function-response-schema": {
+    "body": {
+      "messages": [
+        {
+          "content": "Weather?",
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "tools": [
+        {
+          "function": {
+            "description": "Weather for a city.",
+            "name": "get_weather",
+            "parameters": {
+              "properties": {
+                "city": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "city"
+              ],
+              "type": "object"
+            }
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/chat/completions"
+  },
   "sdk-parameters-schema": {
     "body": {
       "max_completion_tokens": 800,

@@ -380,6 +380,92 @@ expression: outcomes
     "param": null,
     "unsupported": "safetySettings"
   },
+  "sdk-automatic-function-calling": {
+    "body": {
+      "max_tokens": 800,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Weather in Paris? Use the tool, then answer in one sentence.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "tools": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "description": "Weather for a city.\n\nArgs:\n  city: The city name.\n  unit: celsius or fahrenheit.",
+          "input_schema": {
+            "properties": {
+              "city": {
+                "type": "string"
+              },
+              "unit": {
+                "default": "celsius",
+                "type": "string"
+              }
+            },
+            "required": [
+              "city"
+            ],
+            "type": "object"
+          },
+          "name": "get_weather"
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
+  "sdk-function-response-schema": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Weather?",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "tools": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "description": "Weather for a city.",
+          "input_schema": {
+            "properties": {
+              "city": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "city"
+            ],
+            "type": "object"
+          },
+          "name": "get_weather"
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
   "sdk-parameters-schema": {
     "body": {
       "max_tokens": 800,
