@@ -94,7 +94,7 @@
   "errors.fieldUnknown": "`{name}` 不是此请求的字段。",
   "errors.fieldWholeNumber": "`{name}` 必须是整数。",
   "errors.fieldWrongType": "`{name}` 的值类型或格式不正确。",
-  "errors.model.embeddingsFormat": "嵌入模型需要嵌入格式，例如 `openai_embeddings`。",
+  "errors.model.embeddingsFormat": "嵌入模型需要嵌入格式的 `egress_dialect`，例如 `openai_embeddings`。",
   "errors.fieldArray": "`{name}` 必须是数组。",
   "errors.fieldObject": "`{name}` 必须是对象。",
   "errors.fieldOneOf": "`{name}` 必须是 {values} 之一。",

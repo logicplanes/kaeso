@@ -416,7 +416,7 @@
   "errors.model.budgetOff": "A `budget_tokens` of {budget} means `{effort}`; `{model}` needs `thinking` off.",
   "errors.model.decisionOnly": "The model `{model}` is a decision model; send it to `/v1/decisions` or `/v1/systemone`.",
   "errors.model.effortLevels": "The model `{model}` supports the effort levels {levels}; `{effort}` is not one of them.",
-  "errors.model.embeddingsFormat": "An embeddings model needs an embeddings format, such as `openai_embeddings`.",
+  "errors.model.embeddingsFormat": "An embeddings model needs an embeddings `egress_dialect`, such as `openai_embeddings`.",
   "errors.model.embeddingsNoRerank": "The model `{model}` is an embeddings model; it cannot rerank documents.",
   "errors.model.embeddingsOnly": "The model `{model}` is an embeddings model; it cannot generate text.",
   "errors.model.endpoint": "The model `{model}` cannot serve this endpoint.",

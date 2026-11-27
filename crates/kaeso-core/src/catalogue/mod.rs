@@ -824,7 +824,7 @@ impl Fields {
         {
             return Err(FieldError::new(
                 "egress_dialect",
-                "An embeddings model needs an embeddings format, such as `openai_embeddings`.",
+                "An embeddings model needs an embeddings `egress_dialect`, such as `openai_embeddings`.",
             ));
         }
         // A rerank model goes to the provider's rerank API, whose format is a dialect too.

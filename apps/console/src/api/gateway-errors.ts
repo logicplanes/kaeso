@@ -295,7 +295,7 @@ const messages = (): Rule[] => [
   rule("errors.fieldGivenTwice", (v) => t("errors.fieldGivenTwice", "`{name}` is given more than once.", v)),
   rule("errors.fieldWrongType", (v) => t("errors.fieldWrongType", "`{name}` has a value of the wrong type or form.", v)),
   rule("errors.model.embeddingsFormat", () =>
-    t("errors.model.embeddingsFormat", "An embeddings model needs an embeddings format, such as `openai_embeddings`."),
+    t("errors.model.embeddingsFormat", "An embeddings model needs an embeddings `egress_dialect`, such as `openai_embeddings`."),
   ),
   rule("errors.fieldOneOf", (v) => t("errors.fieldOneOf", "`{name}` must be one of {values}.", v), { values: "codeChoice" }),
   rule("errors.fieldString", (v) => t("errors.fieldString", "`{name}` must be a string.", v)),
