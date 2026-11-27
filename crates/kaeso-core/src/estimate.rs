@@ -105,17 +105,8 @@ fn text_tokens(text: &str) -> u64 {
 // A PDF's pages: its page objects (`/Type /Page`) or its page tree's `/Count`, whichever is more.
 // Only a `/Type /Pages` dictionary's `/Count` counts pages; an outline's counts bookmarks.
 fn pdf_pages(data: &[u8]) -> u64 {
-    let mut pages = 0u64;
-    let mut rest = data;
-    while let Some(at) = find(rest, b"/Type") {
-        let after = rest.get(at.saturating_add(5)..).unwrap_or_default();
-        let name = after.trim_ascii_start();
-        if name.starts_with(b"/Page") && !name.get(5..).unwrap_or_default().starts_with(b"s") {
-            pages = pages.saturating_add(1);
-        }
-        rest = after;
-    }
-    let found = pages.max(page_tree_count(data));
+    let (pages, tree) = page_counts(data);
+    let found = pages.max(tree);
     if found <= 1 && find(data, b"/ObjStm").is_some() {
         return u64::try_from(data.len().div_ceil(50_000))
             .unwrap_or(u64::MAX)
@@ -124,9 +115,10 @@ fn pdf_pages(data: &[u8]) -> u64 {
     found.max(1)
 }
 
-// The largest `/Count` of a `/Type /Pages` dictionary, in one pass that follows dictionary
-// nesting and skips strings, comments and stream data, so none of them can mislead it.
-fn page_tree_count(data: &[u8]) -> u64 {
+// The page objects (`/Type /Page`) and the largest `/Count` of a `/Type /Pages` dictionary, in
+// one pass that follows dictionary nesting and skips strings, comments and stream data, so none
+// of them can mislead it.
+fn page_counts(data: &[u8]) -> (u64, u64) {
     const DEPTH: usize = 64;
     #[derive(Default)]
     struct Dict {
@@ -134,7 +126,7 @@ fn page_tree_count(data: &[u8]) -> u64 {
         count: Option<u64>,
     }
     let mut open: Vec<Dict> = Vec::new();
-    let (mut depth, mut best, mut i) = (0usize, 0u64, 0usize);
+    let (mut depth, mut best, mut pages, mut i) = (0usize, 0u64, 0u64, 0usize);
     while let Some(rest) = data.get(i..).filter(|r| !r.is_empty()) {
         if let Some(end) = skipped(rest) {
             i = i.saturating_add(end);
@@ -162,11 +154,19 @@ fn page_tree_count(data: &[u8]) -> u64 {
                 None => after,
             };
         } else if let Some(after) = rest.strip_prefix(b"/Type") {
-            if after.trim_ascii_start().starts_with(b"/Pages")
-                && depth <= DEPTH
-                && let Some(d) = open.last_mut()
+            let name = after.trim_ascii_start();
+            if name.starts_with(b"/Pages") {
+                if depth <= DEPTH
+                    && let Some(d) = open.last_mut()
+                {
+                    d.pages = true;
+                }
+            } else if name.starts_with(b"/Page")
+                && !name
+                    .get(5..)
+                    .is_some_and(|n| n.first().is_some_and(u8::is_ascii_alphanumeric))
             {
-                d.pages = true;
+                pages = pages.saturating_add(1);
             }
             i = i.saturating_add(5);
         } else if let Some(after) = rest.strip_prefix(b"/Count") {
@@ -190,7 +190,7 @@ fn page_tree_count(data: &[u8]) -> u64 {
             i = i.saturating_add(1);
         }
     }
-    best
+    (pages, best)
 }
 
 // The length of a literal string `(…)`, a hex string `<…>` or a comment `%…` at the start of
@@ -927,6 +927,15 @@ mod tests {
             ),
             2,
             "strings are text, whatever they spell"
+        );
+        assert_eq!(
+            pdf_pages(
+                b"%PDF-1.7\n% << /Type /Pages /Count 40 >> /Type /Page /Type /Page\n\
+                  1 0 obj << /Type /Pages /Kids [2 0 R] /Count 1 >> 2 0 obj << /Type /Page >> \
+                  3 0 obj << /Length 17 >> stream\n/Type /Page /Type\nendstream"
+            ),
+            1,
+            "a comment or stream that spells page trees or pages counts nothing"
         );
         let mut many = b"%PDF-1.7\n".to_vec();
         for _ in 0..200_000 {
