@@ -151,11 +151,13 @@ fn page_tree_count(data: &[u8]) -> u64 {
                 best = best.max(d.count.unwrap_or(0));
             }
             depth = depth.saturating_sub(1);
-            i = i.saturating_add(2);
-        } else if rest.starts_with(b"stream") && after_dictionary(data, i) {
-            i = match find(rest, b"endstream") {
-                Some(end) => i.saturating_add(end).saturating_add(9),
-                None => data.len(),
+            let after = i.saturating_add(2);
+            i = match stream_after(data, after) {
+                Some(at) => data
+                    .get(at..)
+                    .and_then(|r| find(r, b"endstream"))
+                    .map_or(data.len(), |end| at.saturating_add(end).saturating_add(9)),
+                None => after,
             };
         } else if let Some(after) = rest.strip_prefix(b"/Type") {
             if after.trim_ascii_start().starts_with(b"/Pages")
@@ -189,12 +191,25 @@ fn page_tree_count(data: &[u8]) -> u64 {
     best
 }
 
-// The `stream` keyword follows its dictionary's `>>`; the word anywhere else, as in a title,
-// is text.
-fn after_dictionary(data: &[u8], at: usize) -> bool {
-    let before = data.get(..at).unwrap_or_default();
-    let trimmed = before.trim_ascii_end();
-    before.len() - trimmed.len() <= 16 && trimmed.ends_with(b">>")
+// Where a stream's `stream` keyword starts, when one follows a dictionary's `>>`, past the
+// whitespace and comments PDF allows between them; the word anywhere else, as in a title, is text.
+fn stream_after(data: &[u8], from: usize) -> Option<usize> {
+    let limit = from.saturating_add(1024);
+    let mut j = from;
+    while j < limit {
+        match *data.get(j)? {
+            b if b.is_ascii_whitespace() => j = j.saturating_add(1),
+            b'%' => {
+                let line = data
+                    .get(j..)?
+                    .iter()
+                    .position(|c| *c == b'\n' || *c == b'\r')?;
+                j = j.saturating_add(line);
+            }
+            _ => break,
+        }
+    }
+    data.get(j..)?.starts_with(b"stream").then_some(j)
 }
 
 fn find(haystack: &[u8], needle: &[u8]) -> Option<usize> {
@@ -857,6 +872,14 @@ mod tests {
             ),
             2,
             "a title's `stream` is text"
+        );
+        assert_eq!(
+            pdf_pages(
+                b"%PDF-1.7 1 0 obj << /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 >> \
+                  9 0 obj << /Length 28 >>\n% the page tree's copy\n\n   stream\n<< /Type /Pages /Count 99 >>\nendstream"
+            ),
+            2,
+            "comments and whitespace may come before `stream`"
         );
         let mut many = b"%PDF-1.7 ".to_vec();
         for _ in 0..200_000 {
