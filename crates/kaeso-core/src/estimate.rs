@@ -125,7 +125,7 @@ fn pdf_pages(data: &[u8]) -> u64 {
 }
 
 // The largest `/Count` of a `/Type /Pages` dictionary, in one pass that follows dictionary
-// nesting and skips stream data, so inline resources and bookmarks can't mislead it.
+// nesting and skips strings, comments and stream data, so none of them can mislead it.
 fn page_tree_count(data: &[u8]) -> u64 {
     const DEPTH: usize = 64;
     #[derive(Default)]
@@ -136,7 +136,9 @@ fn page_tree_count(data: &[u8]) -> u64 {
     let mut open: Vec<Dict> = Vec::new();
     let (mut depth, mut best, mut i) = (0usize, 0u64, 0usize);
     while let Some(rest) = data.get(i..).filter(|r| !r.is_empty()) {
-        if rest.starts_with(b"<<") {
+        if let Some(end) = skipped(rest) {
+            i = i.saturating_add(end);
+        } else if rest.starts_with(b"<<") {
             depth = depth.saturating_add(1);
             if depth <= DEPTH {
                 open.push(Dict::default());
@@ -191,16 +193,52 @@ fn page_tree_count(data: &[u8]) -> u64 {
     best
 }
 
+// The length of a literal string `(…)`, a hex string `<…>` or a comment `%…` at the start of
+// `rest`; a string's `)` or `>`, or a comment's line end, may be missing at the end of the data.
+fn skipped(rest: &[u8]) -> Option<usize> {
+    match rest.first()? {
+        b'(' => {
+            let (mut depth, mut escaped) = (0usize, false);
+            for (k, c) in rest.iter().enumerate() {
+                match c {
+                    _ if escaped => escaped = false,
+                    b'\\' => escaped = true,
+                    b'(' => depth = depth.saturating_add(1),
+                    b')' => {
+                        depth = depth.saturating_sub(1);
+                        if depth == 0 {
+                            return Some(k.saturating_add(1));
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            Some(rest.len())
+        }
+        b'<' if rest.get(1) != Some(&b'<') => Some(
+            rest.iter()
+                .position(|c| *c == b'>')
+                .map_or(rest.len(), |k| k.saturating_add(1)),
+        ),
+        b'%' => Some(
+            rest.iter()
+                .position(|c| *c == b'\n' || *c == b'\r')
+                .unwrap_or(rest.len()),
+        ),
+        _ => None,
+    }
+}
+
 // Where a stream's `stream` keyword starts, when one follows a dictionary's `>>`, past the
-// whitespace and comments PDF allows between them; the word anywhere else, as in a title, is text.
+// whitespace and comments PDF allows between them, looking at most 1 KiB ahead.
 fn stream_after(data: &[u8], from: usize) -> Option<usize> {
-    let limit = from.saturating_add(1024);
-    let mut j = from;
-    while j < limit {
-        match *data.get(j)? {
-            b if b.is_ascii_whitespace() => j = j.saturating_add(1),
+    let window = data.get(from..from.saturating_add(1024).min(data.len()))?;
+    let mut j = 0usize;
+    while let Some(c) = window.get(j) {
+        match c {
+            c if c.is_ascii_whitespace() => j = j.saturating_add(1),
             b'%' => {
-                let line = data
+                let line = window
                     .get(j..)?
                     .iter()
                     .position(|c| *c == b'\n' || *c == b'\r')?;
@@ -209,7 +247,8 @@ fn stream_after(data: &[u8], from: usize) -> Option<usize> {
             _ => break,
         }
     }
-    data.get(j..)?.starts_with(b"stream").then_some(j)
+    let at = from.saturating_add(j);
+    data.get(at..)?.starts_with(b"stream").then_some(at)
 }
 
 fn find(haystack: &[u8], needle: &[u8]) -> Option<usize> {
@@ -834,7 +873,7 @@ mod tests {
             "https://example.com/a.png".into(),
         ))]);
         assert_eq!(input_tokens(&image), Some(MEDIA_TOKENS + 4));
-        let pdf = b"%PDF-1.7 1 0 obj << /Type /Pages /Kids [2 0 R 3 0 R 4 0 R] >> \
+        let pdf = b"%PDF-1.7\n1 0 obj << /Type /Pages /Kids [2 0 R 3 0 R 4 0 R] >> \
             2 0 obj << /Type /Page >> 3 0 obj <</Type/Page>> 4 0 obj << /Type  /Page /Parent 1 0 R >>";
         let doc = user(vec![Block::Document(kaeso_kpp::DocumentBlock::new(
             Source::bytes("application/pdf", pdf.to_vec()),
@@ -845,12 +884,12 @@ mod tests {
             "three pages"
         );
         assert_eq!(
-            pdf_pages(b"%PDF-1.7 1 0 obj << /Count 12 /Type /Pages /Kids [] >>"),
+            pdf_pages(b"%PDF-1.7\n1 0 obj << /Count 12 /Type /Pages /Kids [] >>"),
             12
         );
         assert_eq!(
             pdf_pages(
-                b"%PDF-1.7 1 0 obj << /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 >> \
+                b"%PDF-1.7\n1 0 obj << /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 >> \
                   2 0 obj << /Type /Outlines /First 5 0 R /Last 6 0 R /Count 40 >> \
                   7 0 obj << /Title (Intro) /Parent 2 0 R /Count 12 >>"
             ),
@@ -859,7 +898,7 @@ mod tests {
         );
         assert_eq!(
             pdf_pages(
-                b"%PDF-1.7 1 0 obj << /Resources << /Font << /F1 5 0 R >> >> /Type /Pages \
+                b"%PDF-1.7\n1 0 obj << /Resources << /Font << /F1 5 0 R >> >> /Type /Pages \
                   /Kids [3 0 R] /Count 3 >> 9 0 obj << /Length 28 >> stream\n<< /Type /Pages /Count 99 >>\nendstream"
             ),
             3,
@@ -867,7 +906,7 @@ mod tests {
         );
         assert_eq!(
             pdf_pages(
-                b"%PDF-1.7 1 0 obj << /Title (Live stream notes) >> \
+                b"%PDF-1.7\n1 0 obj << /Title (Live stream notes) >> \
                   2 0 obj << /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 >> 5 0 obj << /Length 3 >> stream\nabc\nendstream"
             ),
             2,
@@ -875,18 +914,26 @@ mod tests {
         );
         assert_eq!(
             pdf_pages(
-                b"%PDF-1.7 1 0 obj << /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 >> \
+                b"%PDF-1.7\n1 0 obj << /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 >> \
                   9 0 obj << /Length 28 >>\n% the page tree's copy\n\n   stream\n<< /Type /Pages /Count 99 >>\nendstream"
             ),
             2,
             "comments and whitespace may come before `stream`"
         );
-        let mut many = b"%PDF-1.7 ".to_vec();
+        assert_eq!(
+            pdf_pages(
+                b"%PDF-1.7\n1 0 obj << /Contents (a >>\n% note\nstream of text) /T <73747265616d> >> \
+                  2 0 obj << /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 >>"
+            ),
+            2,
+            "strings are text, whatever they spell"
+        );
+        let mut many = b"%PDF-1.7\n".to_vec();
         for _ in 0..200_000 {
             many.extend_from_slice(b"/Count 1 ");
         }
         assert_eq!(pdf_pages(&many), 1, "one pass, whatever the PDF holds");
-        let mut packed = b"%PDF-1.7 5 0 obj << /Type /ObjStm /N 40 >>".to_vec();
+        let mut packed = b"%PDF-1.7\n5 0 obj << /Type /ObjStm /N 40 >>".to_vec();
         packed.resize(120_000, b'x');
         assert_eq!(
             pdf_pages(&packed),
