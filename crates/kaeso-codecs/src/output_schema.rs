@@ -59,6 +59,7 @@ enum Unfit {
     NoKeys,
     OpenObject(String),
     ObjectBranches(String),
+    Unlisted(String),
 }
 
 struct Rewrite {
@@ -105,8 +106,7 @@ impl Place {
 
 impl Rewrite {
     fn node(&mut self, node: &mut Map<String, Value>, place: &Place) -> Result<(), Unfit> {
-        self.flatten_all_of(node, place)?;
-        self.merge_all_of(node, place)?;
+        self.join_all_of(node, place)?;
         // Claude closes every object, so one that lists no keys could only ever be `{}`.
         if !place.at.is_empty()
             && !lists_keys(node)
@@ -153,6 +153,9 @@ impl Rewrite {
             self.changed = true;
         }
         if is_object(node) && node.get("additionalProperties") != Some(&Value::Bool(false)) {
+            if !lists_every_required_key(node) {
+                return Err(Unfit::Unlisted(place.at.clone()));
+            }
             node.insert("additionalProperties".to_owned(), Value::Bool(false));
             self.changed = true;
         }
@@ -197,114 +200,119 @@ impl Rewrite {
         })
     }
 
-    // Claude answers a nested `allOf` with 400 "nested allOf is not supported" (checked 2026-11-27).
-    fn flatten_all_of(
-        &mut self,
-        node: &mut Map<String, Value>,
-        place: &Place,
-    ) -> Result<(), Unfit> {
-        let nested = matches!(node.get("allOf"), Some(Value::Array(parts))
-            if parts.iter().any(|p| matches!(p, Value::Object(o) if all_of_only(o))));
-        if !nested {
-            return Ok(());
-        }
-        if self.points_into(&place.field("allOf").ptr) {
-            return Err(Unfit::ObjectBranches(within(&place.at, "allOf")));
-        }
-        if let Some(Value::Array(parts)) = node.remove("allOf") {
-            let mut flat = Vec::with_capacity(parts.len());
-            for part in parts {
-                flat_parts(part, &mut flat);
-            }
-            node.insert("allOf".to_owned(), Value::Array(flat));
-            self.changed = true;
-        }
-        Ok(())
-    }
-
-    // `allOf` applies every branch to one value, so closing each object branch on its own would
-    // forbid the keys the others require; their keys join the node's own instead.
-    fn merge_all_of(&mut self, node: &mut Map<String, Value>, place: &Place) -> Result<(), Unfit> {
-        let Some(Value::Array(branches)) = node.get("allOf") else {
+    // Claude refuses a nested `allOf` and keys such as `properties` beside one (checked live on
+    // 2026-11-27), so the parts are flattened and the plain objects among them join the node.
+    fn join_all_of(&mut self, node: &mut Map<String, Value>, place: &Place) -> Result<(), Unfit> {
+        let Some(Value::Array(list)) = node.get("allOf") else {
             return Ok(());
         };
-        let objects: Vec<usize> = (0..branches.len())
-            .filter(|&i| branches.get(i).is_some_and(object_like))
-            .collect();
-        let own = ["properties", "required"]
-            .iter()
-            .any(|k| node.contains_key(*k))
-            || is_object(node);
-        if objects.len() + usize::from(own) < 2 {
+        let mut parts = Vec::with_capacity(list.len());
+        for item in list.iter().cloned() {
+            conjuncts(item, &mut parts);
+        }
+        let objects: Vec<bool> = parts.iter().map(object_like).collect();
+        let count = objects.iter().filter(|o| **o).count();
+        let join = count + usize::from(objectish(node)) >= 2;
+        if !join && parts == *list {
             return Ok(());
         }
         let refused = || Unfit::ObjectBranches(within(&place.at, "allOf"));
-        let open = |n: &Map<String, Value>| {
-            n.get("additionalProperties")
-                .is_none_or(|a| *a == Value::Bool(true))
-        };
-        let mut merged = Vec::with_capacity(objects.len());
-        let mut hoisted = Vec::new();
-        for &i in &objects {
-            let Some(Value::Object(b)) = branches.get(i) else {
-                return Err(refused());
-            };
-            let mut b = b.clone();
-            // TypeBox writes an intersection of intersections as an object branch with an `allOf`.
-            let inner = place.item("allOf", i);
-            self.flatten_all_of(&mut b, &inner)?;
-            self.merge_all_of(&mut b, &inner)?;
-            // What the inner join leaves, such as `minProperties`, applies to the same value.
-            if let Some(Value::Array(rest)) = b.remove("allOf") {
-                hoisted.extend(rest);
-            }
-            if !(mergeable(&b) && open(&b)) {
-                return Err(refused());
-            }
-            merged.push(b);
-        }
-        let ty = merged
-            .iter()
-            .fold(types_of(node), |types, b| both(types, types_of(b)));
-        // Without a written type the node stays untyped: `node` types it once its keys are known.
-        let ty = match ty {
-            None => None,
-            Some(t) if t == ["object"] => Some(Value::from("object")),
-            Some(t) if t.iter().any(|t| t == "object") => {
-                Some(t.into_iter().map(Value::from).collect())
-            }
-            Some(_) => return Err(refused()),
-        };
-        let combined = changed_by_join(node, &merged)
-            .iter()
-            .any(|name| self.points_into(&place.member("properties", name).ptr));
-        if !open(node) || self.points_into(&place.field("allOf").ptr) || combined {
+        if self.points_into(&place.field("allOf").ptr) {
             return Err(refused());
         }
-        let Some(Value::Array(mut branches)) = node.remove("allOf") else {
-            return Ok(());
-        };
-        for &i in objects.iter().rev() {
-            branches.remove(i);
-        }
-        for branch in merged {
-            join_object(node, branch);
-        }
-        if let Some(ty) = ty {
-            node.insert("type".to_owned(), ty);
-        }
-        for part in hoisted {
-            if !branches.contains(&part) {
-                branches.push(part);
+        let mut merged = Vec::new();
+        let mut rest = Vec::new();
+        for (part, object) in parts.into_iter().zip(objects) {
+            match part {
+                Value::Object(b) if join && object && mergeable(&b) && open(&b) => merged.push(b),
+                _ if join && object => return Err(refused()),
+                other => rest.push(other),
             }
         }
-        node.remove("additionalProperties");
-        if !branches.is_empty() {
-            node.insert("allOf".to_owned(), Value::Array(branches));
+        if join {
+            let ty = merged
+                .iter()
+                .fold(types_of(node), |types, b| both(types, types_of(b)));
+            // Without a written type the node stays untyped: `node` types it once its keys are known.
+            let ty = match ty {
+                None => None,
+                Some(t) if t == ["object"] => Some(Value::from("object")),
+                Some(t) if t.iter().any(|t| t == "object") => {
+                    Some(t.into_iter().map(Value::from).collect())
+                }
+                Some(_) => return Err(refused()),
+            };
+            let combined = changed_by_join(node, &merged)
+                .iter()
+                .any(|name| self.points_into(&place.member("properties", name).ptr));
+            if !open(node) || combined {
+                return Err(refused());
+            }
+            for branch in merged {
+                join_object(node, branch);
+            }
+            if let Some(ty) = ty {
+                node.insert("type".to_owned(), ty);
+            }
+            node.remove("additionalProperties");
+        }
+        node.remove("allOf");
+        if !rest.is_empty() {
+            node.insert("allOf".to_owned(), Value::Array(rest));
         }
         self.changed = true;
         Ok(())
     }
+}
+
+// `allOf` is associative: a nested list's parts, and a wrapper's own keys, apply to one value.
+fn conjuncts(schema: Value, out: &mut Vec<Value>) {
+    let Value::Object(mut m) = schema else {
+        push_new(out, schema);
+        return;
+    };
+    match m.remove("allOf") {
+        Some(Value::Array(list)) => {
+            if !m.is_empty() {
+                push_new(out, Value::Object(m));
+            }
+            for item in list {
+                conjuncts(item, out);
+            }
+        }
+        Some(other) => {
+            m.insert("allOf".to_owned(), other);
+            push_new(out, Value::Object(m));
+        }
+        None => push_new(out, Value::Object(m)),
+    }
+}
+
+fn push_new(out: &mut Vec<Value>, part: Value) {
+    if !out.contains(&part) {
+        out.push(part);
+    }
+}
+
+fn open(n: &Map<String, Value>) -> bool {
+    n.get("additionalProperties")
+        .is_none_or(|a| *a == Value::Bool(true))
+}
+
+fn objectish(node: &Map<String, Value>) -> bool {
+    is_object(node) || node.contains_key("properties") || node.contains_key("required")
+}
+
+fn lists_every_required_key(node: &Map<String, Value>) -> bool {
+    let listed = node.get("properties").and_then(Value::as_object);
+    node.get("required")
+        .and_then(Value::as_array)
+        .is_none_or(|required| {
+            required
+                .iter()
+                .filter_map(Value::as_str)
+                .all(|k| listed.is_some_and(|p| p.contains_key(k)))
+        })
 }
 
 fn types_of(node: &Map<String, Value>) -> Option<Vec<String>> {
@@ -436,8 +444,7 @@ fn flat_parts(schema: Value, out: &mut Vec<Value>) {
                 }
             }
         }
-        other if !out.contains(&other) => out.push(other),
-        _ => {}
+        other => push_new(out, other),
     }
 }
 
@@ -461,7 +468,7 @@ fn lists_keys(node: &Map<String, Value>) -> bool {
         .get("properties")
         .and_then(Value::as_object)
         .is_some_and(|p| !p.is_empty());
-    composed || listed || !is_object(node)
+    composed || listed || !objectish(node)
 }
 
 fn describe(node: &mut Map<String, Value>, moved: &Map<String, Value>) {
@@ -518,6 +525,13 @@ fn refusal(unfit: Unfit, param: &str) -> KppError {
         Unfit::OpenObject(at) => (
             format!("`{at}`, an object without keys,"),
             "Claude returns only the keys a schema lists; list them in `properties`, or send key and value pairs as a list of objects.",
+        ),
+        Unfit::Unlisted(at) => (
+            format!(
+                "`{}` without a key that `required` names",
+                within(&at, "properties")
+            ),
+            "Claude returns only the keys a schema lists; list every required key in `properties`.",
         ),
         Unfit::ObjectBranches(at) => (
             format!("`{at}`, which Kaeso can't join into one object,"),
@@ -911,6 +925,44 @@ mod tests {
         assert_eq!(
             maybe["allOf"],
             json!([{"description": "{minProperties: 1}"}])
+        );
+    }
+
+    #[test]
+    fn a_wrapper_with_a_note_joins_its_object_and_keeps_the_note() {
+        let req = with_schema(json!({"name": "x", "schema": {"allOf": [
+            {"description": "Where it is.", "allOf": [
+                {"properties": {"a": {"type": "string"}}, "required": ["a"]}
+            ]},
+            {"properties": {"b": {"type": "string"}}, "required": ["b"]}
+        ]}}));
+        let (schema, _) = claude_schema(&req);
+        assert_eq!(schema["required"], json!(["a", "b"]), "{schema}");
+        assert_eq!(schema["additionalProperties"], false);
+        assert_eq!(schema["allOf"], json!([{"description": "Where it is."}]));
+    }
+
+    #[test]
+    fn closing_never_forbids_a_key_the_schema_requires() {
+        let keyless = with_schema(json!({"name": "x", "schema": {
+            "type": "object", "properties": {"k": {"allOf": [{"properties": {}}, {"required": ["z"]}]}}
+        }}));
+        let e = sent(A, &keyless).unwrap_err();
+        assert!(
+            e.message
+                .starts_with("`properties.k`, an object without keys,"),
+            "{}",
+            e.message
+        );
+        let unlisted = with_schema(json!({"name": "x", "schema": {
+            "type": "object", "properties": {"a": {"type": "string"}}, "required": ["a", "b"]
+        }}));
+        let e = sent(A, &unlisted).unwrap_err();
+        assert!(
+            e.message
+                .starts_with("`properties` without a key that `required` names"),
+            "{}",
+            e.message
         );
     }
 
