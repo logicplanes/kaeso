@@ -151,6 +151,40 @@ async fn an_anthropic_app_streams_a_together_reply() {
 }
 
 #[tokio::test]
+async fn an_anthropic_or_gemini_apps_top_k_reaches_together_as_top_k() {
+    let env = env().await;
+    let r = call(
+        &env,
+        "/v1/messages",
+        Some(&env.key),
+        true,
+        Some(json!({
+            "model": MODEL,
+            "max_tokens": 300,
+            "top_k": 40,
+            "messages": [{ "role": "user", "content": asking("responses/recorded-sampling-extras") }],
+        })),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.header("kaeso-left-out"), None);
+    assert_eq!(sent_to_together(&env)["top_k"], 40);
+    let r = call(
+        &env,
+        &format!("/v1beta/models/{}:generateContent?key={}", MODEL.replace('/', "%2F"), env.key),
+        None,
+        false,
+        Some(json!({
+            "contents": [{ "role": "user", "parts": [{ "text": asking("responses/recorded-sampling-extras") }] }],
+            "generationConfig": { "topK": 64 }
+        })),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(sent_to_together(&env)["top_k"], 64);
+}
+
+#[tokio::test]
 async fn an_anthropic_field_chat_cannot_carry_is_refused_before_together_is_called() {
     let env = env().await;
     let before = env.mock.received().len();

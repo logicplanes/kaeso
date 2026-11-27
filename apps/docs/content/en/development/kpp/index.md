@@ -165,7 +165,7 @@ Every KPP field is either semantic or a hint:
 | `reasoning.include_encrypted` | hint | Only controls whether encrypted reasoning comes back; OpenAI Responses only ([readable reasoning and summaries](reasoning.md#readable-reasoning-and-summaries)). |
 | `sampling.max_output_tokens` | semantic | |
 | `sampling.temperature`, `.top_p` | semantic | Their spelling (`1` or `1.0`) is form, kept only within the dialect ([sampling](sampling.md)). |
-| `sampling.top_k` | hint | Sent to Anthropic and Gemini; left out elsewhere and named in `kaeso-left-out` ([top K](sampling.md#top-k)). |
+| `sampling.top_k` | hint | Sent to Anthropic, Gemini and Chat Completions providers that take it; left out elsewhere and named in `kaeso-left-out` ([top K](sampling.md#top-k)). |
 | `sampling.stop` | semantic | OpenAI Chat Completions takes at most four; OpenAI Responses has none and returns `Unsupported` ([sampling](sampling.md)). |
 | `sampling.seed` | semantic | OpenAI Chat Completions only; `Unsupported` elsewhere ([sampling](sampling.md)). |
 | `sampling.frequency_penalty`, `.presence_penalty` | semantic | OpenAI Chat Completions and Gemini; `Unsupported` elsewhere, except `0`, which asks for nothing and is left out ([neutral values](sampling.md#neutral-values)). |

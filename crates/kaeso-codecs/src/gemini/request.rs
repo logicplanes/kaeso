@@ -78,6 +78,11 @@ fn parse<T: serde::de::DeserializeOwned + serde::Serialize>(
     })
 }
 
+/// Whether a Gemini app sent its token count as a whole request, in `generateContentRequest`.
+pub(crate) fn wrapped_count(r: &GenerateRequest) -> bool {
+    r.extras.form_str(D, FORM_COUNT) == Some("wrapped")
+}
+
 /// Decodes a Gemini request body for `action` on `model`, as the path names them.
 pub(crate) fn decode(
     model: &str,

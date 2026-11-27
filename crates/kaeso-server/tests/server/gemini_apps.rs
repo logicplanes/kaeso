@@ -123,8 +123,10 @@ async fn gemini_clis_top_k_is_left_out_for_chat_completions_and_responses_models
         ("gpt-4.1-mini", "/v1/chat/completions"),
         ("gpt-4o", "/v1/responses"),
     ] {
-        let mut body = ask("Hello");
-        body["generationConfig"] = json!({ "temperature": 1, "topP": 0.95, "topK": 64 });
+        let body: Value = serde_json::from_str(include_str!(
+            "../../../kaeso-codecs/fixtures/gemini/requests/gemini-cli-turn.json"
+        ))
+        .unwrap();
         let r = gemini(
             &env,
             "POST",

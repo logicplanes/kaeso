@@ -35,7 +35,7 @@ Kaeso reads such a reply as a stream, also when the app asked for none, so the p
 
 ## Top K
 
-`top_k` is a hint. Anthropic and Gemini get it. OpenAI Chat Completions, OpenAI Responses and Amazon Bedrock Converse have no top-k sampling, and some Anthropic-format providers, such as DeepSeek and MiniMax, ignore it. For those, Kaeso leaves it out and names it in `kaeso-left-out` as the app wrote it: `generationConfig.topK` for a Gemini app, `top_k` for an Anthropic app.
+`top_k` is a hint. Anthropic and Gemini get it, and so do Chat Completions providers that document `top_k`, such as Together AI, Fireworks AI and OpenRouter (`with_top_k()`, [provider profiles](openai-chat-providers.md#provider-profiles)). OpenAI's Chat Completions and Responses, the other Chat Completions providers and Amazon Bedrock Converse have no top-k sampling, and some Anthropic-format providers, such as DeepSeek and MiniMax, ignore it. For those, Kaeso leaves it out and names it in `kaeso-left-out` as the app wrote it: `generationConfig.topK` for a Gemini app, `top_k` for an Anthropic app.
 
 Gemini CLI sends `topK` with every request and has no switch for it, so refusing it would refuse Gemini CLI on every such model. Google itself ignores `topK` on its newest models (`GenerationConfig.topK`).
 

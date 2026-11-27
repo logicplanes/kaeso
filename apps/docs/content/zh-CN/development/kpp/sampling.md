@@ -35,7 +35,7 @@ Kaeso 会以流的方式读取这类回复，即使应用没有要求流式输�
 
 ## Top K
 
-`top_k` 是提示字段。Anthropic 和 Gemini 会收到它。OpenAI Chat Completions、OpenAI Responses 和 Amazon Bedrock Converse 没有 top-k 采样，部分 Anthropic 格式服务商（例如 DeepSeek 和 MiniMax）会忽略它。对这些目标，Kaeso 会省略它，并按应用的写法在 `kaeso-left-out` 中注明：Gemini 应用为 `generationConfig.topK`，Anthropic 应用为 `top_k`。
+`top_k` 是提示字段。Anthropic 和 Gemini 会收到它，写明支持 `top_k` 的 Chat Completions 服务商（例如 Together AI、Fireworks AI 和 OpenRouter）也会收到（`with_top_k()`，[服务商配置](openai-chat-providers.md#服务商配置)）。OpenAI 的 Chat Completions 和 Responses、其他 Chat Completions 服务商以及 Amazon Bedrock Converse 没有 top-k 采样，部分 Anthropic 格式服务商（例如 DeepSeek 和 MiniMax）会忽略它。对这些目标，Kaeso 会省略它，并按应用的写法在 `kaeso-left-out` 中注明：Gemini 应用为 `generationConfig.topK`，Anthropic 应用为 `top_k`。
 
 Gemini CLI 在每个请求中都发送 `topK`，且没有开关可以关闭，因此拒绝它就等于在所有这些模型上拒绝 Gemini CLI。Google 自己的最新模型也会忽略 `topK`（`GenerationConfig.topK`）。
 

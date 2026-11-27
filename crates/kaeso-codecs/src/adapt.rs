@@ -530,7 +530,12 @@ fn top_k_left_out(d: &mut Draft<'_>, target: DialectId, ctx: &EgressCtx) {
     if d.get().sampling.top_k.is_none() || takes_top_k(target, ctx) {
         return;
     }
-    let field = app_field(d.get(), Setting::TopK, target);
+    let r = d.get();
+    let field = if crate::gemini::request::wrapped_count(r) {
+        "generateContentRequest.generationConfig.topK"
+    } else {
+        app_field(r, Setting::TopK, target)
+    };
     d.edit().sampling.top_k = None;
     d.leave_out(field.to_owned());
 }
@@ -538,7 +543,8 @@ fn top_k_left_out(d: &mut Draft<'_>, target: DialectId, ctx: &EgressCtx) {
 fn takes_top_k(target: DialectId, ctx: &EgressCtx) -> bool {
     match target {
         DialectId::AnthropicMessages => !ctx.messages_profile.refused_fields.contains(&TOP_K),
-        DialectId::OpenAiChat | DialectId::OpenAiResponses | DialectId::BedrockConverse => false,
+        DialectId::OpenAiChat => ctx.chat_profile.request.top_k,
+        DialectId::OpenAiResponses | DialectId::BedrockConverse => false,
         _ => true,
     }
 }

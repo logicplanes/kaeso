@@ -27,7 +27,7 @@ KPP（Kaeso Provider Protocol）为每种 API 格式都提供一个编解码器�
 
 ## 三条规则
 
-1. **格式相同，没有损失。** 以原格式到达服务商的请求与发送时完全一致。只有模型名称会改为服务商的模型 ID。流始终会请求用量，但只有应用自己请求时才会看到。例外有三个。对于服务商在任何形式下都不接受其 schema 的工具，其参数根部的联合会变为一个对象，回复的 `kaeso-adapted` 响应头会注明它；没有 `type` 的根部会加上 `type: "object"`（[联合类型的工具 schema](../development/kpp/cross-format.md#联合类型的工具-schema)）。发给没有推理强度等级的模型的推理强度，以及发给不支持推理的模型的自适应思考会被省略（[没有推理强度等级的模型](../development/kpp/reasoning.md#没有推理强度等级的模型)）。Claude Opus 4.7 及更新的模型只接受默认采样设置，因此 Kaeso 会省略 `temperature`、`top_p` 和 `top_k`，思考预算则会变为自适应思考。
+1. **格式相同，没有损失。** 以原格式到达服务商的请求与发送时完全一致。只有模型名称会改为服务商的模型 ID。流始终会请求用量，但只有应用自己请求时才会看到。例外有四个。对于服务商在任何形式下都不接受其 schema 的工具，其参数根部的联合会变为一个对象，回复的 `kaeso-adapted` 响应头会注明它；没有 `type` 的根部会加上 `type: "object"`（[联合类型的工具 schema](../development/kpp/cross-format.md#联合类型的工具-schema)）。发给没有推理强度等级的模型的推理强度，以及发给不支持推理的模型的自适应思考会被省略（[没有推理强度等级的模型](../development/kpp/reasoning.md#没有推理强度等级的模型)）。Claude Opus 4.7 及更新的模型只接受默认采样设置，因此 Kaeso 会省略 `temperature`、`top_p` 和 `top_k`，思考预算则会变为自适应思考。忽略 `top_k` 的 Anthropic 格式服务商（例如 DeepSeek 或 MiniMax）不会收到它（[top K](../development/kpp/sampling.md#top-k)）。
 2. **拒绝，而不丢弃。** 请求跨格式转换时，如果目标格式无法支持某个字段，Kaeso 会拒绝请求，并在错误中注明该字段。只有不改变模型输出内容的提示信息、目标缺少的少数可选工具、模型无法接受的推理设置，以及取值本就是 API 所用值的设置会被省略；回复的 `kaeso-left-out` 响应头会注明这些内容（[省略的工具](../development/kpp/cross-format.md#省略的工具)、[中性值](../development/kpp/sampling.md#中性值)）。
 3. **签名的推理只回到原处。** Kaeso 只会把加密或签名的推理内容发回签发它的格式和服务商。
 

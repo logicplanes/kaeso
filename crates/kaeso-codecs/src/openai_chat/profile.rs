@@ -25,6 +25,9 @@ pub struct RequestProfile {
     pub end_user_field: EndUserField,
     pub assistant_prefill: bool,
     pub verbosity: bool,
+    /// Whether the provider takes `top_k`, which OpenAI's Chat Completions doesn't have: an
+    /// Anthropic or Gemini app's top-k sampling is sent as `top_k`, and left out otherwise.
+    pub top_k: bool,
     pub cache_key: bool,
     pub message_bookkeeping: bool,
     pub greedy_top_p: bool,
@@ -143,6 +146,7 @@ impl RequestProfile {
         end_user_field: EndUserField::SafetyIdentifier,
         assistant_prefill: true,
         verbosity: true,
+        top_k: false,
         cache_key: true,
         message_bookkeeping: false,
         greedy_top_p: false,
@@ -204,6 +208,13 @@ impl ChatProfile {
     #[must_use]
     pub const fn with_verbosity(mut self) -> Self {
         self.request.verbosity = true;
+        self
+    }
+
+    /// The provider takes `top_k` on Chat Completions ([`RequestProfile::top_k`]).
+    #[must_use]
+    pub const fn with_top_k(mut self) -> Self {
+        self.request.top_k = true;
         self
     }
 

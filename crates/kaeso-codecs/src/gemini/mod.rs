@@ -4,7 +4,7 @@ mod images;
 pub(crate) mod models;
 pub(crate) mod parts;
 mod path;
-mod request;
+pub(crate) mod request;
 mod response;
 pub(crate) mod schema;
 mod sdk;

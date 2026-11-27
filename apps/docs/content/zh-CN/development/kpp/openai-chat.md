@@ -118,7 +118,7 @@ nav: OpenAI Chat
 - 其他方言的 `reasoning.summary` 和 `reasoning.include_encrypted`，因为 Chat 没有请求它们的字段（[可读推理与摘要](reasoning.md#可读推理与摘要)）；
 - OpenAI Responses 的 `web_search` 工具和 `web_search_call` 项，因为 Chat 没有托管网页搜索（[省略的工具](cross-format.md#省略的工具)）；
 - OpenAI Responses 的 `text.verbosity`，除非服务商配置接受 `verbosity`（[条件条目](cross-format.md#条件条目)）；
-- Chat 没有的 `top_k`，会在 `kaeso-left-out` 中注明（[top K](sampling.md#top-k)）。
+- Chat 没有的 `top_k`，除非服务商配置接受它（`with_top_k()`）；会在 `kaeso-left-out` 中注明（[top K](sampling.md#top-k)）。
 
 OpenAI Responses 的 `custom_tool_call` 和 `local_shell_call` 项及其输出会变为工具调用和 `tool` 消息（[Codex 工具历史](cross-format.md#codex-工具历史)）。
 

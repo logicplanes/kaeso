@@ -105,6 +105,21 @@ fn top_k_is_left_out_by_the_apps_name_for_it() {
 }
 
 #[test]
+fn a_provider_that_takes_top_k_gets_it_from_every_format() {
+    let mut r = base();
+    r.extras = Extras::new(Origin::new(DialectId::Gemini));
+    r.sampling.top_k = Some(40);
+    let req = Request::Generate(r);
+    let profile = ChatProfile::compatible("Example Cloud").with_top_k();
+    let mut ctx = EgressCtx::new(&req).with_chat_profile(profile);
+    OpenAiChat::check(&req, &ctx).unwrap();
+    let out = OpenAiChat::encode_request(&req, &mut ctx).unwrap();
+    let body: serde_json::Value = serde_json::from_slice(&out.body).unwrap();
+    assert_eq!(body["top_k"], 40, "{body}");
+    assert!(ctx.left_out.is_empty());
+}
+
+#[test]
 fn more_than_four_stop_sequences_are_refused() {
     let mut r = base();
     r.sampling.stop = (0..5).map(|i| i.to_string()).collect();

@@ -118,7 +118,7 @@ Budgets und `disabled` werden umgerechnet ([Aufwand und Budget](reasoning.md#auf
 - `reasoning.summary` und `reasoning.include_encrypted` anderer Dialekte, weil Chat kein Feld hat, das sie anfordert ([lesbares Reasoning und Zusammenfassungen](reasoning.md#lesbares-reasoning-und-zusammenfassungen));
 - ein `web_search`-Tool und `web_search_call`-Items von OpenAI Responses, weil Chat keine gehostete Websuche hat ([weggelassene Tools](cross-format.md#weggelassene-tools));
 - ein `text.verbosity` von OpenAI Responses, außer das Anbieterprofil nimmt `verbosity` an ([bedingte Einträge](cross-format.md#bedingte-einträge));
-- `top_k`, das es in Chat nicht gibt, in `kaeso-left-out` genannt ([Top K](sampling.md#top-k)).
+- `top_k`, das es in Chat nicht gibt, außer das Anbieterprofil nimmt es an (`with_top_k()`); in `kaeso-left-out` genannt ([Top K](sampling.md#top-k)).
 
 `custom_tool_call`- und `local_shell_call`-Items von OpenAI Responses und ihre Ausgaben werden zu Tool-Aufrufen und `tool`-Nachrichten ([Tool-Verlauf von Codex](cross-format.md#tool-verlauf-von-codex)).
 
