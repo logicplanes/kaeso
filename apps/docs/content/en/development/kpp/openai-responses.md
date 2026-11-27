@@ -70,7 +70,7 @@ Request input items are compared by their keys instead. A message, its text and 
 | `reasoning` `{}` | `reasoning` = empty config | Form `object`. |
 | `include[]` `"reasoning.encrypted_content"` | `reasoning.include_encrypted` typed | Without a `reasoning` object: form `no_object` on the config. Requests from other dialects always ask for it when they send a reasoning effort other than `none` (after the effort mapping), and so does Anthropic `adaptive` or `enabled` thinking without an effort when `EgressCtx::reasoning = Some(true)` ([readable reasoning and summaries](reasoning.md#readable-reasoning-and-summaries)). With `store: false` it is the only way to give the reasoning back on the next turn ([reasoning blobs](reasoning.md#reasoning-blobs)). |
 | `include[]` other values | extras `include` (the whole list) | `message.output_text.logprobs`, `web_search_call.action.sources`, … |
-| `max_output_tokens` | `sampling.max_output_tokens` typed | `CreateResponse` sets a minimum of 16: a lower value is `InvalidRequest` (`` The request body is not a valid OpenAI Responses request: `max_output_tokens` must be at least 16. ``, param `max_output_tokens`); `TokenCountsBody` has no such field. A request from another dialect with a lower `sampling.max_output_tokens` is `Unsupported` in `check()`, never raised, and names the app's own field, such as `max_completion_tokens` ([sampling](cross-format.md#sampling)). |
+| `max_output_tokens` | `sampling.max_output_tokens` typed | `CreateResponse` sets a minimum of 16: a lower value is `InvalidRequest` (`` The request body is not a valid OpenAI Responses request: `max_output_tokens` must be at least 16. ``, param `max_output_tokens`); `TokenCountsBody` has no such field. A request from another dialect with a lower `sampling.max_output_tokens` is `Unsupported` in `check()`, never raised, and names the app's own field, such as `max_completion_tokens` ([sampling](sampling.md)). |
 | `temperature`, `top_p` | `sampling.temperature`, `sampling.top_p` typed | The canonical spelling is a float (`1.0`); `1` is form `set` with `canon` ([how exact spellings survive](#how-exact-spellings-survive)), so it comes back as `1` while the value is unchanged. Other dialects get `1.0`. |
 | `safety_identifier` | `user` typed | KPP `user` from other dialects is sent as `safety_identifier`. |
 | `user` (deprecated) | `user` typed when `safety_identifier` is absent (form `user_key`); otherwise extras `user` | |
@@ -94,7 +94,7 @@ The error names the field, never a parser position, and sets `param`: `` The req
 
 `check()` also refuses, for requests from any dialect:
 
-- `sampling.top_k`, `seed`, `frequency_penalty`, `presence_penalty` and stop sequences, which the Responses API doesn't have ([sampling](cross-format.md#sampling));
+- `sampling.top_k`, `seed`, `frequency_penalty`, `presence_penalty` and stop sequences, which the Responses API doesn't have ([sampling](sampling.md)); a penalty of `0` is left out ([neutral values](sampling.md#neutral-values));
 - unknown reasoning modes, named by their wire value;
 - text documents, document `title`/`context`/`citations`, and text image sources;
 - audio and video blocks, because `InputContent` has only `input_text`, `input_image` and `input_file` (`audio block`, `video block`); OpenRouter's `input_audio` and `input_video` parts, which OpenAI doesn't have, stay `Block::Unknown`;

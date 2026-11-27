@@ -355,3 +355,35 @@ async fn token_counts_for_xai_models_are_refused_in_each_apps_format() {
     );
     assert!(env.mock.received().is_empty());
 }
+
+#[tokio::test]
+async fn nextchats_neutral_penalties_reach_xais_responses_api_left_out_and_named() {
+    let env = env().await;
+    let mut body: Value = serde_json::from_str(include_str!(
+        "../../../kaeso-codecs/fixtures/openai_chat/requests/nextchat-defaults.json"
+    ))
+    .unwrap();
+    body["model"] = json!("grok-4.3");
+    body["stream"] = json!(false);
+    body["store"] = json!(false);
+    body["service_tier"] = json!("auto");
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(body),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(
+        r.header("kaeso-left-out"),
+        Some("frequency_penalty, presence_penalty, service_tier")
+    );
+    let (path, _, sent) = sent(&env).unwrap();
+    assert_eq!(path, "/v1/responses");
+    for key in ["frequency_penalty", "presence_penalty", "service_tier"] {
+        assert!(sent.get(key).is_none(), "{key}: {sent}");
+    }
+    assert_eq!(sent["store"], json!(false));
+}

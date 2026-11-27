@@ -1328,3 +1328,45 @@ async fn a_complete_reply_says_what_it_cost_to_a_key_whose_owner_sees_costs() {
         "the owner may not see the project's costs"
     );
 }
+
+#[tokio::test]
+async fn nextchats_neutral_penalties_reach_claude_left_out_and_named() {
+    let env = env().await;
+    let mut body: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../kaeso-codecs/fixtures/openai_chat/requests/nextchat-defaults.json"
+    ))
+    .unwrap();
+    body["model"] = json!("claude-haiku-4-5");
+    body["stream"] = json!(false);
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(body.clone()),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(
+        r.header("kaeso-left-out"),
+        Some("frequency_penalty, presence_penalty")
+    );
+    let sent = env.mock.last().unwrap().json();
+    assert!(
+        sent.get("frequency_penalty").is_none() && sent.get("presence_penalty").is_none(),
+        "{sent}"
+    );
+    assert_eq!(sent["temperature"], json!(0.5));
+
+    body["presence_penalty"] = json!(0.6);
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(body),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert_eq!(r.json()["error"]["param"], "presence_penalty");
+}

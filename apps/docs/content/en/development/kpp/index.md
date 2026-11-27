@@ -164,11 +164,11 @@ Every KPP field is either semantic or a hint:
 | `reasoning.summary` | hint | Only controls whether summaries come back. Anthropic: `thinking.display: "summarized"` ([readable reasoning and summaries](reasoning.md#readable-reasoning-and-summaries)). |
 | `reasoning.include_encrypted` | hint | Only controls whether encrypted reasoning comes back; OpenAI Responses only ([readable reasoning and summaries](reasoning.md#readable-reasoning-and-summaries)). |
 | `sampling.max_output_tokens` | semantic | |
-| `sampling.temperature`, `.top_p` | semantic | Their spelling (`1` or `1.0`) is form, kept only within the dialect ([sampling](cross-format.md#sampling)). |
-| `sampling.top_k` | semantic | Anthropic only; `Unsupported` elsewhere ([sampling](cross-format.md#sampling)). |
-| `sampling.stop` | semantic | OpenAI Chat Completions takes at most four; OpenAI Responses has none and returns `Unsupported` ([sampling](cross-format.md#sampling)). |
-| `sampling.seed` | semantic | OpenAI Chat Completions only; `Unsupported` elsewhere ([sampling](cross-format.md#sampling)). |
-| `sampling.frequency_penalty`, `.presence_penalty` | semantic | OpenAI Chat Completions only; `Unsupported` elsewhere ([sampling](cross-format.md#sampling)). |
+| `sampling.temperature`, `.top_p` | semantic | Their spelling (`1` or `1.0`) is form, kept only within the dialect ([sampling](sampling.md)). |
+| `sampling.top_k` | semantic | Anthropic only; `Unsupported` elsewhere ([sampling](sampling.md)). |
+| `sampling.stop` | semantic | OpenAI Chat Completions takes at most four; OpenAI Responses has none and returns `Unsupported` ([sampling](sampling.md)). |
+| `sampling.seed` | semantic | OpenAI Chat Completions only; `Unsupported` elsewhere ([sampling](sampling.md)). |
+| `sampling.frequency_penalty`, `.presence_penalty` | semantic | OpenAI Chat Completions and Gemini; `Unsupported` elsewhere, except `0`, which asks for nothing and is left out ([neutral values](sampling.md#neutral-values)). |
 | `user` | hint | An end-user id for abuse monitoring; it never changes the output. A provider whose Chat profile has no end-user field gets none, not even a Chat app's `user` sent alongside `safety_identifier` ([provider profiles](openai-chat-providers.md#provider-profiles)). |
 | `stream` | semantic | |
 | `output_modalities`, `audio_output.voice`, `.format` | semantic | Only Chat Completions and Gemini write audio, only Gemini images; voices cross only to a target that lists them, and formats are never transcoded ([audio and image replies](cross-format.md#audio-and-image-replies)). |
@@ -290,6 +290,7 @@ When a change alters cross-dialect output, review the snapshot diff: run `INSTA_
 - [Codec design](codec-design.md): Learn how the types, streams and wire structs keep every translation lossless.
 - [Crossing formats](cross-format.md): Look up what happens to data that moves from one API format to another, and why.
 - [Reasoning across formats](reasoning.md): Look up how reasoning, its settings and its signatures move between the formats.
+- [Sampling across formats](sampling.md): Look up which sampling settings each format takes, and which values Kaeso leaves out.
 - [Decisions across formats](decisions-across-formats.md): Look up how decision requests and answers move between the decision formats.
 - [Anthropic Messages](anthropic-messages.md): Find where every field of the Anthropic Messages format goes in KPP.
 - [Messages providers](anthropic-messages-providers.md): See how the Messages codec adapts to each provider that speaks the format.

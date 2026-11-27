@@ -92,7 +92,7 @@ Sources: DeepInfra's [OpenAPI document](https://api.deepinfra.com/openapi.json) 
 | the `developer` role | `Role::System` | The schema lists `system`, `user`, `assistant` and `tool`, so `system_role()` sends `system`. |
 | `user` | `user` | The schema has no `safety_identifier`, so the end user's id goes as `user` (`end_user_as_user()`). |
 | `video_url` parts | `Block::Video` | `with_video_url()`. |
-| `parallel_tool_calls`, `top_logprobs`, `logit_bias`, `metadata`, `store` and the other fields the schema leaves out | refused | DeepInfra drops undeclared fields without a word, so the profile refuses them; `parallel_tool_calls: true` only allows parallel calls and is left out. |
+| `parallel_tool_calls`, `top_logprobs`, `logit_bias`, `metadata`, `store` and the other fields the schema leaves out | refused | DeepInfra drops undeclared fields without a word, so the profile refuses them; `parallel_tool_calls: true` only allows parallel calls and is left out, as is a [neutral value](sampling.md#neutral-values) such as `store: false`. |
 | `top_k`, `min_p`, `repetition_penalty`, `fail_fast`, `models`, `prompt_cache_options`, `cache_salt`, `chat_template_kwargs` and the `reasoning` object | extras | Refused when the request goes to another dialect, like other Chat-only fields. |
 | `usage.estimated_cost`, `prompt_tokens_details` with `cache_write_tokens`, `name: null` | extras and raw usage | Left out towards other dialects (`responses/greeting-published`, `responses/cached-doc`). |
 | a 403 `{"detail": {"error": …}}` for a key without the `inference` scope | `KppError` | `PermissionDenied`, with DeepInfra's message (`errors/missing-scope-doc`). |
@@ -267,7 +267,7 @@ Sources: SambaNova's [OpenAPI document](https://raw.githubusercontent.com/samban
 |---|---|---|
 | `message.reasoning`, `delta.reasoning`, `channel` | `Block::Reasoning`, extras | Through the profile's `reasoning_fields`. Assistant messages take `reasoning` back. |
 | `chat_template_kwargs` (`enable_thinking`), `top_k`, `repetition_penalty` | extras | DeepSeek-V3.2 and Gemma 4 think only with `enable_thinking`, which only a Chat app can send. Refused when the request goes to another dialect. |
-| `frequency_penalty`, `presence_penalty` | refused | SambaNova accepts and ignores them, so the profile refuses them before sending. |
+| `frequency_penalty`, `presence_penalty` | refused | SambaNova accepts and ignores them, so the profile refuses them before sending; `0` is left out ([neutral values](sampling.md#neutral-values)). |
 | an end user's id, a Responses app's `prompt_cache_key` | left out | The request schema has neither and refuses undeclared properties (`without_end_user()`, `without_cache_key()`). Other undeclared fields go as written, for SambaNova's own 400. |
 | `video_url` parts | `Block::Video` | `with_video_url()`; Gemma 4 takes video. |
 | a float `created`, `system_fingerprint` | extras | `responses/palindrome-poem-doc`. |
@@ -362,7 +362,7 @@ Sources: StepFun's [Chat Completions reference](https://platform.stepfun.ai/docs
 | `video_url` parts | `Block::Video` | `with_video_url()`. |
 | `user`, `safety_identifier`, a Responses app's `prompt_cache_key` | left out | The reference has no end-user or cache-key field, and StepFun caches prompts by itself (`without_end_user()`, `without_cache_key()`). |
 | `stream_options` | left out | Every chunk carries the running usage without being asked (`without_stream_options()`, `streams/text-doc`). |
-| `presence_penalty`, `seed`, `logprobs`, `logit_bias`, `parallel_tool_calls`, `prompt_cache_key`, `store` and the other fields the reference leaves out, `name` on messages | refused | Whether StepFun refuses or drops undeclared fields isn't documented, so the profile refuses them before sending; `parallel_tool_calls: true` only allows parallel calls and is left out. `tool_choice`, which StepFun's guides send, is sent. |
+| `presence_penalty`, `seed`, `logprobs`, `logit_bias`, `parallel_tool_calls`, `prompt_cache_key`, `store` and the other fields the reference leaves out, `name` on messages | refused | Whether StepFun refuses or drops undeclared fields isn't documented, so the profile refuses them before sending; `parallel_tool_calls: true` only allows parallel calls and is left out, as is a [neutral value](sampling.md#neutral-values) such as `store: false`. `tool_choice`, which StepFun's guides send, is sent. |
 | `finish_reason: ""` and `role: ""` before the last chunk | none | Read as no value, as for other providers. |
 | a tool call with `finish_reason: "stop"` | `StopReason::EndTurn` | Both documented tool-call replies end this way (`responses/tools-doc`). The Chat mapping reads `stop` as the end of a turn, so an Anthropic app gets the `tool_use` block with `stop_reason: "end_turn"`. |
 | errors as `{"error": {"message", "type"}}` without `code` | `KppError` | The kind follows the status, and StepFun's identifier is in `type`. The China service's 429s `project_credit_limit_exceeded` and `member_project_credit_limit_exceeded` are billing refusals, not rate limits. |

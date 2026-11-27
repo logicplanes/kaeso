@@ -1,0 +1,19 @@
+{
+  "model": "gpt-5.5",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Name three rivers in Europe."
+    }
+  ],
+  "frequency_penalty": 0,
+  "presence_penalty": 0,
+  "logprobs": false,
+  "logit_bias": {},
+  "metadata": {},
+  "store": false,
+  "service_tier": "auto",
+  "verbosity": "medium",
+  "modalities": ["text"],
+  "n": 1
+}
