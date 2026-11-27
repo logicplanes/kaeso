@@ -256,7 +256,7 @@ Responses 模型的搜索会像 Claude 的搜索一样到达 Anthropic 应用。
 | `local_shell_call` | 名为 `local_shell` 的 `Block::ToolCall`，其 `action` 对象作为参数 |
 | `local_shell_call_output` | 对应其 `id` 所指调用的 `Block::ToolResult`；Codex 改为发送 `function_call_output` |
 
-OpenAI 原样收到这些项，SpaceX 原样收到其中的 `custom_tool_call` 和 `custom_tool_call_output`：SpaceX 能根据这样的历史作答（`openai_responses/providers/xai/responses/recorded-codex-gpt-history.json`）。SpaceX 接受的是 `shell_call` 项，因此 `local_shell_call` 和 `local_shell_call_output` 按上文作为工具调用和结果发给它。发给 SpaceX 时会省略 GPT 的推理项，因为 SpaceX 无法解密 OpenAI 的 `encrypted_content`，会拒绝该请求（参见 [SpaceX](openai-responses.md#spacex)）。不符合上述形状的项仍是未知块，并像未知块一样被拒绝。
+OpenAI 原样收到这些项，SpaceX 原样收到其中的 `custom_tool_call` 和 `custom_tool_call_output`：SpaceX 能根据这样的历史作答（`openai_responses/providers/xai/responses/recorded-codex-gpt-history.json`）。SpaceX 接受的是 `shell_call` 项，因此 `local_shell_call` 和 `local_shell_call_output` 按上文作为工具调用和结果发给它。发给 SpaceX 时会省略 GPT 的推理项，因为 SpaceX 无法解密 OpenAI 的 `encrypted_content`，会拒绝该请求（参见 [SpaceX](openai-responses-providers.md#spacex)）。不符合上述形状的项仍是未知块，并像未知块一样被拒绝。
 
 ## Codex 智能体消息
 

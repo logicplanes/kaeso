@@ -916,6 +916,38 @@ expression: outcomes
     },
     "path": "/v1/responses"
   },
+  "providers/deepseek/litellm-custom-tool": {
+    "body": {
+      "input": [
+        {
+          "content": "Weather in Paris?",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 200,
+      "model": "deepseek-flash",
+      "store": false,
+      "tools": [
+        {
+          "description": "Get the weather for a city.",
+          "name": "get_weather",
+          "parameters": {
+            "properties": {
+              "city": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "city"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
   "providers/deepseek/say-hello": {
     "body": {
       "input": [
