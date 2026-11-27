@@ -454,6 +454,41 @@ expression: outcomes
     "param": null,
     "unsupported": "functions"
   },
+  "llm-schema": {
+    "body": {
+      "input": [
+        {
+          "content": "Tokyo",
+          "role": "user"
+        }
+      ],
+      "model": "claude-haiku-5-5",
+      "store": false,
+      "stream": true,
+      "text": {
+        "format": {
+          "name": "output",
+          "schema": {
+            "properties": {
+              "country": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "country"
+            ],
+            "type": "object"
+          },
+          "type": "json_schema"
+        }
+      }
+    },
+    "path": "/v1/responses"
+  },
   "logit-bias": {
     "message": "`logit_bias` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
     "param": null,
@@ -531,6 +566,68 @@ expression: outcomes
       "stream": true,
       "temperature": 0.5,
       "top_p": 1.0
+    },
+    "path": "/v1/responses"
+  },
+  "openai-python-parse-constraints": {
+    "body": {
+      "input": [
+        {
+          "content": "Describe Tokyo.",
+          "role": "user"
+        }
+      ],
+      "model": "claude-haiku-5-5",
+      "store": false,
+      "text": {
+        "format": {
+          "name": "City",
+          "schema": {
+            "additionalProperties": false,
+            "properties": {
+              "country": {
+                "description": "ISO country name",
+                "title": "Country",
+                "type": "string"
+              },
+              "name": {
+                "title": "Name",
+                "type": "string"
+              },
+              "population": {
+                "minimum": 0,
+                "title": "Population",
+                "type": "integer"
+              },
+              "rating": {
+                "maximum": 5,
+                "minimum": 1,
+                "title": "Rating",
+                "type": "number"
+              },
+              "tags": {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 3,
+                "title": "Tags",
+                "type": "array"
+              }
+            },
+            "required": [
+              "name",
+              "country",
+              "population",
+              "rating",
+              "tags"
+            ],
+            "title": "City",
+            "type": "object"
+          },
+          "strict": true,
+          "type": "json_schema"
+        }
+      }
     },
     "path": "/v1/responses"
   },
