@@ -82,6 +82,10 @@ Andere Dialekte lehnen all das mit `Unsupported` ab und nennen die Teile so:
 - das `function_call` eines Assistenten als `messages[i].function_call`;
 - eine `function`-Nachricht als `` `function` message ``, mit dem Hinweis `Remove the message, or send the request to a model served through its original format.`
 
+### Namen von Teilnehmern
+
+Das `name` einer Nachricht unterscheidet Teilnehmer derselben Rolle, und Multi-Agent-Frameworks setzen es: AutoGen bei Benutzernachrichten, CrewAI bei Tool-Nachrichten. Kein anderes Format hat das Feld, auch die Responses-API von OpenAI selbst nicht. Für jedes andere Format und für einen Chat-Anbieter, dessen Profil `name` bei System-, Benutzer- und Assistentennachrichten ablehnt, lässt Kaeso es daher weg und nennt es in `kaeso-left-out` nach der Nachricht, die die App gesendet hat, etwa `messages[1].name` (`openai_chat::names`). Der Rest der Nachricht geht wie gewohnt hinaus, und andere Chat-Anbieter erhalten den Namen wie gesendet. Ein als `null` gesendetes `name` ist Form, und ein solcher Anbieter erhält es ebenfalls nicht. Fixtures: `requests/autogen-user-name.json`, `requests/crewai-tool-name.json`.
+
 ### Inhaltsteile
 
 | Wire | KPP | Anmerkungen |

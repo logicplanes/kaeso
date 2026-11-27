@@ -108,6 +108,7 @@ KPP（Kaeso Provider Protocol）为每种 API 格式都提供一个编解码器�
 - OpenAI 没有的工具结果错误标记；工具结果的文本仍会说明失败的内容
 - 通过 OpenAI Responses 提供的模型的 `seed`，因为那里没有对应字段
 - 取值就是 API 在没有该字段时所用值的设置，例如 `frequency_penalty: 0`、`logprobs: false` 或 `store: false`，NextChat 等聊天应用会在每个请求中发送它们；回复的 `kaeso-left-out` 响应头会列出它们（[中性值](../development/kpp/sampling.md#中性值)）
+- Chat Completions 消息的 `name`，它用于区分同一角色的参与者，其他格式都没有；回复的 `kaeso-left-out` 响应头会列出它（[参与者名称](../development/kpp/openai-chat.md#参与者名称)）
 
 转换为 Responses 的请求带有 `store: false`，因此 OpenAI 不会保存任何内容。
 

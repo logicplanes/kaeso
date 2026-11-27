@@ -18,10 +18,151 @@ expression: outcomes
     "param": "modalities",
     "unsupported": "audio output"
   },
+  "autogen-user-name": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "What's the weather in Paris?",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "id": "call_1",
+              "input": {
+                "city": "Paris"
+              },
+              "name": "weather",
+              "type": "tool_use"
+            }
+          ],
+          "role": "assistant"
+        },
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "content": [
+                {
+                  "text": "Sunny in Paris",
+                  "type": "text"
+                }
+              ],
+              "tool_use_id": "call_1",
+              "type": "tool_result"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "claude-haiku-5-5",
+      "system": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "text": "You are a helpful AI assistant. Solve tasks using your tools. Reply with TERMINATE when the task has been completed.",
+          "type": "text"
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
   "content-array-all-roles": {
     "message": "`refusal block` is not supported by Anthropic Messages. Anthropic has no refusal content block. Remove the refusal from the conversation history or replace it with text.",
     "param": "messages[1].blocks[0]",
     "unsupported": "refusal block"
+  },
+  "crewai-tool-name": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "\nCurrent Task: What's the weather in Paris?\n\nThis is the expected criteria for your final answer: One sentence.\nyou MUST return the actual complete content as the final answer, not a summary.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "id": "call_1",
+              "input": {
+                "city": "Paris"
+              },
+              "name": "get_weather",
+              "type": "tool_use"
+            }
+          ],
+          "role": "assistant"
+        },
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "content": [
+                {
+                  "text": "Sunny in Paris",
+                  "type": "text"
+                }
+              ],
+              "tool_use_id": "call_1",
+              "type": "tool_result"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "claude-haiku-5-5",
+      "system": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "text": "You are Weather reporter. You report weather.\nYour personal goal is: Report the weather",
+          "type": "text"
+        }
+      ],
+      "tool_choice": {
+        "type": "auto"
+      },
+      "tools": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "description": "Get the weather for a city.",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "city": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "city"
+            ],
+            "type": "object"
+          },
+          "name": "get_weather",
+          "strict": true
+        }
+      ]
+    },
+    "path": "/v1/messages"
   },
   "explicit-nulls": {
     "body": {
@@ -4927,9 +5068,83 @@ expression: outcomes
     "unsupported": "tool_choice `any`"
   },
   "providers/mistral/tool-result-named": {
-    "message": "`messages[2].blocks[0].name` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
-    "param": "messages[2].blocks[0]",
-    "unsupported": "messages[2].blocks[0].name"
+    "body": {
+      "max_tokens": 100,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "What is the weather in Lisbon right now?",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "id": "D681PevKs",
+              "input": {
+                "city": "Lisbon"
+              },
+              "name": "get_weather",
+              "type": "tool_use"
+            }
+          ],
+          "role": "assistant"
+        },
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "content": [
+                {
+                  "text": "{\"temperature_c\": 21, \"sky\": \"clear\"}",
+                  "type": "text"
+                }
+              ],
+              "tool_use_id": "D681PevKs",
+              "type": "tool_result"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "mistral-small-latest",
+      "system": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "text": "You are a concise travel assistant.",
+          "type": "text"
+        }
+      ],
+      "tools": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "description": "Current weather for a city.",
+          "input_schema": {
+            "properties": {
+              "city": {
+                "description": "City name, such as Lisbon",
+                "type": "string"
+              }
+            },
+            "required": [
+              "city"
+            ],
+            "type": "object"
+          },
+          "name": "get_weather"
+        }
+      ]
+    },
+    "path": "/v1/messages"
   },
   "providers/mistral/user-field": {
     "body": {
@@ -6733,9 +6948,98 @@ expression: outcomes
     "unsupported": "search_mode"
   },
   "providers/qianfan/after-tool-results-doc": {
-    "message": "`messages[2].blocks[0].name` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
-    "param": "messages[2].blocks[0]",
-    "unsupported": "messages[2].blocks[0].name"
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "查一下上海和北京2025-8-21的天气",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "id": "04fed17840d34b1e99bf3cd6dc94150d",
+              "input": {
+                "location": "上海市",
+                "time": "2025-08-21"
+              },
+              "name": "get_current_weather",
+              "type": "tool_use"
+            },
+            {
+              "id": "a37ee51b99a64723bcb7f2f4d8081770",
+              "input": {
+                "location": "北京市",
+                "time": "2025-08-21"
+              },
+              "name": "get_current_weather",
+              "type": "tool_use"
+            }
+          ],
+          "role": "assistant"
+        },
+        {
+          "content": [
+            {
+              "content": [
+                {
+                  "text": "{\"temperature\": \"25\", \"unit\": \"摄氏度\", \"description\": \"上海\"}",
+                  "type": "text"
+                }
+              ],
+              "tool_use_id": "04fed17840d34b1e99bf3cd6dc94150d",
+              "type": "tool_result"
+            },
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "content": [
+                {
+                  "text": "{\"temperature\": \"20\", \"unit\": \"摄氏度\", \"description\": \"北京\"}",
+                  "type": "text"
+                }
+              ],
+              "tool_use_id": "a37ee51b99a64723bcb7f2f4d8081770",
+              "type": "tool_result"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "deepseek-v3.1-250821",
+      "tool_choice": {
+        "type": "auto"
+      },
+      "tools": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "description": "天气查询工具",
+          "input_schema": {
+            "properties": {
+              "location": {
+                "description": "地理位置，精确到区县级别",
+                "type": "string"
+              },
+              "time": {
+                "description": "时间，格式为YYYY-MM-DD",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "name": "get_current_weather"
+        }
+      ]
+    },
+    "path": "/v1/messages"
   },
   "providers/qianfan/greeting-doc": {
     "body": {
@@ -9314,9 +9618,54 @@ expression: outcomes
     "path": "/v1/messages"
   },
   "system-name-multiturn": {
-    "message": "`system[0].message.name` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
-    "param": "system[0]",
-    "unsupported": "system[0].message.name"
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "How long should I boil an egg for a runny yolk?",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "text": "About 6 minutes from boiling water, then cool it in cold water for a minute.",
+              "type": "text"
+            }
+          ],
+          "role": "assistant"
+        },
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "And for a hard-boiled one?",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-5.5",
+      "system": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "text": "You are a friendly cooking assistant. Answer in two sentences or fewer.",
+          "type": "text"
+        }
+      ],
+      "temperature": 0.7,
+      "top_p": 0.9
+    },
+    "path": "/v1/messages"
   },
   "tool-choice-allowed-tools": {
     "message": "tool_choice `allowed_tools` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Use `auto`, `none`, `required` or a single named tool instead.",

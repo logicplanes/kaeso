@@ -1412,3 +1412,41 @@ async fn nextchats_neutral_penalties_reach_claude_left_out_and_named() {
     assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
     assert_eq!(r.json()["error"]["param"], "presence_penalty");
 }
+
+#[tokio::test]
+async fn multi_agent_participant_names_reach_claude_left_out_and_named() {
+    let env = env().await;
+    for (fixture, named) in [
+        (
+            include_str!(
+                "../../../kaeso-codecs/fixtures/openai_chat/requests/autogen-user-name.json"
+            ),
+            "messages[1].name",
+        ),
+        (
+            include_str!(
+                "../../../kaeso-codecs/fixtures/openai_chat/requests/crewai-tool-name.json"
+            ),
+            "messages[3].name",
+        ),
+    ] {
+        let mut body: serde_json::Value = serde_json::from_str(fixture).unwrap();
+        body["model"] = json!("claude-haiku-4-5");
+        body["max_tokens"] = json!(200);
+        let r = call(
+            &env,
+            "/v1/chat/completions",
+            Some(&env.key),
+            false,
+            Some(body),
+        )
+        .await;
+        assert_eq!(r.status, StatusCode::OK, "{named}: {}", r.text());
+        assert_eq!(r.header("kaeso-left-out"), Some(named));
+        let sent = env.mock.last().unwrap().json();
+        assert!(!sent.to_string().contains("\"name\":\"user\""), "{sent}");
+        let result = &sent["messages"][2]["content"][0];
+        assert_eq!(result["type"], "tool_result", "{sent}");
+        assert!(result.get("name").is_none(), "{sent}");
+    }
+}

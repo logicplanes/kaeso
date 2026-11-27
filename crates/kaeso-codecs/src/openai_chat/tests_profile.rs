@@ -272,7 +272,8 @@ fn refused_fields_fail_before_anything_is_sent_and_name_the_field() {
     let err = encode_with(
         &chat(json!({"model": "m", "messages": [
             {"role": "system", "content": "Be brief."},
-            {"role": "user", "content": "Hi", "name": "alice"}
+            {"role": "assistant", "content": null, "refusal": "I can't."},
+            {"role": "user", "content": "Hi"}
         ]})),
         STRICT,
     )
@@ -280,11 +281,23 @@ fn refused_fields_fail_before_anything_is_sent_and_name_the_field() {
     assert_eq!(
         refusal(&err),
         (
-            Some("name"),
-            Some("messages[1].name"),
-            "`messages[1].name` is not supported by Example Cloud; remove it from the request."
+            Some("refusal"),
+            Some("messages[1].refusal"),
+            "`messages[1].refusal` is not supported by Example Cloud; remove it from the request."
                 .to_owned()
         )
+    );
+    let named = encode_with(
+        &chat(json!({"model": "m", "messages": [
+            {"role": "system", "content": "Be brief."},
+            {"role": "user", "content": "Hi", "name": "alice"}
+        ]})),
+        STRICT,
+    )
+    .unwrap();
+    assert!(
+        named["messages"][1].get("name").is_none(),
+        "a participant name is left out instead: {named}"
     );
 
     let tool_named = json!({"model": "m", "messages": [
@@ -1339,21 +1352,16 @@ fn a_profile_refusing_only_message_names_lets_another_format_s_refusal_through()
         )
     );
 
-    let err = encode_with(
+    let sent = encode_with(
         &chat(json!({"model": "m", "messages": [
             {"role": "user", "content": "Hi", "name": "ada"}
         ]})),
         profile,
     )
-    .unwrap_err();
-    assert_eq!(
-        refusal(&err),
-        (
-            Some("name"),
-            Some("messages[0].name"),
-            "`messages[0].name` is not supported by Example Cloud; remove it from the request."
-                .to_owned()
-        )
+    .unwrap();
+    assert!(
+        sent["messages"][0].get("name").is_none(),
+        "a participant name is left out: {sent}"
     );
 }
 
@@ -1514,15 +1522,15 @@ fn stepfun_refuses_the_fields_its_chat_reference_leaves_out() {
             )
         );
     }
-    let err = encode_with(
+    let named = encode_with(
         &chat(json!({
             "model": "step-3.7-flash",
             "messages": [{"role": "user", "name": "ada", "content": "Hi"}]
         })),
         STEPFUN,
     )
-    .unwrap_err();
-    assert_eq!(refusal(&err).1, Some("messages[0].name"));
+    .unwrap();
+    assert!(named["messages"][0].get("name").is_none(), "{named}");
 }
 
 #[test]

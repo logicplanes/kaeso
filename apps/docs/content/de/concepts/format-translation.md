@@ -108,6 +108,7 @@ Hat das Ziel keinen Platz für sie, lässt Kaeso Hinweise weg, die nicht ändern
 - das Fehler-Flag eines Tool-Ergebnisses, das OpenAI nicht kennt; der Text des Ergebnisses sagt weiterhin, was fehlschlug
 - `seed` für ein Modell, das über OpenAI Responses bedient wird, weil es dort kein Feld dafür gibt
 - Einstellungen mit dem Wert, den die API ohne sie verwendet, etwa `frequency_penalty: 0`, `logprobs: false` oder `store: false`, die Chat-Apps wie NextChat mit jeder Anfrage senden; der Header `kaeso-left-out` der Antwort nennt sie ([neutrale Werte](../development/kpp/sampling.md#neutrale-werte))
+- das `name` einer Chat-Completions-Nachricht, das Teilnehmer derselben Rolle unterscheidet und das kein anderes Format hat; der Header `kaeso-left-out` der Antwort nennt es ([Namen von Teilnehmern](../development/kpp/openai-chat.md#namen-von-teilnehmern))
 
 Anfragen, die in Responses übersetzt werden, tragen `store: false`, sodass OpenAI nichts speichert.
 

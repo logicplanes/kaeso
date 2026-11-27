@@ -219,9 +219,14 @@ async fn fields_groq_refuses_are_refused_before_anything_is_sent_and_developer_i
         })),
     )
     .await;
-    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
-    assert_eq!(r.json()["error"]["param"], "messages[0].name");
-    assert!(env.mock.received().is_empty());
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.header("kaeso-left-out"), Some("messages[0].name"));
+    let (_, _, sent_body) = sent(&env);
+    assert!(
+        sent_body["messages"][0].get("name").is_none(),
+        "{sent_body}"
+    );
+    env.mock.clear();
 
     let r = call(
         &env,
