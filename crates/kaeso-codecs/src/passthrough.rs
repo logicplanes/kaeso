@@ -901,6 +901,8 @@ impl ChatState {
             self.usage_chunk = Some(chunk);
             return;
         }
+        // The chunk goes with its own usage, newer than any an earlier chunk left for the end.
+        self.usage_chunk = None;
         out.extend_from_slice(&held.raw);
     }
 }
@@ -1997,6 +1999,18 @@ mod tests {
             String::from_utf8(pass.encode_error(&KppError::provider("The connection broke.")))
                 .unwrap();
         assert!(error.contains("\"choices\":[]"), "{error}");
+        // Two finishing chunks with usage, then an error: only the newer counts reach the app.
+        let older = finish.replace("\"total_tokens\":7", "\"total_tokens\":0");
+        let (_, out, errors) = run(&format!(
+            "{head}{older}{finish}event: error\ndata: {{\"error\":{{\"message\":\"boom\"}}}}\n\n"
+        ));
+        assert_eq!(errors.len(), 1);
+        let totals: Vec<Value> = data(&out)
+            .iter()
+            .filter(|c| !c["usage"].is_null())
+            .map(|c| c["usage"]["total_tokens"].clone())
+            .collect();
+        assert_eq!(totals, [serde_json::json!(7)], "{out}");
     }
 
     #[test]

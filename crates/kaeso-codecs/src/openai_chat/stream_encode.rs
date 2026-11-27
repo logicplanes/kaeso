@@ -664,7 +664,9 @@ impl ChatStreamEncoder {
             return;
         };
         if usage_chunk_next {
+            // The chunk goes with its own usage, newer than any an earlier chunk left for the end.
             out.extend(held.as_sent);
+            self.usage_chunk = None;
             self.usage_sent = true;
         } else {
             out.extend(held.without_usage);

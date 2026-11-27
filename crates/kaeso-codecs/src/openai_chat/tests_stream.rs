@@ -1402,3 +1402,41 @@ fn a_comment_between_the_finish_and_the_usage_chunk_ends_both_paths_alike() {
     assert_eq!(usage.len(), 1, "{}", String::from_utf8_lossy(&out));
     assert_eq!(usage[0]["choices"], json!([]));
 }
+
+#[test]
+fn an_error_after_a_held_finish_chunk_keeps_the_newest_usage_before_it() {
+    let head = "data: {\"id\":\"c\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"m\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"Hi\"},\"finish_reason\":null}]}\n\n";
+    let finish = |total: u64| {
+        format!(
+            "data: {{\"id\":\"c\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"m\",\"choices\":[{{\"index\":0,\"delta\":{{}},\"finish_reason\":\"stop\"}}],\"usage\":{{\"prompt_tokens\":5,\"completion_tokens\":2,\"total_tokens\":{total}}}}}\n\n"
+        )
+    };
+    let failed = |stream: &str| {
+        let mut events = decode_whole(stream.as_bytes());
+        events.retain(|e| !matches!(e, StreamEvent::ResponseStop(_)));
+        events.push(StreamEvent::Error(KppError::provider(
+            "The connection broke.",
+        )));
+        String::from_utf8(encode(&events, true)).unwrap()
+    };
+    let usage_then_error = |out: &str| -> Vec<Value> {
+        frames(out.as_bytes())
+            .into_iter()
+            .filter(|f| f.get("usage").is_some_and(|u| !u.is_null()) || f.get("error").is_some())
+            .collect()
+    };
+
+    let out = failed(&format!("{head}{}: keepalive\n\n", finish(7)));
+    let tail = usage_then_error(&out);
+    assert_eq!(tail.len(), 2, "{out}");
+    assert_eq!(tail[0]["choices"], json!([]), "{out}");
+    assert_eq!(tail[0]["usage"]["total_tokens"], 7, "{out}");
+    assert!(tail[1].get("error").is_some(), "{out}");
+
+    let out = failed(&format!("{head}{}{}", finish(0), finish(7)));
+    let totals: Vec<Value> = usage_then_error(&out)
+        .into_iter()
+        .filter_map(|f| f.get("usage").map(|u| u["total_tokens"].clone()))
+        .collect();
+    assert_eq!(totals, [json!(7)], "{out}");
+}
