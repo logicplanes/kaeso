@@ -236,6 +236,30 @@ def test_the_console_runs_read_only_with_caddys_scratch_space(default):
     assert sorted(m["mountPath"] for m in console["volumeMounts"]) == ["/tmp", "/var/lib/console/config", "/var/lib/console/data"]
 
 
+@pytest.mark.parametrize("value", [None, "true"])
+def test_search_engines_is_one_value_the_gateway_and_the_console_both_get(value):
+    docs = render(*STORES, *(("--set", f"searchEngines={value}") if value else ()))
+    expected = value or "false"
+    for name in ("kaeso-gateway", "kaeso-console"):
+        [container] = one(docs, "Deployment", name)["spec"]["template"]["spec"]["containers"]
+        assert env_of(container)["KAESO_SEARCH_ENGINES"] == {"name": "KAESO_SEARCH_ENGINES", "value": expected}, name
+
+
+def test_search_engines_set_for_the_gateway_alone_is_refused():
+    extra = "gateway.extraEnv[0]"
+    for where in (
+        ["gateway.env.KAESO_SEARCH_ENGINES=true"],
+        ["gateway.config.search_engines=true"],
+        [f"{extra}.name=KAESO_SEARCH_ENGINES", f"{extra}.value=true"],
+        [f"{extra}.name=KAESO_SEARCH_ENGINES", f"{extra}.valueFrom.secretKeyRef.name=kaeso", f"{extra}.valueFrom.secretKeyRef.key=search"],
+    ):
+        sets = [arg for value in where for arg in ("--set", value)]
+        assert "set searchEngines instead: the console reads it too" in refused("--set", f"publicUrl={URL}", *STORES, *sets), where
+    docs = render(*STORES, "--set", f"{extra}.name=KAESO_OTHER", "--set-string", f"{extra}.value=1")
+    [gateway] = one(docs, "Deployment", "kaeso-gateway")["spec"]["template"]["spec"]["containers"]
+    assert env_of(gateway)["KAESO_OTHER"]["value"] == "1", "other variables still pass"
+
+
 def test_a_digest_pins_an_image():
     digest = "sha256:" + "a" * 64
     docs = render(*STORES, "--set", f"gateway.image.digest={digest}")

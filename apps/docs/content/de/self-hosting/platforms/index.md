@@ -47,6 +47,7 @@ Die verwalteten Stacks auf AWS und Google Cloud sind kein Ein-Klick-Weg: Sie wä
 - **Health-Checks** nutzen `/healthz` für den Prozess und `/readyz` für PostgreSQL, Valkey und ClickHouse ([Zustand und Metriken](../monitoring.md)). Der Metrik-Port ist nie öffentlich.
 - **Der Updater ist aus.** Die Plattform rollt ein neues Release aus und zurück; die Migrationen eines Releases laufen nur vorwärts ([Upgrades](../upgrades.md)).
 - **Eine Version.** Gateway, Konsole und Edge sind auf dasselbe Release festgelegt; ein Release aktualisiert die Vorlagen.
+- **Suchmaschinen bleiben draußen**, bis `KAESO_SEARCH_ENGINES` für Gateway und Konsole `true` ist ([Suchmaschinen](../domains-and-tls.md#suchmaschinen)). Jede Vorlage setzt sie an einer Stelle: auf dem Gateway, dessen Wert die Konsole übernimmt, bei Render und in der Infrastrukturdatei für Railway; als Variable der ganzen App auf DigitalOcean; als Variable des Stacks bei Coolify, Dokploy und CapRover; als Parameter `SearchEngines` auf AWS und als Variable `search_engines` auf Google Cloud; und in `gateway.toml` wie in `console.toml` auf Fly.io.
 
 ## Was jeder Weg braucht
 

@@ -570,19 +570,15 @@ fn output_formats_tools_and_sampling_from_other_formats() {
     );
     let mut r = base();
     spec.description = Some("A reply".into());
-    r.output = OutputSpec::JsonSchema(spec.clone());
-    assert_eq!(
-        refused(&from(DialectId::OpenAiChat, r)).unsupported_feature(),
-        Some("output schema description")
-    );
-    let mut r = base();
-    spec.description = None;
     spec.strict = Some(false);
     r.output = OutputSpec::JsonSchema(spec);
+    let (body, ctx) = encode_value(&from(DialectId::OpenAiChat, r));
     assert_eq!(
-        refused(&from(DialectId::OpenAiChat, r)).unsupported_feature(),
-        Some("non-strict output schema")
+        body["generationConfig"]["responseJsonSchema"],
+        json!({"type": "object", "description": "A reply"}),
+        "Gemini enforces every schema and takes a description in it"
     );
+    assert_eq!(ctx.adapted, ["response_format"]);
 
     let mut strict = FunctionTool::new("f", Some(schema.clone()));
     strict.strict = Some(true);

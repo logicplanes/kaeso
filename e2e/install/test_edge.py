@@ -95,6 +95,7 @@ def test_the_edge_is_healthy_without_caddy_and_the_updater(edge):
     ok = httpx.get(f"{edge.url}/kaeso-edge/healthz", timeout=10)
     assert ok.status_code == 200 and ok.text == "ok"
     assert "server" not in ok.headers
+    assert ok.headers["x-robots-tag"] == "noindex, nofollow"
 
 
 def test_api_paths_reach_the_gateway_and_everything_else_the_console(edge):
@@ -110,6 +111,9 @@ def test_api_paths_reach_the_gateway_and_everything_else_the_console(edge):
         page = httpx.get(f"{edge.url}{path}", timeout=10)
         assert page.status_code == 200, path
         assert "text/html" in page.headers["content-type"], path
+        assert page.headers["x-robots-tag"] == "noindex, nofollow", path
+    robots = httpx.get(f"{edge.url}/robots.txt", timeout=10)
+    assert robots.text == "User-agent: *\nDisallow: /\n", "the console answers robots.txt behind the edge"
     assert httpx.get(f"{edge.url}/v1/models", timeout=10).status_code == 401
     voices = httpx.get(f"{edge.url}/v2/voices", timeout=10)
     assert voices.status_code == 401 and "detail" in voices.json(), "ElevenLabs' /v2 reaches the gateway"
@@ -158,6 +162,7 @@ def test_the_edge_answers_every_api_in_its_format_while_the_gateway_is_away(edge
     try:
         platform = httpx.get(f"{url}/platform/v1/auth/session", timeout=10)
         assert platform.status_code == 503 and platform.headers["retry-after"] == "30"
+        assert platform.headers["x-robots-tag"] == "noindex, nofollow"
         assert platform.json() == {"error": {"type": "unavailable", "message": UNREACHABLE}}
         oa = openai.OpenAI(base_url=f"{url}/v1", api_key="sk-kso-test", max_retries=0)
         with pytest.raises(openai.APIStatusError) as raised:

@@ -121,6 +121,22 @@ pub(crate) fn assert_json_eq(name: &str, expected: &[u8], actual: &[u8]) {
 }
 
 #[track_caller]
+// A Chat stream with `include_usage` as Kaeso sends it on: a finish chunk's usage moves into a
+// chunk of its own before `[DONE]`, where OpenAI sends it. The passthrough writes that stream.
+pub(crate) fn chat_usage_in_its_own_chunk(bytes: &[u8]) -> Vec<u8> {
+    let enc = crate::EncodeCtx::new(RequestKind::Generate, StreamMode::on(true));
+    let Some(mut pass) =
+        crate::passthrough::for_stream(kaeso_kpp::DialectId::OpenAiChat, &egress(), &enc)
+    else {
+        return bytes.to_vec();
+    };
+    let mut out = Vec::new();
+    if pass.feed(bytes, &mut out).error.is_some() || pass.finish(&mut out).error.is_some() {
+        return bytes.to_vec();
+    }
+    out
+}
+
 pub(crate) fn assert_sse_eq(name: &str, expected: &[u8], actual: &[u8]) {
     if let Some(d) = sse_diff(expected, actual) {
         panic!(

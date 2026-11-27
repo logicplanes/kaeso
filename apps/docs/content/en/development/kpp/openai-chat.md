@@ -237,6 +237,8 @@ While such left-out content arrives, the encoder writes paced SSE comments (`: k
 
 Usage is written only when the app asked for it (`EncodeCtx::stream` with `include_usage`). Every chunk then has `usage: null`, and a final `choices: []` chunk carries the usage. From other dialects this is the latest usage, with the input counts from `ResponseStart` when the later report has none.
 
+A Chat provider that puts the usage on the chunk that finishes, as DeepSeek and Mistral do, gets the same shape for its own streams: that chunk goes with `usage: null`, and the usage in a chunk of its own with `choices: []` before `[DONE]`. The finishing chunk waits for the next one, so a provider's own `choices: []` usage chunk, and running usage on earlier chunks, go as sent. `passthrough::for_stream`, which forwards a stream of the same dialect without decoding it, does the same, and the round trip of such a fixture expects this shape (`test_support::chat_usage_in_its_own_chunk`).
+
 ## Errors (`ErrorResponse`)
 
 The error body is `{error: {message, type, param, code}}`.
@@ -254,7 +256,7 @@ The error body is `{error: {message, type, param, code}}`.
 | 403 | `PermissionDenied` | 403 `request_forbidden` |
 | 404 | `NotFound` | 404 `invalid_request_error` |
 | 413 | `RequestTooLarge` | 413 `invalid_request_error` |
-| 429 | `RateLimited` | 429 `rate_limit_error`, code `rate_limit_exceeded` |
+| 429 | `RateLimited` | 429 `rate_limit_error`, code `rate_limit_exceeded`; with `retry: after_reset`, a quota used up until it resets, 429 `insufficient_quota`, code `insufficient_quota` |
 | 503 | `Overloaded` | 503 `service_unavailable_error`, code `server_is_overloaded` |
 | 408, 504, `code` `vector_store_timeout` | `Timeout` | 504 `server_error`, code `timeout` |
 | other | `ProviderError` | its 5xx status (not 503) or 500, `server_error` |

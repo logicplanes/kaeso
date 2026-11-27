@@ -50,7 +50,7 @@ KPP（Kaeso Provider Protocol）为每种 API 格式都提供一个编解码器�
 ### 发往 Anthropic 的请求
 
 - `seed`、不为 0 的频率惩罚和存在惩罚，以及大于 1 的温度
-- `json_object` 输出格式，以及带有描述或带有 `strict: false` 的 JSON schema
+- `json_object` 输出格式，以及没有列出任何键的 JSON schema
 - 历史中的拒绝回复
 - JPEG、PNG、GIF 和 WebP 以外的图像，以及 PDF 和纯文本以外的文档
 - 音频，以及 MiniMax 以外的视频

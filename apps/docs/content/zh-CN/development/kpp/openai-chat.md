@@ -237,6 +237,8 @@ Anthropic 和 Responses 在块开始时就要给出两者，因此解码器按�
 
 只有应用请求了用量时才会写入用量（`EncodeCtx::stream` 带 `include_usage`）。此时每个 chunk 都有 `usage: null`，最后一个 `choices: []` 的 chunk 携带用量。来自其他方言时，这是最新的用量；后面的报告没有输入计数时，输入计数取自 `ResponseStart`。
 
+像 DeepSeek 和 Mistral 那样把用量放在结束 chunk 上的 Chat 服务商，其自身的流也得到同样的形式：该 chunk 以 `usage: null` 发送，用量则放在 `[DONE]` 之前一个单独的 `choices: []` chunk 中。结束 chunk 会等待下一个 chunk，因此服务商自己的 `choices: []` 用量 chunk 以及更早 chunk 上的累计用量都按原样发送。`passthrough::for_stream`（不解码即转发同一方言的流）也这样处理，此类 fixture 的往返测试预期的就是这种形式（`test_support::chat_usage_in_its_own_chunk`）。
+
 ## 错误（`ErrorResponse`）
 
 错误体为 `{error: {message, type, param, code}}`。
@@ -254,7 +256,7 @@ Anthropic 和 Responses 在块开始时就要给出两者，因此解码器按�
 | 403 | `PermissionDenied` | 403 `request_forbidden` |
 | 404 | `NotFound` | 404 `invalid_request_error` |
 | 413 | `RequestTooLarge` | 413 `invalid_request_error` |
-| 429 | `RateLimited` | 429 `rate_limit_error`，code `rate_limit_exceeded` |
+| 429 | `RateLimited` | 429 `rate_limit_error`，code `rate_limit_exceeded`；带 `retry: after_reset`（在重置前已用尽的配额）时为 429 `insufficient_quota`，code `insufficient_quota` |
 | 503 | `Overloaded` | 503 `service_unavailable_error`，code `server_is_overloaded` |
 | 408、504、`code` `vector_store_timeout` | `Timeout` | 504 `server_error`，code `timeout` |
 | 其他 | `ProviderError` | 其 5xx 状态码（503 除外）或 500，`server_error` |

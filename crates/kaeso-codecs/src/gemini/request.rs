@@ -589,25 +589,6 @@ pub(crate) fn check(req: &Request, ctx: &EgressCtx) -> Result<(), KppError> {
         )
         .with_param("parallel_tool_calls"));
     }
-    if generate && let OutputSpec::JsonSchema(spec) = &r.output {
-        let param = app_field(r, Setting::OutputFormat, D);
-        if spec.description.is_some() {
-            return Err(KppError::unsupported_by(
-                "output schema description",
-                D,
-                "Gemini structured output takes a schema only. Move the description into the prompt or the schema's own `description`.",
-            )
-            .with_param(param));
-        }
-        if spec.strict == Some(false) {
-            return Err(KppError::unsupported_by(
-                "non-strict output schema",
-                D,
-                "Gemini always enforces the output schema. Set `strict: true` or remove it.",
-            )
-            .with_param(param));
-        }
-    }
     if generate && let Some(c) = &r.reasoning {
         if let Some(ReasoningEffort::Other(e)) = &c.effort {
             let field = app_field(r, Setting::ReasoningEffort, D);

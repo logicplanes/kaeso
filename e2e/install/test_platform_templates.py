@@ -527,3 +527,48 @@ def test_the_azure_portal_form_fills_exactly_the_templates_parameters(azure):
     [server] = form["parameters"]["steps"]
     [sizes] = [e for e in server["elements"] if e["name"] == "vmSize"]
     assert sizes["constraints"]["allowedSizes"] == azure["parameters"]["vmSize"]["allowedValues"]
+
+
+def test_every_template_gives_the_gateway_and_the_console_one_search_engines_value(app_spec, deploy_template, render):
+    services = {s["name"]: s for s in render["services"]}
+    gateway = {e["key"]: e for e in services["kaeso-gateway"]["envVars"]}
+    assert gateway["KAESO_SEARCH_ENGINES"] == {"key": "KAESO_SEARCH_ENGINES", "value": "false"}
+    assert services["kaeso-console"]["envVars"] == [
+        {"key": "KAESO_SEARCH_ENGINES", "fromService": {"name": "kaeso-gateway", "type": "pserv", "envVarKey": "KAESO_SEARCH_ENGINES"}}
+    ], "Render's console takes the gateway's value"
+
+    railway = (ROOT / ".railway/railway.ts").read_text()
+    assert 'KAESO_SEARCH_ENGINES: "false"' in railway[railway.index('service("kaeso-gateway"') : railway.index('service("kaeso-console"')]
+    assert 'KAESO_SEARCH_ENGINES: "${{kaeso-gateway.KAESO_SEARCH_ENGINES}}"' in railway[railway.index('service("kaeso-console"') : railway.index('service("kaeso-edge"')]
+
+    app_wide = [{"key": "KAESO_SEARCH_ENGINES", "value": "false", "scope": "RUN_TIME"}]
+    assert app_spec["envs"] == app_wide and deploy_template["spec"]["envs"] == app_wide, "DigitalOcean gives every component the app's variables"
+
+    for name in ("gateway", "console"):
+        fly = tomllib.loads((ROOT / f"deploy/fly/{name}.toml").read_text())
+        assert fly["env"]["KAESO_SEARCH_ENGINES"] == "false", name
+
+    caprover = yaml.safe_load((ROOT / "deploy/caprover/kaeso.yml").read_text())
+    for name in ("$$cap_appname-gateway", "$$cap_appname-console"):
+        assert caprover["services"][name]["environment"]["KAESO_SEARCH_ENGINES"] == "$$cap_search_engines", name
+    [variable] = [v for v in caprover["caproverOneClickApp"]["variables"] if v["id"] == "$$cap_search_engines"]
+    assert variable["defaultValue"] == "false"
+
+    coolify = yaml.safe_load((ROOT / "deploy/coolify/compose.yaml").read_text())["services"]
+    for name in ("gateway", "console"):
+        assert "KAESO_SEARCH_ENGINES=${KAESO_SEARCH_ENGINES:-false}" in coolify[name]["environment"], name
+    dokploy = yaml.safe_load((ROOT / "deploy/dokploy/docker-compose.yml").read_text())["services"]
+    for name in ("gateway", "console"):
+        assert dokploy[name]["environment"]["KAESO_SEARCH_ENGINES"] == "${KAESO_SEARCH_ENGINES:-false}", name
+    assert tomllib.loads((ROOT / "deploy/dokploy/template.toml").read_text())["config"]["env"]["KAESO_SEARCH_ENGINES"] == "false"
+
+    aws = (ROOT / "deploy/aws/managed.yaml").read_text()
+    assert aws.count("- { Name: KAESO_SEARCH_ENGINES, Value: !Ref SearchEngines }") == 2, "the gateway's and the console's task"
+    assert re.search(r'  SearchEngines:\n    Type: String\n    Default: "false"\n    AllowedValues: \["false", "true"\]\n', aws)
+
+    gcp = (ROOT / "deploy/gcp/managed/main.tf").read_text()
+    for service in ("gateway", "console"):
+        block = gcp[gcp.index(f'resource "google_cloud_run_v2_service" "{service}"') :]
+        block = block[: block.index("\nresource ")] if "\nresource " in block else block
+        assert 'name  = "KAESO_SEARCH_ENGINES"\n        value = tostring(var.search_engines)' in block, service
+    assert re.search(r'variable "search_engines" \{\n.*\n  type        = bool\n  default     = false\n\}', (ROOT / "deploy/gcp/managed/variables.tf").read_text())
