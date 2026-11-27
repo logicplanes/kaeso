@@ -200,7 +200,7 @@ for await (const chunk of stream) {
 
 Frameworks built on these SDKs take the same base URL and key. A few need a setting of their own:
 
-- **LangChain.** [`ChatOpenAI`](https://python.langchain.com/api_reference/openai/chat_models/langchain_openai.chat_models.base.ChatOpenAI.html) with a `base_url` asks for the usage of a stream only with `stream_usage=True` or `stream_options={"include_usage": True}`.
+- **LangChain.** [`ChatOpenAI`](https://reference.langchain.com/python/langchain-openai/chat_models/base/BaseChatOpenAI/stream_usage) with a `base_url` asks for the usage of a stream only with `stream_usage=True` or `stream_options={"include_usage": True}`.
 - **LlamaIndex.** `OpenAI` refuses model names that aren't OpenAI's. Use [`OpenAILike`](https://docs.llamaindex.ai/en/stable/api_reference/llms/openai_like/) from the `llama-index-llms-openai-like` package with `is_chat_model=True`, and `is_function_calling_model=True` for tools.
 - **[LiteLLM](https://docs.litellm.ai/docs/providers/openai_compatible)** and the tools built on it, such as Aider, CrewAI and DSPy. Name the model `openai/<model>` with the base URL `https://kaeso.example.com/v1`, or `anthropic/<model>` with `https://kaeso.example.com`. LiteLLM's `completion_cost` raises an error for models outside its own price table; where request logs are on, they show the cost Kaeso works out from the model's prices ([request logs](../console/request-logs.md)).
 

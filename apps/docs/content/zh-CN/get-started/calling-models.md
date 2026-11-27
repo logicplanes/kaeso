@@ -200,7 +200,7 @@ for await (const chunk of stream) {
 
 基于这些 SDK 的框架使用相同的基础 URL 和密钥。有几个需要单独设置：
 
-- **LangChain。** 带 `base_url` 的 [`ChatOpenAI`](https://python.langchain.com/api_reference/openai/chat_models/langchain_openai.chat_models.base.ChatOpenAI.html) 只有在设置 `stream_usage=True` 或 `stream_options={"include_usage": True}` 时才会请求流的用量。
+- **LangChain。** 带 `base_url` 的 [`ChatOpenAI`](https://reference.langchain.com/python/langchain-openai/chat_models/base/BaseChatOpenAI/stream_usage) 只有在设置 `stream_usage=True` 或 `stream_options={"include_usage": True}` 时才会请求流的用量。
 - **LlamaIndex。** `OpenAI` 会拒绝不属于 OpenAI 的模型名称。请改用 `llama-index-llms-openai-like` 包中的 [`OpenAILike`](https://docs.llamaindex.ai/en/stable/api_reference/llms/openai_like/)，设置 `is_chat_model=True`，使用工具时再设置 `is_function_calling_model=True`。
 - **[LiteLLM](https://docs.litellm.ai/docs/providers/openai_compatible)** 以及基于它的工具，例如 Aider、CrewAI 和 DSPy。把模型命名为 `openai/<model>` 并使用基础 URL `https://kaeso.example.com/v1`，或命名为 `anthropic/<model>` 并使用 `https://kaeso.example.com`。对于其价格表之外的模型，LiteLLM 的 `completion_cost` 会报错；开启请求日志时，日志会显示 Kaeso 根据模型价格算出的费用（[请求日志](../console/request-logs.md)）。
 
