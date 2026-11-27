@@ -922,9 +922,8 @@ pub(crate) fn refused_key(err: &KppError) -> Option<KppError> {
     Some(error(ErrorKind::ProviderError, 502, message))
 }
 
-// Kaeso keeps no conversations, and a thread Anthropic keeps under the organization's provider
-// key could be continued from any of its projects. The SDKs' tool runners take this refusal and
-// send the whole conversation again without the thread.
+// Kaeso keeps no conversations, and a thread at Anthropic under the organization's key could be
+// continued from any of its projects; the SDKs' tool runners go on without one.
 fn no_threads() -> KppError {
     KppError::unsupported(
         kaeso_codecs::anthropic_messages::THREAD,

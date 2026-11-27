@@ -266,9 +266,8 @@ fn own_body(err: &KppError) -> Option<&serde_json::Map<String, Value>> {
     }
 }
 
-// Anthropic's refusal of a message thread it can't serve, which the SDKs' thread helpers read to
-// send the conversation again without one (`_unsupported_features` in anthropic-sdk-python's
-// `lib/threads/_thread_state.py`; https://platform.claude.com/docs/en/build-with-claude/message-threads).
+// Anthropic's code for a thread it can't serve, on which the SDKs' tool runners go on without one
+// (https://platform.claude.com/docs/en/build-with-claude/message-threads).
 fn details(err: &KppError) -> Option<Value> {
     (err.unsupported_feature() == Some(super::THREAD)).then(|| {
         serde_json::json!({

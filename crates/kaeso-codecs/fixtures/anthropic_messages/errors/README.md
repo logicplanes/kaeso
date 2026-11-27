@@ -32,8 +32,6 @@
 | `rate-limit.meta.json` | HTTP status (and headers) for the body above. | schema: ErrorResponse, RateLimitError (headers from https://platform.claude.com/docs/en/api/rate-limits#response-headers) |
 | `rate-limit-spend-cap.json` | 429 `rate_limit_error` **without** `retry-after`; carries `error.details.error_code: enforced_spend_limit_reached` (field not in the OpenAPI spec). | doc: https://platform.claude.com/docs/en/api/rate-limits#reaching-your-spend-cap |
 | `rate-limit-spend-cap.meta.json` | HTTP status (and headers) for the body above. | doc: https://platform.claude.com/docs/en/api/rate-limits#reaching-your-spend-cap |
-| `thread-unsupported-request.json` | 400 `invalid_request_error` with `error.details.error_code: thread_unsupported_request` and the `unsupported` list, which the SDKs' thread helpers read to send the conversation again without `thread`. Message text and the `unsupported` value are constructed. | doc: https://platform.claude.com/docs/en/build-with-claude/message-threads (error codes); SDK: `_unsupported_features` in anthropic-sdk-python `lib/threads/_thread_state.py` |
-| `thread-unsupported-request.meta.json` | HTTP status for the body above. | doc, as above |
 | `api-error.json` | 500 `api_error`. | schema: ErrorResponse, APIError |
 | `api-error.meta.json` | HTTP status (and headers) for the body above. | schema: ErrorResponse, APIError |
 | `timeout.json` | 504 `timeout_error`. | schema: ErrorResponse, GatewayTimeoutError |

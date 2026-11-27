@@ -1413,4 +1413,23 @@ async fn message_threads_are_refused_as_anthropic_refuses_one_it_cannot_serve() 
         before,
         "nothing reached a provider"
     );
+
+    // What a tool runner sends next: the whole conversation without `thread`, which goes
+    // through. `thread: null` asks for no thread.
+    let mut unthreaded = messages("claude-haiku-4-5", "Weather in Paris? Use the tool.");
+    for thread in [None, Some(json!(null))] {
+        if let Some(t) = thread {
+            unthreaded["thread"] = t;
+        }
+        let r = call(
+            &env,
+            "/v1/messages",
+            Some(&env.key),
+            true,
+            Some(unthreaded.clone()),
+        )
+        .await;
+        assert_eq!(r.status, StatusCode::OK, "{unthreaded}: {}", r.text());
+    }
+    assert_eq!(env.mock.received().len(), before + 2);
 }

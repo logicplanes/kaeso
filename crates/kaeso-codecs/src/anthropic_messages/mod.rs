@@ -50,7 +50,8 @@ pub const THREAD: &str = "thread";
 pub fn asks_for_thread(req: &kaeso_kpp::GenerateRequest) -> bool {
     req.extras
         .fields_for(common::D)
-        .is_some_and(|fields| fields.contains_key(THREAD))
+        .and_then(|fields| fields.get(THREAD))
+        .is_some_and(|thread| thread.get() != "null")
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]

@@ -517,6 +517,7 @@ fn a_request_with_a_thread_says_so() {
             r#","thread":{"type":"continue","previous_message_id":"msg_1"}"#,
             true,
         ),
+        (r#","thread":null"#, false),
         ("", false),
     ] {
         let body = format!(
