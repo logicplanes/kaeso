@@ -233,7 +233,7 @@ impl Rewrite {
             Some(t) if t.iter().any(|t| t == "object") => t.into_iter().map(Value::from).collect(),
             Some(_) => return Err(refused()),
         };
-        let combined = named_twice(node, &merged)
+        let combined = changed_by_join(node, &merged)
             .iter()
             .any(|name| self.points_into(&place.member("properties", name).ptr));
         if !open(node) || self.points_into(&place.field("allOf").ptr) || combined {
@@ -278,21 +278,23 @@ fn both(a: Option<Vec<String>>, b: Option<Vec<String>>) -> Option<Vec<String>> {
     }
 }
 
-fn named_twice(node: &Map<String, Value>, branches: &[Map<String, Value>]) -> Vec<String> {
-    let mut seen: Vec<&String> = Vec::new();
-    let mut twice = Vec::new();
-    let names = std::iter::once(node)
+fn changed_by_join(node: &Map<String, Value>, branches: &[Map<String, Value>]) -> Vec<String> {
+    let mut first: Vec<(&String, &Value)> = Vec::new();
+    let mut changed = Vec::new();
+    let properties = std::iter::once(node)
         .chain(branches)
         .filter_map(|n| n.get("properties").and_then(Value::as_object))
-        .flat_map(|p| p.keys());
-    for name in names {
-        if seen.contains(&name) {
-            twice.push(name.clone());
-        } else {
-            seen.push(name);
+        .flatten();
+    for (name, schema) in properties {
+        match first.iter().find(|(n, _)| *n == name) {
+            Some((_, own)) if *own != schema && !changed.contains(name) => {
+                changed.push(name.clone());
+            }
+            Some(_) => {}
+            None => first.push((name, schema)),
         }
     }
-    twice
+    changed
 }
 
 fn within(at: &str, key: &str) -> String {
@@ -367,17 +369,38 @@ fn join_object(node: &mut Map<String, Value>, branch: Map<String, Value>) {
 
 // A property several branches define takes all of their schemas in one flat `allOf`.
 fn combine(own: &mut Value, schema: Value) {
-    if let Value::Object(o) = own
-        && o.len() == 1
-        && let Some(Value::Array(all)) = o.get_mut("allOf")
-    {
-        if !all.contains(&schema) {
-            all.push(schema);
-        }
-        return;
+    if all_of_only(own).is_none() {
+        let first = std::mem::take(own);
+        *own = serde_json::json!({ "allOf": [first] });
     }
-    let first = std::mem::take(own);
-    *own = serde_json::json!({ "allOf": [first, schema] });
+    let added = match schema {
+        Value::Object(mut s) if all_of_only_map(&s) => match s.remove("allOf") {
+            Some(Value::Array(parts)) => parts,
+            _ => Vec::new(),
+        },
+        other => vec![other],
+    };
+    if let Some(all) = all_of_only(own) {
+        for part in added {
+            if !all.contains(&part) {
+                all.push(part);
+            }
+        }
+    }
+}
+
+fn all_of_only(schema: &mut Value) -> Option<&mut Vec<Value>> {
+    match schema {
+        Value::Object(o) if all_of_only_map(o) => match o.get_mut("allOf") {
+            Some(Value::Array(all)) => Some(all),
+            _ => None,
+        },
+        _ => None,
+    }
+}
+
+fn all_of_only_map(o: &Map<String, Value>) -> bool {
+    o.len() == 1 && matches!(o.get("allOf"), Some(Value::Array(_)))
 }
 
 fn is_object(node: &Map<String, Value>) -> bool {
@@ -915,6 +938,37 @@ mod tests {
             "{}",
             e.message
         );
+
+        let unchanged = with_schema(json!({"name": "x", "schema": {
+            "type": "object",
+            "properties": {"id": {"type": "string"}, "copy": {"$ref": "#/properties/id"}},
+            "allOf": [{"properties": {"id": {"type": "string"}, "region": {"type": "string"}}}]
+        }}));
+        let (schema, _) = claude_schema(&unchanged);
+        assert_eq!(
+            schema["properties"]["id"],
+            json!({"type": "string"}),
+            "{schema}"
+        );
+        assert_eq!(schema["properties"]["region"], json!({"type": "string"}));
+    }
+
+    #[test]
+    fn a_join_flattens_lists_in_either_order() {
+        let list = json!({"allOf": [{"maxLength": 8}, {"maxLength": 9}]});
+        let one = json!({"maxLength": 10});
+        let joined = |a: &Value, b: &Value| {
+            let req = with_schema(json!({"name": "x", "schema": {
+                "type": "object", "allOf": [
+                    {"properties": {"zip": a}}, {"properties": {"zip": b}}
+                ]
+            }}));
+            claude_schema(&req).0["properties"]["zip"]["allOf"]
+                .as_array()
+                .map(Vec::len)
+        };
+        assert_eq!(joined(&list, &one), Some(3));
+        assert_eq!(joined(&one, &list), Some(3));
     }
 
     #[test]
