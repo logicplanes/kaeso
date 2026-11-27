@@ -1,5 +1,6 @@
 import { Announcement, Button, Dashboard, Skeleton } from "@logicplanes/kaeso-ui";
 import { t } from "~/i18n";
+import { dismissedRelease } from "./release-dismissed";
 import { showWhatsNew } from "~/shell/whats-new-request";
 
 export function ReadWhatsNew() {
@@ -11,8 +12,9 @@ export function ReadWhatsNew() {
 }
 
 // What's new always has the running release, so the banner keeps its place while it loads; its summary always takes
-// two lines' room.
+// two lines' room. Someone who closed a release's banner most likely still has it closed, so it holds no place then.
 export function ReleaseBannerPending() {
+  if (dismissedRelease() !== null) return null;
   return (
     <Dashboard aria-label={t("kaeso.home.news", "News")} busy>
       <Announcement
@@ -26,7 +28,6 @@ export function ReleaseBannerPending() {
           </>
         }
         actions={<ReadWhatsNew />}
-        art={<Skeleton className="h-full w-full" />}
       />
     </Dashboard>
   );
