@@ -351,11 +351,16 @@ async fn token_counts_for_xai_models_are_estimated_in_each_apps_format() {
         Some(json!({ "generateContentRequest": {
             "model": "models/grok-4.3",
             "contents": [{ "role": "user", "parts": [{ "text": "Hello" }] }],
-            "generationConfig": { "stopSequences": ["END"], "maxOutputTokens": 5 },
+            "generationConfig": { "stopSequences": ["END"], "maxOutputTokens": 5, "seed": 7 },
         } })),
     )
     .await;
     assert!(r.estimated_count() > 0);
+    assert_eq!(
+        r.header("kaeso-left-out"),
+        Some("generationConfig.seed"),
+        "as a generation would"
+    );
     assert!(env.mock.received().is_empty());
 }
 

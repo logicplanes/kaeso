@@ -124,57 +124,74 @@ fn pdf_pages(data: &[u8]) -> u64 {
     found.max(1)
 }
 
+// The largest `/Count` of a `/Type /Pages` dictionary, in one pass that follows dictionary
+// nesting and skips stream data, so inline resources and bookmarks can't mislead it.
 fn page_tree_count(data: &[u8]) -> u64 {
-    let mut count = 0u64;
-    let mut from = 0usize;
-    while let Some(at) = data.get(from..).and_then(|rest| find(rest, b"/Count")) {
-        let at = from.saturating_add(at);
-        let after = at.saturating_add(6);
-        let start = data
-            .get(..at)
-            .and_then(|before| rfind(before, b"<<"))
-            .unwrap_or(0);
-        let end = data
-            .get(after..)
-            .and_then(|rest| find(rest, b">>"))
-            .map_or(data.len(), |e| after.saturating_add(e));
-        let dict = data.get(start..end).unwrap_or_default();
-        if is_page_tree(dict) {
-            let digits: Vec<u8> = data
-                .get(after..)
-                .unwrap_or_default()
+    const DEPTH: usize = 64;
+    #[derive(Default)]
+    struct Dict {
+        pages: bool,
+        count: Option<u64>,
+    }
+    let mut open: Vec<Dict> = Vec::new();
+    let (mut depth, mut best, mut i) = (0usize, 0u64, 0usize);
+    while let Some(rest) = data.get(i..).filter(|r| !r.is_empty()) {
+        if rest.starts_with(b"<<") {
+            depth = depth.saturating_add(1);
+            if depth <= DEPTH {
+                open.push(Dict::default());
+            }
+            i = i.saturating_add(2);
+        } else if rest.starts_with(b">>") {
+            if depth > 0
+                && depth <= DEPTH
+                && let Some(d) = open.pop()
+                && d.pages
+            {
+                best = best.max(d.count.unwrap_or(0));
+            }
+            depth = depth.saturating_sub(1);
+            i = i.saturating_add(2);
+        } else if rest.starts_with(b"stream")
+            && !i
+                .checked_sub(1)
+                .and_then(|p| data.get(p))
+                .is_some_and(u8::is_ascii_alphanumeric)
+        {
+            i = match find(rest, b"endstream") {
+                Some(end) => i.saturating_add(end).saturating_add(9),
+                None => data.len(),
+            };
+        } else if let Some(after) = rest.strip_prefix(b"/Type") {
+            if after.trim_ascii_start().starts_with(b"/Pages")
+                && depth <= DEPTH
+                && let Some(d) = open.last_mut()
+            {
+                d.pages = true;
+            }
+            i = i.saturating_add(5);
+        } else if let Some(after) = rest.strip_prefix(b"/Count") {
+            let digits: Vec<u8> = after
                 .trim_ascii_start()
                 .iter()
                 .copied()
                 .take_while(u8::is_ascii_digit)
+                .take(19)
                 .collect();
             if let Some(n) = std::str::from_utf8(&digits)
                 .ok()
                 .and_then(|d| d.parse().ok())
+                && depth <= DEPTH
+                && let Some(d) = open.last_mut()
             {
-                count = count.max(n);
+                d.count = Some(n);
             }
+            i = i.saturating_add(6);
+        } else {
+            i = i.saturating_add(1);
         }
-        from = after;
     }
-    count
-}
-
-fn is_page_tree(dict: &[u8]) -> bool {
-    let mut rest = dict;
-    while let Some(at) = find(rest, b"/Type") {
-        let after = rest.get(at.saturating_add(5)..).unwrap_or_default();
-        let name = after.trim_ascii_start();
-        if name.starts_with(b"/Pages") {
-            return true;
-        }
-        rest = after;
-    }
-    false
-}
-
-fn rfind(haystack: &[u8], needle: &[u8]) -> Option<usize> {
-    haystack.windows(needle.len()).rposition(|w| w == needle)
+    best
 }
 
 fn find(haystack: &[u8], needle: &[u8]) -> Option<usize> {
@@ -822,6 +839,19 @@ mod tests {
             2,
             "an outline's bookmarks are no pages"
         );
+        assert_eq!(
+            pdf_pages(
+                b"%PDF-1.7 1 0 obj << /Resources << /Font << /F1 5 0 R >> >> /Type /Pages \
+                  /Kids [3 0 R] /Count 3 >> 9 0 obj << /Length 9 >> stream\n<< /Type /Pages /Count 99 >> endstream"
+            ),
+            3,
+            "inline resources come before the count, and stream data is no dictionary"
+        );
+        let mut many = b"%PDF-1.7 ".to_vec();
+        for _ in 0..200_000 {
+            many.extend_from_slice(b"/Count 1 ");
+        }
+        assert_eq!(pdf_pages(&many), 1, "one pass, whatever the PDF holds");
         let mut packed = b"%PDF-1.7 5 0 obj << /Type /ObjStm /N 40 >>".to_vec();
         packed.resize(120_000, b'x');
         assert_eq!(

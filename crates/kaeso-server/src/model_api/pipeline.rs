@@ -2492,13 +2492,15 @@ async fn attempt(
             // some formats need, and fitted to OpenAI Responses as a generation is.
             let mut generate = g.clone();
             generate.sampling.max_output_tokens.get_or_insert(16);
+            // What a generation would leave out, such as `seed`, the count names too.
             if plan.dialect == DialectId::OpenAiResponses {
-                kaeso_core::catalogue::capability::fit_responses(
+                let fit = kaeso_core::catalogue::capability::fit_responses(
                     &mut generate,
                     ingress,
                     &eff,
                     None,
                 );
+                plan.left_out.extend(fit.left_out);
             }
             let dialect = plan.dialect;
             off_thread(request_bytes, move || {
