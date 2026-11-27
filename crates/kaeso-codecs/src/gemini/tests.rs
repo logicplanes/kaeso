@@ -771,6 +771,10 @@ fn replies_map_finish_reasons_usage_and_blocked_prompts() {
     )
     .unwrap_err();
     assert_eq!(e.unsupported_feature(), Some("more than one candidate"));
+    assert_eq!(
+        e.message,
+        "The provider returned several candidates, but Kaeso reads one; leave `candidateCount` out or set it to 1."
+    );
     let e = Gemini::decode_response(200, &HeaderList::new(), b"[]", &generate_ctx()).unwrap_err();
     assert_eq!(e.kind, ErrorKind::ProviderError);
 }
@@ -1005,7 +1009,7 @@ fn stream_decoding_reports_errors_and_keeps_frames_it_cannot_read() {
     assert_sse_eq("odd frames", odd, &encode_stream(&events));
     let two = b"data: {\"candidates\": [{}, {}]}\n\n";
     assert!(
-        matches!(decode_stream(two, 0).last(), Some(StreamEvent::Error(e)) if e.unsupported_feature() == Some("more than one candidate"))
+        matches!(decode_stream(two, 0).last(), Some(StreamEvent::Error(e)) if e.unsupported_feature() == Some("more than one candidate") && e.message == "The provider returned several candidates, but Kaeso reads one; leave `candidateCount` out or set it to 1.")
     );
     let mut dec = Gemini::stream_decoder(&stream_ctx());
     dec.feed(b"data: {\"candidates\": [{\"content\": {\"parts\": [{\"text\": \"Hi\"}]}}]}\n\n");

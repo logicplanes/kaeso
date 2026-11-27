@@ -461,6 +461,10 @@ fn truncated_and_malformed_streams_end_with_an_error() {
         panic!()
     };
     assert_eq!(err.unsupported_feature(), Some("n"));
+    assert_eq!(
+        err.message,
+        "The provider streamed several choices, but Kaeso carries one; leave `n` out or set it to 1."
+    );
     let mut decoder = OpenAiChat::stream_decoder(&ectx());
     decoder.feed(b"data: {bad\n\n");
     assert!(
