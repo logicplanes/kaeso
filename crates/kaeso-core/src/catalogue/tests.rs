@@ -1769,18 +1769,16 @@ fn duties_fill_what_kpp_cannot_know() {
         .flat_map(|m| m["architecture"]["output_modalities"].as_array().unwrap())
         .filter_map(serde_json::Value::as_str)
         .collect();
-    for (provider, model) in [
-        ("openai", "text-embedding-3-small"),
-        ("cohere", "rerank-v5.0-fast"),
-        ("cloudflare-ai-gateway", "@cf/cloudflare/clef"),
+    for (provider, model, makes) in [
+        ("openai", "text-embedding-3-small", "embeddings"),
+        ("cohere", "rerank-v5.0-fast", "rerank"),
+        ("cloudflare-ai-gateway", "@cf/cloudflare/clef", "decisions"),
     ] {
+        assert!(theirs.contains(&makes), "{makes} against {theirs:?}");
         let outputs = model_info(model, &eff(&entry(provider, model)))
             .output_modalities
             .unwrap();
-        assert!(
-            matches!(outputs.as_slice(), [o] if theirs.contains(&o.as_str())),
-            "{model}: {outputs:?} against {theirs:?}"
-        );
+        assert_eq!(outputs, [makes], "{model}");
     }
     let mut no_levels = eff(&entry("xai", "grok-4.7"));
     no_levels.fields.efforts = None;
