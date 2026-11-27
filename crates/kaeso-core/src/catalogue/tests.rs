@@ -1692,6 +1692,7 @@ fn duties_fill_what_kpp_cannot_know() {
             reasoning: Some(false),
             left_out: Vec::new(),
             adapted: Vec::new(),
+            estimated_count: None,
         }
     );
     let Request::Generate(g) = &req else { panic!() };
