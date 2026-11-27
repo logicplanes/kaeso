@@ -1432,4 +1432,12 @@ async fn message_threads_are_refused_as_anthropic_refuses_one_it_cannot_serve() 
         assert_eq!(r.status, StatusCode::OK, "{unthreaded}: {}", r.text());
     }
     assert_eq!(env.mock.received().len(), before + 2);
+
+    // Served in another format, `thread: null` is left out and named.
+    let mut other = messages("gpt-4o", "Hi");
+    other["thread"] = json!(null);
+    let r = call(&env, "/v1/messages", Some(&env.key), true, Some(other)).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.header("kaeso-left-out"), Some("thread"));
+    assert!(env.mock.last().unwrap().json().get("thread").is_none());
 }

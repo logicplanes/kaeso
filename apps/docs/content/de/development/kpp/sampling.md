@@ -35,6 +35,7 @@ Chat-Apps wie NextChat senden die Sampling-Felder von OpenAI mit jeder Anfrage, 
 | `logit_bias`, `metadata` | `{}` | ebenso |
 | `store` | `false` | ebenso; ein Responses-Ziel erhält Kaesos eigenes `store: false`, dort wird es nicht genannt |
 | `service_tier`, aus Chat und aus Anthropic | `"auto"` | ebenso, und Anthropic-Provider, die es ablehnen |
+| `thread`, aus Anthropic | `null` | jedes andere Format; es verlangt keinen Nachrichten-Thread, wie wenn das Feld fehlt |
 | `verbosity` | `"medium"` | ebenso |
 | `modalities` | `["text"]` | Chat-Provider, die es ablehnen; andere Formate schreiben ohnehin Text |
 

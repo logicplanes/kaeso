@@ -270,6 +270,25 @@ mod tests {
     }
 
     #[test]
+    fn an_anthropic_apps_null_thread_crosses_to_every_format() {
+        let req = decoded(
+            A,
+            json!({
+                "model": "m", "max_tokens": 100, "thread": null,
+                "messages": [{"role": "user", "content": "Hi"}]
+            }),
+        );
+        for target in [C, R, G, B] {
+            let (body, left_out) = sent(target, &req).unwrap_or_else(|e| panic!("{target}: {e}"));
+            assert_eq!(left_out, ["thread"], "{target}");
+            assert!(body.get("thread").is_none(), "{target}: {body}");
+        }
+        let (body, left_out) = sent(A, &req).unwrap();
+        assert!(left_out.is_empty(), "{left_out:?}");
+        assert_eq!(body["thread"], json!(null), "Anthropic gets it as written");
+    }
+
+    #[test]
     fn other_values_of_those_fields_are_still_refused() {
         for (key, value) in [
             ("logprobs", json!(true)),

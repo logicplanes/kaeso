@@ -326,6 +326,8 @@ pub const NEUTRAL_VALUES: &[(DialectId, &str, &str)] = &[
     (DialectId::OpenAiChat, "service_tier", "\"auto\""),
     (DialectId::OpenAiChat, "verbosity", "\"medium\""),
     (DialectId::AnthropicMessages, "service_tier", "\"auto\""),
+    // No message thread, as without the field (`anthropic_messages::asks_for_thread`).
+    (DialectId::AnthropicMessages, "thread", "null"),
 ];
 
 /// Whether `value` of the request field `key` from `origin` is on [`NEUTRAL_VALUES`].

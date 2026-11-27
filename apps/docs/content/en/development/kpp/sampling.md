@@ -35,6 +35,7 @@ Chat apps such as NextChat send OpenAI's sampling fields on every request, at th
 | `logit_bias`, `metadata` | `{}` | the same |
 | `store` | `false` | the same; a Responses target gets Kaeso's own `store: false`, so it isn't named there |
 | `service_tier`, from Chat and from Anthropic | `"auto"` | the same, and Anthropic providers that refuse it |
+| `thread`, from Anthropic | `null` | every other format; it asks for no message thread, as leaving it out does |
 | `verbosity` | `"medium"` | the same |
 | `modalities` | `["text"]` | Chat providers that refuse it; other formats write text anyway |
 

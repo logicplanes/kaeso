@@ -35,6 +35,7 @@ NextChat 等聊天应用在每个请求中都会发送 OpenAI 的采样字段，
 | `logit_bias`、`metadata` | `{}` | 同上 |
 | `store` | `false` | 同上；Responses 目标会收到 Kaeso 自己的 `store: false`，因此那里不列出 |
 | `service_tier`，来自 Chat 和 Anthropic | `"auto"` | 同上，以及拒绝它的 Anthropic 提供商 |
+| `thread`，来自 Anthropic | `null` | 其他所有格式；它与省略该字段一样，不要求消息线程 |
 | `verbosity` | `"medium"` | 同上 |
 | `modalities` | `["text"]` | 拒绝它的 Chat 提供商；其他格式本来就输出文本 |
 
