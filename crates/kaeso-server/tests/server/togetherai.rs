@@ -162,14 +162,14 @@ async fn an_anthropic_field_chat_cannot_carry_is_refused_before_together_is_call
         Some(json!({
             "model": MODEL,
             "max_tokens": 300,
-            "top_k": 40,
+            "container": "container_011",
             "messages": [{ "role": "user", "content": "Name one planet." }],
         })),
     )
     .await;
     assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
     assert_eq!(r.json()["type"], "error");
-    assert!(r.text().contains("top_k"), "{}", r.text());
+    assert!(r.text().contains("container"), "{}", r.text());
     assert_eq!(env.mock.received().len(), before);
 }
 

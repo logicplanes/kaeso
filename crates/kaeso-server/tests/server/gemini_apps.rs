@@ -107,6 +107,51 @@ async fn a_gemini_apps_sampling_settings_claude_5_refuses_are_left_out_by_their_
 }
 
 #[tokio::test]
+async fn gemini_clis_top_k_is_left_out_for_chat_completions_and_responses_models() {
+    let env = env().await;
+    let base = format!("/orgs/{}/projects/{}", env.owner.org_id, env.project);
+    let r = env
+        .app
+        .post(
+            &format!("{base}/models"),
+            json!({ "provider": "openai", "model_id": "gpt-4.1-mini", "overrides": { "egress_dialect": "openai_chat" } }),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
+    for (model, path) in [
+        ("gpt-4.1-mini", "/v1/chat/completions"),
+        ("gpt-4o", "/v1/responses"),
+    ] {
+        let mut body = ask("Hello");
+        body["generationConfig"] = json!({ "temperature": 1, "topP": 0.95, "topK": 64 });
+        let r = gemini(
+            &env,
+            "POST",
+            &format!("/v1beta/models/{model}:streamGenerateContent?alt=sse"),
+            Key::Header(&env.key),
+            Some(body),
+        )
+        .await;
+        assert_eq!(r.status, StatusCode::OK, "{model}: {}", r.text());
+        assert_eq!(
+            r.header("kaeso-left-out"),
+            Some("generationConfig.topK"),
+            "{model}"
+        );
+        let sent = env.mock.last().unwrap();
+        assert_eq!(sent.path, path, "{model}");
+        let sent = sent.json();
+        assert!(sent.get("top_k").is_none(), "{model}: {sent}");
+        assert_eq!(
+            (&sent["temperature"], &sent["top_p"]),
+            (&json!(1.0), &json!(0.95)),
+            "{model}"
+        );
+    }
+}
+
+#[tokio::test]
 async fn a_gemini_apps_thinking_budget_reaches_claude_5_as_adaptive_thinking() {
     let env = env().await;
     let base = format!("/orgs/{}/projects/{}", env.owner.org_id, env.project);

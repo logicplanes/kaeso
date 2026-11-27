@@ -9,15 +9,15 @@ order: 3
 
 ## 目标拒绝的设置
 
-目标无法遵守的采样设置为 `Unsupported`，从不丢弃或重新缩放，惩罚值为 0 时除外（[中性值](#中性值)）：
+目标无法遵守的采样设置为 `Unsupported`，从不丢弃或重新缩放，`top_k`（[top K](#top-k)）和值为 0 的惩罚参数除外（[中性值](#中性值)）：
 
 | 目标 | 拒绝 |
 | --- | --- |
 | Anthropic | `seed`、频率惩罚和存在惩罚，以及超出 Anthropic 取值范围 0 到 1 的 `temperature` |
-| OpenAI Chat Completions | `top_k`，以及超过四个的停止序列 |
-| OpenAI Responses | `top_k`、`seed`、各项惩罚和停止序列，Responses 没有这些参数；以及低于 16 个 Token 的输出上限，即 `CreateResponse` 的最小值；除 `top_k` 和各项惩罚外，网关都会处理（[网关中的 OpenAI Responses](#网关中的-openai-responses)） |
+| OpenAI Chat Completions | 超过四个的停止序列 |
+| OpenAI Responses | `seed`、各项惩罚和停止序列，Responses 没有这些参数；以及低于 16 个 Token 的输出上限，即 `CreateResponse` 的最小值；除各项惩罚外，网关都会处理（[网关中的 OpenAI Responses](#网关中的-openai-responses)） |
 | Gemini API | 超过五个停止序列（`GenerationConfig.stopSequences`） |
-| Amazon Bedrock Converse | `top_k`、`seed` 和惩罚参数，它们属于各模型系列自己的字段 |
+| Amazon Bedrock Converse | `seed` 和惩罚参数，它们属于各模型系列自己的字段 |
 
 数字在同一方言内保持原来的写法：只要值未改变，`temperature: 1` 回来时仍是 `1`，`1.0` 仍是 `1.0`。跨方言时使用目标自己的写法，因此来自 Chat 的 `temperature: 1` 到达 Anthropic 时是 `1.0`。
 
@@ -32,6 +32,12 @@ Responses 编解码器会拒绝停止序列、`seed` 和低于 16 个 Token 的�
 - **`seed`。** 会被省略，并在 `kaeso-left-out` 中注明：OpenAI 只尽力而为地遵循它，而 Responses 没有对应字段。
 
 Kaeso 会以流的方式读取这类回复，即使应用没有要求流式输出，这样 Kaeso 结束回复时服务商也会停止生成。Kaeso 根据已读取的内容估算用量，与 [ChatGPT 套餐的输出上限](openai-responses.md#chatgpt-套餐用量)相同。
+
+## Top K
+
+`top_k` 是提示字段。Anthropic 和 Gemini 会收到它。OpenAI Chat Completions、OpenAI Responses 和 Amazon Bedrock Converse 没有 top-k 采样，部分 Anthropic 格式服务商（例如 DeepSeek 和 MiniMax）会忽略它。对这些目标，Kaeso 会省略它，并按应用的写法在 `kaeso-left-out` 中注明：Gemini 应用为 `generationConfig.topK`，Anthropic 应用为 `top_k`。
+
+Gemini CLI 在每个请求中都发送 `topK`，且没有开关可以关闭，因此拒绝它就等于在所有这些模型上拒绝 Gemini CLI。Google 自己的最新模型也会忽略 `topK`（`GenerationConfig.topK`）。
 
 ## 中性值
 

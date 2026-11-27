@@ -9,15 +9,15 @@ Sampling settings decide how a model picks its words: temperature, top P and top
 
 ## Settings a target refuses
 
-Sampling settings a target can't honour are `Unsupported`, never dropped or rescaled, except a penalty of 0 ([neutral values](#neutral-values)):
+Sampling settings a target can't honour are `Unsupported`, never dropped or rescaled, except `top_k` ([top K](#top-k)) and a penalty of 0 ([neutral values](#neutral-values)):
 
 | Target | Refused |
 | --- | --- |
 | Anthropic | `seed`, frequency and presence penalties, and a `temperature` outside 0 to 1, Anthropic's range |
-| OpenAI Chat Completions | `top_k`, and more than four stop sequences |
-| OpenAI Responses | `top_k`, `seed`, the penalties and stop sequences, which Responses doesn't have, and an output limit below 16 tokens, the `CreateResponse` minimum; the gateway serves all but `top_k` and the penalties ([OpenAI Responses in the gateway](#openai-responses-in-the-gateway)) |
+| OpenAI Chat Completions | More than four stop sequences |
+| OpenAI Responses | `seed`, the penalties and stop sequences, which Responses doesn't have, and an output limit below 16 tokens, the `CreateResponse` minimum; the gateway serves all but the penalties ([OpenAI Responses in the gateway](#openai-responses-in-the-gateway)) |
 | Gemini API | More than five stop sequences (`GenerationConfig.stopSequences`) |
-| Amazon Bedrock Converse | `top_k`, `seed` and the penalties, which go in a model family's own fields |
+| Amazon Bedrock Converse | `seed` and the penalties, which go in a model family's own fields |
 
 Numbers keep their spelling within a dialect: `temperature: 1` comes back as `1` and `1.0` as `1.0` while the value is unchanged. Across dialects the target's own spelling is used, so `temperature: 1` from Chat reaches Anthropic as `1.0`.
 
@@ -32,6 +32,12 @@ The Responses codec refuses stop sequences, `seed` and an output limit below 16 
 - **`seed`.** Left out and named in `kaeso-left-out`: OpenAI treats it as best effort, and Responses has no field for it.
 
 Kaeso reads such a reply as a stream, also when the app asked for none, so the provider stops when Kaeso ends the reply. Kaeso estimates the usage from what it read, as for a [ChatGPT plan's output limit](openai-responses.md#chatgpt-plan-usage).
+
+## Top K
+
+`top_k` is a hint. Anthropic and Gemini get it. OpenAI Chat Completions, OpenAI Responses and Amazon Bedrock Converse have no top-k sampling, and some Anthropic-format providers, such as DeepSeek and MiniMax, ignore it. For those, Kaeso leaves it out and names it in `kaeso-left-out` as the app wrote it: `generationConfig.topK` for a Gemini app, `top_k` for an Anthropic app.
+
+Gemini CLI sends `topK` with every request and has no switch for it, so refusing it would refuse Gemini CLI on every such model. Google itself ignores `topK` on its newest models (`GenerationConfig.topK`).
 
 ## Neutral values
 

@@ -59,7 +59,7 @@ When a request crosses formats, Kaeso refuses these with an error that names the
 
 ### Requests to OpenAI Chat Completions
 
-- `top_k` and more than four stop sequences
+- more than four stop sequences
 - text documents, document URLs, document titles, context and citations
 - image file ids, and images, documents and audio outside user messages
 - audio other than base64 WAV and MP3, and video, except for providers that document more
@@ -67,7 +67,7 @@ When a request crosses formats, Kaeso refuses these with an error that names the
 
 ### Requests to OpenAI Responses
 
-- `top_k` and penalties other than 0
+- penalties other than 0
 - text documents, document titles, context and citations
 - audio and video, and audio and image output
 

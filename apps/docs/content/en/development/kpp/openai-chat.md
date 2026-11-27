@@ -108,7 +108,6 @@ For KPP from other dialects, `check()` refuses:
 - an image or other output modality, audio without a voice, a voice OpenAI doesn't list, and audio settings without audio output;
 - refusals and citations outside assistant messages;
 - other dialects' citations, through `check_foreign`;
-- `top_k` ([sampling](sampling.md));
 - unknown reasoning modes and reasoning efforts outside the spec enum.
 
 Budgets and `disabled` are converted ([effort and budget](reasoning.md#effort-and-budget)). These hints are dropped instead:
@@ -118,7 +117,8 @@ Budgets and `disabled` are converted ([effort and budget](reasoning.md#effort-an
 - `ToolResult::is_error`, whose information the error content carries ([tool errors](cross-format.md#tool-errors));
 - other dialects' `reasoning.summary` and `reasoning.include_encrypted`, because Chat has no field that asks for them ([readable reasoning and summaries](reasoning.md#readable-reasoning-and-summaries));
 - an OpenAI Responses `web_search` tool and `web_search_call` items, because Chat has no hosted web search ([tools left out](cross-format.md#tools-left-out));
-- an OpenAI Responses `text.verbosity`, unless the provider profile takes `verbosity` ([conditional entries](cross-format.md#conditional-entries)).
+- an OpenAI Responses `text.verbosity`, unless the provider profile takes `verbosity` ([conditional entries](cross-format.md#conditional-entries));
+- `top_k`, which Chat doesn't have, named in `kaeso-left-out` ([top K](sampling.md#top-k)).
 
 OpenAI Responses `custom_tool_call` and `local_shell_call` items and their outputs become tool calls and `tool` messages ([Codex tool history](cross-format.md#codex-tool-history)).
 

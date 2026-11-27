@@ -735,9 +735,6 @@ fn check_output_limit(r: &GenerateRequest) -> Result<(), KppError> {
 
 fn check_generate(r: &GenerateRequest) -> Result<(), KppError> {
     let s = &r.sampling;
-    if s.top_k.is_some() {
-        return Err(unsupported("top_k", "OpenAI models do not support top-k sampling. Remove `top_k` or route the request to an Anthropic model.").with_param("top_k"));
-    }
     if s.seed.is_some() {
         return Err(unsupported(
             "seed",

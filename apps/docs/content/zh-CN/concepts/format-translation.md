@@ -59,7 +59,7 @@ KPP（Kaeso Provider Protocol）为每种 API 格式都提供一个编解码器�
 
 ### 发往 OpenAI Chat Completions 的请求
 
-- `top_k` 和超过四个的停止序列
+- 超过四个的停止序列
 - 文本文档、文档 URL、文档标题、上下文和引用
 - 图像文件 ID，以及用户消息之外的图像、文档和音频
 - base64 WAV 和 MP3 以外的音频，以及视频，文档中写明支持更多的服务商除外
@@ -67,7 +67,7 @@ KPP（Kaeso Provider Protocol）为每种 API 格式都提供一个编解码器�
 
 ### 发往 OpenAI Responses 的请求
 
-- `top_k` 和不为 0 的惩罚参数
+- 不为 0 的惩罚参数
 - 文本文档、文档标题、上下文和引用
 - 音频和视频，以及音频和图像输出
 

@@ -582,9 +582,27 @@ expression: outcomes
     "path": "/v1/chat/completions"
   },
   "system-instruction": {
-    "message": "`top_k` is not supported by OpenAI Chat Completions. Remove `top_k`, or route the request to an Anthropic model.",
-    "param": "top_k",
-    "unsupported": "top_k"
+    "body": {
+      "max_completion_tokens": 512,
+      "messages": [
+        {
+          "content": "You are a terse assistant. Answer in one sentence.",
+          "role": "system"
+        },
+        {
+          "content": "What is the capital of France?",
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "seed": 42,
+      "stop": [
+        "STOP"
+      ],
+      "temperature": 0.7,
+      "top_p": 0.95
+    },
+    "path": "/v1/chat/completions"
   },
   "text-simple": {
     "body": {

@@ -162,6 +162,17 @@ def test_tools_reach_other_formats(gg: genai.Client, mock):
     assert r.function_calls and r.candidates[0].finish_reason == types.FinishReason.STOP
 
 
+def test_top_k_is_left_out_for_a_model_without_it(gg: genai.Client, mock):
+    config = types.GenerateContentConfig(temperature=1, top_p=0.95, top_k=64)
+    r = gg.models.generate_content(model="gpt-4o", contents="Hello", config=config)
+    assert r.text
+    assert r.sdk_http_response.headers["kaeso-left-out"] == "generationConfig.topK"
+    sent = mock.last()["body"]
+    assert "top_k" not in sent and sent["top_p"] == 0.95
+    gg.models.generate_content(model="gemini-3.5-flash", contents="Hello [mock:fixture=recorded-text-simple]", config=config)
+    assert mock.last()["body"]["generationConfig"]["topK"] == 64
+
+
 @pytest.mark.parametrize(("model", "path"), [("claude-haiku-4-5", "/v1/messages/count_tokens"), ("gemini-3.5-flash", "/v1beta/models/gemini-3.5-flash:countTokens")])
 def test_count_tokens(gg: genai.Client, mock, model, path):
     r = gg.models.count_tokens(model=model, contents="Hello")

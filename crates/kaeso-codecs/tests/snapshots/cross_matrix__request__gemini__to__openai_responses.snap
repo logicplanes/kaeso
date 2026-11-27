@@ -602,9 +602,9 @@ expression: outcomes
     "path": "/v1/responses"
   },
   "system-instruction": {
-    "message": "`top_k` is not supported by OpenAI Responses. OpenAI models do not support top-k sampling. Remove `top_k` or route the request to an Anthropic model.",
-    "param": "top_k",
-    "unsupported": "top_k"
+    "message": "`seed` is not supported by OpenAI Responses. The Responses API has no `seed`. Remove it or use the Chat Completions format.",
+    "param": "seed",
+    "unsupported": "seed"
   },
   "text-simple": {
     "body": {

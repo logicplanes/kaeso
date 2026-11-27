@@ -9,15 +9,15 @@ Sampling-Einstellungen bestimmen, wie ein Modell seine Wörter wählt: Temperatu
 
 ## Einstellungen, die ein Ziel ablehnt
 
-Sampling-Einstellungen, die ein Ziel nicht einhalten kann, sind `Unsupported` und werden nie weggelassen oder umskaliert, außer eine Penalty von 0 ([neutrale Werte](#neutrale-werte)):
+Sampling-Einstellungen, die ein Ziel nicht einhalten kann, sind `Unsupported` und werden nie weggelassen oder umskaliert, außer `top_k` ([Top K](#top-k)) und eine Penalty von 0 ([neutrale Werte](#neutrale-werte)):
 
 | Ziel | Abgelehnt |
 | --- | --- |
 | Anthropic | `seed`, Frequency- und Presence-Penalties und eine `temperature` außerhalb von 0 bis 1, dem Bereich bei Anthropic |
-| OpenAI Chat Completions | `top_k` und mehr als vier Stoppsequenzen |
-| OpenAI Responses | `top_k`, `seed`, die Penalties und Stoppsequenzen, die es bei Responses nicht gibt, und ein Ausgabelimit unter 16 Token, dem Minimum von `CreateResponse`; das Gateway bedient alle außer `top_k` und den Penalties ([OpenAI Responses im Gateway](#openai-responses-im-gateway)) |
+| OpenAI Chat Completions | Mehr als vier Stoppsequenzen |
+| OpenAI Responses | `seed`, die Penalties und Stoppsequenzen, die es bei Responses nicht gibt, und ein Ausgabelimit unter 16 Token, dem Minimum von `CreateResponse`; das Gateway bedient alle außer den Penalties ([OpenAI Responses im Gateway](#openai-responses-im-gateway)) |
 | Gemini API | Mehr als fünf Stoppsequenzen (`GenerationConfig.stopSequences`) |
-| Amazon Bedrock Converse | `top_k`, `seed` und die Penalties, die in die eigenen Felder einer Modellfamilie gehören |
+| Amazon Bedrock Converse | `seed` und die Penalties, die in die eigenen Felder einer Modellfamilie gehören |
 
 Zahlen behalten ihre Schreibweise innerhalb eines Dialekts: `temperature: 1` kommt als `1` zurück und `1.0` als `1.0`, solange der Wert unverändert ist. Über Dialekte hinweg gilt die eigene Schreibweise des Ziels, daher erreicht `temperature: 1` aus Chat Anthropic als `1.0`.
 
@@ -32,6 +32,12 @@ Der Responses-Codec lehnt Stoppsequenzen, `seed` und ein Ausgabelimit unter 16 T
 - **`seed`.** Wird weggelassen und in `kaeso-left-out` genannt: OpenAI behandelt ihn als Best Effort, und Responses hat kein Feld dafür.
 
 Kaeso liest eine solche Antwort als Stream, auch wenn die App keinen verlangt hat, damit der Anbieter aufhört, sobald Kaeso die Antwort beendet. Die Nutzung schätzt Kaeso aus dem Gelesenen, wie beim [Ausgabelimit eines ChatGPT-Abos](openai-responses.md#nutzung-eines-chatgpt-abos).
+
+## Top K
+
+`top_k` ist ein Hinweis. Anthropic und Gemini bekommen ihn. OpenAI Chat Completions, OpenAI Responses und Amazon Bedrock Converse haben kein Top-k-Sampling, und manche Anbieter im Anthropic-Format, etwa DeepSeek und MiniMax, ignorieren es. Für diese lässt Kaeso ihn weg und nennt ihn in `kaeso-left-out` so, wie die App ihn geschrieben hat: `generationConfig.topK` für eine Gemini-App, `top_k` für eine Anthropic-App.
+
+Gemini CLI sendet `topK` mit jeder Anfrage und hat keinen Schalter dafür, daher würde eine Ablehnung Gemini CLI auf jedem solchen Modell ablehnen. Google selbst ignoriert `topK` bei seinen neuesten Modellen (`GenerationConfig.topK`).
 
 ## Neutrale Werte
 

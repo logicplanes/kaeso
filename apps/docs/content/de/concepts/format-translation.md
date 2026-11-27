@@ -59,7 +59,7 @@ Wechselt eine Anfrage das Format, lehnt Kaeso Folgendes mit einem Fehler ab, der
 
 ### Anfragen an OpenAI Chat Completions
 
-- `top_k` und mehr als vier Stoppsequenzen
+- mehr als vier Stoppsequenzen
 - Textdokumente, Dokument-URLs, Dokumenttitel, Kontext und Zitate
 - Bild-Datei-IDs sowie Bilder, Dokumente und Audio außerhalb von Benutzernachrichten
 - Audio außer base64-WAV und -MP3, und Video, außer für Anbieter, die mehr dokumentieren
@@ -67,7 +67,7 @@ Wechselt eine Anfrage das Format, lehnt Kaeso Folgendes mit einem Fehler ab, der
 
 ### Anfragen an OpenAI Responses
 
-- `top_k` und Penalties außer 0
+- Penalties außer 0
 - Textdokumente, Dokumenttitel, Kontext und Zitate
 - Audio und Video sowie Audio- und Bildausgabe
 
