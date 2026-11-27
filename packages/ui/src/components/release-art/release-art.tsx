@@ -21,6 +21,7 @@ export {
   releaseArtGlowText,
   randomReleaseArt,
   releaseArtFor,
+  releaseArtScheme,
   type ReleaseArtSpec,
   type ReleaseArtStyle,
 } from "./drawing.js";
@@ -29,6 +30,7 @@ export const KAESO_RELEASE_ART_VARIANTS = {
   shape: {
     banner: { classes: "aspect-video", description: "16:9: the head of a dialog or a card (default)" },
     wide: { classes: "aspect-21/9", description: "21:9: a wide strip above a page's content" },
+    strip: { classes: "aspect-5/1", description: "5:1: the ground of an `Announcement`, its left half kept clear for the words on it" },
   },
 } as const;
 export const KAESO_RELEASE_ART_DEFAULT_VARIANTS = { shape: "banner" } as const;
@@ -94,7 +96,7 @@ export const ReleaseArt = forwardRef<SVGSVGElement, ReleaseArtProps>(function Re
         viewBox={`0 0 ${w} ${h}`}
         role="img"
         aria-label={label}
-        preserveAspectRatio="xMidYMid slice"
+        preserveAspectRatio={shape === "strip" ? "xMinYMid slice" : "xMidYMid slice"}
         className={cn("block w-full overflow-hidden", flush ? "h-full" : cn("rounded-well", KAESO_RELEASE_ART_VARIANTS.shape[shape].classes))}
       >
         {src && failed !== src ? (
