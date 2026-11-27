@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { Announcement, ModelCard } from "./model-card.js";
 
 describe("ModelCard", () => {
@@ -60,6 +61,31 @@ describe("Announcement", () => {
   it("keeps two lines' room for a one-line summary, so it is as tall as its loading state and as a longer summary", () => {
     render(<Announcement title="Kaeso 40.5.0" description="Search on every list." />);
     expect(screen.getByText("Search on every list.")).toHaveClass("line-clamp-2", "min-h-40");
+  });
+
+  it("closes from a button named Dismiss, and has none when it can't be closed", async () => {
+    const onDismiss = vi.fn();
+    const { rerender } = render(<Announcement title="Kaeso 40.5.0" onDismiss={onDismiss} />);
+    await userEvent.click(screen.getByRole("button", { name: "Dismiss" }));
+    expect(onDismiss).toHaveBeenCalledOnce();
+    rerender(<Announcement title="Kaeso 40.5.0" />);
+    expect(screen.queryByRole("button", { name: "Dismiss" })).not.toBeInTheDocument();
+  });
+
+  it("raises its close button off its artwork, so it reads over any shape, and keeps it quiet without artwork", () => {
+    const { rerender } = render(<Announcement title="Kaeso 40.5.0" scheme="light" art={<svg />} onDismiss={() => {}} />);
+    expect(screen.getByRole("button", { name: "Dismiss" })).toHaveClass("material-secondary");
+    rerender(<Announcement title="Kaeso 40.5.0" onDismiss={() => {}} />);
+    expect(screen.getByRole("button", { name: "Dismiss" })).not.toHaveClass("material-secondary");
+    expect(screen.getByRole("button", { name: "Dismiss" })).toHaveClass("text-fg-secondary");
+  });
+
+  it("takes its artwork's mode for its words, and the page's without artwork", () => {
+    const { rerender } = render(<Announcement title="Kaeso 40.5.0" scheme="dark" art={<svg />} />);
+    const section = () => screen.getByRole("heading", { name: "Kaeso 40.5.0" }).closest("section") as HTMLElement;
+    expect(section()).toHaveAttribute("data-theme", "dark");
+    rerender(<Announcement title="Kaeso 40.5.0" scheme="dark" />);
+    expect(section()).not.toHaveAttribute("data-theme");
   });
 
   it("shows only its title when that's all it has", () => {
