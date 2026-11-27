@@ -182,23 +182,36 @@ describe("the analytics control room", () => {
         usageRow({ key: "google/gemini-4-carbon-high", name: "Gemini 4 Carbon (high)", requests: 30 }),
         usageRow({ key: "anthropic/claude-sonnet-4-5", name: "Sonnet as KPMR says", requests: 20 }),
         usageRow({ key: "acme/house-model", requests: 10 }),
+        usageRow({ key: "/gpt-oss-20b", name: "GPT OSS 20B", requests: 5 }),
       ],
     });
     on("GET", `${USAGE}/timeline`, { data: [bucket("2026-10-13T09:00:00Z")] });
-    await renderApp(projectPath(`analytics?${PERIOD}`));
+    const { user } = await renderApp(projectPath(`analytics?${PERIOD}`));
 
-    await waitFor(() => expect(within(cell("Models by requests")).getAllByRole("button")).toHaveLength(3));
-    const [carbon, sonnet, house] = within(cell("Models by requests")).getAllByRole("button");
+    await waitFor(() => expect(within(cell("Models by requests")).getAllByRole("button")).toHaveLength(4));
+    const [carbon, sonnet, house, oss] = within(cell("Models by requests")).getAllByRole("button");
     expect(carbon).toHaveTextContent(/Gemini 4 Carbon \(high\)gemini-4-carbon-high/);
     expect(sonnet).toHaveTextContent(/Claude Sonnet 4\.5claude-sonnet-4-5/);
     expect(sonnet).not.toHaveTextContent("Sonnet as KPMR says");
     expect(house).toHaveTextContent(/^house-model/);
+    expect(oss).toHaveTextContent(/GPT OSS 20Bgpt-oss-20b/);
+    expect(oss?.querySelector("[role=img]")).toBeNull();
 
     await view("Models");
     await waitFor(() => {
       const table = screen.getByLabelText("Models in the period", { selector: "[role=grid], [role=table]" });
       expect(within(table).getByText("Gemini 4 Carbon (high)")).toBeInTheDocument();
       expect(within(table).getByText("gemini-4-carbon-high")).toBeInTheDocument();
+      expect(within(table).getByText("GPT OSS 20B").closest("[role=row]")?.querySelector("[role=img]")).toBeNull();
+    });
+
+    await view("Breakdown");
+    await user.click(await screen.findByRole("radio", { name: "By model" }));
+    await waitFor(() => {
+      const table = screen.getByLabelText("Usage breakdown", { selector: "[role=grid], [role=table]" });
+      expect(within(table).getByText("Gemini 4 Carbon (high)")).toBeInTheDocument();
+      expect(within(table).getByText("GPT OSS 20B")).toBeInTheDocument();
+      expect(within(table).getByText("GPT OSS 20B").closest("[role=row]")?.querySelector("[role=img]")).toBeNull();
     });
   });
 

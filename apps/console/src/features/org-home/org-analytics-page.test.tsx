@@ -443,6 +443,7 @@ describe("organization analytics", () => {
       expect(within(table).getByText("house-model")).toBeInTheDocument();
       expect(within(table).getAllByText("gpt-oss-120b")).toHaveLength(1);
       expect(within(table).getByText("GPT OSS 20B")).toBeInTheDocument();
+      expect(within(table).getByText("GPT OSS 20B").closest("[role=row]")?.querySelector("[role=img]")).toBeNull();
       expect(within(table).queryByText("No model")).not.toBeInTheDocument();
     });
   });
