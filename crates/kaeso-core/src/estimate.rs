@@ -152,12 +152,7 @@ fn page_tree_count(data: &[u8]) -> u64 {
             }
             depth = depth.saturating_sub(1);
             i = i.saturating_add(2);
-        } else if rest.starts_with(b"stream")
-            && !i
-                .checked_sub(1)
-                .and_then(|p| data.get(p))
-                .is_some_and(u8::is_ascii_alphanumeric)
-        {
+        } else if rest.starts_with(b"stream") && after_dictionary(data, i) {
             i = match find(rest, b"endstream") {
                 Some(end) => i.saturating_add(end).saturating_add(9),
                 None => data.len(),
@@ -192,6 +187,14 @@ fn page_tree_count(data: &[u8]) -> u64 {
         }
     }
     best
+}
+
+// The `stream` keyword follows its dictionary's `>>`; the word anywhere else, as in a title,
+// is text.
+fn after_dictionary(data: &[u8], at: usize) -> bool {
+    let before = data.get(..at).unwrap_or_default();
+    let trimmed = before.trim_ascii_end();
+    before.len() - trimmed.len() <= 16 && trimmed.ends_with(b">>")
 }
 
 fn find(haystack: &[u8], needle: &[u8]) -> Option<usize> {
@@ -842,10 +845,18 @@ mod tests {
         assert_eq!(
             pdf_pages(
                 b"%PDF-1.7 1 0 obj << /Resources << /Font << /F1 5 0 R >> >> /Type /Pages \
-                  /Kids [3 0 R] /Count 3 >> 9 0 obj << /Length 9 >> stream\n<< /Type /Pages /Count 99 >> endstream"
+                  /Kids [3 0 R] /Count 3 >> 9 0 obj << /Length 28 >> stream\n<< /Type /Pages /Count 99 >>\nendstream"
             ),
             3,
             "inline resources come before the count, and stream data is no dictionary"
+        );
+        assert_eq!(
+            pdf_pages(
+                b"%PDF-1.7 1 0 obj << /Title (Live stream notes) >> \
+                  2 0 obj << /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 >> 5 0 obj << /Length 3 >> stream\nabc\nendstream"
+            ),
+            2,
+            "a title's `stream` is text"
         );
         let mut many = b"%PDF-1.7 ".to_vec();
         for _ in 0..200_000 {
