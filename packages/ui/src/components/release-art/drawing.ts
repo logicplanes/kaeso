@@ -493,9 +493,11 @@ export function releaseArtGlowLight(spec: ReleaseArtSpec, shape: ReleaseArtShape
   // The blooms are drawn again until white stands out at 7:1 or more where the name sits, and the light is bright
   // enough somewhere to read as light, not as a stain.
   for (let attempt = 0; ; attempt++) {
-    const top = next() < 0.5;
-    // A strip's light rises on its right, large enough to fill its low height, and its fainter one on its left.
+    const coin = next() < 0.5;
+    // A strip's light rises from its lower right, large enough to fill its low height and clear of a close button in
+    // the top right corner, and its fainter one on its left.
     const strip = shape === "strip";
+    const top = coin && !strip;
     const main: Bloom = {
       x: w * (strip ? 0.68 + next() * 0.22 : 0.15 + next() * 0.7),
       y: h * (top ? -0.18 - next() * 0.15 : 1.18 + next() * 0.15),
