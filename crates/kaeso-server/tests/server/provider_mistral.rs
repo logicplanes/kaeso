@@ -464,6 +464,7 @@ async fn fields_mistral_refuses_are_refused_before_anything_is_sent() {
     assert_eq!(r.header("kaeso-left-out"), Some("messages[0].name"));
     let sent = sent_to_mistral(&env, "/v1/chat/completions", SMALL);
     assert!(sent["messages"][0].get("name").is_none(), "{sent}");
+    env.mock.clear();
 
     let mut body = chat(SMALL, "Say hello.");
     body["modalities"] = json!(["text", "audio"]);
