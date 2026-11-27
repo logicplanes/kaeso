@@ -1174,13 +1174,12 @@ pub const PROVIDERS: &[Provider] = &[
             .system_role()
             .reasoning_fields(&["reasoning_content"])
             .tool_schema_root(ToolSchemaRoot::TypedObjectUnions)
-            .tool_patterns(ToolPatterns::Compiled),
+            .tool_patterns(ToolPatterns::Compiled)
+            .forced_tool_without_thinking(),
         responses: ResponsesProfile::compatible("DeepSeek"),
-        messages: MessagesProfile::compatible("DeepSeek").refusing(&[
-            "top_k",
-            "container",
-            "mcp_servers",
-        ]),
+        messages: MessagesProfile::compatible("DeepSeek")
+            .refusing(&["top_k", "container", "mcp_servers"])
+            .forced_tool_without_thinking(),
         gemini: GeminiProfile::GOOGLE_AI_STUDIO,
         account: None,
         routes: &[],

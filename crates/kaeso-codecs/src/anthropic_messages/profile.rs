@@ -36,6 +36,9 @@ pub struct MessagesProfile {
     /// (`{"type": "video", "source": …}`); empty for a provider without video blocks, which
     /// refuses them. URL sources pass whatever they point to.
     pub video_media_types: &'static [&'static str],
+    /// Whether a model of the provider can't think while a tool is forced, as DeepSeek's
+    /// models can't; Kaeso then sends such a request with thinking disabled.
+    pub forced_tool_without_thinking: bool,
 }
 
 /// The video media types MiniMax takes in a `video` block's base64 source: `MediaSource`'s
@@ -89,6 +92,7 @@ impl MessagesProfile {
         forced_tool_choice: true,
         raw_predict: false,
         video_media_types: &[],
+        forced_tool_without_thinking: false,
     };
 
     /// Another provider's Messages API, as Anthropic's until a setting says otherwise.
@@ -130,6 +134,14 @@ impl MessagesProfile {
     #[must_use]
     pub const fn with_video(mut self, media_types: &'static [&'static str]) -> Self {
         self.video_media_types = media_types;
+        self
+    }
+
+    /// A model of the provider can't think while a tool is forced
+    /// ([`MessagesProfile::forced_tool_without_thinking`]).
+    #[must_use]
+    pub const fn forced_tool_without_thinking(mut self) -> Self {
+        self.forced_tool_without_thinking = true;
         self
     }
 

@@ -126,7 +126,7 @@ Kaeso 这样转换推理设置：
 - **推理强度和预算。** 同一请求中的推理强度优先于预算。目录条目注明时，Claude 模型不支持自适应思考。Claude 4.5 及更早版本都不支持。
 - **调整预算。** Kaeso 会按 Anthropic 的规则调整预算：至少 1,024 个 Token，且小于 `max_tokens`。当 `max_tokens` 为 1,024 或更小时，预算为 1,024，Kaeso 会把 `max_tokens` 增加 1,024，为回答保留空间。
 - **思考和采样。** 当 Kaeso 为来自其他格式的请求开启 Claude 的思考时，会省略 `temperature`、`top_p` 和 `top_k`，因为 Anthropic 会拒绝将它们与思考一起使用。Anthropic 应用自身的设置会按收到的原样发送，但发往 Claude Opus 4.7 及更新的模型时除外：这些模型不接受其中任何一项，Kaeso 会为所有应用省略它们，并在 `kaeso-left-out` 中注明。
-- **强制工具调用。** Anthropic 会拒绝预算思考与强制工具调用（`required` 或指定的工具）同时使用。这时 Kaeso 会不带思考发送请求。自适应思考则保留强制工具。
+- **强制工具调用。** Anthropic 会拒绝预算思考与强制工具调用（`required` 或指定的工具）同时使用。这时 Kaeso 会不带思考发送请求。自适应思考则保留强制工具。DeepSeek 拒绝任何思考与强制工具调用同时使用，因此对这类请求，Kaeso 会关闭 DeepSeek 的思考，并在 `kaeso-adapted` 中注明，除非请求设置了 DeepSeek 自己的 `thinking` 字段。
 - **来自其他地方的工具轮次。** 开启预算思考时，上一个助手轮次的工具调用中可能没有 Claude 可以重放的思考内容，例如这些调用由另一个服务商发出。这时 Kaeso 会不带思考发送请求。自适应思考保持开启。
 - **何时开启推理。** 目录会说明模型是否支持推理（KPMR 的 `capabilities.reasoning`）。对这样的模型，不带推理强度的 `reasoning: {summary: "auto"}` 或 OpenRouter 的 `reasoning: {enabled: true}` 会以默认深度开启 Claude 的思考：自适应思考，或 8,192 个 Token 的预算。Anthropic 应用不带推理强度开启思考时，会在下一轮收到 OpenAI 的加密推理。Kaeso 从不为不支持推理或未知是否支持推理的模型开启推理。发给这类模型的推理强度或自适应思考会被省略，`enabled` 思考或预算则会被拒绝。
 - **OpenRouter 的 `reasoning` 对象。** Chat Completions 和 Responses 应用都可以向任意模型发送 OpenRouter 的 `reasoning` 对象（`effort`、`max_tokens`、`enabled`、`exclude`）。`effort`、`max_tokens` 和 `enabled` 会像上面的原生设置一样跨格式转换；相互冲突的组合（例如同时设置 `effort` 与 `max_tokens`，或 `enabled: false` 与预算）返回 400。`exclude: true` 会在回复中隐藏推理内容，同时在用量中保留 `reasoning_tokens`。
