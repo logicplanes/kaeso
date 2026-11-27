@@ -157,3 +157,29 @@ fn anthropics_own_profile_sends_every_field_as_written() {
         "Example Cloud"
     );
 }
+
+#[test]
+fn a_provider_without_the_custom_tool_type_gets_an_apps_tools_without_it() {
+    let tools = json!({ "tools": [
+        { "type": "custom", "name": "get_weather", "input_schema": { "type": "object" } },
+        { "name": "plain", "input_schema": { "type": "object" } },
+        { "type": "web_search_20250305", "name": "web_search", "max_uses": 1 }
+    ]});
+    let untyped = MessagesProfile::compatible("Example Cloud").without_custom_tool_type();
+    let (body, left_out) = sent_with(A, request(tools.clone()), untyped).unwrap();
+    assert_eq!(
+        body["tools"],
+        json!([
+            { "name": "get_weather", "input_schema": { "type": "object" } },
+            { "name": "plain", "input_schema": { "type": "object" } },
+            { "type": "web_search_20250305", "name": "web_search", "max_uses": 1 }
+        ]),
+        "a server tool keeps its type"
+    );
+    assert!(left_out.is_empty(), "the type is form: {left_out:?}");
+    let (body, _) = sent_with(A, request(tools), MessagesProfile::ANTHROPIC).unwrap();
+    assert_eq!(
+        body["tools"][0]["type"], "custom",
+        "Anthropic gets it as sent"
+    );
+}
