@@ -3,7 +3,19 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { UsageRow } from "~/api/generated/types";
 import { atFixtureTime } from "~/test/clock";
 import { signedIn, whoAmI, without } from "~/test/fixtures";
-import { apiKey, catalogueModel, limit, listed, me, projectData, projectMember, projectPath, serviceAccount, usageRow } from "~/test/fixtures/project";
+import {
+  apiKey,
+  catalogueModel,
+  externalSource,
+  limit,
+  listed,
+  me,
+  projectData,
+  projectMember,
+  projectPath,
+  serviceAccount,
+  usageRow,
+} from "~/test/fixtures/project";
 import { logRow } from "~/test/fixtures/project-logs";
 import { auditEvent } from "~/test/fixtures/shell";
 import { apiError, on, requests } from "~/test/network";
@@ -216,7 +228,7 @@ describe("the project overview", () => {
       "GET",
       "orgs/:org/projects/:project/logs",
       listed([
-        logRow({ id: "req_play", key_id: null }),
+        logRow({ id: "req_play", source: "playground", key_id: null }),
         logRow({ id: "req_gone", key_id: "key_deleted", provider: "", model: "", requested_model: "fast", duration_ms: null }),
       ]),
     );
@@ -228,6 +240,30 @@ describe("the project overview", () => {
     expect(gone).toHaveTextContent("fast");
     expect(gone).toHaveTextContent("—");
     expect(gone).not.toHaveTextContent("key_deleted");
+  });
+
+  it("names the source that reported a request where its key would be, never the Playground", async () => {
+    signedIn();
+    projectData({ keys: [apiKey()], sources: [externalSource({ name: "Claude Code" })] });
+    usage({});
+    on(
+      "GET",
+      "orgs/:org/projects/:project/logs",
+      listed([
+        logRow({ id: "req_seen", source: "observed", source_id: "src_claude", key_id: null, provider: "anthropic", model: "claude-opus-5-5" }),
+        logRow({ id: "req_hidden", source: "observed", source_id: "src_other", key_id: null }),
+        logRow({ id: "req_keyless", key_id: null }),
+        logRow({ id: "req_api" }),
+      ]),
+    );
+    await renderApp(projectPath());
+    const latest = await screen.findByRole("list", { name: "Latest requests" });
+    await waitFor(() => expect(within(latest).getByRole("button", { name: /Claude Code \(source\)/ })).toBeInTheDocument());
+    const [seen, hidden, keyless, api] = within(latest).getAllByRole("button");
+    expect(seen).toHaveTextContent(/claude-opus-5-5.*Claude Code \(source\).*1\.3 s/);
+    expect(hidden).toHaveTextContent("A source");
+    expect(api).toHaveTextContent("checkout-web");
+    for (const row of [seen, hidden, keyless, api]) expect(row).not.toHaveTextContent("Playground");
   });
 
   it("opens models, keys and members from their lists", async () => {

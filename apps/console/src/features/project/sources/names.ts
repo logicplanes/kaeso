@@ -10,6 +10,8 @@ export interface SourceNames {
   source: (id: string | null | undefined) => ExternalSourceView | undefined;
   /** Its name, or "A source" for one the person can't see. */
   name: (id: string) => string;
+  /** It where a key would stand, for the requests it reported, which have none: "{name} (source)", or "A source". */
+  asKey: (id: string) => string;
   sources: readonly ExternalSourceView[];
   /** The sources are still loading, so a name may be a placeholder for a moment. */
   loading: boolean;
@@ -29,5 +31,12 @@ export function useSourceNames(org: string, project: string): SourceNames {
   const sources = query.data;
   const source = useCallback((id: string | null | undefined) => (id ? sources?.find((s) => s.id === id) : undefined), [sources]);
   const name = useCallback((id: string) => sources?.find((s) => s.id === id)?.name ?? t("project.analytics.aSource", "A source"), [sources]);
-  return { source, name, sources: sources ?? [], loading: query.isLoading };
+  const asKey = useCallback(
+    (id: string) => {
+      const found = sources?.find((s) => s.id === id);
+      return found ? t("project.analytics.sourceKey", "{name} (source)", { name: found.name }) : t("project.analytics.aSource", "A source");
+    },
+    [sources],
+  );
+  return { source, name, asKey, sources: sources ?? [], loading: query.isLoading };
 }
