@@ -219,15 +219,16 @@ function LiveCell({ org, project, className }: { org: string; project: string; c
       <ModelLabel className="min-w-0" provider={provider} providerName={providers.name(provider)} model={model} {...(name && name !== model ? { name } : {})} />
     );
   };
-  const sources = useSourceNames(org, project);
+  const rows = (logs.data?.rows ?? []).slice(0, FEED_ROWS);
+  const sources = useSourceNames(org, project, !phone && rows.some((l) => !!l.source_id));
   // Neither a Playground request nor a reported one has a key, so the source field tells them apart.
   const sentWith = (l: LogView) => {
-    if (l.source_id) return sources.asKey(l.source_id);
+    if (l.source_id) return sources.loading ? "" : sources.asKey(l.source_id);
     if (l.source === "playground") return t("project.overview.playground", "Playground");
     const k = l.key_id ? keys.data?.find((x) => x.id === l.key_id) : undefined;
     return k ? keyLabel(k) : "";
   };
-  const items: RankItem[] = (logs.data?.rows ?? []).slice(0, FEED_ROWS).map((l) => ({
+  const items: RankItem[] = rows.map((l) => ({
     id: l.id,
     label: (
       <>

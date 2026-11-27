@@ -103,6 +103,7 @@ describe("the project overview", () => {
     expect(row).toHaveTextContent("gpt-5.4-mini");
     expect(row).toHaveTextContent("2 min ago");
     expect(row).toHaveTextContent("1.3 s");
+    expect(requests("GET", "orgs/:org/projects/:project/sources")).toHaveLength(0);
     await user.click(row);
     await waitFor(() => expect(router.state.location.searchStr).toBe("?log=req_0001"));
     expect(router.state.location.pathname).toBe(projectPath("logs"));
@@ -119,9 +120,16 @@ describe("the project overview", () => {
       removeEventListener() {},
     }));
     signedIn();
-    projectData({ keys: [apiKey()] });
+    projectData({ keys: [apiKey()], sources: [externalSource()] });
     usage({});
-    on("GET", "orgs/:org/projects/:project/logs", listed([logRow()]));
+    on(
+      "GET",
+      "orgs/:org/projects/:project/logs",
+      listed([
+        logRow(),
+        logRow({ id: "req_seen", source: "observed", source_id: "src_claude", key_id: null, provider: "anthropic", model: "claude-opus-5-5" }),
+      ]),
+    );
     await renderApp(projectPath());
 
     const latest = await screen.findByRole("list", { name: "Latest requests" });
@@ -129,6 +137,8 @@ describe("the project overview", () => {
     expect(row).toHaveTextContent("2 min ago");
     expect(row).not.toHaveTextContent("1.3 s");
     expect(row).not.toHaveTextContent("checkout-web");
+    expect(await within(latest).findByRole("button", { name: /claude-opus-5-5/ })).not.toHaveTextContent("Claude Code");
+    expect(requests("GET", "orgs/:org/projects/:project/sources")).toHaveLength(0);
   });
 
   it("shows the project's limits, its models by use, its keys by last use and its members", async () => {
@@ -264,6 +274,7 @@ describe("the project overview", () => {
     expect(hidden).toHaveTextContent("A source");
     expect(api).toHaveTextContent("checkout-web");
     for (const row of [seen, hidden, keyless, api]) expect(row).not.toHaveTextContent("Playground");
+    expect(requests("GET", "orgs/:org/projects/:project/sources")).toHaveLength(1);
   });
 
   it("opens models, keys and members from their lists", async () => {

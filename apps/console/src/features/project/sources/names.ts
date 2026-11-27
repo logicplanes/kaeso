@@ -24,10 +24,10 @@ export function keyLogFilter(key: string): Record<string, string> {
   return { key };
 }
 
-/** The project's sources by id, for the logs and analytics that name them; nothing without the right to see them. */
-export function useSourceNames(org: string, project: string): SourceNames {
+/** The project's sources by id, for the logs and analytics that name them; nothing without the right to see them or while not `needed`. */
+export function useSourceNames(org: string, project: string, needed = true): SourceNames {
   const rights = useProjectRights(org, project);
-  const query = useQuery({ ...sourcesQuery(org, project), enabled: !!project && rights.has("sources.view") });
+  const query = useQuery({ ...sourcesQuery(org, project), enabled: needed && !!project && rights.has("sources.view") });
   const sources = query.data;
   const source = useCallback((id: string | null | undefined) => (id ? sources?.find((s) => s.id === id) : undefined), [sources]);
   const name = useCallback((id: string) => sources?.find((s) => s.id === id)?.name ?? t("project.analytics.aSource", "A source"), [sources]);
