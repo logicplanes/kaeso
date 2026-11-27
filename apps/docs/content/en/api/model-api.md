@@ -221,7 +221,7 @@ The values come from the project's catalogue, overrides included; an alias shows
 - `response_format` and `structured_outputs` (JSON Schema output);
 - `temperature`.
 
-A model that makes no content lists what it makes as its output modality, in OpenRouter's words: `embeddings`, `rerank` or `decisions`. A field the catalogue doesn't know is left out.
+A model that makes no content lists what it makes as its output modality, in OpenRouter's words, as its model list with `?output_modalities=all` writes them: `embeddings`, `rerank` or `decisions`. A field the catalogue doesn't know is left out.
 
 `GET /v1/models/{model}` and `GET /v1beta/models/{model}` take any [model name](#model-names). They answer 404 when the model isn't in the catalogue, the key may not use it, or the provider doesn't serve it.
 

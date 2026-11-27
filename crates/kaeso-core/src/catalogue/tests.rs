@@ -1753,6 +1753,14 @@ fn duties_fill_what_kpp_cannot_know() {
             .contains(&kaeso_kpp::ModelFeature::ReasoningEffort),
         "grok-4.7 lists effort levels"
     );
+    let mut no_levels = eff(&entry("xai", "grok-4.7"));
+    no_levels.fields.efforts = None;
+    let features = model_info("grok-4.7", &no_levels).features.unwrap();
+    assert!(features.contains(&kaeso_kpp::ModelFeature::Reasoning));
+    assert!(
+        !features.contains(&kaeso_kpp::ModelFeature::ReasoningEffort),
+        "a reasoning model without effort levels lists no `reasoning_effort`"
+    );
     let mut unknown = haiku.clone();
     unknown.fields = crate::catalogue::Fields::default();
     let bare = model_info("m", &unknown);

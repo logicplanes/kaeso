@@ -1904,6 +1904,14 @@ fn the_catalogue_description_reaches_openai_apps_in_openrouters_fields() {
             "{d}"
         );
     }
+    let mut levels_unknown = ModelInfo::new("m");
+    levels_unknown.features = Some(vec![kaeso_kpp::ModelFeature::Reasoning]);
+    let o = json_of(&dispatch::encode_model(DialectId::OpenAiChat, &levels_unknown).unwrap());
+    assert_eq!(
+        o["supported_parameters"],
+        json!(["reasoning"]),
+        "a model without effort levels takes no `reasoning_effort`"
+    );
     let mut none = ModelInfo::new("m");
     none.features = Some(Vec::new());
     let o = json_of(&dispatch::encode_model(DialectId::OpenAiChat, &none).unwrap());
@@ -1945,6 +1953,24 @@ fn the_catalogue_description_reaches_openai_apps_in_openrouters_fields() {
         ours.as_object_mut().unwrap().remove(k);
     }
     same_shape(&ours, theirs, "model");
+}
+
+#[test]
+fn models_that_make_no_content_name_their_output_as_openrouter_does() {
+    let recorded = json_of(&fixture(
+        "openai_chat",
+        "providers/openrouter/list-recorded-output-modalities",
+    ));
+    let theirs: Vec<&str> = recorded["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .flat_map(|m| m["architecture"]["output_modalities"].as_array().unwrap())
+        .map(|v| v.as_str().unwrap())
+        .collect();
+    for ours in ["embeddings", "rerank", "decisions"] {
+        assert!(theirs.contains(&ours), "{ours} is not in {theirs:?}");
+    }
 }
 
 #[test]

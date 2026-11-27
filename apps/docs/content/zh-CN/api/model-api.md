@@ -221,7 +221,7 @@ console.log(response.text);
 - `response_format` 和 `structured_outputs`（按 JSON Schema 输出）；
 - `temperature`。
 
-不生成内容的模型以 OpenRouter 的命名把它生成的东西列为输出模态：`embeddings`、`rerank` 或 `decisions`。目录中未知的字段会省略。
+不生成内容的模型以 OpenRouter 的命名（即其模型列表在 `?output_modalities=all` 时的写法）把它生成的东西列为输出模态：`embeddings`、`rerank` 或 `decisions`。目录中未知的字段会省略。
 
 `GET /v1/models/{model}` 和 `GET /v1beta/models/{model}` 接受任何[模型名称](#模型名称)。模型不在目录中、密钥无权使用或服务商不提供该模型时，返回 404。
 

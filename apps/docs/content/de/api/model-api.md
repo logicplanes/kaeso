@@ -221,7 +221,7 @@ Die Werte stammen aus dem Katalog des Projekts, Überschreibungen eingeschlossen
 - `response_format` und `structured_outputs` (Ausgabe nach JSON Schema);
 - `temperature`.
 
-Ein Modell, das keine Inhalte erzeugt, nennt als Ausgabemodalität, was es erzeugt, mit den Worten von OpenRouter: `embeddings`, `rerank` oder `decisions`. Ein Feld, das der Katalog nicht kennt, fehlt.
+Ein Modell, das keine Inhalte erzeugt, nennt als Ausgabemodalität, was es erzeugt, mit den Worten von OpenRouter, wie dessen Modellliste mit `?output_modalities=all` sie schreibt: `embeddings`, `rerank` oder `decisions`. Ein Feld, das der Katalog nicht kennt, fehlt.
 
 `GET /v1/models/{model}` und `GET /v1beta/models/{model}` nehmen jeden [Modellnamen](#modellnamen). Die Antwort ist 404, wenn das Modell nicht im Katalog ist, der Schlüssel es nicht verwenden darf oder der Anbieter es nicht bereitstellt.
 

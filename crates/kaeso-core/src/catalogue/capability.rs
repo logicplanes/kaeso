@@ -1128,7 +1128,8 @@ pub fn model_info(id: &str, eff: &Effective) -> ModelInfo {
     info.max_output_tokens = eff.fields.output_limit;
     info.input_modalities
         .clone_from(&eff.fields.input_modalities);
-    // A model that makes no content says what it makes instead, in OpenRouter's words.
+    // A model that makes no content says what it makes instead, in OpenRouter's words, as its
+    // list with `?output_modalities=all` writes them.
     let makes = if eff.is_embeddings() {
         Some("embeddings")
     } else if eff.is_rerank() {
