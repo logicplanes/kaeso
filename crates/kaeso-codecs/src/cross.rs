@@ -783,7 +783,16 @@ fn check_generate(r: &GenerateRequest, target: &Origin) -> Result<(), KppError> 
 fn check_block(block: &Block, target: &Origin, path: &str) -> Result<(), KppError> {
     let dialect = target.dialect;
     match block {
-        Block::Reasoning(_) => Ok(()),
+        Block::Reasoning(r) => match crate::openai_responses::reasoning_reference(r) {
+            Some(id) if dialect != DialectId::OpenAiResponses => Err(foreign(
+                format!("`item_reference` `{id}`"),
+                &Origin::new(DialectId::OpenAiResponses),
+                dialect,
+                path,
+                "Send the reasoning item itself in `input`, as SDKs do with `store: false`.",
+            )),
+            _ => Ok(()),
+        },
         Block::Unknown(item) => {
             if item.origin.is(dialect) {
                 return Ok(());

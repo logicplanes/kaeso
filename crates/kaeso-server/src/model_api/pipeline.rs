@@ -7,7 +7,7 @@ use axum::http::{HeaderMap, HeaderValue, StatusCode, header};
 use axum::response::Response;
 use bytes::Bytes;
 use futures::StreamExt;
-use kaeso_codecs::continuity::reasoning_for_tool_calls;
+use kaeso_codecs::continuity::{every_reasoning_for_tool_calls, reasoning_for_tool_calls};
 use kaeso_codecs::gemini::GeminiAction;
 use kaeso_codecs::{EgressCtx, EncodeCtx, HeaderList, dispatch};
 use kaeso_core::catalogue::Entry;
@@ -923,6 +923,19 @@ pub(crate) fn refused_key(err: &KppError) -> Option<KppError> {
         _ => return None,
     };
     Some(error(ErrorKind::ProviderError, 502, message).with_retry(kaeso_kpp::Retry::Futile))
+}
+
+// An `item_reference` to reasoning Kaeso no longer keeps for this key: kept for
+// `continuity.reasoning_ttl`, or never, for another key or with continuity off.
+fn unkept_reasoning(id: &str) -> KppError {
+    error(
+        ErrorKind::InvalidRequest,
+        400,
+        format!(
+            "Kaeso no longer keeps the reasoning `{id}` points to; send the items themselves in `input`, as SDKs do with `store: false`."
+        ),
+    )
+    .with_param("input")
 }
 
 fn redacted(mut err: KppError) -> KppError {
@@ -2374,6 +2387,7 @@ async fn attempt(
             provider: &eff.provider,
             model: &eff.model_id,
             credential: &credential,
+            resolves_reasoning: true,
         },
         &req,
     )
@@ -2433,6 +2447,36 @@ async fn attempt(
     // A reply Kaeso ends itself is read as a stream, so the provider stops when Kaeso does.
     let streams_upstream = chatgpt.is_some() || output_cap.is_some();
 
+    // Whether to keep reasoning follows what the app sent: Kaeso itself may send `store: false`.
+    let carry = continuity::carry(state, caller.key_id, ingress, plan.dialect, &app_req)
+        .filter(|_| kind == RequestKind::Generate);
+    if let Some(c) = carry.filter(|c| !c.every)
+        && let Request::Generate(g) = &mut req
+    {
+        continuity::restore(state, c.key_id, g).await;
+    }
+    // Reasoning put back is input the provider bills, so limits see it before admitting.
+    let mut restored_tokens = 0;
+    if ingress == DialectId::OpenAiResponses
+        && let Request::Generate(g) | Request::CountTokens(g) = &mut req
+        && kaeso_codecs::openai_responses::has_reasoning_reference(g)
+    {
+        // A Responses provider that keeps nothing of this request can't look reasoning up by id.
+        // A count stands for the generation it counts, which the provider would keep alike.
+        let kept_there = keeping.is_some()
+            && kaeso_codecs::openai_responses::stored_state(g).store != Some(false);
+        let stateless = plan.dialect == DialectId::OpenAiResponses && !kept_there;
+        let resolved = continuity::resolve_references(state, caller.key_id, g, stateless)
+            .await
+            .map_err(|id| fail(Stage::Request)(unkept_reasoning(&id)))?;
+        if resolved.left_out > 0 {
+            plan.left_out.push("item_reference".to_owned());
+        }
+        restored_tokens = kaeso_core::estimate::tokens_of_bytes(
+            u64::try_from(resolved.restored_bytes).unwrap_or(u64::MAX),
+        );
+    }
+
     let admission = Admission {
         request_id: rec.outcome().request_id,
         caller: caller.clone(),
@@ -2443,10 +2487,13 @@ async fn attempt(
         worst: WorstCase::continuing(
             &req,
             request_bytes,
-            keeping.as_ref().map_or(
-                0,
-                crate::services::stored_responses::Keeping::earlier_tokens,
-            ),
+            keeping
+                .as_ref()
+                .map_or(
+                    0,
+                    crate::services::stored_responses::Keeping::earlier_tokens,
+                )
+                .saturating_add(restored_tokens),
             &eff.fields,
             &eff.provider,
         ),
@@ -2483,15 +2530,6 @@ async fn attempt(
             .await
     {
         return Err(fail(Stage::Unserved(eff.model_id.clone()))(unserved(&eff)));
-    }
-
-    let carry = caller.key_id.filter(|_| {
-        continuity::applies(state, ingress, plan.dialect) && kind == RequestKind::Generate
-    });
-    if let Some(key_id) = carry
-        && let Request::Generate(g) = &mut req
-    {
-        continuity::restore(state, key_id, g).await;
     }
 
     let platform = match crate::services::agent_platform::egress(
@@ -3097,7 +3135,7 @@ async fn attempt(
                 limits: None,
             };
             let keepalive = state.config.streams.keepalive_interval;
-            let carry = carry.map(|key_id| continuity::StreamCarry::new(state.clone(), key_id));
+            let carry = carry.map(|c| continuity::StreamCarry::new(state.clone(), c));
             let parts = stream::Parts {
                 chunks,
                 mode,
@@ -3772,7 +3810,7 @@ async fn reply_with(
     reply: Reply,
     out: Result<Vec<u8>, KppError>,
     counter: InputCounter,
-    carry: Option<uuid::Uuid>,
+    carry: Option<continuity::Carry>,
     served: &Served,
 ) -> Result<Done, KppError> {
     record_usage(rec, &reply, counter).await;
@@ -3806,13 +3844,18 @@ async fn answer_with(
     rec: &mut Recording,
     reply: Reply,
     out: Vec<u8>,
-    carry: Option<uuid::Uuid>,
+    carry: Option<continuity::Carry>,
     served: &Served,
 ) -> Result<Done, KppError> {
-    if let Some(key_id) = carry
+    if let Some(c) = carry
         && let Reply::Generate(r) = &reply
     {
-        continuity::keep(state, key_id, &reasoning_for_tool_calls(&r.blocks)).await;
+        let kept = if c.every {
+            every_reasoning_for_tool_calls(&r.blocks)
+        } else {
+            reasoning_for_tool_calls(&r.blocks)
+        };
+        continuity::keep(state, c.key_id, &kept).await;
     }
     let reply_kind = reply.kind();
     // Speech is audio and a transcript may be plain text or events: the app's codec names the
@@ -3925,7 +3968,7 @@ async fn replay(
     rec: &mut Recording,
     stored: response_cache::Stored,
     encode_ctx: &EncodeCtx,
-    carry: Option<uuid::Uuid>,
+    carry: Option<continuity::Carry>,
     served: &Served,
 ) -> Result<Done, KppError> {
     let age = stored.age(state.clock.now());

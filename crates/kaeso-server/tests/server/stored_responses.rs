@@ -375,6 +375,7 @@ async fn item_references_omitted_store_and_batches_follow_stored_response_rules(
         json!({ "model": "gpt-4o", "input": "Hi", "store": true }),
         json!({ "model": "gpt-4o", "input": "Hi", "previous_response_id": STORED }),
         json!({ "model": "gpt-4o", "input": [{ "type": "item_reference", "id": "msg_1" }] }),
+        json!({ "model": "gpt-4o", "input": [{ "type": "item_reference", "id": "rs_1" }] }),
     ] {
         let before = env.mock.received().len();
         let line = json!({

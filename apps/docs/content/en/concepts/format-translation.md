@@ -152,6 +152,12 @@ The metric `kaeso_reasoning_continuity_total` counts reasoning kept, restored, m
 
 A Gemini app gets no reasoning from another provider, because a thought part can't carry it: `google-genai` reads `thoughtSignature` as base64. When Claude, or an OpenAI model through Responses, serves a Gemini app, the gateway keeps the reasoning before each tool call by the call's id and puts it back, as for Chat Completions. When a Gemini model serves a Gemini app, its thought signatures reach the app and come back as Gemini wrote them.
 
+### Responses apps that keep `store` on
+
+A Responses app that leaves `store` on, as the Vercel AI SDK does by default, sends the reply's reasoning back as an `item_reference` to its id instead of the item itself. Kaeso keeps no responses, so the gateway keeps the reasoning before each tool call for such an app, as for Chat Completions, and puts it where the reference points. A reference in a turn without tool calls, where no model needs the reasoning back, is left out and named in `kaeso-left-out`.
+
+When the reasoning is gone, because it expired, another key sends the turn or the app sent `store: false` before, Kaeso refuses the request with `400` and asks for the items themselves, as SDKs send them with `store: false`. A reference to anything other than reasoning stays refused ([stored responses](../console/organizations-and-projects.md#stored-responses)).
+
 ### Readable reasoning
 
 What an app sees of the reasoning follows what it asks for in its own format:
