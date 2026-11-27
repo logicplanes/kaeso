@@ -1,6 +1,6 @@
 use kaeso_kpp::{
-    Block, BlockDelta, BlockStop, Delta, GenerateRequest, OutputSpec, ResponseDelta,
-    ResponseStop, Source, StopReason, StreamEvent, ToolDef, Usage,
+    Block, BlockDelta, BlockStop, Delta, GenerateRequest, OutputSpec, ResponseDelta, ResponseStop,
+    Source, StopReason, StreamEvent, ToolDef, Usage,
 };
 
 pub const BYTES_PER_TOKEN: u64 = 4;
@@ -730,6 +730,7 @@ mod tests {
         assert_eq!(text_of(&out), "これで");
         assert_eq!(begun("これで終", "終わり"), "終".len());
         assert_eq!(begun("abc", "終わり"), 0);
+    }
 
     fn user(blocks: Vec<Block>) -> kaeso_kpp::GenerateRequest {
         kaeso_kpp::GenerateRequest::new("m")
