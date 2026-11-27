@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
 use kaeso_codecs::continuity::{
-    CarriedReasoning, ReasoningCollector, Resolved, referenced_tool_calls,
-    resolve_reasoning_references, restore_reasoning, tool_calls_missing_reasoning,
+    CarriedReasoning, ReasoningCollector, Resolved, Unresolved, referenced_tool_calls,
+    resolve_kept_references, restore_reasoning, tool_calls_missing_reasoning,
 };
 use kaeso_crypto::Sealed;
 use kaeso_kpp::{DialectId, GenerateRequest, Request, StreamEvent};
@@ -44,9 +44,9 @@ pub fn enabled(state: &AppState) -> bool {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Carry {
     pub key_id: Uuid,
-    /// Every reasoning block before a tool call, for an OpenAI Responses app that may point to it
-    /// with an `item_reference`; otherwise only what a provider must get back signed, for an app
-    /// whose format can't carry it.
+    /// Every reasoning block and the text before a tool call, for an OpenAI Responses app that
+    /// may point to them with an `item_reference`; otherwise only the reasoning a provider must
+    /// get back signed, for an app whose format can't carry it.
     pub every: bool,
 }
 
@@ -177,22 +177,22 @@ pub async fn restore(state: &AppState, key_id: Uuid, req: &mut GenerateRequest) 
     restored
 }
 
-/// Puts back the reasoning an OpenAI Responses app points to with `item_reference` items, from
-/// what Kaeso kept of its earlier replies for this key. The error is the first reference whose
-/// reasoning Kaeso doesn't hold.
+/// Puts back the reasoning and text an OpenAI Responses app points to with `item_reference`
+/// items, from what Kaeso kept of its earlier replies for this key. The error is the first
+/// reference Kaeso holds nothing for.
 pub async fn resolve_references(
     state: &AppState,
     key_id: Option<Uuid>,
     req: &mut GenerateRequest,
     stateless: bool,
-) -> Result<Resolved, String> {
+) -> Result<Resolved, Unresolved> {
     let ids = referenced_tool_calls(req);
     let kept = match key_id {
         Some(key_id) if enabled(state) && !ids.is_empty() => lookup(state, key_id, ids).await,
         _ => Vec::new(),
     };
-    let resolved = resolve_reasoning_references(req, &kept, stateless)?;
-    if resolved.restored > 0 {
+    let resolved = resolve_kept_references(req, &kept, stateless)?;
+    if resolved.restored > 0 || resolved.messages > 0 {
         count("restored", kept.len());
     }
     Ok(resolved)

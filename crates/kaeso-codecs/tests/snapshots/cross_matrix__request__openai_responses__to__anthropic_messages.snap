@@ -1930,9 +1930,9 @@ expression: outcomes
     "path": "/v1/messages"
   },
   "item-reference-breakpoint": {
-    "message": "`item_reference content block` comes from an OpenAI Responses request and has no equivalent in Anthropic Messages. Remove the block, or send the request to a model served through its original format.",
+    "message": "`item_reference` `msg_0d71a3c94be2f058006acb8b02c1d4819b6e2f0a93c5d7e41b` comes from an OpenAI Responses request and has no equivalent in Anthropic Messages. Send the message itself in `input`, as SDKs do with `store: false`.",
     "param": "messages[0].blocks[0]",
-    "unsupported": "item_reference content block"
+    "unsupported": "`item_reference` `msg_0d71a3c94be2f058006acb8b02c1d4819b6e2f0a93c5d7e41b`"
   },
   "json-object-mode": {
     "message": "`json_object output` is not supported by Anthropic Messages. Anthropic has no JSON mode without a schema. Send a JSON schema (structured outputs) instead.",
@@ -3921,6 +3921,11 @@ expression: outcomes
     "message": "`x_future_field` comes from an OpenAI Responses request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
     "param": null,
     "unsupported": "x_future_field"
+  },
+  "vercel-ai-sdk-message-reference": {
+    "message": "`item_reference` `msg_kaeso_00000000000000000000000000000001_0` comes from an OpenAI Responses request and has no equivalent in Anthropic Messages. Send the message itself in `input`, as SDKs do with `store: false`.",
+    "param": "messages[1].blocks[0]",
+    "unsupported": "`item_reference` `msg_kaeso_00000000000000000000000000000001_0`"
   },
   "vercel-ai-sdk-reasoning-reference": {
     "message": "`item_reference` `rs_kaeso_00000000000000000000000000000001_0` comes from an OpenAI Responses request and has no equivalent in Anthropic Messages. Send the reasoning item itself in `input`, as SDKs do with `store: false`.",

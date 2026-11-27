@@ -706,7 +706,7 @@ async fn check_stored_lines(
                 provider: &checked.provider,
                 model: &checked.upstream_model,
                 credential: &checked.credential,
-                resolves_reasoning: false,
+                resolves_references: false,
             },
             &req,
         )

@@ -154,9 +154,9 @@ Gemini 应用收不到其他服务商的推理，因为思考 part 无法承载�
 
 ### 保持 `store` 开启的 Responses 应用
 
-保持 `store` 开启的 Responses 应用（Vercel AI SDK 默认如此）会把回复中的推理作为指向其 ID 的 `item_reference` 发回，而不是发回 item 本身。Kaeso 不保留回复，因此网关会像对 Chat Completions 一样，为这类应用保留每次工具调用之前的推理，并把它放回引用所指的位置。没有工具调用的轮次中的引用会被省略并在 `kaeso-left-out` 中注明，因为没有模型需要取回那里的推理。
+保持 `store` 开启的 Responses 应用（Vercel AI SDK 默认如此）会把回复中的推理和消息作为指向其 ID 的 `item_reference` 发回。Kaeso 不保留回复，因此网关会为这类应用保留工具循环会回指的内容。这包括每次工具调用之前的推理（与 Chat Completions 相同），以及模型在调用之前紧接着写下的文本，例如“我来查一下巴黎的天气。”两者都会被放回引用所指的位置。没有工具调用的轮次中指向推理的引用会被省略并在 `kaeso-left-out` 中注明，因为没有模型需要取回那里的推理。
 
-当推理已不在时（已过期、由另一个密钥发送该轮次，或应用此前发送了 `store: false`），Kaeso 会以 `400` 拒绝请求，并要求直接发送这些 item，就像 SDK 在 `store: false` 时那样。指向推理以外内容的引用仍会被拒绝（[存储的回复](../console/organizations-and-projects.md#存储的回复)）。
+两者都以加密形式保留，只有发送该请求的 API 密钥才能读取，保留时间为 `continuity.reasoning_ttl`，默认一小时（[推理连续性](../self-hosting/configuration.md#推理连续性)）。Kaeso 不保留其他文本：指向工具轮次之外消息的引用（例如聊天中较早的回答）会以 `400` 被拒绝。推理或文本已不在时（已过期、由另一个密钥发送该轮次，或应用此前发送了 `store: false`），引用同样会被拒绝。拒绝信息会要求直接发送这些 item，就像 SDK 在 `store: false` 时那样。指向其他内容的引用仍会被拒绝（[存储的回复](../console/organizations-and-projects.md#存储的回复)）。
 
 ### 可读的推理
 

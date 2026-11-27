@@ -534,3 +534,181 @@ async fn a_responses_app_that_sends_store_false_gets_no_reasoning_kept() {
     let r = responses(&env, &env.key, responses_second_turn(&reasoning, &call_id)).await;
     assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
 }
+
+// A model that writes text before its tool call, as Claude without thinking does.
+fn responses_text_turn(stream: bool, store: Option<bool>) -> Value {
+    let mut body = json!({
+        "model": "claude-haiku-4-5",
+        "stream": stream,
+        "tools": responses_tools(),
+        "input": "Weather in Paris? [mock:fixture=tools-single]",
+    });
+    if let Some(store) = store {
+        body["store"] = json!(store);
+    }
+    body
+}
+
+// The SDK's next step: the reply's message as an `item_reference`, the call and its output.
+fn responses_text_reference(message: &str, call_id: &str) -> Value {
+    json!({
+        "model": "claude-haiku-4-5",
+        "tools": responses_tools(),
+        "input": [
+            { "role": "user", "content": "Weather in Paris?" },
+            { "type": "item_reference", "id": message },
+            { "type": "function_call", "call_id": call_id, "name": "get_weather", "arguments": "{\"city\":\"Paris\"}" },
+            { "type": "function_call_output", "call_id": call_id, "output": "18 °C, sunny" },
+        ],
+    })
+}
+
+fn message_and_call(output: &[Value]) -> (String, String) {
+    let id = |ty: &str, field: &str| {
+        output
+            .iter()
+            .find(|i| i["type"] == ty)
+            .unwrap_or_else(|| panic!("no {ty} in {output:?}"))[field]
+            .as_str()
+            .unwrap()
+            .to_owned()
+    };
+    (id("message", "id"), id("function_call", "call_id"))
+}
+
+async fn kept_keys(env: &Env) -> Vec<String> {
+    let mut conn = env.app.state.valkey.conn();
+    redis::cmd("KEYS")
+        .arg(env.app.state.valkey.key("reasoning:*"))
+        .query_async(&mut conn)
+        .await
+        .unwrap()
+}
+
+#[tokio::test]
+async fn a_responses_app_that_references_the_text_before_its_tool_call_gets_it_back() {
+    let env = env(&[]).await;
+    let first = responses(&env, &env.key, responses_text_turn(false, None)).await;
+    assert_eq!(first.status, StatusCode::OK, "{}", first.text());
+    let (message, call_id) = message_and_call(first.json()["output"].as_array().unwrap());
+    assert!(message.starts_with("msg_"), "{message}");
+
+    let second = responses(&env, &env.key, responses_text_reference(&message, &call_id)).await;
+    assert_eq!(second.status, StatusCode::OK, "{}", second.text());
+    assert_eq!(second.header("kaeso-left-out"), None);
+    let turn = sent_assistant_turn(&env);
+    assert_eq!(
+        turn["content"],
+        json!([
+            { "type": "text", "text": "I'll check the current weather in San Francisco for you." },
+            { "type": "tool_use", "id": call_id, "name": "get_weather", "input": { "city": "Paris" } },
+        ]),
+        "{turn}"
+    );
+
+    let other = env
+        .app
+        .post(
+            &format!("/orgs/{}/projects/{}/keys", env.owner.org_id, env.project),
+            json!({ "name": "other" }),
+            Some(&env.owner.cookie),
+        )
+        .await
+        .body["secret"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let before = env.mock.received().len();
+    let r = responses(&env, &other, responses_text_reference(&message, &call_id)).await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert_eq!(
+        r.json()["error"]["message"],
+        format!(
+            "Kaeso no longer keeps the text `{message}` points to; send the items themselves in `input`, as SDKs do with `store: false`."
+        )
+    );
+    assert_eq!(r.json()["error"]["param"], "input");
+    assert_eq!(env.mock.received().len(), before, "nothing was sent");
+}
+
+#[tokio::test]
+async fn a_streamed_responses_turn_keeps_its_text_for_the_next_step() {
+    let env = env(&[]).await;
+    // The provider's stream stays open, its end unread, until the next step is answered, so the
+    // text must be kept before the upstream body closes.
+    let gate = common::v1::hold_back_the_end(&env, "anthropic_messages", "tools-single");
+    let mut first = responses_text_turn(true, None);
+    first["input"] = json!(format!(
+        "{} {}",
+        first["input"].as_str().unwrap(),
+        gate.steps_marker()
+    ));
+    let (_, mut stream) = common::v1::open_stream(&env, "/v1/responses", false, &first).await;
+    let completed = completed_event(&mut stream).await;
+    let (message, call_id) = message_and_call(completed["output"].as_array().unwrap());
+    let second = responses(&env, &env.key, responses_text_reference(&message, &call_id)).await;
+    gate.finish();
+    assert_eq!(second.status, StatusCode::OK, "{}", second.text());
+    let turn = sent_assistant_turn(&env);
+    assert_eq!(
+        turn["content"][0],
+        json!({ "type": "text", "text": "I'll check the current weather in San Francisco for you." }),
+        "{turn}"
+    );
+}
+
+#[tokio::test]
+async fn a_reference_to_a_message_outside_a_tool_turn_is_refused() {
+    let env = env(&[]).await;
+    let before = env.mock.received().len();
+    let r = responses(
+        &env,
+        &env.key,
+        json!({
+            "model": "claude-haiku-4-5",
+            "input": [
+                { "role": "user", "content": "Hi" },
+                { "type": "item_reference", "id": "msg_kaeso_earlier_0" },
+                { "role": "user", "content": "Tell me more." },
+            ],
+        }),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert_eq!(
+        r.json()["error"]["message"],
+        "Kaeso keeps only the text before a tool call, not the message `msg_kaeso_earlier_0` points to; send the items themselves in `input`, as SDKs do with `store: false`."
+    );
+    assert_eq!(env.mock.received().len(), before, "nothing was sent");
+}
+
+#[tokio::test]
+async fn text_is_kept_only_for_responses_apps_that_leave_store_on() {
+    let env = env(&[]).await;
+    let r = responses(&env, &env.key, responses_text_turn(false, Some(false))).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let r = chat(
+        &env,
+        &env.key,
+        json!({
+            "model": "claude-haiku-4-5",
+            "tools": tools(),
+            "messages": [{ "role": "user", "content": "Weather in Paris? [mock:fixture=tools-single]" }],
+        }),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert!(
+        r.json()["choices"][0]["message"]["content"]
+            .as_str()
+            .is_some_and(|t| !t.is_empty()),
+        "{}",
+        r.text()
+    );
+    let keys = kept_keys(&env).await;
+    assert!(keys.is_empty(), "{keys:?}");
+
+    let r = responses(&env, &env.key, responses_text_turn(false, None)).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(kept_keys(&env).await.len(), 1);
+}

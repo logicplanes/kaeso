@@ -7,7 +7,7 @@ use axum::http::{HeaderMap, HeaderValue, StatusCode, header};
 use axum::response::Response;
 use bytes::Bytes;
 use futures::StreamExt;
-use kaeso_codecs::continuity::{every_reasoning_for_tool_calls, reasoning_for_tool_calls};
+use kaeso_codecs::continuity::{Unresolved, items_for_tool_calls, reasoning_for_tool_calls};
 use kaeso_codecs::gemini::GeminiAction;
 use kaeso_codecs::{EgressCtx, EncodeCtx, HeaderList, dispatch};
 use kaeso_core::catalogue::Entry;
@@ -925,17 +925,23 @@ pub(crate) fn refused_key(err: &KppError) -> Option<KppError> {
     Some(error(ErrorKind::ProviderError, 502, message).with_retry(kaeso_kpp::Retry::Futile))
 }
 
-// An `item_reference` to reasoning Kaeso no longer keeps for this key: kept for
-// `continuity.reasoning_ttl`, or never, for another key or with continuity off.
-fn unkept_reasoning(id: &str) -> KppError {
-    error(
-        ErrorKind::InvalidRequest,
-        400,
-        format!(
+// An `item_reference` to reasoning or text Kaeso no longer keeps for this key: kept for
+// `continuity.reasoning_ttl`, or never, for another key or with continuity off. Of the messages,
+// Kaeso keeps only the text right before a tool call.
+fn unkept(unresolved: &Unresolved) -> KppError {
+    let message = match unresolved {
+        Unresolved::Reasoning(id) => format!(
             "Kaeso no longer keeps the reasoning `{id}` points to; send the items themselves in `input`, as SDKs do with `store: false`."
         ),
-    )
-    .with_param("input")
+        Unresolved::Message(id) => format!(
+            "Kaeso no longer keeps the text `{id}` points to; send the items themselves in `input`, as SDKs do with `store: false`."
+        ),
+        Unresolved::Conversation(id) => format!(
+            "Kaeso keeps only the text before a tool call, not the message `{id}` points to; send the items themselves in `input`, as SDKs do with `store: false`."
+        ),
+        _ => "`item_reference` items point to state Kaeso does not keep; send the items themselves in `input`, as SDKs do with `store: false`.".to_owned(),
+    };
+    error(ErrorKind::InvalidRequest, 400, message).with_param("input")
 }
 
 fn redacted(mut err: KppError) -> KppError {
@@ -2387,7 +2393,7 @@ async fn attempt(
             provider: &eff.provider,
             model: &eff.model_id,
             credential: &credential,
-            resolves_reasoning: true,
+            resolves_references: true,
         },
         &req,
     )
@@ -2459,7 +2465,7 @@ async fn attempt(
     let mut restored_tokens = 0;
     if ingress == DialectId::OpenAiResponses
         && let Request::Generate(g) | Request::CountTokens(g) = &mut req
-        && kaeso_codecs::openai_responses::has_reasoning_reference(g)
+        && kaeso_codecs::openai_responses::has_kept_reference(g)
     {
         // A Responses provider that keeps nothing of this request can't look reasoning up by id.
         // A count stands for the generation it counts, which the provider would keep alike.
@@ -2468,7 +2474,7 @@ async fn attempt(
         let stateless = plan.dialect == DialectId::OpenAiResponses && !kept_there;
         let resolved = continuity::resolve_references(state, caller.key_id, g, stateless)
             .await
-            .map_err(|id| fail(Stage::Request)(unkept_reasoning(&id)))?;
+            .map_err(|u| fail(Stage::Request)(unkept(&u)))?;
         if resolved.left_out > 0 {
             plan.left_out.push("item_reference".to_owned());
         }
@@ -3827,7 +3833,7 @@ async fn answer_with(
         && let Reply::Generate(r) = &reply
     {
         let kept = if c.every {
-            every_reasoning_for_tool_calls(&r.blocks)
+            items_for_tool_calls(&r.blocks)
         } else {
             reasoning_for_tool_calls(&r.blocks)
         };

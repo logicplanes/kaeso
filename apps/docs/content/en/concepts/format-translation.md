@@ -154,9 +154,9 @@ A Gemini app gets no reasoning from another provider, because a thought part can
 
 ### Responses apps that keep `store` on
 
-A Responses app that leaves `store` on, as the Vercel AI SDK does by default, sends the reply's reasoning back as an `item_reference` to its id instead of the item itself. Kaeso keeps no responses, so the gateway keeps the reasoning before each tool call for such an app, as for Chat Completions, and puts it where the reference points. A reference in a turn without tool calls, where no model needs the reasoning back, is left out and named in `kaeso-left-out`.
+A Responses app that leaves `store` on, as the Vercel AI SDK does by default, sends the reply's reasoning and messages back as `item_reference` items to their ids. Kaeso keeps no responses, so for such an app the gateway keeps what a tool loop points back to. That is the reasoning before each tool call, as for Chat Completions, and the text the model wrote right before the call, such as "I'll check the weather in Paris." It puts both where the references point. A reference to reasoning in a turn without tool calls, where no model needs it back, is left out and named in `kaeso-left-out`.
 
-When the reasoning is gone, because it expired, another key sends the turn or the app sent `store: false` before, Kaeso refuses the request with `400` and asks for the items themselves, as SDKs send them with `store: false`. A reference to anything other than reasoning stays refused ([stored responses](../console/organizations-and-projects.md#stored-responses)).
+Both are kept encrypted, readable only with the API key that sent the request, and for `continuity.reasoning_ttl`, an hour by default ([reasoning continuity](../self-hosting/configuration.md#reasoning-continuity)). Kaeso keeps no other text: a reference to a message outside a tool turn, such as an earlier answer in a chat, is refused with `400`. So is a reference whose reasoning or text is gone, because it expired, another key sends the turn or the app sent `store: false` before. The refusal asks for the items themselves, as SDKs send them with `store: false`. References to anything else stay refused ([stored responses](../console/organizations-and-projects.md#stored-responses)).
 
 ### Readable reasoning
 

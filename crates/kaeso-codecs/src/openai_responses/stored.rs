@@ -91,8 +91,8 @@ fn raw_is_item_reference(text: &str) -> bool {
     serde::Deserializer::deserialize_map(&mut de, AnyItemRef).unwrap_or(false)
 }
 
-/// The form key of a reasoning block that stands for an `item_reference` item pointing to
-/// earlier reasoning: its value is the referenced id.
+/// The form key of a block that stands for an `item_reference` item pointing to an earlier
+/// reply's reasoning or message: its value is the referenced id.
 pub(crate) const REFERENCE: &str = "item_reference";
 
 /// The id of the earlier reasoning a Responses app pointed to with an `item_reference` item,
@@ -101,20 +101,34 @@ pub fn reasoning_reference(block: &kaeso_kpp::ReasoningBlock) -> Option<&str> {
     block.extras.form_str(DIALECT, REFERENCE)
 }
 
-/// Whether a Responses-format request points to earlier reasoning with `item_reference` items.
-pub fn has_reasoning_reference(req: &GenerateRequest) -> bool {
-    req.all_blocks().any(|block| match block {
-        kaeso_kpp::Block::Reasoning(r) => reasoning_reference(r).is_some(),
-        _ => false,
-    })
+/// The id of the earlier message a Responses app pointed to with an `item_reference` item,
+/// which this empty text block stands for.
+pub fn message_reference(block: &kaeso_kpp::TextBlock) -> Option<&str> {
+    block.extras.form_str(DIALECT, REFERENCE)
 }
 
-// An `item_reference` item whose id is a reasoning item's (`rs_`, as OpenAI and Kaeso name
-// them) and that has no other field; any other reference stays an unknown item.
-pub(super) fn decode_reasoning_reference(
+/// The id a block stands for when it is an `item_reference` to earlier reasoning or text.
+pub fn reference(block: &kaeso_kpp::Block) -> Option<&str> {
+    match block {
+        kaeso_kpp::Block::Reasoning(r) => reasoning_reference(r),
+        kaeso_kpp::Block::Text(t) => message_reference(t),
+        _ => None,
+    }
+}
+
+/// Whether a Responses-format request points to earlier reasoning or messages with
+/// `item_reference` items, which the gateway puts back from what it kept for tool loops.
+pub fn has_kept_reference(req: &GenerateRequest) -> bool {
+    req.all_blocks().any(|block| reference(block).is_some())
+}
+
+// An `item_reference` item whose id is a reasoning item's or a message's (`rs_` or `msg_`, as
+// OpenAI and Kaeso name them) and that has no other field; any other reference stays an
+// unknown item.
+pub(super) fn decode_reference(
     raw: &serde_json::value::RawValue,
     origin: &kaeso_kpp::Origin,
-) -> Option<kaeso_kpp::ReasoningBlock> {
+) -> Option<kaeso_kpp::Block> {
     #[derive(serde::Deserialize)]
     #[serde(deny_unknown_fields)]
     struct Reference {
@@ -123,17 +137,25 @@ pub(super) fn decode_reasoning_reference(
         id: String,
     }
     let r: Reference = serde_json::from_str(raw.get()).ok()?;
-    if !r.id.starts_with("rs_") {
-        return None;
+    let mut extras = kaeso_kpp::Extras::new(origin.clone());
+    let reasoning = r.id.starts_with("rs_");
+    let message = r.id.starts_with("msg_");
+    extras.form.insert(REFERENCE.to_owned(), r.id.into());
+    if reasoning {
+        let mut block = kaeso_kpp::ReasoningBlock::new(origin.clone());
+        block.extras = extras;
+        Some(kaeso_kpp::Block::Reasoning(block))
+    } else if message {
+        let mut block = kaeso_kpp::TextBlock::new("");
+        block.extras = extras;
+        Some(kaeso_kpp::Block::Text(block))
+    } else {
+        None
     }
-    let mut block = kaeso_kpp::ReasoningBlock::new(origin.clone());
-    block.extras = kaeso_kpp::Extras::new(origin.clone());
-    block.extras.form.insert(REFERENCE.to_owned(), r.id.into());
-    Some(block)
 }
 
 /// Whether a Responses-format request carries an `item_reference` item in `input` other than
-/// one to earlier reasoning, which [`has_reasoning_reference`] finds.
+/// one to earlier reasoning or a message, which [`has_kept_reference`] finds.
 pub fn has_item_reference(req: &GenerateRequest) -> bool {
     if !req.extras.is_from(DIALECT) {
         return false;
@@ -181,8 +203,8 @@ mod tests {
     #[test]
     fn item_references_and_without_store_are_recognized_and_written() {
         for raw in [
-            br#"{"model":"gpt-4o","input":[{"type":"item_reference","id":"msg_1"}]}"#.as_slice(),
-            br#"{"model":"gpt-4o","input":[{"type":"item_\u0072eference","id":"msg_1"}]}"#
+            br#"{"model":"gpt-4o","input":[{"type":"item_reference","id":"ws_1"}]}"#.as_slice(),
+            br#"{"model":"gpt-4o","input":[{"type":"item_\u0072eference","id":"ws_1"}]}"#
                 .as_slice(),
             br#"{"model":"gpt-4o","input":[{"type":"message","type":"item_reference","id":"msg_1"}]}"#
                 .as_slice(),
@@ -238,12 +260,16 @@ mod tests {
     }
 
     // The Vercel AI SDK's second tool step with `store` left on.
-    fn tool_loop() -> Vec<u8> {
+    fn fixture(name: &str) -> Vec<u8> {
         crate::test_support::fixtures("openai_responses", "requests", "json")
             .into_iter()
-            .find(|(n, _)| n == "vercel-ai-sdk-reasoning-reference")
+            .find(|(n, _)| n == name)
             .unwrap()
             .1
+    }
+
+    fn tool_loop() -> Vec<u8> {
+        fixture("vercel-ai-sdk-reasoning-reference")
     }
 
     fn decoded(body: &[u8]) -> GenerateRequest {
@@ -262,7 +288,7 @@ mod tests {
     fn a_reference_to_reasoning_stands_in_the_turn_of_its_tool_call_and_is_written_back() {
         let body = tool_loop();
         let g = decoded(&body);
-        assert!(has_reasoning_reference(&g));
+        assert!(has_kept_reference(&g));
         assert!(!has_item_reference(&g));
         let turn = g
             .messages
@@ -290,6 +316,47 @@ mod tests {
         let input: serde_json::Value =
             serde_json::from_slice::<serde_json::Value>(&body).unwrap()["input"].clone();
         assert_eq!(sent["input"], input);
+    }
+
+    #[test]
+    fn a_reference_to_a_message_stands_as_empty_text_in_its_turn_and_is_written_back() {
+        let body = fixture("vercel-ai-sdk-message-reference");
+        let g = decoded(&body);
+        assert!(has_kept_reference(&g));
+        assert!(!has_item_reference(&g));
+        let turn = g
+            .messages
+            .iter()
+            .find(|m| m.role == kaeso_kpp::Role::Assistant)
+            .unwrap();
+        match turn.blocks.as_slice() {
+            [kaeso_kpp::Block::Text(t), kaeso_kpp::Block::ToolCall(c)] => {
+                assert_eq!(
+                    message_reference(t),
+                    Some("msg_kaeso_00000000000000000000000000000001_0")
+                );
+                assert!(t.text.is_empty());
+                assert_eq!(c.id, "call_00000000000000000000000001");
+            }
+            other => panic!("{other:?}"),
+        }
+        let req = Request::Generate(g);
+        let mut ctx = EgressCtx::new(&req);
+        let enc = super::super::OpenAiResponses::encode_request(&req, &mut ctx).unwrap();
+        let sent: serde_json::Value = serde_json::from_slice(&enc.body).unwrap();
+        let input: serde_json::Value =
+            serde_json::from_slice::<serde_json::Value>(&body).unwrap()["input"].clone();
+        assert_eq!(sent["input"], input);
+
+        let target = kaeso_kpp::Origin::new(kaeso_kpp::DialectId::OpenAiChat);
+        let err = crate::cross::check_foreign(&req, &target).unwrap_err();
+        assert!(
+            err.message.starts_with(
+                "`item_reference` `msg_kaeso_00000000000000000000000000000001_0` comes from an OpenAI Responses request and has no equivalent in OpenAI Chat Completions."
+            ),
+            "{}",
+            err.message
+        );
     }
 
     #[test]
@@ -329,7 +396,7 @@ mod tests {
                 "call_00000000000000000000000001",
                 vec![block],
             )];
-            crate::continuity::resolve_reasoning_references(&mut g, &kept, true).unwrap();
+            crate::continuity::resolve_kept_references(&mut g, &kept, true).unwrap();
             let req = Request::Generate(g);
             let mut ctx = EgressCtx::new(&req).with_provider("vercel");
             let enc = super::super::OpenAiResponses::encode_request(&req, &mut ctx).unwrap();
@@ -352,14 +419,15 @@ mod tests {
     #[test]
     fn other_references_stay_unknown_items() {
         for item in [
-            r#"{"type":"item_reference","id":"msg_1"}"#,
             r#"{"type":"item_reference","id":"fc_kaeso_1"}"#,
+            r#"{"type":"item_reference","id":"ws_1"}"#,
             r#"{"type":"item_reference","id":"rs_1","extra":true}"#,
+            r#"{"type":"item_reference","id":"msg_1","extra":true}"#,
             r#"{"type":"item_reference","id":7}"#,
         ] {
             let body = format!(r#"{{"model":"m","input":[{item}]}}"#);
             let g = decoded(body.as_bytes());
-            assert!(!has_reasoning_reference(&g), "{item}");
+            assert!(!has_kept_reference(&g), "{item}");
             assert!(has_item_reference(&g), "{item}");
         }
     }

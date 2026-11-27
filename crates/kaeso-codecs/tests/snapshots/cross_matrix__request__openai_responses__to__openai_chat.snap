@@ -3083,6 +3083,11 @@ expression: outcomes
     "param": null,
     "unsupported": "x_future_field"
   },
+  "vercel-ai-sdk-message-reference": {
+    "message": "`item_reference` `msg_kaeso_00000000000000000000000000000001_0` comes from an OpenAI Responses request and has no equivalent in OpenAI Chat Completions. Send the message itself in `input`, as SDKs do with `store: false`.",
+    "param": "messages[1].blocks[0]",
+    "unsupported": "`item_reference` `msg_kaeso_00000000000000000000000000000001_0`"
+  },
   "vercel-ai-sdk-reasoning-reference": {
     "message": "`item_reference` `rs_kaeso_00000000000000000000000000000001_0` comes from an OpenAI Responses request and has no equivalent in OpenAI Chat Completions. Send the reasoning item itself in `input`, as SDKs do with `store: false`.",
     "param": "messages[1].blocks[0]",

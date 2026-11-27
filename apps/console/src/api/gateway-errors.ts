@@ -1003,6 +1003,26 @@ const messages = (): Rule[] => [
       v,
     ),
   ),
+  rule("errors.modelApi.unkeptText", (v) =>
+    t(
+      "errors.modelApi.unkeptText",
+      "Kaeso no longer keeps the text `{id}` points to; send the items themselves in `input`, as SDKs do with `store: false`.",
+      v,
+    ),
+  ),
+  rule("errors.modelApi.itemReference", () =>
+    t(
+      "errors.modelApi.itemReference",
+      "`item_reference` items point to state Kaeso does not keep; send the items themselves in `input`, as SDKs do with `store: false`.",
+    ),
+  ),
+  rule("errors.modelApi.keptTextOnly", (v) =>
+    t(
+      "errors.modelApi.keptTextOnly",
+      "Kaeso keeps only the text before a tool call, not the message `{id}` points to; send the items themselves in `input`, as SDKs do with `store: false`.",
+      v,
+    ),
+  ),
   rule("errors.modelApi.notCached", () =>
     t("errors.modelApi.notCached", "No cached reply answers this request, and `only-if-cached` keeps it from the provider."),
   ),
