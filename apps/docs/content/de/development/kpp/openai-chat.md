@@ -237,6 +237,8 @@ Während solche weggelassenen Inhalte ankommen, schreibt der Encoder getaktete S
 
 Nutzung wird nur geschrieben, wenn die App danach gefragt hat (`EncodeCtx::stream` mit `include_usage`). Jeder Chunk hat dann `usage: null`, und ein letzter Chunk mit `choices: []` trägt die Nutzung. Aus anderen Dialekten ist das die zuletzt gemeldete Nutzung, mit den Eingabezahlen aus `ResponseStart`, wenn die spätere Meldung keine hat.
 
+Ein Chat-Anbieter, der die Nutzung an den abschließenden Chunk hängt, wie DeepSeek und Mistral, bekommt für seine eigenen Streams dieselbe Form: Dieser Chunk geht mit `usage: null`, und die Nutzung in einem eigenen Chunk mit `choices: []` vor `[DONE]`. Der abschließende Chunk wartet auf den nächsten, sodass ein eigener `choices: []`-Nutzungschunk des Anbieters und laufende Nutzung an früheren Chunks unverändert bleiben. `passthrough::for_stream`, das einen Stream desselben Dialekts weiterleitet, ohne ihn zu dekodieren, macht es genauso, und der Round Trip eines solchen Fixtures erwartet diese Form (`test_support::chat_usage_in_its_own_chunk`).
+
 ## Fehler (`ErrorResponse`)
 
 Der Fehler-Body ist `{error: {message, type, param, code}}`.
