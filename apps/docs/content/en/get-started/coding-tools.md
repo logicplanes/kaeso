@@ -34,7 +34,7 @@ With an OpenAI model behind it, Claude Code may send pre-release Anthropic field
 
 Claude Code's `WebSearch` uses the web search of GPT and Grok models. Models served through Chat Completions, such as Mistral, have no web search, so they answer `WebSearch` without searching.
 
-Claude Code prices tokens with its own table of Claude prices, so its `/cost` and `total_cost_usd` are wrong for other models. The [request logs](../console/request-logs.md) show Kaeso's cost for each request.
+Claude Code prices tokens with its own table of Claude prices, so its `/cost` and `total_cost_usd` are wrong for other models. Where request logs are on, they show the cost Kaeso works out from the model's prices ([request logs](../console/request-logs.md)).
 
 > [!WARNING]
 > Keep the key in your user settings or your shell profile. A project's settings file gets committed, and everyone who can read the repository could use the key.
@@ -70,7 +70,7 @@ Models without web search, such as Mistral, get the request without it. Claude a
 
 ## Set up Gemini CLI
 
-Gemini CLI speaks the Gemini API. First tell it to sign in with a key instead of a Google account, in `~/.gemini/settings.json`; otherwise a saved Google sign-in wins:
+Gemini CLI speaks the Gemini API. First tell it to sign in with a key instead of a Google account, in `~/.gemini/settings.json` ([authentication](https://geminicli.com/docs/get-started/authentication)); otherwise a saved Google sign-in wins:
 
 ```json
 { "security": { "auth": { "selectedType": "gemini-api-key" } } }
@@ -88,7 +88,7 @@ Gemini CLI sends `topK` with every request. Models without top-k sampling, such 
 
 ## Set up Qwen Code
 
-Qwen Code speaks OpenAI Chat Completions. Choose OpenAI as its sign-in and the model with `-m`:
+[Qwen Code](https://github.com/QwenLM/qwen-code) speaks OpenAI Chat Completions. Choose OpenAI as its sign-in and the model with `-m`:
 
 ```bash
 export OPENAI_BASE_URL=https://kaeso.example.com/v1
@@ -136,11 +136,11 @@ Some tools need more than the base URL:
 
 | Tool | What to set |
 | --- | --- |
-| Crush | A provider with `type: "openai-compat"` and `base_url: "https://kaeso.example.com/v1"`, or `type: "anthropic"` and `https://kaeso.example.com`. Give each model a `context_window` and a `default_max_tokens`. |
-| Goose | `OPENAI_HOST=https://kaeso.example.com`, without `/v1`: Goose adds `v1/chat/completions` itself. For Anthropic Messages, `ANTHROPIC_HOST` instead. |
-| Aider | `--model openai/<model>` with `OPENAI_API_BASE=https://kaeso.example.com/v1`, or `--model anthropic/<model>` with `ANTHROPIC_API_BASE=https://kaeso.example.com`. Add `--no-show-model-warnings` for models Aider doesn't know. Its token counts are its own estimates. |
-| Continue | A model with `provider: openai` and `apiBase: https://kaeso.example.com/v1`, or `provider: anthropic` and `apiBase: https://kaeso.example.com/v1/`. |
-| Open WebUI | `OPENAI_API_BASE_URL=https://kaeso.example.com/v1` and `OPENAI_API_KEY`. For its document search through Kaeso, `RAG_EMBEDDING_ENGINE=openai`, `RAG_OPENAI_API_BASE_URL=https://kaeso.example.com/v1` (it doesn't take the chat connection's), `RAG_OPENAI_API_KEY`, and an embeddings model of the project in `RAG_EMBEDDING_MODEL`. |
+| [Crush](https://github.com/charmbracelet/crush#custom-providers) | A provider with `type: "openai-compat"` and `base_url: "https://kaeso.example.com/v1"`, or `type: "anthropic"` and `https://kaeso.example.com`. Give each model a `context_window` and a `default_max_tokens`. |
+| [Goose](https://goose-docs.ai/docs/getting-started/providers/) | `OPENAI_HOST=https://kaeso.example.com`, without `/v1`: Goose adds `v1/chat/completions` itself. For Anthropic Messages, `ANTHROPIC_HOST` instead. |
+| [Aider](https://aider.chat/docs/llms/openai-compat.html) | `--model openai/<model>` with `OPENAI_API_BASE=https://kaeso.example.com/v1`, or `--model anthropic/<model>` with `ANTHROPIC_API_BASE=https://kaeso.example.com`. Add `--no-show-model-warnings` for models Aider doesn't know. Its token counts are its own estimates. |
+| [Continue](https://docs.continue.dev/customize/model-providers/top-level/openai) | A model with `provider: openai` and `apiBase: https://kaeso.example.com/v1`, or `provider: anthropic` and `apiBase: https://kaeso.example.com/v1/`. |
+| [Open WebUI](https://docs.openwebui.com/reference/env-configuration) | `OPENAI_API_BASE_URL=https://kaeso.example.com/v1` and `OPENAI_API_KEY`. For its document search through Kaeso, `RAG_EMBEDDING_ENGINE=openai`, `RAG_OPENAI_API_BASE_URL=https://kaeso.example.com/v1` (it doesn't take the chat connection's), `RAG_OPENAI_API_KEY`, and an embeddings model of the project in `RAG_EMBEDDING_MODEL`. |
 
 ## Next steps
 

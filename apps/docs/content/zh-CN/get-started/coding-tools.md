@@ -34,7 +34,7 @@ Claude Code 使用 Anthropic Messages。在 `~/.claude/settings.json` 中把它�
 
 Claude Code 的 `WebSearch` 会使用 GPT 和 Grok 模型自带的网页搜索。通过 Chat Completions 提供的模型（例如 Mistral）没有网页搜索，因此它们会在不搜索的情况下回答 `WebSearch`。
 
-Claude Code 用它自己的 Claude 价格表计算 token 费用，因此对其他模型而言，它的 `/cost` 和 `total_cost_usd` 并不准确。[请求日志](../console/request-logs.md)显示 Kaeso 为每个请求计算的费用。
+Claude Code 用它自己的 Claude 价格表计算 token 费用，因此对其他模型而言，它的 `/cost` 和 `total_cost_usd` 并不准确。开启请求日志时，日志会显示 Kaeso 根据模型价格算出的费用（[请求日志](../console/request-logs.md)）。
 
 > [!WARNING]
 > 请把密钥放在用户设置或 shell 配置文件中。项目的设置文件会被提交，能读取该仓库的任何人都可能使用这个密钥。
@@ -70,7 +70,7 @@ Codex 每一轮都会发送只有 OpenAI 认识的部分。Kaeso 会为其他模
 
 ## 设置 Gemini CLI
 
-Gemini CLI 使用 Gemini API。先在 `~/.gemini/settings.json` 中让它用密钥登录，而不是用 Google 账号；否则已保存的 Google 登录会优先：
+Gemini CLI 使用 Gemini API。先在 `~/.gemini/settings.json` 中让它用密钥登录，而不是用 Google 账号（[身份验证](https://geminicli.com/docs/get-started/authentication)）；否则已保存的 Google 登录会优先：
 
 ```json
 { "security": { "auth": { "selectedType": "gemini-api-key" } } }
@@ -88,7 +88,7 @@ Gemini CLI 在每个请求中都发送 `topK`。没有 top-k 采样的模型（�
 
 ## 设置 Qwen Code
 
-Qwen Code 使用 OpenAI Chat Completions。选择 OpenAI 作为登录方式，并用 `-m` 选择模型：
+[Qwen Code](https://github.com/QwenLM/qwen-code) 使用 OpenAI Chat Completions。选择 OpenAI 作为登录方式，并用 `-m` 选择模型：
 
 ```bash
 export OPENAI_BASE_URL=https://kaeso.example.com/v1
@@ -136,11 +136,11 @@ qwen --auth-type openai -m claude-sonnet-5-5
 
 | 工具 | 需要设置的内容 |
 | --- | --- |
-| Crush | 一个服务商，`type: "openai-compat"` 加 `base_url: "https://kaeso.example.com/v1"`，或 `type: "anthropic"` 加 `https://kaeso.example.com`。为每个模型设置 `context_window` 和 `default_max_tokens`。 |
-| Goose | `OPENAI_HOST=https://kaeso.example.com`，不带 `/v1`：Goose 会自己加上 `v1/chat/completions`。使用 Anthropic Messages 时改用 `ANTHROPIC_HOST`。 |
-| Aider | `--model openai/<model>` 加 `OPENAI_API_BASE=https://kaeso.example.com/v1`，或 `--model anthropic/<model>` 加 `ANTHROPIC_API_BASE=https://kaeso.example.com`。对 Aider 不认识的模型加上 `--no-show-model-warnings`。它的 token 数是自己的估算。 |
-| Continue | 一个模型，`provider: openai` 加 `apiBase: https://kaeso.example.com/v1`，或 `provider: anthropic` 加 `apiBase: https://kaeso.example.com/v1/`。 |
-| Open WebUI | `OPENAI_API_BASE_URL=https://kaeso.example.com/v1` 和 `OPENAI_API_KEY`。若要通过 Kaeso 进行文档搜索，设置 `RAG_EMBEDDING_ENGINE=openai`、`RAG_OPENAI_API_BASE_URL=https://kaeso.example.com/v1`（它不沿用聊天连接的地址）、`RAG_OPENAI_API_KEY`，并在 `RAG_EMBEDDING_MODEL` 中填写项目的一个嵌入模型。 |
+| [Crush](https://github.com/charmbracelet/crush#custom-providers) | 一个服务商，`type: "openai-compat"` 加 `base_url: "https://kaeso.example.com/v1"`，或 `type: "anthropic"` 加 `https://kaeso.example.com`。为每个模型设置 `context_window` 和 `default_max_tokens`。 |
+| [Goose](https://goose-docs.ai/docs/getting-started/providers/) | `OPENAI_HOST=https://kaeso.example.com`，不带 `/v1`：Goose 会自己加上 `v1/chat/completions`。使用 Anthropic Messages 时改用 `ANTHROPIC_HOST`。 |
+| [Aider](https://aider.chat/docs/llms/openai-compat.html) | `--model openai/<model>` 加 `OPENAI_API_BASE=https://kaeso.example.com/v1`，或 `--model anthropic/<model>` 加 `ANTHROPIC_API_BASE=https://kaeso.example.com`。对 Aider 不认识的模型加上 `--no-show-model-warnings`。它的 token 数是自己的估算。 |
+| [Continue](https://docs.continue.dev/customize/model-providers/top-level/openai) | 一个模型，`provider: openai` 加 `apiBase: https://kaeso.example.com/v1`，或 `provider: anthropic` 加 `apiBase: https://kaeso.example.com/v1/`。 |
+| [Open WebUI](https://docs.openwebui.com/reference/env-configuration) | `OPENAI_API_BASE_URL=https://kaeso.example.com/v1` 和 `OPENAI_API_KEY`。若要通过 Kaeso 进行文档搜索，设置 `RAG_EMBEDDING_ENGINE=openai`、`RAG_OPENAI_API_BASE_URL=https://kaeso.example.com/v1`（它不沿用聊天连接的地址）、`RAG_OPENAI_API_KEY`，并在 `RAG_EMBEDDING_MODEL` 中填写项目的一个嵌入模型。 |
 
 ## 下一步
 
