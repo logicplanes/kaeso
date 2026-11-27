@@ -9799,6 +9799,52 @@ expression: outcomes
     },
     "path": "/v1/messages"
   },
+  "typebox-intersect-nested": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Tokyo",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "claude-haiku-5-5",
+      "output_config": {
+        "format": {
+          "schema": {
+            "additionalProperties": false,
+            "properties": {
+              "country": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "population": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "name",
+              "country",
+              "population"
+            ],
+            "type": "object"
+          },
+          "type": "json_schema"
+        }
+      }
+    },
+    "path": "/v1/messages"
+  },
   "unknown-choice-and-schema": {
     "message": "tool_choice `x_future_choice` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Use `auto`, `none`, `required` or a single named tool instead.",
     "param": "tool_choice",

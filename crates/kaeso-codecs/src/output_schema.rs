@@ -245,10 +245,18 @@ impl Rewrite {
         };
         let mut merged = Vec::with_capacity(objects.len());
         for &i in &objects {
-            match branches.get(i) {
-                Some(Value::Object(b)) if mergeable(b) && open(b) => merged.push(b.clone()),
-                _ => return Err(refused()),
+            let Some(Value::Object(b)) = branches.get(i) else {
+                return Err(refused());
+            };
+            let mut b = b.clone();
+            // TypeBox writes an intersection of intersections as an object branch with an `allOf`.
+            let inner = place.item("allOf", i);
+            self.flatten_all_of(&mut b, &inner)?;
+            self.merge_all_of(&mut b, &inner)?;
+            if !(mergeable(&b) && open(&b)) {
+                return Err(refused());
             }
+            merged.push(b);
         }
         let ty = merged
             .iter()
@@ -847,6 +855,24 @@ mod tests {
             })
         );
         assert_eq!(adapted, ["response_format"]);
+    }
+
+    #[test]
+    fn typeboxs_nested_intersection_reaches_claude_as_one_closed_object() {
+        let (schema, _) = claude_schema(&fixture("typebox-intersect-nested"));
+        assert_eq!(
+            schema,
+            json!({
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string"},
+                    "country": {"type": "string"},
+                    "population": {"type": "integer"}
+                },
+                "required": ["name", "country", "population"],
+                "additionalProperties": false
+            })
+        );
     }
 
     #[test]
