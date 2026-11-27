@@ -254,7 +254,7 @@ The error body is `{error: {message, type, param, code}}`.
 | 403 | `PermissionDenied` | 403 `request_forbidden` |
 | 404 | `NotFound` | 404 `invalid_request_error` |
 | 413 | `RequestTooLarge` | 413 `invalid_request_error` |
-| 429 | `RateLimited` | 429 `rate_limit_error`, code `rate_limit_exceeded` |
+| 429 | `RateLimited` | 429 `rate_limit_error`, code `rate_limit_exceeded`; with `retryable: false`, a quota used up until it resets, 429 `insufficient_quota`, code `insufficient_quota` |
 | 503 | `Overloaded` | 503 `service_unavailable_error`, code `server_is_overloaded` |
 | 408, 504, `code` `vector_store_timeout` | `Timeout` | 504 `server_error`, code `timeout` |
 | other | `ProviderError` | its 5xx status (not 503) or 500, `server_error` |

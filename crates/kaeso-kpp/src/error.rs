@@ -18,6 +18,11 @@ pub struct KppError {
     pub param: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub retry_after: Option<Duration>,
+    /// Whether sending the same request again can succeed: `Some(false)` for a failure that
+    /// lasts until someone changes the request, a key or a budget, `Some(true)` for one that
+    /// passes, `None` when the kind and status say it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub retryable: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub origin: Option<Origin>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -32,6 +37,7 @@ impl KppError {
             status: None,
             param: None,
             retry_after: None,
+            retryable: None,
             origin: None,
             raw: None,
         }
@@ -84,6 +90,12 @@ impl KppError {
     #[must_use]
     pub fn with_retry_after(mut self, retry_after: Duration) -> Self {
         self.retry_after = Some(retry_after);
+        self
+    }
+
+    #[must_use]
+    pub fn with_retryable(mut self, retryable: bool) -> Self {
+        self.retryable = Some(retryable);
         self
     }
 
@@ -222,6 +234,11 @@ mod tests {
             .with_retry_after(Duration::from_secs(20))
             .with_origin(DialectId::AnthropicMessages);
         let json = serde_json::to_string(&e).unwrap();
+        assert!(!json.contains("retryable"));
         assert_eq!(serde_json::from_str::<KppError>(&json).unwrap(), e);
+        let lasting = e.with_retryable(false);
+        let json = serde_json::to_string(&lasting).unwrap();
+        assert!(json.contains("\"retryable\":false"));
+        assert_eq!(serde_json::from_str::<KppError>(&json).unwrap(), lasting);
     }
 }

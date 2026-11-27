@@ -764,6 +764,7 @@ fn refusal(l: &Limit, now: OffsetDateTime, why: Why) -> Refusal {
                 l.describe()
             ),
             retry_after: Some(Duration::from_secs(1)),
+            lasting: false,
             param: None,
             left: None,
         },
@@ -775,6 +776,7 @@ fn refusal(l: &Limit, now: OffsetDateTime, why: Why) -> Refusal {
                 l.describe()
             ),
             retry_after: Some(JOB_RETRY),
+            lasting: false,
             param: None,
             left: None,
         },
@@ -786,6 +788,7 @@ fn refusal(l: &Limit, now: OffsetDateTime, why: Why) -> Refusal {
                 l.describe()
             ),
             retry_after: None,
+            lasting: true,
             param: None,
             left: None,
         },
@@ -797,6 +800,7 @@ fn refusal(l: &Limit, now: OffsetDateTime, why: Why) -> Refusal {
                 l.describe()
             ),
             retry_after: None,
+            lasting: true,
             param: None,
             left: None,
         },
@@ -811,12 +815,14 @@ fn refusal(l: &Limit, now: OffsetDateTime, why: Why) -> Refusal {
                     crate::auth::throttle::wait(secs)
                 ),
                 retry_after: Some(Duration::from_secs(secs)),
+                lasting: false,
                 param: None,
                 left: None,
             }
         }
         Why::Over(_) => {
-            let resets = l.period.resets_at(now).map_or_else(
+            let reset_at = l.period.resets_at(now);
+            let resets = reset_at.map_or_else(
                 || "it does not reset, so raise the limit to continue.".to_owned(),
                 |t| {
                     format!(
@@ -833,12 +839,21 @@ fn refusal(l: &Limit, now: OffsetDateTime, why: Why) -> Refusal {
                     noun(l.subject),
                     l.describe()
                 ),
-                retry_after: None,
+                retry_after: reset_at.map(|t| until(now, t)),
+                lasting: true,
                 param: None,
                 left: None,
             }
         }
     }
+}
+
+// The wait until a budget's period resets, in whole seconds rounded up so a retry at that
+// moment finds the new period.
+fn until(now: OffsetDateTime, reset: OffsetDateTime) -> Duration {
+    let left = reset - now;
+    let secs = left.whole_seconds().max(0) + i64::from(left.subsec_nanoseconds() > 0);
+    Duration::from_secs(u64::try_from(secs.max(1)).unwrap_or(1))
 }
 
 fn unpriced_refusal(subject: Subject, u: &Unpriced) -> Refusal {
@@ -858,6 +873,7 @@ fn unpriced_refusal(subject: Subject, u: &Unpriced) -> Refusal {
         status: 403,
         message,
         retry_after: None,
+        lasting: false,
         param: Some(u.param),
         left: None,
     }
@@ -950,6 +966,7 @@ impl Limits for ValkeyLimits {
                             "Kaeso cannot check this project's limits right now; try again shortly."
                                 .into(),
                         retry_after: Some(RECHECK_AFTER),
+                        lasting: false,
                         param: None,
                         left: None,
                     });
@@ -1062,6 +1079,7 @@ fn unavailable() -> Refusal {
         message: "Kaeso cannot check this project's hard budgets right now; try again shortly."
             .into(),
         retry_after: Some(RECHECK_AFTER),
+        lasting: false,
         param: None,
         left: None,
     }

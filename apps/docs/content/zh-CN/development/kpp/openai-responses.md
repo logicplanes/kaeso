@@ -307,6 +307,7 @@ order: 7
 | `NotFound` | 404 | `invalid_request_error` | `null` |
 | `RequestTooLarge` | 413 | `invalid_request_error` | `null` |
 | `RateLimited` | 429 | `rate_limit_error` | `rate_limit_exceeded` |
+| 带 `retryable: false` 的 `RateLimited`（在重置前已用尽的预算或订阅计划） | 429 | `insufficient_quota` | `insufficient_quota` |
 | `Billing` | 429 | `insufficient_quota` | `insufficient_quota` |
 | `Overloaded` | 503 | `service_unavailable_error` | `server_is_overloaded` |
 | `Timeout` | 504 | `server_error` | `timeout` |

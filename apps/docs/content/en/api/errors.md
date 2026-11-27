@@ -79,11 +79,12 @@ Chat Completions, Responses and Embeddings share one error body:
 | 413 | `invalid_request_error` | |
 | 415 | `invalid_request_error` | |
 | 429 | `rate_limit_error` | `rate_limit_exceeded` |
+| 429 | `insufficient_quota` | `insufficient_quota`, for a budget used up until it resets or a plan's usage limit |
 | 500, 502 | `server_error` | |
 | 503 | `service_unavailable_error` | `server_is_overloaded` |
 | 504 | `server_error` | `timeout` |
 
-The body has no field for the request's id, so read it from the `kaeso-request-id` header. `Retry-After` gives the wait in whole seconds, rounded up. When the wait has a fraction of a second, `retry-after-ms` gives it in milliseconds.
+The body has no field for the request's id, so read it from the `kaeso-request-id` header. `Retry-After` gives the wait in whole seconds, rounded up. When the wait has a fraction of a second, `retry-after-ms` gives it in milliseconds. [Retries](#retries) explains when not to send a request again.
 
 ## Anthropic format
 
@@ -341,6 +342,18 @@ An app on `/v1/systemone` gets errors in TypeSafe's shape, as TypeSafe's SDK rea
 
 An app on `/v1/rerank` or `/v2/rerank` gets errors in Cohere's shape, as Cohere's SDK reads them: `{"id": "…", "message": "…"}`, with Kaeso's request id as `id`. A blocked token answers 498, as at Cohere, and an overloaded provider 503. An error Cohere itself sent reaches the app as Cohere sent it, with its status. The [Rerank API](rerank.md#what-is-refused) lists what Kaeso refuses.
 
+## Retries
+
+The OpenAI and Anthropic SDKs, and the coding agents built on them, retry a 429, a 5xx and some other errors by themselves. A failure that another try of the same request can't fix carries `x-should-retry: false`, in every format, so these clients give up at once and show the message instead of retrying for minutes. Anthropic sends the same header on its own errors. Kaeso sends it for:
+
+- a request it can't take as it is: every 400, 401, 403, 404, 405, 410, 413 and 415, and a provider's 402;
+- a budget used up until it resets, or a request that could cost more than what's left of one;
+- a plan's usage limit, which lasts until the plan resets;
+- a provider key the provider refused, a project without a provider key, a signed-out account and other problems only an organization admin can fix, each a 500 or 502;
+- any error whose `Retry-After` is longer than a minute, which is longer than the SDKs wait by themselves.
+
+`Retry-After` says when a request can pass again, where Kaeso knows it: when a rate limit's window frees up, when a used-up budget's period resets, and how long Kaeso holds an account whose plan reached its usage limit in an [alias route](../concepts/alias-routes.md#fallbacks). A rate limit, a 503 or 529 and a provider's other failures carry no `x-should-retry`, so clients retry them as usual.
+
 ## Causes
 
 The message names the cause and what to do. These are the causes behind each status:
@@ -364,7 +377,8 @@ The message names the cause and what to do. These are the causes behind each sta
 | 410 | The model's provider has retired it. The message names the day and the replacement the provider recommends ([model lifecycle](../concepts/model-lifecycle.md#after-the-shutdown)). |
 | 413 | The body is larger than its endpoint's limit, or decodes to more: `KAESO_BODY_LIMITS_MODEL_API`, 32 MiB by default, or the limits of images, audio and decisions ([body limits](../self-hosting/configuration.md#request-and-response-bodies)). |
 | 415 | The body's `Content-Encoding` is not `gzip`, `x-gzip` or `zstd`, or names more than one ([request bodies](model-api.md#request-bodies)). |
-| 429 | A rate limit or budget is reached, or the request could cost more than what's left of one, and the message names it. For a used-up budget, the message says when it resets. |
+| 429 | A rate limit or budget is reached, or the request could cost more than what's left of one, and the message names it. For a used-up budget, the message says when it resets, and so does `Retry-After`. |
+| 429 | An account's plan reached its usage limit. The message links to the plan's usage page. |
 | 429 | Too many requests with unknown keys came from your address. |
 | 500 | Kaeso can't decrypt the provider key, or the model's provider isn't available in this install. |
 | 500 | The model's provider is a custom provider, and the install turned custom providers off. |

@@ -316,6 +316,7 @@ async fn errors_arrive_in_the_apps_format() {
     assert_eq!(r.status, StatusCode::UNAUTHORIZED);
     assert_eq!(r.json()["type"], "error");
     assert_eq!(r.json()["error"]["type"], "authentication_error");
+    assert_eq!(r.header("x-should-retry"), Some("false"));
     let r = call(
         &env,
         "/v1/chat/completions",
@@ -326,6 +327,7 @@ async fn errors_arrive_in_the_apps_format() {
     .await;
     assert_eq!(r.status, StatusCode::UNAUTHORIZED);
     assert!(r.json()["error"]["message"].as_str().is_some());
+    assert_eq!(r.header("x-should-retry"), Some("false"));
     let r = call(
         &env,
         "/v1/messages",

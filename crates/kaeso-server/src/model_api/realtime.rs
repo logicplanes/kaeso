@@ -334,7 +334,7 @@ impl Opening {
         .await
         .map_err(|e| match e {
             crate::services::credentials::ResolveError::Missing { .. } => {
-                error(ErrorKind::ProviderError, 502, e.to_string())
+                error(ErrorKind::ProviderError, 502, e.to_string()).with_retryable(false)
             }
             other => {
                 tracing::error!(error = %other, "cannot load the ElevenLabs credential");
@@ -359,7 +359,8 @@ impl Opening {
             match e {
                 kaeso_upstream::ws::WsError::Refused {
                     status: 401 | 403, ..
-                } => error(ErrorKind::ProviderError, 502, super::pipeline::KEY_REFUSED),
+                } => error(ErrorKind::ProviderError, 502, super::pipeline::KEY_REFUSED)
+                    .with_retryable(false),
                 kaeso_upstream::ws::WsError::Refused { status, .. }
                     if (400..500).contains(&status) =>
                 {

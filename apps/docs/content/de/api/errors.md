@@ -79,11 +79,12 @@ Chat Completions, Responses und Embeddings teilen einen Fehler-Body:
 | 413 | `invalid_request_error` | |
 | 415 | `invalid_request_error` | |
 | 429 | `rate_limit_error` | `rate_limit_exceeded` |
+| 429 | `insufficient_quota` | `insufficient_quota`, für ein Budget, das bis zu seinem Zurücksetzen aufgebraucht ist, oder das Nutzungslimit eines Abos |
 | 500, 502 | `server_error` | |
 | 503 | `service_unavailable_error` | `server_is_overloaded` |
 | 504 | `server_error` | `timeout` |
 
-Der Body hat kein Feld für die ID der Anfrage. Lesen Sie sie deshalb aus dem Header `kaeso-request-id`. `Retry-After` nennt die Wartezeit in ganzen Sekunden, aufgerundet. Hat die Wartezeit Sekundenbruchteile, nennt `retry-after-ms` sie in Millisekunden.
+Der Body hat kein Feld für die ID der Anfrage. Lesen Sie sie deshalb aus dem Header `kaeso-request-id`. `Retry-After` nennt die Wartezeit in ganzen Sekunden, aufgerundet. Hat die Wartezeit Sekundenbruchteile, nennt `retry-after-ms` sie in Millisekunden. [Wiederholungen](#wiederholungen) erklärt, wann Sie eine Anfrage nicht erneut senden sollten.
 
 ## Anthropic-Format
 
@@ -341,6 +342,18 @@ Eine App an `/v1/systemone` erhält Fehler in der Form von TypeSafe, wie das SDK
 
 Eine App an `/v1/rerank` oder `/v2/rerank` erhält Fehler in der Gestalt von Cohere, wie das SDK von Cohere sie liest: `{"id": "…", "message": "…"}`, mit der Anfrage-ID von Kaeso als `id`. Ein gesperrtes Token beantwortet Kaeso wie Cohere mit 498, einen überlasteten Anbieter mit 503. Ein Fehler, den Cohere selbst sendete, erreicht die App so, wie Cohere ihn sandte, mit seinem Status. Die [Rerank-API](rerank.md#was-abgelehnt-wird) nennt, was Kaeso ablehnt.
 
+## Wiederholungen
+
+Die SDKs von OpenAI und Anthropic und die Coding-Agents, die auf ihnen aufbauen, wiederholen einen 429, einen 5xx und einige andere Fehler von selbst. Ein Fehler, den ein weiterer Versuch derselben Anfrage nicht beheben kann, trägt in jedem Format `x-should-retry: false`. So geben diese Clients sofort auf und zeigen die Meldung, statt minutenlang zu wiederholen. Anthropic sendet denselben Header bei seinen eigenen Fehlern. Kaeso sendet ihn bei:
+
+- einer Anfrage, die es so nicht annehmen kann: jedem 400, 401, 403, 404, 405, 410, 413 und 415 sowie einem 402 des Anbieters;
+- einem Budget, das bis zu seinem Zurücksetzen aufgebraucht ist, oder einer Anfrage, die mehr kosten könnte, als davon übrig ist;
+- dem Nutzungslimit eines Abos, das bis zum Zurücksetzen des Abos gilt;
+- einem Anbieter-Schlüssel, den der Anbieter abgelehnt hat, einem Projekt ohne Anbieter-Schlüssel, einem abgemeldeten Konto und anderen Problemen, die nur ein Organisations-Admin beheben kann, jeweils mit 500 oder 502;
+- jedem Fehler, dessen `Retry-After` länger als eine Minute ist, also länger, als die SDKs von selbst warten.
+
+`Retry-After` sagt, wann eine Anfrage wieder durchkommen kann, wo Kaeso es weiß: wann das Fenster eines Ratenlimits frei wird, wann der Zeitraum eines aufgebrauchten Budgets neu beginnt und wie lange Kaeso ein Konto zurückhält, dessen Abo in einer [Alias-Route](../concepts/alias-routes.md#fallbacks) sein Nutzungslimit erreicht hat. Ein Ratenlimit, ein 503 oder 529 und die anderen Fehler eines Anbieters tragen kein `x-should-retry`, damit Clients sie wie gewohnt wiederholen.
+
 ## Ursachen
 
 Die Meldung nennt die Ursache und was zu tun ist. Diese Ursachen stehen hinter jedem Status:
@@ -364,7 +377,8 @@ Die Meldung nennt die Ursache und was zu tun ist. Diese Ursachen stehen hinter j
 | 410 | Der Anbieter hat das Modell abgeschaltet. Die Meldung nennt den Tag und den Nachfolger, den der Anbieter empfiehlt ([Modell-Lebenszyklus](../concepts/model-lifecycle.md#nach-der-abschaltung)). |
 | 413 | Der Body ist größer als das Limit seines Endpunkts oder wird zu mehr entpackt: `KAESO_BODY_LIMITS_MODEL_API`, standardmäßig 32 MiB, oder die Limits für Bilder, Audio und Entscheidungen ([Body-Limits](../self-hosting/configuration.md#anfrage--und-antwortkörper)). |
 | 415 | Das `Content-Encoding` des Bodys ist weder `gzip`, `x-gzip` noch `zstd`, oder es nennt mehr als eine Kodierung ([Anfragekörper](model-api.md#anfragekörper)). |
-| 429 | Ein Ratenlimit oder Budget ist erreicht, oder die Anfrage könnte mehr kosten, als davon übrig ist, und die Meldung nennt es. Bei einem aufgebrauchten Budget nennt sie, wann es zurückgesetzt wird. |
+| 429 | Ein Ratenlimit oder Budget ist erreicht, oder die Anfrage könnte mehr kosten, als davon übrig ist, und die Meldung nennt es. Bei einem aufgebrauchten Budget nennt sie, wann es zurückgesetzt wird, und `Retry-After` ebenso. |
+| 429 | Das Abo eines Kontos hat sein Nutzungslimit erreicht. Die Meldung verlinkt die Nutzungsseite des Abos. |
 | 429 | Von Ihrer Adresse kamen zu viele Anfragen mit unbekannten Schlüsseln. |
 | 500 | Kaeso kann den Anbieter-Schlüssel nicht entschlüsseln, oder der Anbieter des Modells ist in dieser Installation nicht verfügbar. |
 | 500 | Der Anbieter des Modells ist ein eigener Anbieter, und die Installation hat eigene Anbieter ausgeschaltet. |

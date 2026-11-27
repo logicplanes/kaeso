@@ -229,6 +229,35 @@ async fn every_request_goes_to_the_responses_api_as_a_stream_without_refused_fie
         .collect();
     assert_eq!(text, HELLO);
     assert_eq!(p.sent().len(), 4, "no request is retried");
+
+    let models = p
+        .app
+        .get(&format!("{}/models", p.base()), &p.owner.cookie)
+        .await;
+    let gpt = models.body["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|m| m["model_id"] == "gpt-5")
+        .unwrap()["id"]
+        .clone();
+    p.app
+        .post(
+            &format!("{}/aliases", p.base()),
+            json!({ "name": "plan", "route": { "type": "model", "model": gpt } }),
+            Some(&p.owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::CREATED);
+    p.oauth.reply_with(Reply::UsageLimit);
+    let r = p.call("/v1/messages", true, messages("plan", "Hi")).await;
+    assert_eq!(r.status, StatusCode::TOO_MANY_REQUESTS, "{}", r.text());
+    assert_eq!(
+        r.header("retry-after"),
+        Some("300"),
+        "the hold Kaeso keeps on the plan"
+    );
+    assert_eq!(r.header("x-should-retry"), Some("false"));
     p.services.cleanup().await;
 }
 
@@ -557,12 +586,16 @@ async fn a_reached_usage_limit_answers_429_with_the_usage_page() {
         .await;
     assert_eq!(r.status, StatusCode::TOO_MANY_REQUESTS, "{}", r.text());
     assert_eq!(r.json()["error"]["message"], USAGE);
+    assert_eq!(r.json()["error"]["code"], "insufficient_quota");
+    assert_eq!(r.header("x-should-retry"), Some("false"));
+    assert_eq!(r.header("retry-after"), None);
     let r = p
         .call("/v1/messages", true, messages("openai/gpt-5", "Hi"))
         .await;
     assert_eq!(r.status, StatusCode::TOO_MANY_REQUESTS, "{}", r.text());
     assert_eq!(r.json()["error"]["message"], USAGE);
     assert_eq!(r.json()["error"]["type"], "rate_limit_error");
+    assert_eq!(r.header("x-should-retry"), Some("false"));
 
     p.oauth.reply_with(Reply::UsageLimitInStream);
     let r = p

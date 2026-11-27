@@ -328,9 +328,17 @@ fn every_error_fixture_round_trips_with_status_and_retry_after() {
             headers.get("retry-after"),
             "{name}"
         );
+        if let Some(said) = headers.get(crate::SHOULD_RETRY_HEADER) {
+            let sent = crate::dispatch::encode_error(A, &err);
+            assert_eq!(
+                sent.headers.get(crate::SHOULD_RETRY_HEADER),
+                Some(said),
+                "{name}"
+            );
+        }
         n += 1;
     }
-    assert!(n >= 14, "{n}");
+    assert!(n >= 15, "{n}");
 }
 
 #[test]

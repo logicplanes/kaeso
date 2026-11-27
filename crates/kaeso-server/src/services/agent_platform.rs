@@ -94,11 +94,14 @@ fn base(state: &AppState, provider: &ProviderRef, location: &str) -> Result<Url,
     match configured {
         Some(url) if Some(url.as_str().trim_end_matches('/')) != default => Ok(url.clone()),
         _ => Url::parse(&format!("https://{}", google::host(location))).map_err(|_| {
-            EgressError::Setup(error(
-                ErrorKind::ProviderError,
-                500,
-                "No base URL is configured for this provider.",
-            ))
+            EgressError::Setup(
+                error(
+                    ErrorKind::ProviderError,
+                    500,
+                    "No base URL is configured for this provider.",
+                )
+                .with_retryable(false),
+            )
         }),
     }
 }
@@ -172,7 +175,7 @@ pub async fn egress(
 pub fn token_error(e: &TokenError) -> KppError {
     match e {
         TokenError::Refused { .. } | TokenError::Sign => {
-            error(ErrorKind::ProviderError, 502, KEY_REFUSED)
+            error(ErrorKind::ProviderError, 502, KEY_REFUSED).with_retryable(false)
         }
         TokenError::Unavailable { status } => {
             tracing::warn!(status, "Google's token endpoint is unavailable");

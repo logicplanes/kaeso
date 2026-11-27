@@ -79,11 +79,12 @@ Chat Completions、Responses 和 Embeddings 使用同一种错误正文：
 | 413 | `invalid_request_error` | |
 | 415 | `invalid_request_error` | |
 | 429 | `rate_limit_error` | `rate_limit_exceeded` |
+| 429 | `insufficient_quota` | `insufficient_quota`，用于在重置前已用尽的预算，或订阅计划的用量上限 |
 | 500、502 | `server_error` | |
 | 503 | `service_unavailable_error` | `server_is_overloaded` |
 | 504 | `server_error` | `timeout` |
 
-该正文没有存放请求 ID 的字段，请从 `kaeso-request-id` 响应头读取。`Retry-After` 以整秒给出等待时间，向上取整。等待时间含不足一秒的部分时，`retry-after-ms` 以毫秒给出。
+该正文没有存放请求 ID 的字段，请从 `kaeso-request-id` 响应头读取。`Retry-After` 以整秒给出等待时间，向上取整。等待时间含不足一秒的部分时，`retry-after-ms` 以毫秒给出。[重试](#重试)说明了何时不应再次发送请求。
 
 ## Anthropic 格式
 
@@ -341,6 +342,18 @@ ElevenLabs 自己发送的错误按原样连同其状态码传给应用。`Retry
 
 `/v1/rerank` 或 `/v2/rerank` 上的应用得到 Cohere 形式的错误，与 Cohere 的 SDK 读取的方式一致：`{"id": "…", "message": "…"}`，`id` 为 Kaeso 的请求 ID。与 Cohere 一样，被屏蔽的 token 返回 498，过载的服务商返回 503。Cohere 自己发送的错误按 Cohere 发送时的样子和状态码到达应用。[重排序 API](rerank.md#拒绝的内容)列出了 Kaeso 拒绝的内容。
 
+## 重试
+
+OpenAI 和 Anthropic 的 SDK，以及基于它们构建的编程智能体，会自行重试 429、5xx 和其他一些错误。同一请求再试一次也无法解决的失败，在每种格式中都带有 `x-should-retry: false`，这样这些客户端会立即放弃并显示消息，而不是重试好几分钟。Anthropic 在自己的错误上也发送这个响应头。Kaeso 在以下情况发送它：
+
+- 无法按原样接受的请求：所有 400、401、403、404、405、410、413 和 415，以及服务商的 402；
+- 在重置前已用尽的预算，或费用可能超过其剩余额度的请求；
+- 订阅计划的用量上限，它会持续到计划重置；
+- 服务商拒绝了的服务商密钥、没有服务商密钥的项目、已退出登录的账号，以及其他只有组织管理员才能解决的问题，均为 500 或 502；
+- `Retry-After` 超过一分钟的任何错误，这比 SDK 自行等待的时间更长。
+
+在 Kaeso 知道的情况下，`Retry-After` 会说明请求何时能再次通过：速率限制的窗口何时空出、已用尽预算的周期何时重置，以及在[别名路由](../concepts/alias-routes.md#回退)中，订阅计划达到用量上限的账号会被 Kaeso 暂停多久。速率限制、503 或 529 以及服务商的其他失败不带 `x-should-retry`，因此客户端会照常重试。
+
 ## 原因
 
 消息会说明原因以及该怎么做。各状态码背后的原因如下：
@@ -364,7 +377,8 @@ ElevenLabs 自己发送的错误按原样连同其状态码传给应用。`Retry
 | 410 | 服务商已停用该模型。消息会写明停用日期和服务商推荐的替代模型（[模型生命周期](../concepts/model-lifecycle.md#停用之后)）。 |
 | 413 | 正文大于其端点的上限，或解压后大于该上限：`KAESO_BODY_LIMITS_MODEL_API`（默认为 32 MiB），或图像、音频和决策的上限（[正文上限](../self-hosting/configuration.md#请求体与响应体)）。 |
 | 415 | 正文的 `Content-Encoding` 不是 `gzip`、`x-gzip` 或 `zstd`，或列出了多种编码（[请求体](model-api.md#请求体)）。 |
-| 429 | 达到了速率限制或预算，或者请求的费用可能超过其剩余额度，消息会指明是哪一个。预算用尽时，消息会说明何时重置。 |
+| 429 | 达到了速率限制或预算，或者请求的费用可能超过其剩余额度，消息会指明是哪一个。预算用尽时，消息会说明何时重置，`Retry-After` 也会说明。 |
+| 429 | 某个账号的订阅计划达到了用量上限。消息会链接到该计划的用量页面。 |
 | 429 | 来自您所在地址、使用未知密钥的请求过多。 |
 | 500 | Kaeso 无法解密服务商密钥，或模型的服务商在此实例中不可用。 |
 | 500 | 模型的服务商是自定义服务商，而实例已关闭自定义服务商。 |

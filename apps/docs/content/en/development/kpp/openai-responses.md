@@ -307,6 +307,7 @@ Encoding replays the body and status of errors that came from an OpenAI dialect 
 | `NotFound` | 404 | `invalid_request_error` | `null` |
 | `RequestTooLarge` | 413 | `invalid_request_error` | `null` |
 | `RateLimited` | 429 | `rate_limit_error` | `rate_limit_exceeded` |
+| `RateLimited` with `retryable: false` (a budget or a plan used up until it resets) | 429 | `insufficient_quota` | `insufficient_quota` |
 | `Billing` | 429 | `insufficient_quota` | `insufficient_quota` |
 | `Overloaded` | 503 | `service_unavailable_error` | `server_is_overloaded` |
 | `Timeout` | 504 | `server_error` | `timeout` |

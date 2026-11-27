@@ -140,6 +140,7 @@ async fn budgets_refuse_a_request_that_could_cross_them_and_reset_at_utc_midnigh
         "This request could exceed this key's daily token budget of 50 tokens; ask for fewer output tokens."
     );
     assert!(r.header("retry-after").is_none());
+    assert_eq!(r.header("x-should-retry"), Some("false"));
     used(&env, lim_id, "28").await;
     env.app.clock.advance(time::Duration::minutes(2));
     assert_eq!(ask(&env, &secret).await.status, StatusCode::OK);
@@ -2172,12 +2173,55 @@ async fn a_budget_used_up_exactly_refuses_the_next_request() {
     used(&env, lim["id"].as_str().unwrap(), &(2 * TOKENS).to_string()).await;
     let r = ask(&env, &secret).await;
     assert_eq!(r.status, StatusCode::TOO_MANY_REQUESTS, "{}", r.text());
-    assert_eq!(r.header("retry-after"), None);
+    assert_eq!(r.header("x-should-retry"), Some("false"));
+    assert_eq!(r.json()["error"]["type"], "rate_limit_error");
     let msg = r.json()["error"]["message"].as_str().unwrap().to_owned();
-    assert!(
-        msg.starts_with("Budget used up: this key's daily token budget of 56 tokens; it resets at"),
-        "{msg}"
-    );
+    let resets = msg
+        .strip_prefix("Budget used up: this key's daily token budget of 56 tokens; it resets at ")
+        .and_then(|t| t.strip_suffix('.'))
+        .unwrap_or_else(|| panic!("{msg}"));
+    let resets =
+        time::OffsetDateTime::parse(resets, &time::format_description::well_known::Rfc3339)
+            .unwrap();
+    use kaeso_core::clock::Clock;
+    let wait = (resets - env.app.clock.now()).whole_seconds();
+    assert_eq!(r.header("retry-after"), Some(wait.to_string().as_str()));
+
+    let openai = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&secret),
+        false,
+        Some(chat("claude-haiku-4-5", "Hi")),
+    )
+    .await;
+    assert_eq!(openai.status, StatusCode::TOO_MANY_REQUESTS);
+    assert_eq!(openai.header("x-should-retry"), Some("false"));
+    assert_eq!(openai.header("retry-after"), r.header("retry-after"));
+    assert_eq!(openai.json()["error"]["type"], "insufficient_quota");
+    assert_eq!(openai.json()["error"]["code"], "insufficient_quota");
+}
+
+#[tokio::test]
+async fn a_request_rate_limit_lets_clients_retry_after_its_window() {
+    let env = common::v1::env(None, None).await;
+    let (secret, id) = key_of(&env, "k", json!({})).await;
+    limit(&env, json!({ "level": "key", "key": id, "kind": "request_rate", "period": "minute", "amount": 1 })).await;
+    assert_eq!(ask(&env, &secret).await.status, StatusCode::OK);
+    let r = ask(&env, &secret).await;
+    assert_eq!(r.status, StatusCode::TOO_MANY_REQUESTS, "{}", r.text());
+    let wait: u64 = r.header("retry-after").unwrap().parse().unwrap();
+    assert!((1..=60).contains(&wait), "{wait}");
+    assert_eq!(r.header("x-should-retry"), None);
+    let openai = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&secret),
+        false,
+        Some(chat("claude-haiku-4-5", "Hi")),
+    )
+    .await;
+    assert_eq!(openai.json()["error"]["code"], "rate_limit_exceeded");
 }
 
 #[tokio::test]

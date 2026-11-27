@@ -108,6 +108,9 @@ pub struct Refusal {
     pub status: u16,
     pub message: String,
     pub retry_after: Option<Duration>,
+    /// A budget used up until it resets, or a request larger than what a limit lets through:
+    /// sending it again can't pass.
+    pub lasting: bool,
     pub param: Option<&'static str>,
     /// The limit that refused the request, with nothing left.
     pub left: Option<Left>,
