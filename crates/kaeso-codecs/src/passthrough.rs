@@ -2014,6 +2014,44 @@ mod tests {
     }
 
     #[test]
+    fn a_recorded_stream_cut_by_an_error_after_its_usage_keeps_the_newest_counts() {
+        let ectx = EgressCtx::for_kind(RequestKind::Generate, StreamMode::on(true));
+        let enc = EncodeCtx::new(RequestKind::Generate, StreamMode::on(true));
+        let bytes = fixture(
+            "openai_chat/providers/cloudflare-ai-gateway/streams/recorded-stream-include-usage.sse",
+        );
+        let text = String::from_utf8(bytes).unwrap();
+        let cut = text.strip_suffix("data: [DONE]\n\n").unwrap();
+        let failed = format!("{cut}event: error\ndata: {{\"error\":{{\"message\":\"boom\"}}}}\n\n");
+        let mut pass = for_stream(DialectId::OpenAiChat, &ectx, &enc).unwrap();
+        let (out, errors, _) = feed_chunked(pass.as_mut(), failed.as_bytes(), 41);
+        assert_eq!(errors.len(), 1);
+        let chunks: Vec<Value> = crate::sse::parse_all(&out)
+            .unwrap()
+            .into_iter()
+            .filter_map(|i| match i {
+                crate::sse::SseItem::Event(e) => serde_json::from_str(&e.data).ok(),
+                _ => None,
+            })
+            .collect();
+        let finishing: Vec<&Value> = chunks
+            .iter()
+            .filter(|c| {
+                c["choices"][0]["finish_reason"].is_string()
+                    || c["choices"] == serde_json::json!([])
+            })
+            .collect();
+        let last = finishing.last().unwrap();
+        assert_eq!(last["usage"]["total_tokens"], 24, "{last}");
+        assert!(
+            finishing
+                .iter()
+                .all(|c| c["usage"].is_null() || c["usage"]["total_tokens"] == 24),
+            "{finishing:?}"
+        );
+    }
+
+    #[test]
     fn chat_passthrough_preserves_wire_and_hides_unasked_usage() {
         let raw = concat!(
             "data: {\"id\":\"chatcmpl-1\",\"object\":\"chat.completion.chunk\",\"created\":1700000000,\"model\":\"gpt-4o-mini\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"\"},\"finish_reason\":null}]}\n\n",

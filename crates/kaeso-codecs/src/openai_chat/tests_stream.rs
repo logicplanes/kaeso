@@ -1440,3 +1440,31 @@ fn an_error_after_a_held_finish_chunk_keeps_the_newest_usage_before_it() {
         .collect();
     assert_eq!(totals, [json!(7)], "{out}");
 }
+
+#[test]
+fn a_recorded_stream_cut_by_an_error_after_its_usage_keeps_the_newest_counts() {
+    let (_, bytes) = fixtures(D, "streams", "sse")
+        .into_iter()
+        .find(|(n, _)| n == "providers/cloudflare-ai-gateway/recorded-stream-include-usage")
+        .unwrap();
+    let mut events = decode_whole(&bytes);
+    events.retain(|e| !matches!(e, StreamEvent::ResponseStop(_)));
+    events.push(StreamEvent::Error(KppError::provider(
+        "The connection broke.",
+    )));
+    let out = encode(&events, true);
+    let finishing: Vec<Value> = frames(&out)
+        .into_iter()
+        .filter(|c| c["choices"][0]["finish_reason"].is_string() || c["choices"] == json!([]))
+        .collect();
+    let last = finishing.last().unwrap();
+    assert_eq!(last["usage"]["total_tokens"], 24, "{last}");
+    assert!(
+        finishing
+            .iter()
+            .all(|c| c["usage"].is_null() || c["usage"]["total_tokens"] == 24),
+        "{}",
+        String::from_utf8_lossy(&out)
+    );
+    assert!(frames(&out).last().unwrap().get("error").is_some());
+}
