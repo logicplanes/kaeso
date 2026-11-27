@@ -172,6 +172,36 @@ describe("the analytics control room", () => {
     expect(router.state.location.searchStr).toBe("?model=gpt-5.4-mini&from=2026-10-01&to=2026-10-14&utc=true");
   });
 
+  it("names a model by the project's name for it, else by KPMR's, else by its id", async () => {
+    signedIn();
+    projectData({ models: [catalogueModel()], keys: [apiKey()] });
+    on("GET", "orgs/:org/projects/:project/logs", listed([]));
+    usage(USAGE, {
+      ...THIS_PERIOD,
+      model: [
+        usageRow({ key: "google/gemini-4-carbon-high", name: "Gemini 4 Carbon (high)", requests: 30 }),
+        usageRow({ key: "anthropic/claude-sonnet-4-5", name: "Sonnet as KPMR says", requests: 20 }),
+        usageRow({ key: "acme/house-model", requests: 10 }),
+      ],
+    });
+    on("GET", `${USAGE}/timeline`, { data: [bucket("2026-10-13T09:00:00Z")] });
+    await renderApp(projectPath(`analytics?${PERIOD}`));
+
+    await waitFor(() => expect(within(cell("Models by requests")).getAllByRole("button")).toHaveLength(3));
+    const [carbon, sonnet, house] = within(cell("Models by requests")).getAllByRole("button");
+    expect(carbon).toHaveTextContent(/Gemini 4 Carbon \(high\)gemini-4-carbon-high/);
+    expect(sonnet).toHaveTextContent(/Claude Sonnet 4\.5claude-sonnet-4-5/);
+    expect(sonnet).not.toHaveTextContent("Sonnet as KPMR says");
+    expect(house).toHaveTextContent(/^house-model/);
+
+    await view("Models");
+    await waitFor(() => {
+      const table = screen.getByLabelText("Models in the period", { selector: "[role=grid], [role=table]" });
+      expect(within(table).getByText("Gemini 4 Carbon (high)")).toBeInTheDocument();
+      expect(within(table).getByText("gemini-4-carbon-high")).toBeInTheDocument();
+    });
+  });
+
   it("counts the requests the spend leaves out because no price covers them", async () => {
     signedIn();
     projectData({ models: [catalogueModel()], keys: [apiKey()] });

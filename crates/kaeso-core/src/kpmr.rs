@@ -601,6 +601,127 @@ impl Catalogue {
             .or_else(|| models().find(|(m, _)| tail(&m.to_lowercase()) == tail(&wanted)))
             .map(|(_, model)| model)
     }
+
+    /// Whether any provider lists a model by exactly this id: such an id names a model of its
+    /// own even when it ends like a setting, as `gpt-5.1-codex-max` does.
+    pub fn lists(&self, id: &str) -> bool {
+        self.providers.values().any(|p| p.models.contains_key(id))
+    }
+
+    /// Every model listed under this id, the provider's own first, then other providers' in
+    /// order: a client set up for one provider often names a model another one sells.
+    fn listed(&self, provider: &str, id: &str) -> Vec<&Model> {
+        let mut models: Vec<&Model> = self.model(provider, id).into_iter().collect();
+        models.extend(
+            self.providers
+                .iter()
+                .filter(|(p, _)| p.as_str() != provider)
+                .filter_map(|(_, p)| p.models.get(id)),
+        );
+        models
+    }
+
+    /// The models an id stands for and the setting it names: the models listed under the id,
+    /// or, for an id no provider lists, the models it names at a setting they take.
+    fn stands_for(&self, provider: &str, id: &str) -> (Vec<&Model>, Option<IdSetting>) {
+        if self.lists(id) {
+            return (self.listed(provider, id), None);
+        }
+        match IdSetting::split(id) {
+            Some((base, setting)) => {
+                let mut models = self.listed(provider, base);
+                models.retain(|m| setting.fits_model(m));
+                (models, Some(setting))
+            }
+            None => (Vec::new(), None),
+        }
+    }
+
+    /// The model an id names at a setting: the provider's model, else the same model at another
+    /// provider; `None` for an id a provider lists, which is a model of its own.
+    pub fn at_setting(&self, provider: &str, id: &str) -> Option<(&Model, IdSetting)> {
+        let (models, setting) = self.stands_for(provider, id);
+        Some((*models.first()?, setting?))
+    }
+
+    /// The name people know a model id by: KPMR's name of the model, the provider's first and
+    /// a real name before one that only repeats the id, followed by the setting an id such as
+    /// `gemini-4-carbon-high` names (`Gemini 4 Carbon (high)`).
+    pub fn display_name(&self, provider: &str, id: &str) -> Option<String> {
+        let (models, setting) = self.stands_for(provider, id);
+        let names: Vec<(&str, &str)> = models
+            .iter()
+            .filter_map(|m| {
+                let name = m.name.as_deref().map(str::trim)?;
+                (!name.is_empty()).then_some((name, m.id.as_str()))
+            })
+            .collect();
+        let (name, _) = names
+            .iter()
+            .find(|(name, id)| name != id)
+            .or(names.first())?;
+        Some(match setting {
+            Some(s) => format!("{name} ({})", s.word()),
+            None => (*name).to_owned(),
+        })
+    }
+}
+
+/// What a client puts at the end of a model's id to name the model at a setting rather than
+/// another model, as Antigravity names Gemini 3.8 Flash at low effort `gemini-3.8-flash-low` and
+/// Claude Opus 4.6 with thinking on `claude-opus-4-6-thinking`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum IdSetting {
+    /// An effort level, such as `low`.
+    Effort(&'static str),
+    /// Thinking on, at no level the id names.
+    Thinking,
+}
+
+impl IdSetting {
+    const EFFORTS: [&'static str; 6] = ["minimal", "low", "medium", "high", "xhigh", "max"];
+
+    /// The id without the setting at its end, and the setting; `None` when it ends in none.
+    pub fn split(id: &str) -> Option<(&str, IdSetting)> {
+        let (base, word) = id.rsplit_once('-')?;
+        if base.is_empty() {
+            return None;
+        }
+        let setting = match word {
+            "thinking" => IdSetting::Thinking,
+            _ => IdSetting::Effort(Self::EFFORTS.iter().find(|e| **e == word)?),
+        };
+        Some((base, setting))
+    }
+
+    /// The effort level the request log keeps for it; thinking names none.
+    pub fn effort(self) -> Option<&'static str> {
+        match self {
+            IdSetting::Effort(level) => Some(level),
+            IdSetting::Thinking => None,
+        }
+    }
+
+    pub fn word(self) -> &'static str {
+        self.effort().unwrap_or("thinking")
+    }
+
+    /// Whether a model with these effort levels and this reasoning flag takes the setting: an
+    /// effort level only when the model lists it, thinking only when the model reasons. A model
+    /// whose levels are unknown takes no level, so an id such as `qwen3.9-max` stays a model.
+    pub fn fits(self, efforts: Option<&[String]>, reasons: Option<bool>) -> bool {
+        match self {
+            IdSetting::Effort(level) => efforts.is_some_and(|e| e.iter().any(|l| l == level)),
+            IdSetting::Thinking => reasons == Some(true),
+        }
+    }
+
+    fn fits_model(self, m: &Model) -> bool {
+        self.fits(
+            m.reasoning.as_ref().and_then(|r| r.efforts.as_deref()),
+            m.capabilities.as_ref().and_then(|c| c.reasoning),
+        )
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -843,6 +964,142 @@ mod tests {
         assert!(c.same_model("Llama-3.3-70B-Instruct").is_some());
         assert!(c.same_model("research/llama-3.3-70b-instruct").is_some());
         assert!(c.same_model("my-finetune-v7").is_none());
+    }
+
+    #[test]
+    fn an_id_ending_in_a_setting_splits_into_the_model_and_the_setting() {
+        assert_eq!(
+            IdSetting::split("gemini-4-carbon-high"),
+            Some(("gemini-4-carbon", IdSetting::Effort("high")))
+        );
+        assert_eq!(
+            IdSetting::split("gemini-4-hydrogen-xhigh"),
+            Some(("gemini-4-hydrogen", IdSetting::Effort("xhigh")))
+        );
+        assert_eq!(
+            IdSetting::split("claude-opus-4-6-thinking"),
+            Some(("claude-opus-4-6", IdSetting::Thinking))
+        );
+        assert_eq!(
+            IdSetting::split("gemini-4-max"),
+            Some(("gemini-4", IdSetting::Effort("max")))
+        );
+        for none in [
+            "gpt-5.4-mini",
+            "gemini-shallow",
+            "-low",
+            "low",
+            "gemini-4-High",
+            "x-none",
+            "",
+        ] {
+            assert_eq!(IdSetting::split(none), None, "{none}");
+        }
+        assert_eq!(IdSetting::Effort("low").effort(), Some("low"));
+        assert_eq!(IdSetting::Thinking.effort(), None);
+        assert_eq!(IdSetting::Thinking.word(), "thinking");
+
+        let levels = ["low".to_owned(), "high".to_owned()];
+        assert!(IdSetting::Effort("high").fits(Some(&levels), Some(true)));
+        assert!(!IdSetting::Effort("max").fits(Some(&levels), Some(true)));
+        assert!(!IdSetting::Effort("high").fits(None, Some(true)));
+        assert!(!IdSetting::Effort("high").fits(Some(&[]), Some(true)));
+        assert!(IdSetting::Thinking.fits(None, Some(true)));
+        assert!(!IdSetting::Thinking.fits(Some(&levels), Some(false)));
+        assert!(!IdSetting::Thinking.fits(Some(&levels), None));
+    }
+
+    #[test]
+    fn a_model_named_at_a_setting_it_takes_is_that_model_and_a_listed_id_stays_its_own() {
+        let doc = catalogue(
+            r#"{
+            "openai": {"id": "openai", "models": {
+                "luna": {"id": "luna", "name": "Luna", "reasoning": {"efforts": ["low", "high"]}, "capabilities": {"reasoning": true}},
+                "luna-max": {"id": "luna-max", "name": "Luna Max"},
+                "plain": {"id": "plain", "name": "Plain", "capabilities": {"reasoning": false}},
+                "unnamed": {"id": "unnamed", "reasoning": {"efforts": ["low"]}},
+                "oss": {"id": "oss", "name": "oss"}
+            }},
+            "anthropic": {"id": "anthropic", "models": {
+                "opus": {"id": "opus", "name": " Opus ", "capabilities": {"reasoning": true}},
+                "luna-high": {"id": "luna-high", "name": "Someone else's model"},
+                "oss": {"id": "oss", "name": "Open Model"}
+            }}
+        }"#,
+        );
+        let c = parse(&doc, &known_ids()).unwrap().catalogue;
+        let at = |p: &str, id: &str| c.at_setting(p, id).map(|(m, s)| (m.id.as_str(), s));
+        assert_eq!(
+            at("openai", "luna-low"),
+            Some(("luna", IdSetting::Effort("low")))
+        );
+        assert_eq!(
+            at("anthropic", "opus-thinking"),
+            Some(("opus", IdSetting::Thinking))
+        );
+        assert_eq!(
+            at("anthropic", "luna-low"),
+            Some(("luna", IdSetting::Effort("low"))),
+            "another provider's model of that id"
+        );
+        assert_eq!(
+            at("zeta", "opus-thinking"),
+            Some(("opus", IdSetting::Thinking))
+        );
+        for none in [
+            "luna",
+            "luna-max",
+            "luna-medium",
+            "luna-high",
+            "plain-thinking",
+            "plain-low",
+            "made-up-low",
+        ] {
+            assert_eq!(at("openai", none), None, "{none}");
+        }
+        assert!(c.lists("luna-high") && !c.lists("luna-low"));
+
+        let name = |p: &str, id: &str| c.display_name(p, id);
+        assert_eq!(name("openai", "luna").as_deref(), Some("Luna"));
+        assert_eq!(name("zeta", "luna").as_deref(), Some("Luna"));
+        assert_eq!(name("openai", "luna-low").as_deref(), Some("Luna (low)"));
+        assert_eq!(
+            name("anthropic", "opus-thinking").as_deref(),
+            Some("Opus (thinking)")
+        );
+        assert_eq!(
+            name("openai", "luna-high").as_deref(),
+            Some("Someone else's model")
+        );
+        assert_eq!(
+            name("openai", "oss").as_deref(),
+            Some("Open Model"),
+            "a real name first"
+        );
+        assert_eq!(name("openai", "unnamed"), None);
+        assert_eq!(name("openai", "unnamed-low"), None);
+        assert_eq!(name("openai", "luna-medium"), None);
+        assert_eq!(name("openai", "made-up"), None);
+    }
+
+    #[test]
+    fn antigravity_models_are_named_after_the_shipped_catalogue_models() {
+        let c = embedded().unwrap();
+        for (id, name) in [
+            ("gemini-4-carbon-high", "Gemini 4 Carbon (high)"),
+            ("gemini-4-hydrogen-xhigh", "Gemini 4 Hydrogen (xhigh)"),
+            ("gemini-3.8-flash-low", "Gemini 3.8 Flash (low)"),
+            ("gemini-4-carbon", "Gemini 4 Carbon"),
+            ("claude-opus-4-6-thinking", "Claude Opus 4.6 (thinking)"),
+            ("gpt-oss-120b-medium", "GPT OSS 120B (medium)"),
+        ] {
+            assert_eq!(c.display_name("google", id).as_deref(), Some(name), "{id}");
+        }
+        assert_eq!(
+            c.display_name("openai", "gpt-5.1-codex-max").as_deref(),
+            Some("GPT-5.1 Codex Max")
+        );
+        assert!(c.at_setting("openai", "gpt-5.1-codex-max").is_none());
     }
 
     #[test]

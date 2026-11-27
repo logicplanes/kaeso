@@ -76,7 +76,7 @@ export function Breakdown({
   granularity?: Granularity | undefined;
   withYear?: boolean | undefined;
   showCost: boolean;
-  modelName: (key: string) => string;
+  modelName: (key: string, kpmrName?: string | null) => string;
   loading: boolean;
   failed: boolean;
   onRetry: () => void;
@@ -110,7 +110,7 @@ export function Breakdown({
   };
   const labelText = (r: UsageRow): string => {
     if (by === "day") return bucketLabel(r.key, granularity, withYear);
-    if (by === "model") return modelName(r.key);
+    if (by === "model") return modelName(r.key, r.name);
     if (by === "key") return keyName(r.key);
     if (by === "route") return routeText(r.key, providers.name);
     if (by === "client") return clientLabel(r.key);
@@ -148,7 +148,7 @@ export function Breakdown({
     if (by === "model") {
       const [provider = "", ...rest] = r.key.split("/");
       const model = rest.join("/");
-      const name = modelName(r.key);
+      const name = modelName(r.key, r.name);
       if (!model) return <Text tone="secondary">{name}</Text>;
       return (
         <ModelLabel className="max-w-full" provider={provider} providerName={providers.name(provider)} model={model} {...(name !== model ? { name } : {})} />
