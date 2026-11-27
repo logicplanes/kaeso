@@ -412,6 +412,16 @@ fn put_back(
         if let Block::ToolCall(call) = &block {
             if let Some(found) = restored.remove(call.id.as_str()) {
                 for r in found {
+                    // The app's own copy gives way to the kept one, so the turn keeps its order.
+                    let own = since_call.iter().position(|b| match b {
+                        Block::Reasoning(i) => reference_of(b).is_none() && same_reasoning(i, &r),
+                        _ => false,
+                    });
+                    if let Some(at) = own {
+                        since_call.remove(at);
+                        blocks.push(Block::Reasoning(r));
+                        continue;
+                    }
                     if inline.iter().any(|i| same_reasoning(i, &r)) {
                         continue;
                     }

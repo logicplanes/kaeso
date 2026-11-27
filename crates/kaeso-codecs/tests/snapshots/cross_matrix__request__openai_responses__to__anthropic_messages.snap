@@ -3868,6 +3868,11 @@ expression: outcomes
     "param": null,
     "unsupported": "x_future_field"
   },
+  "vercel-ai-sdk-reasoning-reference": {
+    "message": "`item_reference` `rs_kaeso_00000000000000000000000000000001_0` comes from an OpenAI Responses request and has no equivalent in Anthropic Messages. Send the reasoning item itself in `input`, as SDKs do with `store: false`.",
+    "param": "messages[1].blocks[0]",
+    "unsupported": "`item_reference` `rs_kaeso_00000000000000000000000000000001_0`"
+  },
   "web-search": {
     "message": "`include` comes from an OpenAI Responses request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
     "param": null,
