@@ -1107,25 +1107,10 @@ fn deepseek_gets_a_union_of_objects_with_an_object_type_at_its_root() {
 
 #[test]
 fn a_gemini_declaration_with_a_union_root_is_named_where_the_app_wrote_it() {
-    let union = json!({"anyOf": [
-        {"type": "object", "properties": {"city": {"type": "string"}}, "required": ["city"]},
-        {"type": "object", "properties": {"zip": {"type": "string"}}, "required": ["zip"]}
-    ]});
-    let body = json!({
-        "contents": [{"role": "user", "parts": [{"text": "Weather?"}]}],
-        "generationConfig": {"maxOutputTokens": 256},
-        "tools": [
-            {"functionDeclarations": [{"name": "now", "parametersJsonSchema": {"type": "object"}}]},
-            {"functionDeclarations": [
-                {"name": "today", "parametersJsonSchema": {"type": "object"}},
-                {"name": "weather", "parametersJsonSchema": union}
-            ]}
-        ]
-    });
     let req = dispatch::decode_gemini_request(
-        "m",
+        "gemini-3.5-flash",
         kaeso_codecs::gemini::GeminiAction::GenerateContent,
-        &serde_json::to_vec(&body).unwrap(),
+        &fixture(DialectId::Gemini, "requests/tools-union-root.json"),
         &HeaderList::new(),
     )
     .unwrap();

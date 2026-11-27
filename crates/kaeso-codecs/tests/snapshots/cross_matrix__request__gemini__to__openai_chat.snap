@@ -1121,6 +1121,76 @@ expression: outcomes
     },
     "path": "/v1/chat/completions"
   },
+  "tools-union-root": {
+    "body": {
+      "max_completion_tokens": 256,
+      "messages": [
+        {
+          "content": "What's the weather where I am?",
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "tools": [
+        {
+          "function": {
+            "description": "Returns the current time.",
+            "name": "get_time",
+            "parameters": {
+              "properties": {},
+              "type": "object"
+            }
+          },
+          "type": "function"
+        },
+        {
+          "function": {
+            "description": "Returns the user's city.",
+            "name": "get_location",
+            "parameters": {
+              "properties": {},
+              "type": "object"
+            }
+          },
+          "type": "function"
+        },
+        {
+          "function": {
+            "description": "Returns the weather for a city or a postal code.",
+            "name": "get_weather",
+            "parameters": {
+              "anyOf": [
+                {
+                  "properties": {
+                    "city": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "city"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "properties": {
+                    "zip": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "zip"
+                  ],
+                  "type": "object"
+                }
+              ]
+            }
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/chat/completions"
+  },
   "transcribe-diarized": {
     "message": "`generationConfig.audioTranscriptionConfig` comes from a Gemini API request and has no equivalent in OpenAI Chat Completions. Remove it, or send the request to a model served through its original format.",
     "param": null,

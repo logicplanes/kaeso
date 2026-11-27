@@ -1253,6 +1253,63 @@ expression: outcomes
     },
     "path": "/v1/messages"
   },
+  "tools-union-root": {
+    "body": {
+      "max_tokens": 256,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "What's the weather where I am?",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "tools": [
+        {
+          "description": "Returns the current time.",
+          "input_schema": {
+            "properties": {},
+            "type": "object"
+          },
+          "name": "get_time"
+        },
+        {
+          "description": "Returns the user's city.",
+          "input_schema": {
+            "properties": {},
+            "type": "object"
+          },
+          "name": "get_location"
+        },
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "description": "Returns the weather for a city or a postal code.\n\nThe arguments match one of these variants:\n1. requires city.\n2. requires zip.",
+          "input_schema": {
+            "properties": {
+              "city": {
+                "type": "string"
+              },
+              "zip": {
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "name": "get_weather"
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
   "transcribe-diarized": {
     "message": "`generationConfig.audioTranscriptionConfig` comes from a Gemini API request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
     "param": null,

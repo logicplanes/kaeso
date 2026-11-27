@@ -12,6 +12,7 @@ A `<name>.meta.json` names the model or the method of a request when the round-t
 | `thinking-budget.json` | `thinkingBudget: 1024` with `includeThoughts` | doc: thinking, thinking budgets |
 | `tools-single.json` | one function declaration with OpenAPI `parameters`, `mode: AUTO` | doc: function calling |
 | `tools-parallel.json` | `parametersJsonSchema`, parallel calls with thoughts | doc: function calling, parallel function calling |
+| `tools-union-root.json` | two `tools` entries, the second with two declarations, one of them a `parametersJsonSchema` whose root is an `anyOf` of objects | schema: Tool, FunctionDeclaration.parametersJsonSchema (discovery v1beta revision 20261106) |
 | `tools-forced.json` | `mode: ANY` with one `allowedFunctionNames` entry | schema: FunctionCallingConfig (discovery v1beta revision 20261106) |
 | `tool-result-signature.json` | the model content of `responses/recorded-tools-parallel.json` sent back with its thought signature, and two function responses | doc: thought signatures, parallel function calling |
 | `tool-result-dummy-signature.json` | a function call from another model with the documented dummy signature and an id in Anthropic's pattern | doc: thought signatures, FAQ |

@@ -1117,6 +1117,71 @@ expression: outcomes
     },
     "path": "/v1/responses"
   },
+  "tools-union-root": {
+    "body": {
+      "input": [
+        {
+          "content": "What's the weather where I am?",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 256,
+      "model": "gemini-3.5-flash",
+      "store": false,
+      "tools": [
+        {
+          "description": "Returns the current time.",
+          "name": "get_time",
+          "parameters": {
+            "properties": {},
+            "type": "object"
+          },
+          "type": "function"
+        },
+        {
+          "description": "Returns the user's city.",
+          "name": "get_location",
+          "parameters": {
+            "properties": {},
+            "type": "object"
+          },
+          "type": "function"
+        },
+        {
+          "description": "Returns the weather for a city or a postal code.",
+          "name": "get_weather",
+          "parameters": {
+            "anyOf": [
+              {
+                "properties": {
+                  "city": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "city"
+                ],
+                "type": "object"
+              },
+              {
+                "properties": {
+                  "zip": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "zip"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
   "transcribe-diarized": {
     "message": "`audio block` is not supported by OpenAI Responses. Its input has no audio content part; send a transcript of the audio as text, or route the request to a Chat Completions or Gemini model.",
     "param": "messages[0].blocks[0]",
