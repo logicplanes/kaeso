@@ -173,11 +173,34 @@ async fn chat_and_responses_apps_get_minimaxs_answers_in_their_own_format() {
 }
 
 #[tokio::test]
+async fn a_gemini_apps_top_k_is_left_out_for_minimax_and_its_sampling_goes_as_sent() {
+    let env = env().await;
+    let body = json!({
+        "contents": [{ "role": "user", "parts": [{ "text": format!("Hi {}", fixture("deep-thinking")) }] }],
+        "generationConfig": { "temperature": 1, "topP": 0.95, "topK": 64 }
+    });
+    let r = call(
+        &env,
+        &format!("/v1beta/models/{M3}:generateContent?key={}", env.key),
+        None,
+        false,
+        Some(body),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.header("kaeso-left-out"), Some("generationConfig.topK"));
+    let sent = sent_to_minimax(&env, M3);
+    assert!(sent.get("top_k").is_none(), "{sent}");
+    assert_eq!(
+        (&sent["temperature"], &sent["top_p"]),
+        (&json!(1.0), &json!(0.95))
+    );
+}
+
+#[tokio::test]
 async fn what_minimax_ignores_is_refused_before_anything_is_sent() {
     let env = env().await;
     env.mock.clear();
-    let mut top_k = messages(M3, "Hi");
-    top_k["top_k"] = json!(40);
     let mut stop = chat(M3, "Hi");
     stop["stop"] = json!(["END"]);
     let mut temperature = chat(M3, "Hi");
@@ -186,7 +209,6 @@ async fn what_minimax_ignores_is_refused_before_anything_is_sent() {
     forced["tools"] = weather_tool();
     forced["tool_choice"] = json!({ "type": "any" });
     for (path, anthropic, body, param) in [
-        ("/v1/messages", true, top_k, "top_k"),
         ("/v1/chat/completions", false, stop, "stop"),
         ("/v1/chat/completions", false, temperature, "temperature"),
         ("/v1/messages", true, forced, "tool_choice"),

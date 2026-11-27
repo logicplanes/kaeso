@@ -17,9 +17,10 @@ pub struct MessagesProfile {
     pub provider: &'static str,
     /// Request fields the provider ignores, by their Anthropic names: `top_k`,
     /// `stop_sequences`, or a top-level field an Anthropic app sent, such as `container`.
-    /// A request that sets one is refused, except a field that may be left out when the
-    /// request crosses formats, such as Claude Code's `context_management` that only clears
-    /// thinking, which is left out and named in `left_out`.
+    /// A request that sets one is refused, except `top_k`, a sampling hint, and a field that
+    /// may be left out when the request crosses formats, such as Claude Code's
+    /// `context_management` that only clears thinking; those are left out and named in
+    /// `left_out`.
     pub refused_fields: &'static [&'static str],
     /// Sampling fields the provider always sets to one value of its own, with that value:
     /// `temperature` or `top_p`. A request with another value is refused.
@@ -226,7 +227,6 @@ pub(crate) fn apply(d: &mut Draft<'_>, profile: &MessagesProfile) -> Result<(), 
     let mut left_out = Vec::new();
     for field in profile.refused_fields {
         match *field {
-            "top_k" if r.sampling.top_k.is_some() => return Err(profile.refused("top_k")),
             "stop_sequences" if !r.sampling.stop.is_empty() => {
                 return Err(profile.refused(cross::app_field(r, Setting::StopSequences, D)));
             }

@@ -98,13 +98,6 @@ fn check_output(r: &GenerateRequest) -> Result<(), KppError> {
 
 fn check_generate(r: &GenerateRequest, profile: &ChatProfile) -> Result<(), KppError> {
     check_output(r)?;
-    if r.sampling.top_k.is_some() {
-        return Err(unsupported(
-            "top_k",
-            "Remove `top_k`, or route the request to an Anthropic model.",
-            "top_k",
-        ));
-    }
     if r.sampling.stop.len() > MAX_STOP {
         let field = app_field(r, Setting::StopSequences, DIALECT);
         return Err(unsupported(

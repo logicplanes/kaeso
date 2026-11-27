@@ -108,7 +108,6 @@ Für KPP aus anderen Dialekten lehnt `check()` ab:
 - eine Bild- oder andere Ausgabemodalität, Audio ohne Stimme, eine Stimme, die OpenAI nicht nennt, und Audioeinstellungen ohne Audioausgabe;
 - Verweigerungen und Zitate außerhalb von Assistentennachrichten;
 - über `check_foreign` die Zitate anderer Dialekte;
-- `top_k` ([Sampling](sampling.md));
 - unbekannte Reasoning-Modi und Aufwandsstufen außerhalb des Enums der Spezifikation.
 
 Budgets und `disabled` werden umgerechnet ([Aufwand und Budget](reasoning.md#aufwand-und-budget)). Diese Hinweise werden stattdessen verworfen:
@@ -118,7 +117,8 @@ Budgets und `disabled` werden umgerechnet ([Aufwand und Budget](reasoning.md#auf
 - `ToolResult::is_error`, dessen Information der Fehlerinhalt trägt ([Tool-Fehler](cross-format.md#tool-fehler));
 - `reasoning.summary` und `reasoning.include_encrypted` anderer Dialekte, weil Chat kein Feld hat, das sie anfordert ([lesbares Reasoning und Zusammenfassungen](reasoning.md#lesbares-reasoning-und-zusammenfassungen));
 - ein `web_search`-Tool und `web_search_call`-Items von OpenAI Responses, weil Chat keine gehostete Websuche hat ([weggelassene Tools](cross-format.md#weggelassene-tools));
-- ein `text.verbosity` von OpenAI Responses, außer das Anbieterprofil nimmt `verbosity` an ([bedingte Einträge](cross-format.md#bedingte-einträge)).
+- ein `text.verbosity` von OpenAI Responses, außer das Anbieterprofil nimmt `verbosity` an ([bedingte Einträge](cross-format.md#bedingte-einträge));
+- `top_k`, das es in Chat nicht gibt, außer das Anbieterprofil nimmt es an (`with_top_k()`); in `kaeso-left-out` genannt ([Top K](sampling.md#top-k)).
 
 `custom_tool_call`- und `local_shell_call`-Items von OpenAI Responses und ihre Ausgaben werden zu Tool-Aufrufen und `tool`-Nachrichten ([Tool-Verlauf von Codex](cross-format.md#tool-verlauf-von-codex)).
 

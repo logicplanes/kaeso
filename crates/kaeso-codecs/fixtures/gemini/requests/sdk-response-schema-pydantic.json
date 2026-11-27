@@ -1,0 +1,63 @@
+{
+  "contents": [
+    {
+      "parts": [
+        {
+          "text": "Facts about Tokyo."
+        }
+      ],
+      "role": "user"
+    }
+  ],
+  "generationConfig": {
+    "maxOutputTokens": 1500,
+    "responseMimeType": "application/json",
+    "responseSchema": {
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "STRING"
+        },
+        "country": {
+          "title": "Country",
+          "type": "STRING"
+        },
+        "population": {
+          "nullable": true,
+          "title": "Population",
+          "type": "INTEGER"
+        },
+        "landmarks": {
+          "items": {
+            "type": "STRING"
+          },
+          "title": "Landmarks",
+          "type": "ARRAY"
+        },
+        "color": {
+          "enum": [
+            "red",
+            "green"
+          ],
+          "title": "Color",
+          "type": "STRING"
+        }
+      },
+      "property_ordering": [
+        "name",
+        "country",
+        "population",
+        "landmarks",
+        "color"
+      ],
+      "required": [
+        "name",
+        "country",
+        "landmarks",
+        "color"
+      ],
+      "title": "City",
+      "type": "OBJECT"
+    }
+  }
+}

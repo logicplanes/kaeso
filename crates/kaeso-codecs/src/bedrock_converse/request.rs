@@ -137,7 +137,6 @@ fn check_output(r: &GenerateRequest) -> Result<(), KppError> {
 fn check_sampling(r: &GenerateRequest) -> Result<(), KppError> {
     let s = &r.sampling;
     let unsupported = [
-        ("top_k", s.top_k.is_some()),
         ("seed", s.seed.is_some()),
         ("frequency_penalty", s.frequency_penalty.is_some()),
         ("presence_penalty", s.presence_penalty.is_some()),
