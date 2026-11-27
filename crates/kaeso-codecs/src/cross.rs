@@ -46,6 +46,8 @@ pub const EXTRAS_ALLOWLIST: &[(DialectId, Scope, &str)] = &[
     ),
     (DialectId::OpenAiDecisions, "request", "safety_identifier"),
     (DialectId::OpenAiDecisions, "image", "detail"),
+    (DialectId::Gemini, "tool", "response"),
+    (DialectId::Gemini, "tool", "responseJsonSchema"),
     (DialectId::GeminiDecisions, "image", "resolution"),
     (DialectId::GeminiDecisions, "video", "resolution"),
     (
@@ -728,8 +730,13 @@ fn check_generate(r: &GenerateRequest, target: &Origin) -> Result<(), KppError> 
             check_block(b, target, &format!("{path}.blocks[{bi}]"))?;
         }
     }
+    let gemini_paths = crate::gemini::declarations::wire_paths(r);
     for (i, t) in r.tools.iter().enumerate() {
-        let path = format!("tools[{i}]");
+        let path = gemini_paths
+            .get(i)
+            .cloned()
+            .flatten()
+            .unwrap_or_else(|| format!("tools[{i}]"));
         match t {
             ToolDef::Function(f) => check_extras(&f.extras, dialect, &path, "tool")?,
             ToolDef::Unknown(item) => {

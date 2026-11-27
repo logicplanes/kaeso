@@ -51,7 +51,7 @@ Schema `GenerateContentRequest`。
 | `functionDeclarations[].name`、`.description` | `name`、`description` | |
 | `functionDeclarations[].parametersJsonSchema` | `parameters` | 完整的 JSON Schema。外来工具总是得到 `parametersJsonSchema`，因此不会因 OpenAPI 子集而丢失内容。 |
 | `functionDeclarations[].parameters`（OpenAPI `Schema`） | `parameters` | 形式标记 `schema: "parameters"`，使 Gemini 在 `parameters` 中收回它。其他方言收到的是 JSON Schema（[schema](#schema)）。旁边同时有 `parametersJsonSchema` 时 → 字段 `parameters`。 |
-| `functionDeclarations[].response`、`.responseJsonSchema`、`.behavior` | 工具的字段 | |
+| `functionDeclarations[].response`、`.responseJsonSchema`、`.behavior` | 工具的字段 | `response` 和 `responseJsonSchema` 描述应用的函数返回什么：其他方言不会收到它们，并在 `kaeso-left-out` 中注明（[允许列表](cross-format.md#允许列表)）。错误以 `tools[0].functionDeclarations[1]` 的形式指明声明。 |
 | `toolConfig.functionCallingConfig` `mode: AUTO` / `NONE` / `ANY` | `tool_choice` `Auto` / `None` / `Required` | |
 | `mode: ANY` 且 `allowedFunctionNames` 只有一项 | `ToolChoice::Tool(name)` | |
 | `mode: VALIDATED`、带多个名称的 `ANY`，以及其他任何组合 | `ToolChoice::Unknown`（原样） | 跨方言时被拒绝。 |

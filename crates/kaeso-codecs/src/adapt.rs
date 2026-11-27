@@ -122,6 +122,7 @@ pub(crate) fn for_target<'a>(
     let profile = ctx.responses_profile;
     let mut draft = Draft::new(r);
     if target != DialectId::Gemini {
+        crate::gemini::declarations::for_foreign(&mut draft);
         crate::gemini::schema::for_foreign(&mut draft);
     }
     neutral::left_out(&mut draft, target, ctx);

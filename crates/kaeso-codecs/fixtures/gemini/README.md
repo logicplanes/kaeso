@@ -9,7 +9,7 @@ The layout and the provenance marks (`doc:`, `sdk:`, `schema:`) are in [Fixtures
 - The Gemini API discovery document, `https://generativelanguage.googleapis.com/$discovery/rest?version=v1beta`, revision `20261106`, downloaded 2026-11-08. Schema names in `schema:` rows refer to it.
 - The Gemini API documentation at https://aistudio.google.com/docs (text dump `https://aistudio.google.com/llms-full.txt`, read 2026-11-08): text generation, thinking, thought signatures, function calling, structured output, token counting, embeddings, models and troubleshooting.
 - `google-genai` 2.32.0, the official Python SDK, as a tie-breaker; the SDK conformance suite runs it.
-- `google-genai` 3.6.1 and `@google/genai` 3.6.1, whose request bodies the `sdk-*` and `node-*` schema fixtures are, captured on 2026-11-27, and revision `20261125` of the discovery document for `Schema`.
+- `google-genai` 3.6.1 and `@google/genai` 3.6.1, whose request bodies the `sdk-*` and `node-*` fixtures are, captured on 2026-11-27, and revision `20261125` of the discovery document for `Schema`.
 
 ## Recordings
 
