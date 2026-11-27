@@ -1737,6 +1737,22 @@ fn duties_fill_what_kpp_cannot_know() {
         (Some("1"), Some("5"))
     );
     assert_eq!(prices.cache_read.as_deref(), Some("0.1"));
+    let embed = model_info(
+        "text-embedding-3-small",
+        &eff(&entry("openai", "text-embedding-3-small")),
+    );
+    assert_eq!(
+        embed.output_modalities.as_deref(),
+        Some(&["embeddings".to_owned()][..]),
+        "an embeddings model makes no text"
+    );
+    let grok = model_info("grok-4.7", &eff(&entry("xai", "grok-4.7")));
+    assert!(
+        grok.features
+            .unwrap()
+            .contains(&kaeso_kpp::ModelFeature::ReasoningEffort),
+        "grok-4.7 lists effort levels"
+    );
     let mut unknown = haiku.clone();
     unknown.fields = crate::catalogue::Fields::default();
     let bare = model_info("m", &unknown);

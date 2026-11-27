@@ -1128,12 +1128,29 @@ pub fn model_info(id: &str, eff: &Effective) -> ModelInfo {
     info.max_output_tokens = eff.fields.output_limit;
     info.input_modalities
         .clone_from(&eff.fields.input_modalities);
-    info.output_modalities
-        .clone_from(&eff.fields.output_modalities);
+    // A model that makes no content says what it makes instead, in OpenRouter's words.
+    let makes = if eff.is_embeddings() {
+        Some("embeddings")
+    } else if eff.is_rerank() {
+        Some("rerank")
+    } else if eff.decides_only() {
+        Some("decisions")
+    } else {
+        None
+    };
+    info.output_modalities = match makes {
+        Some(m) => Some(vec![m.to_owned()]),
+        None => eff.fields.output_modalities.clone(),
+    };
     let f = &eff.fields;
+    let efforts = !effort_levels(eff, DialectId::OpenAiChat).is_empty();
     let features: Vec<ModelFeature> = [
         (f.tool_call, ModelFeature::Tools),
         (f.reasoning, ModelFeature::Reasoning),
+        (
+            f.reasoning.filter(|_| efforts),
+            ModelFeature::ReasoningEffort,
+        ),
         (f.structured_output, ModelFeature::StructuredOutput),
         (f.temperature, ModelFeature::Temperature),
     ]

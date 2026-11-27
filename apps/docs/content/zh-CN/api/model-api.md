@@ -214,7 +214,14 @@ console.log(response.text);
  "supported_parameters": ["tools", "tool_choice", "reasoning", "reasoning_effort", "response_format", "structured_outputs", "temperature"]}
 ```
 
-这些值来自项目的目录（包括覆盖设置）；别名显示其列出时所用模型的值。`pricing` 是 Kaeso 计算请求费用所用的基础价格，单位为每 Token 美元：`prompt`、`completion`、`input_cache_read`、`input_cache_write` 和 `internal_reasoning`。长提示词的价格以及按图像、秒或字符计的价格不会列出。`supported_parameters` 列出目录中该模型接受的请求字段：`tools` 和 `tool_choice`、`reasoning` 和 `reasoning_effort`、`response_format` 和 `structured_outputs`（按 JSON Schema 输出），以及 `temperature`。目录中未知的字段会省略。
+这些值来自项目的目录（包括覆盖设置）；别名显示其列出时所用模型的值。`pricing` 是 Kaeso 计算请求费用所用的基础价格，单位为每 Token 美元：`prompt`、`completion`、`input_cache_read`、`input_cache_write` 和 `internal_reasoning`。长提示词的价格以及按图像、秒或字符计的价格不会列出。`supported_parameters` 列出目录中该模型接受的请求字段：
+
+- `tools` 和 `tool_choice`；
+- 会推理的模型列出 `reasoning`，有推理强度等级时还列出 `reasoning_effort`；
+- `response_format` 和 `structured_outputs`（按 JSON Schema 输出）；
+- `temperature`。
+
+不生成内容的模型以 OpenRouter 的命名把它生成的东西列为输出模态：`embeddings`、`rerank` 或 `decisions`。目录中未知的字段会省略。
 
 `GET /v1/models/{model}` 和 `GET /v1beta/models/{model}` 接受任何[模型名称](#模型名称)。模型不在目录中、密钥无权使用或服务商不提供该模型时，返回 404。
 

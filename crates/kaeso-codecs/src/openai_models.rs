@@ -180,7 +180,8 @@ fn parameters(features: &[ModelFeature]) -> Vec<&'static str> {
     for f in features {
         out.extend_from_slice(match f {
             ModelFeature::Tools => &["tools", "tool_choice"][..],
-            ModelFeature::Reasoning => &["reasoning", "reasoning_effort"],
+            ModelFeature::Reasoning => &["reasoning"],
+            ModelFeature::ReasoningEffort => &["reasoning_effort"],
             ModelFeature::StructuredOutput => &["response_format", "structured_outputs"],
             ModelFeature::Temperature => &["temperature"],
             _ => &[],

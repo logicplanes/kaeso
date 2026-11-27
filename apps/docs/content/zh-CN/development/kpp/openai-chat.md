@@ -299,7 +299,7 @@ OpenAI 不分页，因此网关调用 `ModelList::page` 时不设默认上限，
 | `context_length`、`top_provider` `{context_length, max_completion_tokens}`（仅写出） | `context_window`、`max_output_tokens` | 省略 |
 | `architecture` `{modality, input_modalities, output_modalities}`（仅写出） | `input_modalities`、`output_modalities`；两者都已知且不为空时，`modality` 将其连接为 `text+image->text` | 省略 |
 | `pricing` `{prompt, completion, input_cache_read, input_cache_write, internal_reasoning}`，每 Token 美元，十进制字符串（仅写出） | `prices` 的 `input`、`output`、`cache_read`、`cache_write`、`reasoning`，每百万 Token 美元，精确除以一百万（`"3.00"` 变为 `"0.000003"`） | 省略 |
-| `supported_parameters`（仅写出） | `features`：`Tools` 对应 `tools` 和 `tool_choice`，`Reasoning` 对应 `reasoning` 和 `reasoning_effort`，`StructuredOutput` 对应 `response_format` 和 `structured_outputs`，`Temperature` 对应 `temperature` | 省略；`features` 为空时为 `[]` |
+| `supported_parameters`（仅写出） | `features`：`Tools` 对应 `tools` 和 `tool_choice`，`Reasoning` 对应 `reasoning`，`ReasoningEffort` 对应 `reasoning_effort`，`StructuredOutput` 对应 `response_format` 和 `structured_outputs`，`Temperature` 对应 `temperature` | 省略；`features` 为空时为 `[]` |
 | 未知键 | extras 字段 | |
 
 网关从自己的目录列出模型：把 `owned_by` 设为服务商 ID，并在目录中有发布日期时把 `created_at` 设为该日期。仅写出的字段也由目录填写（[列出模型](../../api/model-api.md#列出模型)）。它们是 OpenRouter 列表的字段（fixture `providers/openrouter/models/list-recorded.json`），读取 OpenAI 格式列表的应用从中获取模型的名称、限制、模态和价格。编解码器不读取它们：发送这些字段的列表（例如 OpenRouter 的）将其保留为 extras，并按原样写回；网关的服务商检测从那里读取 `context_length`。

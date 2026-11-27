@@ -214,7 +214,14 @@ In the OpenAI format, each model describes itself in the fields of [OpenRouter's
  "supported_parameters": ["tools", "tool_choice", "reasoning", "reasoning_effort", "response_format", "structured_outputs", "temperature"]}
 ```
 
-The values come from the project's catalogue, overrides included; an alias shows those of the model it lists. `pricing` holds the base prices Kaeso costs a request at, in USD per token: `prompt`, `completion`, `input_cache_read`, `input_cache_write` and `internal_reasoning`. Prices for long prompts and prices per image, second or character aren't listed. `supported_parameters` names the request fields the catalogue says the model takes: `tools` and `tool_choice`, `reasoning` and `reasoning_effort`, `response_format` and `structured_outputs` (JSON Schema output), and `temperature`. A field the catalogue doesn't know is left out.
+The values come from the project's catalogue, overrides included; an alias shows those of the model it lists. `pricing` holds the base prices Kaeso costs a request at, in USD per token: `prompt`, `completion`, `input_cache_read`, `input_cache_write` and `internal_reasoning`. Prices for long prompts and prices per image, second or character aren't listed. `supported_parameters` names the request fields the catalogue says the model takes:
+
+- `tools` and `tool_choice`;
+- `reasoning` for a model that reasons, and `reasoning_effort` when it has effort levels;
+- `response_format` and `structured_outputs` (JSON Schema output);
+- `temperature`.
+
+A model that makes no content lists what it makes as its output modality, in OpenRouter's words: `embeddings`, `rerank` or `decisions`. A field the catalogue doesn't know is left out.
 
 `GET /v1/models/{model}` and `GET /v1beta/models/{model}` take any [model name](#model-names). They answer 404 when the model isn't in the catalogue, the key may not use it, or the provider doesn't serve it.
 

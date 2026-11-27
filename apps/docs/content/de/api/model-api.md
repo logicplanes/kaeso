@@ -214,7 +214,14 @@ Im OpenAI-Format beschreibt sich jedes Modell in den Feldern der [Modellliste vo
  "supported_parameters": ["tools", "tool_choice", "reasoning", "reasoning_effort", "response_format", "structured_outputs", "temperature"]}
 ```
 
-Die Werte stammen aus dem Katalog des Projekts, Überschreibungen eingeschlossen; ein Alias zeigt die des Modells, mit dem er gelistet wird. `pricing` enthält die Grundpreise, mit denen Kaeso eine Anfrage berechnet, in USD pro Token: `prompt`, `completion`, `input_cache_read`, `input_cache_write` und `internal_reasoning`. Preise für lange Prompts und Preise pro Bild, Sekunde oder Zeichen stehen nicht darin. `supported_parameters` nennt die Anfragefelder, die das Modell laut Katalog nimmt: `tools` und `tool_choice`, `reasoning` und `reasoning_effort`, `response_format` und `structured_outputs` (Ausgabe nach JSON Schema) sowie `temperature`. Ein Feld, das der Katalog nicht kennt, fehlt.
+Die Werte stammen aus dem Katalog des Projekts, Überschreibungen eingeschlossen; ein Alias zeigt die des Modells, mit dem er gelistet wird. `pricing` enthält die Grundpreise, mit denen Kaeso eine Anfrage berechnet, in USD pro Token: `prompt`, `completion`, `input_cache_read`, `input_cache_write` und `internal_reasoning`. Preise für lange Prompts und Preise pro Bild, Sekunde oder Zeichen stehen nicht darin. `supported_parameters` nennt die Anfragefelder, die das Modell laut Katalog nimmt:
+
+- `tools` und `tool_choice`;
+- `reasoning` für ein Modell, das Reasoning nutzt, und `reasoning_effort`, wenn es Aufwandsstufen hat;
+- `response_format` und `structured_outputs` (Ausgabe nach JSON Schema);
+- `temperature`.
+
+Ein Modell, das keine Inhalte erzeugt, nennt als Ausgabemodalität, was es erzeugt, mit den Worten von OpenRouter: `embeddings`, `rerank` oder `decisions`. Ein Feld, das der Katalog nicht kennt, fehlt.
 
 `GET /v1/models/{model}` und `GET /v1beta/models/{model}` nehmen jeden [Modellnamen](#modellnamen). Die Antwort ist 404, wenn das Modell nicht im Katalog ist, der Schlüssel es nicht verwenden darf oder der Anbieter es nicht bereitstellt.
 

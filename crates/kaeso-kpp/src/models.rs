@@ -28,7 +28,8 @@ pub struct ModelInfo {
     /// What the model takes: `text`, `image`, `pdf`, `audio`, `video`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub input_modalities: Option<Vec<String>>,
-    /// What the model produces: `text`, `image`, `audio`, `video` or `embedding`.
+    /// What the model produces: `text`, `image`, `audio` or `video`, or for a model that makes
+    /// none of them, `embeddings`, `rerank` or `decisions`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub output_modalities: Option<Vec<String>>,
     /// The request features the model is known to take; one it is not known to take is left
@@ -51,6 +52,8 @@ pub enum ModelFeature {
     Tools,
     /// Reasoning (thinking) before the answer.
     Reasoning,
+    /// Effort levels for the reasoning that a request can choose from.
+    ReasoningEffort,
     /// Output that follows a JSON Schema.
     StructuredOutput,
     /// A sampling `temperature`.

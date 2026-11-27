@@ -1875,12 +1875,15 @@ fn the_catalogue_description_reaches_openai_apps_in_openrouters_fields() {
     m.features = Some(vec![
         kaeso_kpp::ModelFeature::Tools,
         kaeso_kpp::ModelFeature::Reasoning,
+        kaeso_kpp::ModelFeature::ReasoningEffort,
         kaeso_kpp::ModelFeature::StructuredOutput,
     ]);
     let mut prices = kaeso_kpp::ModelPrices::default();
     prices.input = Some("3.00".into());
     prices.output = Some("15".into());
     prices.cache_read = Some("0.075".into());
+    prices.cache_write = Some("3.75".into());
+    prices.reasoning = Some("15".into());
     m.prices = Some(prices);
     for d in OPENAI {
         let o = json_of(&dispatch::encode_model(d, &m).unwrap());
@@ -1892,7 +1895,9 @@ fn the_catalogue_description_reaches_openai_apps_in_openrouters_fields() {
                                     "input_modalities": ["text", "image"],
                                     "output_modalities": ["text"]},
                    "pricing": {"prompt": "0.000003", "completion": "0.000015",
-                               "input_cache_read": "0.000000075"},
+                               "input_cache_read": "0.000000075",
+                               "input_cache_write": "0.00000375",
+                               "internal_reasoning": "0.000015"},
                    "top_provider": {"context_length": 2_000_000, "max_completion_tokens": 64_000},
                    "supported_parameters": ["tools", "tool_choice", "reasoning", "reasoning_effort",
                                             "response_format", "structured_outputs"]}),
@@ -1932,7 +1937,7 @@ fn the_catalogue_description_reaches_openai_apps_in_openrouters_fields() {
     }
     let recorded = json_of(&fixture(
         "openai_chat",
-        "providers/openrouter/list-recorded",
+        "providers/openrouter/list-recorded-prices",
     ));
     let theirs = &recorded["data"][0];
     let mut ours = json_of(&dispatch::encode_model(DialectId::OpenAiChat, &m).unwrap());
