@@ -554,7 +554,7 @@ impl ChatState {
             return;
         }
         if frame.has_data && frame.event == Some("error") {
-            self.release_held(true, out);
+            self.release_before_error(out);
             let err = crate::openai_chat::error::with_detail(
                 crate::openai_chat::error::decode_body(None, frame.data.as_bytes()),
                 self.error_detail,
@@ -663,7 +663,7 @@ impl ChatState {
         let tap: ChatTap<'_> = match serde_json::from_str(&frame.data) {
             Ok(t) => t,
             Err(e) => {
-                self.release_held(true, out);
+                self.release_before_error(out);
                 self.inert = true;
                 step.error = Some(
                     KppError::provider(format!(
@@ -682,7 +682,7 @@ impl ChatState {
                 self.error_detail,
             )
             .with_origin(self.origin.clone());
-            self.release_held(true, out);
+            self.release_before_error(out);
             self.inert = true;
             step.error = Some(err);
             return;
@@ -704,7 +704,7 @@ impl ChatState {
 
         let choices_empty = match &tap.choices {
             Some(choices) if choices.len() > 1 => {
-                self.release_held(true, out);
+                self.release_before_error(out);
                 self.inert = true;
                 step.error = Some(
                     KppError::unsupported_by(
@@ -720,7 +720,7 @@ impl ChatState {
             Some(choices) => {
                 if let Some(ch) = choices.first() {
                     if ch.index != 0 {
-                        self.release_held(true, out);
+                        self.release_before_error(out);
                         self.inert = true;
                         step.error = Some(
                             KppError::unsupported_by(
@@ -735,7 +735,7 @@ impl ChatState {
                     if ch.finish_reason.as_deref() == Some("error") {
                         let raw_val =
                             serde_json::from_str::<Value>(&frame.data).unwrap_or(Value::Null);
-                        self.release_held(true, out);
+                        self.release_before_error(out);
                         self.inert = true;
                         step.error = Some(
                             KppError::provider(
@@ -760,7 +760,7 @@ impl ChatState {
             match crate::openai_chat::response::decode_usage(&raw_json, &self.origin) {
                 Ok(decoded) => decoded_usage = Some(decoded),
                 Err(err) => {
-                    self.release_held(true, out);
+                    self.release_before_error(out);
                     self.inert = true;
                     step.error = Some(err.with_origin(self.origin.clone()));
                     return;
@@ -879,6 +879,15 @@ impl ChatState {
             self.usage_chunk = None;
         }
         out.extend_from_slice(raw);
+    }
+
+    // An error ends the stream: what the app would have got before it, the held chunk as sent or
+    // the usage a comment already moved out of it, goes first.
+    fn release_before_error(&mut self, out: &mut Vec<u8>) {
+        self.release_held(true, out);
+        if let Some(chunk) = self.usage_chunk.take() {
+            out.extend_from_slice(&chunk);
+        }
     }
 
     fn release_held(&mut self, as_sent: bool, out: &mut Vec<u8>) {
@@ -1044,14 +1053,14 @@ impl StreamPassthrough for ChatPassthrough {
     }
 
     fn flush_eof_error(&mut self, out: &mut Vec<u8>) -> PassthroughStep {
-        self.state.release_held(true, out);
+        self.state.release_before_error(out);
         flush_eof_framer(&mut self.framer, &mut self.state, out)
     }
 
     fn encode_error(&mut self, err: &KppError) -> Vec<u8> {
         let body = crate::openai_chat::error::error_body(err);
         let mut out = Vec::new();
-        self.state.release_held(true, &mut out);
+        self.state.release_before_error(&mut out);
         out.extend_from_slice(b"data: ");
         let _ = serde_json::to_writer(&mut out, &body);
         out.extend_from_slice(b"\n\n");
@@ -1970,6 +1979,24 @@ mod tests {
         assert_eq!(chunks[1]["usage"], Value::Null, "{out}");
         assert_eq!(chunks[2]["usage"]["total_tokens"], 7, "{out}");
         assert!(out.contains(": keepalive\n\n"), "{out}");
+
+        // A comment, then an error: the usage the comment moved out of the chunk comes first.
+        let (_, out, errors) = run(&format!(
+            "{head}{finish}: keepalive\n\nevent: error\ndata: {{\"error\":{{\"message\":\"boom\"}}}}\n\n"
+        ));
+        assert_eq!(errors.len(), 1);
+        let chunks = data(&out);
+        assert_eq!(chunks.len(), 3, "{out}");
+        assert_eq!(chunks[2]["choices"], serde_json::json!([]), "{out}");
+        assert_eq!(chunks[2]["usage"]["total_tokens"], 7, "{out}");
+        let mut pass = for_stream(DialectId::OpenAiChat, &ectx, &enc).unwrap();
+        let mut out = Vec::new();
+        let fed = format!("{head}{finish}: keepalive\n\n");
+        assert!(pass.feed(fed.as_bytes(), &mut out).error.is_none());
+        let error =
+            String::from_utf8(pass.encode_error(&KppError::provider("The connection broke.")))
+                .unwrap();
+        assert!(error.contains("\"choices\":[]"), "{error}");
     }
 
     #[test]

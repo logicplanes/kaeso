@@ -360,6 +360,9 @@ impl ChatStreamEncoder {
                 out.extend(self.close(!no_done)?);
             }
             StreamEvent::Error(err) => {
+                if let Some(chunk) = self.usage_chunk.take() {
+                    out.extend(chunk);
+                }
                 let body = serde_json::to_string(&error_body(err)).map_err(internal)?;
                 write_event(&mut out, None, &body);
                 self.done = true;
