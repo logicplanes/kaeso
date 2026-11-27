@@ -487,21 +487,27 @@ fn tools_of_other_formats_without_strict_go_non_strict() {
 
 #[test]
 fn recorded_tools_with_optional_arguments_keep_them_optional() {
-    for (dialect, file, tool) in [
+    for (dialect, file, tool, required, optional) in [
         (
             DialectId::Gemini,
             "gemini/requests/tools-parallel.json",
             "get_weather",
+            &["location"][..],
+            &["unit"][..],
         ),
         (
             DialectId::AnthropicMessages,
             "anthropic_messages/requests/tools-single.json",
             "get_weather",
+            &["location"],
+            &["unit"],
         ),
         (
             DialectId::OpenAiChat,
             "openai_chat/requests/qwen-code-tool-loop.json",
             "read_file",
+            &["file_path"],
+            &["offset", "limit", "pages"],
         ),
     ] {
         let body = std::fs::read(crate::test_support::fixtures_dir().join(file)).unwrap();
@@ -527,10 +533,10 @@ fn recorded_tools_with_optional_arguments_keep_them_optional() {
             .find(|t| t["name"] == tool)
             .unwrap();
         assert_eq!(sent["strict"], json!(false), "{file}");
-        let properties = sent["parameters"]["properties"].as_object().unwrap().len();
-        let required = sent["parameters"]["required"]
-            .as_array()
-            .map_or(0, Vec::len);
-        assert!(required < properties, "{file}: {sent}");
+        assert_eq!(sent["parameters"]["required"], json!(required), "{file}");
+        let properties = sent["parameters"]["properties"].as_object().unwrap();
+        for name in required.iter().chain(optional) {
+            assert!(properties.contains_key(*name), "{file}: {name} in {sent}");
+        }
     }
 }
