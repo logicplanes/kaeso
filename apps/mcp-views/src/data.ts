@@ -17,7 +17,6 @@ export interface Point {
 export interface GroupRow {
   key: string;
   label: string;
-  /** The name of the source that reported a row grouped by key as `source:…`; null when it isn't visible. */
   source?: string | null;
   value: Value;
   requests: number;

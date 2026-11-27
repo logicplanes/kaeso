@@ -667,25 +667,35 @@ async fn stats_of(
 // Archived keys and sources too, so past requests keep their names; a list the user may not see
 // leaves its names out, and the breakdown says "A source" as the console does.
 async fn names_of(c: &Call<'_>, list: &str) -> std::collections::HashMap<String, String> {
-    let rows = platform_get(
-        c,
-        list,
-        &[
+    let mut names = std::collections::HashMap::new();
+    let mut after: Option<String> = None;
+    loop {
+        let mut query = vec![
             ("limit", "100".to_owned()),
             ("include_archived", "true".to_owned()),
-        ],
-    )
-    .await
-    .map(rows_of)
-    .unwrap_or_default();
-    rows.iter()
-        .filter_map(|r| {
+        ];
+        if let Some(cursor) = &after {
+            query.push(("after", cursor.clone()));
+        }
+        let Ok(page) = platform_get(c, list, &query).await else {
+            break;
+        };
+        let next = page
+            .get("next_cursor")
+            .and_then(Value::as_str)
+            .map(str::to_owned);
+        names.extend(rows_of(page).iter().filter_map(|r| {
             Some((
                 r.get("id")?.as_str()?.to_owned(),
                 r.get("name")?.as_str()?.to_owned(),
             ))
-        })
-        .collect()
+        }));
+        match next {
+            Some(cursor) if after.as_ref() != Some(&cursor) => after = Some(cursor),
+            _ => break,
+        }
+    }
+    names
 }
 
 fn arguments(params: &Map<String, Value>) -> Map<String, Value> {
