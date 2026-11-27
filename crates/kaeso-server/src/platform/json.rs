@@ -144,7 +144,14 @@ pub(crate) fn read<T: DeserializeOwned>(json: &str) -> Result<T, ApiError> {
             format!("`{p}` must be an object.")
         }
         (None, Some(x)) if INTEGERS.contains(&x) => format!("`{p}` must be a whole number."),
-        _ => format!("`{p}` has a value of the wrong type or form."),
+        _ => String::new(),
+    };
+    // The console shows a message in a toast, at most 120 characters; a long list of values
+    // doesn't fit, and the API reference lists them.
+    let message = if message.is_empty() || message.chars().count() > 120 {
+        format!("`{p}` has a value of the wrong type or form.")
+    } else {
+        message
     };
     Err(ApiError::invalid(&p, message))
 }
@@ -191,6 +198,23 @@ mod tests {
     }
 
     #[derive(Debug, Deserialize)]
+    #[serde(rename_all = "snake_case")]
+    enum Server {
+        Vllm,
+        Sglang,
+        Ollama,
+        LmStudio,
+        LlamaCpp,
+        Localai,
+        Tgi,
+        Lmdeploy,
+        Nim,
+        DockerModelRunner,
+        Koboldcpp,
+        Tabbyapi,
+    }
+
+    #[derive(Debug, Deserialize)]
     #[serde(deny_unknown_fields)]
     struct Create {
         name: String,
@@ -208,6 +232,8 @@ mod tests {
         on: Option<bool>,
         #[serde(default)]
         max: Option<u32>,
+        #[serde(default)]
+        server: Option<Server>,
     }
 
     fn reject(body: &str) -> (String, Option<String>) {
@@ -266,6 +292,7 @@ mod tests {
         assert!(matches!(more.embeddings, Some(Format::OpenaiEmbeddings)));
         assert!(matches!(more.modes[..], [Auth::Bearer, Auth::None]));
         assert_eq!((more.on, more.max), (Some(true), Some(3)));
+        assert!(more.server.is_none());
     }
 
     #[test]
@@ -331,6 +358,11 @@ mod tests {
                 r#"{"name": "a", "max": 1.5}"#,
                 "`max` must be a whole number.",
                 Some("max"),
+            ),
+            (
+                r#"{"name": "a", "server": "vllm2"}"#,
+                "`server` has a value of the wrong type or form.",
+                Some("server"),
             ),
             (
                 r#""x""#,
