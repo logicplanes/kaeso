@@ -70,18 +70,18 @@ Codex 每一轮都会发送只有 OpenAI 认识的部分。Kaeso 会为其他模
 
 ## 设置 Gemini CLI
 
-Gemini CLI 使用 Gemini API。设置不带版本的基础 URL（Gemini CLI 会自己加上 `/v1beta`），并用 `-m` 选择模型：
+Gemini CLI 使用 Gemini API。先在 `~/.gemini/settings.json` 中让它用密钥登录，而不是用 Google 账号；否则已保存的 Google 登录会优先：
+
+```json
+{ "security": { "auth": { "selectedType": "gemini-api-key" } } }
+```
+
+然后设置不带版本的基础 URL（Gemini CLI 会自己加上 `/v1beta`），并用 `-m` 选择模型：
 
 ```bash
 export GOOGLE_GEMINI_BASE_URL=https://kaeso.example.com
 export GEMINI_API_KEY=sk-kso-…
 gemini -m claude-sonnet-5-5
-```
-
-在 `~/.gemini/settings.json` 中让 Gemini CLI 用密钥登录，而不是用 Google 账号：
-
-```json
-{ "security": { "auth": { "selectedType": "gemini-api-key" } } }
 ```
 
 Gemini CLI 在每个请求中都发送 `topK`。没有 top-k 采样的模型（例如 GPT 和 DeepSeek）收到的请求不含它，回复的 `kaeso-left-out` 响应头会注明。
@@ -140,7 +140,7 @@ qwen --auth-type openai -m claude-sonnet-5-5
 | Goose | `OPENAI_HOST=https://kaeso.example.com`，不带 `/v1`：Goose 会自己加上 `v1/chat/completions`。使用 Anthropic Messages 时改用 `ANTHROPIC_HOST`。 |
 | Aider | `--model openai/<model>` 加 `OPENAI_API_BASE=https://kaeso.example.com/v1`，或 `--model anthropic/<model>` 加 `ANTHROPIC_API_BASE=https://kaeso.example.com`。对 Aider 不认识的模型加上 `--no-show-model-warnings`。它的 token 数是自己的估算。 |
 | Continue | 一个模型，`provider: openai` 加 `apiBase: https://kaeso.example.com/v1`，或 `provider: anthropic` 加 `apiBase: https://kaeso.example.com/v1/`。 |
-| Open WebUI | `OPENAI_API_BASE_URL=https://kaeso.example.com/v1` 和 `OPENAI_API_KEY`。若要通过 Kaeso 进行文档搜索，设置 `RAG_EMBEDDING_ENGINE=openai`、`RAG_OPENAI_API_BASE_URL`、`RAG_OPENAI_API_KEY`，并在 `RAG_EMBEDDING_MODEL` 中填写项目的一个嵌入模型。 |
+| Open WebUI | `OPENAI_API_BASE_URL=https://kaeso.example.com/v1` 和 `OPENAI_API_KEY`。若要通过 Kaeso 进行文档搜索，设置 `RAG_EMBEDDING_ENGINE=openai`、`RAG_OPENAI_API_BASE_URL=https://kaeso.example.com/v1`（它不沿用聊天连接的地址）、`RAG_OPENAI_API_KEY`，并在 `RAG_EMBEDDING_MODEL` 中填写项目的一个嵌入模型。 |
 
 ## 下一步
 

@@ -70,18 +70,18 @@ Modelle ohne Websuche, etwa Mistral, bekommen die Anfrage ohne sie. Claude und G
 
 ## Gemini CLI einrichten
 
-Gemini CLI spricht die Gemini API. Setzen Sie die Basis-URL ohne Version, da Gemini CLI `/v1beta` selbst anhängt, und wählen Sie das Modell mit `-m`:
+Gemini CLI spricht die Gemini API. Weisen Sie es zuerst in `~/.gemini/settings.json` an, sich mit einem Schlüssel statt mit einem Google-Konto anzumelden; sonst gewinnt eine gespeicherte Google-Anmeldung:
+
+```json
+{ "security": { "auth": { "selectedType": "gemini-api-key" } } }
+```
+
+Setzen Sie dann die Basis-URL ohne Version, da Gemini CLI `/v1beta` selbst anhängt, und wählen Sie das Modell mit `-m`:
 
 ```bash
 export GOOGLE_GEMINI_BASE_URL=https://kaeso.example.com
 export GEMINI_API_KEY=sk-kso-…
 gemini -m claude-sonnet-5-5
-```
-
-Weisen Sie Gemini CLI in `~/.gemini/settings.json` an, sich mit dem Schlüssel statt mit einem Google-Konto anzumelden:
-
-```json
-{ "security": { "auth": { "selectedType": "gemini-api-key" } } }
 ```
 
 Gemini CLI sendet `topK` mit jeder Anfrage. Modelle ohne Top-k-Sampling, etwa GPT und DeepSeek, bekommen die Anfrage ohne es, und der Header `kaeso-left-out` der Antwort nennt es.
@@ -140,7 +140,7 @@ Manche Tools brauchen mehr als die Basis-URL:
 | Goose | `OPENAI_HOST=https://kaeso.example.com` ohne `/v1`: Goose hängt `v1/chat/completions` selbst an. Für Anthropic Messages stattdessen `ANTHROPIC_HOST`. |
 | Aider | `--model openai/<model>` mit `OPENAI_API_BASE=https://kaeso.example.com/v1` oder `--model anthropic/<model>` mit `ANTHROPIC_API_BASE=https://kaeso.example.com`. Fügen Sie `--no-show-model-warnings` für Modelle hinzu, die Aider nicht kennt. Seine Token-Zahlen sind eigene Schätzungen. |
 | Continue | Ein Modell mit `provider: openai` und `apiBase: https://kaeso.example.com/v1` oder mit `provider: anthropic` und `apiBase: https://kaeso.example.com/v1/`. |
-| Open WebUI | `OPENAI_API_BASE_URL=https://kaeso.example.com/v1` und `OPENAI_API_KEY`. Für seine Dokumentsuche über Kaeso `RAG_EMBEDDING_ENGINE=openai`, `RAG_OPENAI_API_BASE_URL`, `RAG_OPENAI_API_KEY` und ein Embedding-Modell des Projekts in `RAG_EMBEDDING_MODEL`. |
+| Open WebUI | `OPENAI_API_BASE_URL=https://kaeso.example.com/v1` und `OPENAI_API_KEY`. Für seine Dokumentsuche über Kaeso `RAG_EMBEDDING_ENGINE=openai`, `RAG_OPENAI_API_BASE_URL=https://kaeso.example.com/v1` (es übernimmt nicht die der Chat-Verbindung), `RAG_OPENAI_API_KEY` und ein Embedding-Modell des Projekts in `RAG_EMBEDDING_MODEL`. |
 
 ## Nächste Schritte
 
