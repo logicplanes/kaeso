@@ -50,7 +50,7 @@ When a request crosses formats, Kaeso refuses these with an error that names the
 ### Requests to Anthropic
 
 - `seed`, frequency and presence penalties other than 0, and a temperature above 1
-- the `json_object` output format, and a JSON schema with a description or with `strict: false`
+- the `json_object` output format, and a JSON schema that lists no keys
 - refusals in the history
 - images other than JPEG, PNG, GIF and WebP, and documents other than PDF and plain text
 - audio, and video except for MiniMax

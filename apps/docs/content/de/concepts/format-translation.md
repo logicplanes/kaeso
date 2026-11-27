@@ -50,7 +50,7 @@ Wechselt eine Anfrage das Format, lehnt Kaeso Folgendes mit einem Fehler ab, der
 ### Anfragen an Anthropic
 
 - `seed`, Frequency- und Presence-Penalties außer 0 und eine Temperatur über 1
-- das Ausgabeformat `json_object` und ein JSON-Schema mit einer Beschreibung oder mit `strict: false`
+- das Ausgabeformat `json_object` und ein JSON-Schema ohne Schlüssel
 - Verweigerungen im Verlauf
 - Bilder außer JPEG, PNG, GIF und WebP und Dokumente außer PDF und reinem Text
 - Audio, und Video außer für MiniMax
