@@ -33,6 +33,7 @@ export function InstanceGeneralPage() {
         <>
           <AccountsSettings settings={s} />
           <SignIn settings={s} />
+          <SearchEngines on={s.search_engines} />
           <AdminSsoSettings settings={s} />
           <TimeZoneSettings settings={s} />
           <ExchangeRatesSettings settings={s} />
@@ -141,6 +142,28 @@ function SignIn({ settings }: { settings: SettingsView }) {
             control={<Status tone={on ? "success" : "neutral"}>{on ? t("common.on", "On") : t("common.off", "Off")}</Status>}
           />
         ))}
+      </SettingsGroup>
+    </Section>
+  );
+}
+
+function SearchEngines({ on }: { on: boolean }) {
+  return (
+    <Section
+      spacing="settings"
+      title={t("instance.searchEngines", "Search engines")}
+      description={t("instance.searchEnginesHint", "Set with KAESO_SEARCH_ENGINES for the gateway and the console.")}
+    >
+      <SettingsGroup>
+        <SettingsRow
+          title={t("instance.searchEnginesIndex", "Index the sign-in page")}
+          description={
+            on
+              ? t("instance.searchEnginesOn", "Search engines may list the sign-in page.")
+              : t("instance.searchEnginesOff", "Every crawler is asked to keep out of this install.")
+          }
+          control={<Status tone={on ? "success" : "neutral"}>{on ? t("common.on", "On") : t("common.off", "Off")}</Status>}
+        />
       </SettingsGroup>
     </Section>
   );
