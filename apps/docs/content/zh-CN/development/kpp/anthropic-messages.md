@@ -236,7 +236,7 @@ Schema `MessageStreamEvent`。
 - **拒绝回复**变为文本块。
 - **工具调用参数**：来自其他方言的参数一到达就作为 `input_json_delta` 写出。开头的空白文本会等到第一个非空增量再一起写出；参数始终为空的调用不会得到 `input_json_delta`，应用此时读到的是块开始时的输入 `{}`。不构成 JSON 对象的参数（例如被输出上限截断）按收到时的原样发送。Anthropic 自己流式发送被 `max_tokens` 截断的调用时也是如此，因此应用能看到模型写了什么。Anthropic 自己的流按收到时的原样回放。
 - **推理块**：来自其他方言的推理块变为 `thinking` 块（[推理数据块](reasoning.md#推理数据块)）。摘要和推理文本作为 `thinking_delta` 写出，各部分之间有一个空行。不透明增量被收集起来，块结束时写出一个 `signature_delta`，其中是整个块的推理数据块。
-- **省略的内容**（[回复](cross-format.md#回复)）：外来的引用增量和未知增量、未知块以及 `Extra` 事件，与完整回复一致。在它们到达期间，编码器会按节奏写出 `event: ping` 帧（`{"type": "ping"}`，与 Anthropic 发送的相同）：隐藏文本和外来的额外事件每 1,024 字节一帧（[保活消息](cross-format.md#保活消息)）。`StreamEncoder::keepalive` 会把同样的帧交给网关。
+- **省略的内容**（[回复](cross-format.md#回复)）：外来的引用增量和未知增量、未知块以及 `Extra` 事件，与完整回复一致。在它们到达期间，编码器会按节奏写出 `event: ping` 帧（`{"type": "ping"}`，与 Anthropic 发送的相同）：隐藏文本和外来的额外事件累计满 1,024 字节写一帧（[保活消息](cross-format.md#保活消息)）。`StreamEncoder::keepalive` 会把同样的帧交给网关。
 - **停止原因：**`StopReason::Other` 的映射方式与回复相同。
 - **错误**：KPP `Error` 变为 `event: error`，其内容与[错误](#错误)中的响应体相同，但不含 `request_id`：从 Anthropic 解码的错误按收到时的原样写出，其他错误为 `{"type":"error","error":{type,message}}`。
 

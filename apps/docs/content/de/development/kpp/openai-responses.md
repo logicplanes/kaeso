@@ -235,7 +235,7 @@ Blöcke, die bei `ResponseStop` noch offen sind, werden zuerst geschlossen. Nach
 
 Reasoning-Blöcke anderer Dialekte werden zu Reasoning-Items mit einer `rs_kaeso_…`-ID ([Reasoning-Blobs](reasoning.md#reasoning-blobs)). Der Reasoning-Text wird als `reasoning_summary_text` der Zusammenfassung 0 gestreamt, und Zusammenfassungen behalten ihren Index. `output_item.done` trägt den Reasoning-Blob des ganzen Blocks in `encrypted_content`.
 
-Was ein anderer Dialekt sendet und dieser Dialekt nicht darstellen kann, etwa zusätzliche Events wie Anthropic-`ping` oder fremde unbekannte Blöcke, löst getaktete SSE-Kommentare aus: `: keepalive` ([Keepalives](cross-format.md#keepalives)). Der Encoder schreibt einen pro 1.024 Byte verborgenem Text und zusätzlichen Events. `StreamEncoder::keepalive` gibt dem Gateway denselben Frame. Es gibt kein Endsignal für den Stream.
+Was ein anderer Dialekt sendet und dieser Dialekt nicht darstellen kann, etwa zusätzliche Events wie Anthropic-`ping` oder fremde unbekannte Blöcke, löst getaktete SSE-Kommentare aus: `: keepalive` ([Keepalives](cross-format.md#keepalives)). Der Encoder schreibt einen, sobald sich 1.024 Byte verborgener Text und zusätzliche Events angesammelt haben. `StreamEncoder::keepalive` gibt dem Gateway denselben Frame. Es gibt kein Endsignal für den Stream.
 
 ## Schema-Eigenschaften ohne eigene Zeile
 
