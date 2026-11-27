@@ -26,8 +26,10 @@ impl Pacer {
         if is_own(event, target) {
             return;
         }
+        // A provider's keepalive, such as Anthropic's `ping` after `message_start`, weighs its size:
+        // a frame at once breaks clients that don't skip comments, and the interval covers silence.
         let weight = match event {
-            StreamEvent::Extra(_) => HIDDEN_TEXT_PER_KEEPALIVE,
+            StreamEvent::Extra(item) => item.raw.get().len(),
             StreamEvent::BlockDelta(d) => match &d.delta {
                 Delta::Text(t)
                 | Delta::ToolArguments(t)
@@ -97,10 +99,11 @@ mod tests {
     }
 
     #[test]
-    fn foreign_extra_events_always_earn_a_frame_own_events_never() {
+    fn foreign_extra_events_count_as_hidden_data_by_their_size_own_events_never() {
         let mut p = Pacer::default();
-        assert!(paced(&mut p, &ping(A)));
-        assert!(paced(&mut p, &ping(A)));
+        let size = r#"{"event":"ping","data":{"type":"ping"}}"#.len();
+        let first = (1..=HIDDEN_TEXT_PER_KEEPALIVE).find(|_| paced(&mut p, &ping(A)));
+        assert_eq!(first, Some(HIDDEN_TEXT_PER_KEEPALIVE.div_ceil(size)));
         assert!(!paced(&mut p, &ping(C)));
         let mut own = BlockDelta::new(0, Delta::Text("x".repeat(5000)));
         own.extras = Extras::new(C);

@@ -985,7 +985,10 @@ async fn streams_that_fail_after_their_headers_are_logged_as_failures() {
     assert_eq!(r.status, StatusCode::OK);
     let received = r.body.len() as u64;
     env.app.clock.advance(time::Duration::seconds(1));
-    let mut cut = chat("claude-haiku-4-5", "[mock:cut]");
+    let mut cut = chat(
+        "claude-haiku-4-5",
+        "[mock:fixture=thinking-long-tool-loop] [mock:cut]",
+    );
     cut["stream"] = json!(true);
     let r = call(
         &env,

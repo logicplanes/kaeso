@@ -99,7 +99,7 @@ fn claude_thinking_keeps_a_chat_app_hearing_from_the_stream() {
         "{silence} bytes hidden in a row"
     );
     let all = outputs.concat();
-    assert_eq!(comments(&all), 4, "{}", String::from_utf8_lossy(&all));
+    assert_eq!(comments(&all), 3, "{}", String::from_utf8_lossy(&all));
     let back = decode(C, &all);
     let calls = back
         .iter()
@@ -114,24 +114,47 @@ fn claude_thinking_keeps_a_chat_app_hearing_from_the_stream() {
     ));
 }
 
+fn extra(origin: DialectId, json: &str) -> StreamEvent {
+    StreamEvent::Extra(RawItem::new(
+        origin,
+        RawJson::from_string(json.to_owned()).unwrap(),
+    ))
+}
+
+const PING: &str = r#"{"event":"ping","data":{"type":"ping"}}"#;
+
+fn large_extra(origin: DialectId) -> StreamEvent {
+    let pad = "x".repeat(HIDDEN_TEXT_PER_KEEPALIVE);
+    extra(
+        origin,
+        &format!(r#"{{"event":"x-future","data":{{"pad":"{pad}"}}}}"#),
+    )
+}
+
 #[test]
-fn foreign_extra_events_become_keepalives_in_every_dialect() {
-    let ping = |origin: DialectId| {
-        StreamEvent::Extra(RawItem::new(
-            origin,
-            RawJson::from_string(r#"{"event":"ping","data":{"type":"ping"}}"#.into()).unwrap(),
-        ))
-    };
+fn a_providers_ping_is_no_keepalive_for_apps_of_other_formats_but_large_extra_events_are() {
     let start = StreamEvent::ResponseStart(ResponseStart::new("x", "m"));
-    for (target, source) in [(C, A), (R, A), (A, R)] {
-        let outputs = encode_each(target, &[start.clone(), ping(source), ping(source)]);
-        let tail = [outputs[1].clone(), outputs[2].clone()].concat();
-        let frames = if target == A {
-            pings(&tail)
-        } else {
-            comments(&tail)
+    for (target, source) in [(C, A), (R, A), (A, R), (DialectId::Gemini, A)] {
+        let outputs = encode_each(
+            target,
+            &[start.clone(), extra(source, PING), extra(source, PING)],
+        );
+        assert!(
+            outputs[1].is_empty() && outputs[2].is_empty(),
+            "{target}: {outputs:?}"
+        );
+        let outputs = encode_each(target, &[start.clone(), large_extra(source)]);
+        let frames = match target {
+            A => pings(&outputs[1]),
+            DialectId::Gemini => usize::from(outputs[1] == b"\n\n"),
+            _ => comments(&outputs[1]),
         };
-        assert_eq!(frames, 2, "{target}: {}", String::from_utf8_lossy(&tail));
+        assert_eq!(
+            frames,
+            1,
+            "{target}: {}",
+            String::from_utf8_lossy(&outputs[1])
+        );
     }
 }
 
@@ -162,12 +185,8 @@ fn every_encoder_gives_the_gateway_a_keepalive_frame_until_the_stream_ends() {
 #[test]
 fn gemini_apps_hear_blank_lines_that_their_sdk_skips() {
     let g = DialectId::Gemini;
-    let ping = StreamEvent::Extra(RawItem::new(
-        A,
-        RawJson::from_string(r#"{"event":"ping","data":{"type":"ping"}}"#.into()).unwrap(),
-    ));
     let start = StreamEvent::ResponseStart(ResponseStart::new("x", "m"));
-    let outputs = encode_each(g, &[start, ping.clone(), ping]);
+    let outputs = encode_each(g, &[start, large_extra(A), large_extra(A)]);
     assert_eq!(
         [outputs[1].clone(), outputs[2].clone()].concat(),
         b"\n\n\n\n"
@@ -202,7 +221,7 @@ fn claude_thinking_streams_to_a_responses_app_as_reasoning_summary_text() {
             .count(),
         40
     );
-    assert_eq!(comments(all.as_bytes()), 2);
+    assert_eq!(comments(all.as_bytes()), 0);
 }
 
 #[test]

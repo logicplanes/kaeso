@@ -576,7 +576,6 @@ fn a_foreign_stream_becomes_a_valid_sequential_anthropic_stream() {
             "content_block_start",
             "content_block_delta",
             "content_block_delta",
-            "ping",
             "content_block_stop",
             "content_block_start",
             "content_block_delta",

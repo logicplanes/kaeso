@@ -806,7 +806,6 @@ fn an_anthropic_stream_becomes_a_chat_stream() {
                 json!({"role": "assistant", "content": "", "refusal": null}),
                 Value::Null
             ),
-            json!(": keepalive"),
             chunk(json!({"content": "Checking"}), Value::Null),
             chunk(json!({"content": " now."}), Value::Null),
             chunk(tool(0, "toolu_01", "get_weather"), Value::Null),
