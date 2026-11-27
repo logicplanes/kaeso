@@ -268,6 +268,10 @@ Wenn Codex Subagenten startet, schreiben sich die Agenten mit `agent_message`-In
 
 Ein `encrypted_content`, das Chiffretext ist (eine ununterbrochene Base64-Folge), kann nur OpenAI lesen; überall sonst ist es `Unsupported`, ebenso ein Teil anderen Typs. Fixtures: `openai_responses/providers/xai/requests/codex-multi-agent.json` (die erste Anfrage eines Subagenten) und `codex-multi-agent-root.json` (ein späterer Zug des Root-Agenten).
 
+## Strikte Tools
+
+Ein Funktions-Tool aus Chat Completions, Anthropic oder Gemini ist nicht strikt, außer es sagt es, während Responses für ein Tool ohne `strict` den Strict-Modus versucht, der jedes Argument zur Pflicht macht ([Function Calling](https://developers.openai.com/api/docs/guides/function-calling#strict-mode)). Der Responses-Encoder sendet ein Tool aus einem anderen Dialekt ohne `strict` daher mit `strict: false`, sodass das Modell optionale Argumente weglassen kann.
+
 ## Argumente von Tool-Aufrufen
 
 Die Argumente eines Tool-Aufrufs sind in jedem Format ein JSON-Objekt. Chat Completions und Responses übertragen sie als String, sodass ein Aufruf mit Text ankommen kann, der keines ist. Kaeso behandelt solchen Text auf jedem Weg gleich:
