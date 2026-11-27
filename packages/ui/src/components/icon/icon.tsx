@@ -1,7 +1,7 @@
 import { createElement, forwardRef, useState, type Ref, type SVGAttributes } from "react";
 import { cn } from "../../utils/cn.js";
 
-/** An icon's shapes on a 24px grid, as Lucide exports them: each element's tag and its attributes. */
+/** An icon's shapes on Octicons' 16px grid, filled in the text's color: each element's tag and its attributes. */
 export type IconData = readonly (readonly [tag: string, attrs: Readonly<Record<string, string | number | undefined>>])[];
 
 export const KAESO_ICON_VARIANTS = {
@@ -17,8 +17,6 @@ export const KAESO_ICON_DEFAULT_VARIANTS = { size: "sm" } as const;
 export type IconSize = keyof typeof KAESO_ICON_VARIANTS.size;
 
 const PX: Record<IconSize, number> = { xs: 14, sm: 16, md: 18, lg: 20, xl: 24 };
-// A 1.5px line at every size: the stroke is set in the 24-unit grid the shapes are drawn on.
-const STROKE = 36;
 
 export interface IconProps extends Omit<SVGAttributes<SVGSVGElement>, "children" | "strokeWidth" | "color"> {
   icon: IconData;
@@ -40,12 +38,8 @@ const glyph = (icon: IconData, px: number, props: GlyphProps) =>
     {
       width: px,
       height: px,
-      viewBox: "0 0 24 24",
-      fill: "none",
-      stroke: "currentColor",
-      strokeWidth: STROKE / px,
-      strokeLinecap: "round",
-      strokeLinejoin: "round",
+      viewBox: "0 0 16 16",
+      fill: "currentColor",
       "aria-hidden": true,
       focusable: false,
       ...props,

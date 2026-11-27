@@ -15,7 +15,7 @@ Some providers' terms don't permit their logos in an interface like Kaeso's with
 ## Fonts and icons
 
 - [Inter](https://rsms.me/inter/), SIL Open Font License 1.1, and [Geist Mono](https://vercel.com/font), SIL Open Font License 1.1: unmodified subsets of their Fontsource builds, self-hosted by `@logicplanes/kaeso-ui` and shipped with their license files (`packages/ui/src/styles/fonts/`).
-- [Lucide](https://lucide.dev), ISC licensed: the icon set of every Kaeso interface.
+- [Octicons](https://primer.style/octicons) 19.43.0, MIT licensed, Copyright (c) GitHub Inc.: the icon set of every Kaeso interface, its 16px drawings unchanged in `packages/ui/src/icons/octicons.ts`. The microphone, keyboard and sidebar icons there are Kaeso's own, drawn to match.
 
 ## Provider marks
 

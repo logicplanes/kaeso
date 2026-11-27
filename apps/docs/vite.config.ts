@@ -111,8 +111,8 @@ function uiEntryImports(): Plugin {
     enforce: "pre",
     async buildStart() {
       const { icons } = (await import(pathToFileURL(`${dist}/components/icon.js`).href)) as { icons: Record<string, unknown> };
-      const lucide = (await import("lucide")) as Record<string, unknown>;
-      const byIcon = new Map(Object.entries(lucide).map(([name, icon]) => [icon, name]));
+      const octicons = (await import(pathToFileURL(`${dist}/octicons.js`).href)) as Record<string, unknown>;
+      const byIcon = new Map(Object.entries(octicons).map(([name, icon]) => [icon, name]));
       iconExports.clear();
       for (const [meaning, icon] of Object.entries(icons)) {
         const name = byIcon.get(icon);
@@ -147,7 +147,7 @@ function uiEntryImports(): Plugin {
           const from = entries.get(name) ?? "@logicplanes/kaeso-ui";
           groups.set(from, [...(groups.get(from) ?? []), raw]);
         }
-        const iconImport = icons.size ? `import { ${[...icons].map((i) => `${i} as __icon_${i}`).join(", ")} } from "lucide";` : "";
+        const iconImport = icons.size ? `import { ${[...icons].map((i) => `${i} as __icon_${i}`).join(", ")} } from "@logicplanes/kaeso-ui/octicons";` : "";
         icons.clear();
         return [...[...groups].map(([from, names]) => `import { ${names.join(", ")} } from "${from}";`), iconImport].filter(Boolean).join("\n");
       });
