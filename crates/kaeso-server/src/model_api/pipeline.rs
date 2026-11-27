@@ -2488,9 +2488,10 @@ async fn attempt(
                 &eff.model_id,
                 ModelFlags::of(&plan),
             );
-            // Checked as the generation it counts, which needs an output limit in some formats.
+            // Checked as the generation it counts, which needs an output limit in some formats,
+            // and one of at least 16 tokens in OpenAI Responses.
             let mut generate = g.clone();
-            generate.sampling.max_output_tokens.get_or_insert(1);
+            generate.sampling.max_output_tokens.get_or_insert(16);
             dispatch::check(plan.dialect, &Request::Generate(generate), &ectx)
                 .map_err(fail(Stage::Capability))?;
         }
