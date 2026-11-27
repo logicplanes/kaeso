@@ -2310,7 +2310,8 @@ async fn usage_stats_answer_with_a_summary_and_the_data_the_view_draws() {
 }
 
 #[tokio::test]
-async fn usage_by_key_names_a_reporting_source_only_for_an_agent_that_may_see_sources() {
+async fn usage_by_key_names_a_reporting_source_on_any_page_only_for_an_agent_that_may_see_sources()
+{
     use kaeso_server::services::observed::{self, Batch, ObservedRequest};
     let (_s, app, owner) = setup().await;
     let project = common::first_project(&app, &owner).await;
@@ -2330,6 +2331,17 @@ async fn usage_by_key_names_a_reporting_source_only_for_an_agent_that_may_see_so
         .await;
     assert_eq!(made.status, StatusCode::CREATED, "{:?}", made.body);
     let id = made.body["source"]["id"].as_str().unwrap().to_owned();
+    // Sources list newest first, 100 to a page, so the one that reports is on the second page.
+    for n in 0..100 {
+        let r = app
+            .post(
+                &format!("/orgs/{}/projects/{project}/sources", owner.org_id),
+                json!({ "kind": "claude_code", "name": format!("Filler {n}") }),
+                Some(&owner.cookie),
+            )
+            .await;
+        assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
+    }
     let source =
         kaeso_store::pg::sources::get(&app.state.pg, common::uuid(&project), common::uuid(&id))
             .await
