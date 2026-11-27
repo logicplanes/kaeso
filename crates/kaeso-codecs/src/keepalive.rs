@@ -27,7 +27,8 @@ impl Pacer {
             return;
         }
         // A provider's keepalive, such as Anthropic's `ping` after `message_start`, weighs its size:
-        // a frame at once breaks clients that don't skip comments, and the interval covers silence.
+        // a frame at once breaks clients that don't skip comments, such as openai-go's stream
+        // reader (https://github.com/logicplanes/kaeso/issues/1537); the interval covers silence.
         let weight = match event {
             StreamEvent::Extra(item) => item.raw.get().len(),
             StreamEvent::BlockDelta(d) => match &d.delta {
