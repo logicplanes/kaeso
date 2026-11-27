@@ -922,6 +922,18 @@ pub(crate) fn refused_key(err: &KppError) -> Option<KppError> {
     Some(error(ErrorKind::ProviderError, 502, message))
 }
 
+// Kaeso keeps no conversations, and a thread Anthropic keeps under the organization's provider
+// key could be continued from any of its projects. The SDKs' tool runners take this refusal and
+// send the whole conversation again without the thread.
+fn no_threads() -> KppError {
+    KppError::unsupported(
+        kaeso_codecs::anthropic_messages::THREAD,
+        "Kaeso keeps no message threads; send the whole conversation without `thread`.",
+    )
+    .with_status(400)
+    .with_param(kaeso_codecs::anthropic_messages::THREAD)
+}
+
 fn redacted(mut err: KppError) -> KppError {
     err.message = kaeso_core::secret::redact_tokens(&err.message);
     err.raw = None;
@@ -1336,6 +1348,11 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         (&mut req, video.as_ref().and_then(|v| v.remix.as_ref()))
     {
         source.fill(r);
+    }
+    if let Request::Generate(g) | Request::CountTokens(g) = &req
+        && kaeso_codecs::anthropic_messages::asks_for_thread(g)
+    {
+        return Err(at(Stage::Request)(no_threads()));
     }
     req.validate().map_err(at(Stage::Request))?;
     if let Request::Video(r) = &req {

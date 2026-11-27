@@ -304,5 +304,5 @@ OpenAI 和 Anthropic 的 SDK 都只有在应用传入 `dangerouslyAllowBrowser: 
 ## Kaeso 不做的事
 
 - **重试。** 只有项目或别名步骤要求时，Kaeso 才会在连接中断、返回 5xx 或服务商过载后，且在任何回复到达应用之前，把请求重新发送给模型（[别名路由](../concepts/alias-routes.md#回退)）。否则每个请求只发送一次；SDK 会在错误允许时自行重试。
-- **存储状态。** Kaeso 自己不保存对话。只有在项目允许在服务商处存储回复、且服务商会保留该模型回复时，`store: true` 和 `previous_response_id` 才可用（见[存储的回复](../console/organizations-and-projects.md#存储的回复)）；其他情况下 Kaeso 会拒绝它们，`conversation` 和 `background: true` 则一律拒绝。否则请每次发送完整对话。
+- **存储状态。** Kaeso 自己不保存对话。只有在项目允许在服务商处存储回复、且服务商会保留该模型回复时，`store: true` 和 `previous_response_id` 才可用（见[存储的回复](../console/organizations-and-projects.md#存储的回复)）；其他情况下 Kaeso 会拒绝它们，`conversation` 和 `background: true` 则一律拒绝。Anthropic 的消息线程（`thread`）也会被拒绝，拒绝时使用 Anthropic 对无法提供的线程发送的 `thread_unsupported_request`，这样 Anthropic SDK 的工具运行器会在不使用线程的情况下继续。否则请每次发送完整对话。
 - **悄然更改。** 无法传递给模型服务商的字段，Kaeso 会拒绝并在错误中指出该字段，绝不会悄悄丢弃。在 Chat Completions、Messages 和 Embeddings 中，名称以 `header:` 开头或包含 `.` 的字段会得到 400，因为 Kaeso 无法传递这样的名称；Responses 则会把这类字段保留在请求正文中。格式之间能传递哪些内容，见[格式转换](../concepts/format-translation.md)。

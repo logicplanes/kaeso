@@ -1,0 +1,12 @@
+{
+  "type": "error",
+  "error": {
+    "type": "invalid_request_error",
+    "message": "A request with `thread` can carry at most 4 `cache_control` breakpoints.",
+    "details": {
+      "error_code": "thread_unsupported_request",
+      "unsupported": ["cache_control"]
+    }
+  },
+  "request_id": "req_011CThreadUnsupportedReq"
+}

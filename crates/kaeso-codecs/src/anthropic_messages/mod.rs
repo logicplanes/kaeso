@@ -40,6 +40,19 @@ pub const RAW_PREDICT_VERSION: &str = "vertex-2023-10-16";
 
 pub const COUNT_TOKENS_PATH: &str = "/v1/messages/count_tokens";
 
+/// The request field of Anthropic's message threads (`thread: {"type": "create"}` or
+/// `{"type": "continue", "previous_message_id"}`), kept as an extras field. An `Unsupported` error
+/// naming it is written as Anthropic's `thread_unsupported_request` refusal.
+pub const THREAD: &str = "thread";
+
+/// Whether a Messages request asks for a message thread: one the server keeps the conversation
+/// of, or continues from an earlier reply without sending it again.
+pub fn asks_for_thread(req: &kaeso_kpp::GenerateRequest) -> bool {
+    req.extras
+        .fields_for(common::D)
+        .is_some_and(|fields| fields.contains_key(THREAD))
+}
+
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub struct AnthropicMessages;

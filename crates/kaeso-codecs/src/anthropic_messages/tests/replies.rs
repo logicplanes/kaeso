@@ -486,3 +486,54 @@ fn embeddings_are_not_an_anthropic_reply() {
     let ctx = EgressCtx::for_kind(RequestKind::Embed, StreamMode::Off);
     assert!(AnthropicMessages::decode_response(200, &HeaderList::new(), b"{}", &ctx).is_err());
 }
+
+#[test]
+fn a_refused_thread_is_anthropics_thread_unsupported_request() {
+    let err = kaeso_kpp::KppError::unsupported(
+        crate::anthropic_messages::THREAD,
+        "Kaeso keeps no message threads; send the whole conversation without `thread`.",
+    )
+    .with_status(400)
+    .with_param("thread");
+    let enc = AnthropicMessages::encode_error_for_request(&err, "req_kaeso_3");
+    assert_eq!(enc.status, 400);
+    let body: Value = serde_json::from_slice(&enc.body).unwrap();
+    assert_eq!(body["error"]["type"], "invalid_request_error");
+    assert_eq!(
+        body["error"]["details"],
+        json!({ "error_code": "thread_unsupported_request", "unsupported": ["thread"] })
+    );
+    let other = kaeso_kpp::KppError::unsupported("top_k", "No `top_k`.");
+    let body: Value =
+        serde_json::from_slice(&AnthropicMessages::encode_error(&other).body).unwrap();
+    assert!(body["error"].get("details").is_none(), "{body}");
+}
+
+#[test]
+fn a_request_with_a_thread_says_so() {
+    for (thread, asks) in [
+        (r#","thread":{"type":"create"}"#, true),
+        (
+            r#","thread":{"type":"continue","previous_message_id":"msg_1"}"#,
+            true,
+        ),
+        ("", false),
+    ] {
+        let body = format!(
+            r#"{{"model":"claude-haiku-4-5","max_tokens":16,"messages":[{{"role":"user","content":"hi"}}]{thread}}}"#
+        );
+        let Request::Generate(g) = AnthropicMessages::decode_request(
+            kaeso_kpp::RequestKind::Generate,
+            body.as_bytes(),
+            &HeaderList::new(),
+        )
+        .unwrap() else {
+            panic!()
+        };
+        assert_eq!(
+            crate::anthropic_messages::asks_for_thread(&g),
+            asks,
+            "{body}"
+        );
+    }
+}

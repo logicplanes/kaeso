@@ -1370,3 +1370,47 @@ async fn nextchats_neutral_penalties_reach_claude_left_out_and_named() {
     assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
     assert_eq!(r.json()["error"]["param"], "presence_penalty");
 }
+
+#[tokio::test]
+async fn message_threads_are_refused_as_anthropic_refuses_one_it_cannot_serve() {
+    let env = env().await;
+    let before = env.mock.received().len();
+    let continued = json!({
+        "model": "claude-haiku-4-5",
+        "max_tokens": 64,
+        "messages": [{ "role": "user", "content": [{ "type": "tool_result", "tool_use_id": "toolu_01", "content": "Sunny 21C" }] }],
+        "thread": { "type": "continue", "previous_message_id": "msg_01" },
+    });
+    let mut bodies = vec![continued];
+    for model in ["claude-haiku-4-5", "gpt-4o"] {
+        let mut created = messages(model, "Weather in Paris? Use the tool.");
+        created["thread"] = json!({ "type": "create" });
+        bodies.push(created);
+    }
+    for body in bodies {
+        let r = call(
+            &env,
+            "/v1/messages",
+            Some(&env.key),
+            true,
+            Some(body.clone()),
+        )
+        .await;
+        assert_eq!(r.status, StatusCode::BAD_REQUEST, "{body}: {}", r.text());
+        let error = &r.json()["error"];
+        assert_eq!(error["type"], "invalid_request_error", "{body}");
+        assert_eq!(
+            error["message"],
+            "Kaeso keeps no message threads; send the whole conversation without `thread`."
+        );
+        assert_eq!(
+            error["details"],
+            json!({ "error_code": "thread_unsupported_request", "unsupported": ["thread"] })
+        );
+    }
+    assert_eq!(
+        env.mock.received().len(),
+        before,
+        "nothing reached a provider"
+    );
+}
