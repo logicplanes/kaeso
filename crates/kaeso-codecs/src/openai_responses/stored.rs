@@ -132,7 +132,8 @@ pub(super) fn decode_reasoning_reference(
     Some(block)
 }
 
-/// Whether a Responses-format request carries an `item_reference` item in `input`.
+/// Whether a Responses-format request carries an `item_reference` item in `input` other than
+/// one to earlier reasoning, which [`has_reasoning_reference`] finds.
 pub fn has_item_reference(req: &GenerateRequest) -> bool {
     if !req.extras.is_from(DIALECT) {
         return false;
@@ -236,11 +237,14 @@ mod tests {
         );
     }
 
-    const TOOL_LOOP: &[u8] = br#"{"model":"deepseek-flash","input":[
-        {"role":"user","content":[{"type":"input_text","text":"Weather in Paris? Use the tool."}]},
-        {"type":"item_reference","id":"rs_kaeso_0123_0"},
-        {"type":"function_call","call_id":"call_1","name":"weather","arguments":"{\"city\":\"Paris\"}"},
-        {"type":"function_call_output","call_id":"call_1","output":"Sunny 21C"}]}"#;
+    // The Vercel AI SDK's second tool step with `store` left on.
+    fn tool_loop() -> Vec<u8> {
+        crate::test_support::fixtures("openai_responses", "requests", "json")
+            .into_iter()
+            .find(|(n, _)| n == "vercel-ai-sdk-reasoning-reference")
+            .unwrap()
+            .1
+    }
 
     fn decoded(body: &[u8]) -> GenerateRequest {
         let Request::Generate(g) = super::super::OpenAiResponses::decode_request(
@@ -256,7 +260,8 @@ mod tests {
 
     #[test]
     fn a_reference_to_reasoning_stands_in_the_turn_of_its_tool_call_and_is_written_back() {
-        let g = decoded(TOOL_LOOP);
+        let body = tool_loop();
+        let g = decoded(&body);
         assert!(has_reasoning_reference(&g));
         assert!(!has_item_reference(&g));
         let turn = g
@@ -269,9 +274,12 @@ mod tests {
                 kaeso_kpp::Block::Reasoning(r),
                 kaeso_kpp::Block::ToolCall(c),
             ] => {
-                assert_eq!(reasoning_reference(r), Some("rs_kaeso_0123_0"));
+                assert_eq!(
+                    reasoning_reference(r),
+                    Some("rs_kaeso_00000000000000000000000000000001_0")
+                );
                 assert!(r.text.is_empty() && r.summary.is_empty() && r.opaque.is_empty());
-                assert_eq!(c.id, "call_1");
+                assert_eq!(c.id, "call_00000000000000000000000001");
             }
             other => panic!("{other:?}"),
         }
@@ -280,7 +288,7 @@ mod tests {
         let enc = super::super::OpenAiResponses::encode_request(&req, &mut ctx).unwrap();
         let sent: serde_json::Value = serde_json::from_slice(&enc.body).unwrap();
         let input: serde_json::Value =
-            serde_json::from_slice::<serde_json::Value>(TOOL_LOOP).unwrap()["input"].clone();
+            serde_json::from_slice::<serde_json::Value>(&body).unwrap()["input"].clone();
         assert_eq!(sent["input"], input);
     }
 
@@ -301,12 +309,12 @@ mod tests {
 
     #[test]
     fn a_reference_to_reasoning_has_no_equivalent_in_another_format() {
-        let req = Request::Generate(decoded(TOOL_LOOP));
+        let req = Request::Generate(decoded(&tool_loop()));
         let target = kaeso_kpp::Origin::new(kaeso_kpp::DialectId::AnthropicMessages);
         let err = crate::cross::check_foreign(&req, &target).unwrap_err();
         assert!(
             err.message.starts_with(
-                "`item_reference` `rs_kaeso_0123_0` comes from an OpenAI Responses request and has no equivalent in Anthropic Messages."
+                "`item_reference` `rs_kaeso_00000000000000000000000000000001_0` comes from an OpenAI Responses request and has no equivalent in Anthropic Messages."
             ),
             "{}",
             err.message

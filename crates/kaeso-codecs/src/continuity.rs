@@ -281,6 +281,8 @@ pub struct Resolved {
     pub restored: usize,
     /// References in turns without tool calls, where no provider needs the reasoning back.
     pub left_out: usize,
+    /// The size of the restored reasoning's text, summaries and opaque data, in bytes.
+    pub restored_bytes: usize,
 }
 
 /// Puts the reasoning kept for each turn's tool calls where an OpenAI Responses app's
@@ -293,28 +295,53 @@ pub fn resolve_reasoning_references(
 ) -> Result<Resolved, String> {
     let by_call = by_call(kept);
     let mut resolved = Resolved::default();
-    for message in &mut req.messages {
+    let mut emptied = vec![false; req.messages.len()];
+    for (message, emptied) in req.messages.iter_mut().zip(&mut emptied) {
         let Some(first) = references(message).next().map(str::to_owned) else {
             continue;
         };
+        let asked = references(message).count();
         let calls = message
             .blocks
             .iter()
             .any(|b| matches!(b, Block::ToolCall(_)));
         if calls {
-            let put = put_back(message, &by_call);
-            if put == 0 {
+            let (put, bytes) = put_back(message, &by_call);
+            if put < asked {
                 return Err(first);
             }
             resolved.restored += put;
+            resolved.restored_bytes = resolved.restored_bytes.saturating_add(bytes);
         } else {
-            resolved.left_out += references(message).count();
+            resolved.left_out += asked;
         }
         message.blocks.retain(|b| reference_of(b).is_none());
+        *emptied = message.blocks.is_empty() && message.extras.fields.is_empty();
     }
-    req.messages
-        .retain(|m| !m.blocks.is_empty() || !m.extras.fields.is_empty());
+    let mut emptied = emptied.into_iter();
+    req.messages.retain(|_| !emptied.next().unwrap_or(false));
     Ok(resolved)
+}
+
+fn size(r: &ReasoningBlock) -> usize {
+    r.text
+        .iter()
+        .chain(&r.summary)
+        .map(String::len)
+        .chain(r.opaque.iter().map(|o| o.data.len()))
+        .fold(0, usize::saturating_add)
+}
+
+// Reasoning the app sent itself next to its references is the same Kaeso kept, wherever it
+// came from, when its text, summaries and opaque data match.
+fn same_reasoning(a: &ReasoningBlock, b: &ReasoningBlock) -> bool {
+    a.text == b.text
+        && a.summary == b.summary
+        && a.opaque.len() == b.opaque.len()
+        && a.opaque
+            .iter()
+            .zip(&b.opaque)
+            .all(|(x, y)| x.data == y.data)
 }
 
 fn reference_of(block: &Block) -> Option<&str> {
@@ -338,7 +365,10 @@ fn by_call(kept: &[CarriedReasoning]) -> HashMap<&str, &CarriedReasoning> {
 
 // The kept reasoning of each tool call goes right before that call, and only into the turn
 // it came from: a client that merged or split turns gets nothing back.
-fn put_back(message: &mut kaeso_kpp::Message, by_call: &HashMap<&str, &CarriedReasoning>) -> usize {
+fn put_back(
+    message: &mut kaeso_kpp::Message,
+    by_call: &HashMap<&str, &CarriedReasoning>,
+) -> (usize, usize) {
     let turn: HashSet<&str> = message
         .blocks
         .iter()
@@ -364,17 +394,31 @@ fn put_back(message: &mut kaeso_kpp::Message, by_call: &HashMap<&str, &CarriedRe
         })
         .collect();
     if restored.is_empty() {
-        return 0;
+        return (0, 0);
     }
-    let mut inserted = 0;
+    let inline: Vec<ReasoningBlock> = message
+        .blocks
+        .iter()
+        .filter_map(|b| match b {
+            Block::Reasoning(r) if reference_of(b).is_none() => Some(r.clone()),
+            _ => None,
+        })
+        .collect();
+    let (mut inserted, mut bytes) = (0, 0usize);
     let mut restored: HashMap<String, Vec<ReasoningBlock>> = restored.into_iter().collect();
     let mut blocks = Vec::with_capacity(message.blocks.len());
     let mut since_call = Vec::new();
     for block in std::mem::take(&mut message.blocks) {
         if let Block::ToolCall(call) = &block {
             if let Some(found) = restored.remove(call.id.as_str()) {
-                inserted += found.len();
-                blocks.extend(found.into_iter().map(Block::Reasoning));
+                for r in found {
+                    if inline.iter().any(|i| same_reasoning(i, &r)) {
+                        continue;
+                    }
+                    inserted += 1;
+                    bytes = bytes.saturating_add(size(&r));
+                    blocks.push(Block::Reasoning(r));
+                }
             }
             blocks.append(&mut since_call);
             blocks.push(block);
@@ -384,7 +428,7 @@ fn put_back(message: &mut kaeso_kpp::Message, by_call: &HashMap<&str, &CarriedRe
     }
     blocks.append(&mut since_call);
     message.blocks = blocks;
-    inserted
+    (inserted, bytes)
 }
 
 #[cfg(test)]
@@ -747,6 +791,66 @@ mod tests {
         assert_eq!(
             resolve_reasoning_references(&mut unkept, &kept),
             Err("rs_z".to_owned())
+        );
+    }
+
+    #[test]
+    fn reasoning_sent_inline_beside_references_is_not_put_back_twice() {
+        let kept = [CarriedReasoning::new("c1", vec![signed("a"), signed("b")])];
+        let mut req = GenerateRequest::new("m");
+        req.messages = vec![
+            Message::user("q"),
+            Message::new(
+                Role::Assistant,
+                vec![Block::Reasoning(signed("a")), reference("rs_b"), call("c1")],
+            ),
+        ];
+        let resolved = resolve_reasoning_references(&mut req, &kept).unwrap();
+        assert_eq!(resolved.restored, 1);
+        assert_eq!(
+            resolved.restored_bytes,
+            size(&signed("b")),
+            "the restored reasoning counts toward the request's size"
+        );
+        assert_eq!(
+            req.messages[1].blocks,
+            [
+                Block::Reasoning(signed("a")),
+                Block::Reasoning(signed("b")),
+                call("c1")
+            ]
+        );
+
+        // Two references and one kept block: one of them points to reasoning Kaeso doesn't keep.
+        let mut more = GenerateRequest::new("m");
+        more.messages = vec![Message::new(
+            Role::Assistant,
+            vec![reference("rs_1"), reference("rs_2"), call("c1")],
+        )];
+        let one = [CarriedReasoning::new("c1", vec![signed("a")])];
+        assert_eq!(
+            resolve_reasoning_references(&mut more, &one),
+            Err("rs_1".to_owned())
+        );
+    }
+
+    #[test]
+    fn only_turns_emptied_by_a_reference_go() {
+        let mut req = GenerateRequest::new("m");
+        let mut empty = Message::new(Role::Assistant, vec![]);
+        empty.extras = Extras::new(Origin::new(DialectId::OpenAiResponses))
+            .with_form("content_empty", true.into());
+        req.messages = vec![
+            Message::user("q"),
+            empty.clone(),
+            Message::new(Role::Assistant, vec![reference("rs_x")]),
+            Message::user("again"),
+        ];
+        resolve_reasoning_references(&mut req, &[]).unwrap();
+        assert_eq!(
+            req.messages,
+            [Message::user("q"), empty, Message::user("again")],
+            "the app's own empty message stays"
         );
     }
 }

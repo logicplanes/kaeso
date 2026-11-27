@@ -359,6 +359,74 @@ async fn a_responses_app_that_references_its_reasoning_keeps_claudes_thinking() 
 }
 
 #[tokio::test]
+async fn a_streamed_responses_turn_keeps_its_reasoning_for_the_next_step() {
+    let env = env(&[]).await;
+    let mut body = responses_first_turn(None);
+    body["stream"] = json!(true);
+    let first = responses(&env, &env.key, body).await;
+    assert_eq!(first.status, StatusCode::OK, "{}", first.text());
+    let completed = first
+        .text()
+        .split("\n\n")
+        .find_map(|frame| {
+            let data = frame.lines().find_map(|l| l.strip_prefix("data: "))?;
+            let event: Value = serde_json::from_str(data).ok()?;
+            (event["type"] == "response.completed").then(|| event["response"].clone())
+        })
+        .expect("a response.completed event");
+    let output = completed["output"].as_array().unwrap();
+    let reasoning = output.iter().find(|i| i["type"] == "reasoning").unwrap()["id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let call_id = output
+        .iter()
+        .find(|i| i["type"] == "function_call")
+        .unwrap()["call_id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    // The reasoning is kept once the stream ends, which an SDK's next step comes after.
+    let mut second = responses(&env, &env.key, responses_second_turn(&reasoning, &call_id)).await;
+    for _ in 0..20 {
+        if second.status == StatusCode::OK {
+            break;
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+        second = responses(&env, &env.key, responses_second_turn(&reasoning, &call_id)).await;
+    }
+    assert_eq!(second.status, StatusCode::OK, "{}", second.text());
+    let turn = sent_assistant_turn(&env);
+    assert_eq!(turn["content"][0]["type"], "thinking", "{turn}");
+}
+
+#[tokio::test]
+async fn reasoning_is_kept_when_kaeso_itself_tells_the_provider_not_to_store() {
+    // The project keeps no responses at OpenAI, so Kaeso sends `store: false`; the app left
+    // `store` on, and its next step will point to the reasoning by id.
+    let env = env(&[]).await;
+    let r = responses(
+        &env,
+        &env.key,
+        json!({
+            "model": "gpt-4o",
+            "tools": responses_tools(),
+            "input": "Weather in Paris and Tokyo? [mock:fixture=tools-parallel]",
+        }),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(env.mock.last().unwrap().json()["store"], false);
+    let mut conn = env.app.state.valkey.conn();
+    let keys: Vec<String> = redis::cmd("KEYS")
+        .arg(env.app.state.valkey.key("reasoning:*"))
+        .query_async(&mut conn)
+        .await
+        .unwrap();
+    assert!(!keys.is_empty(), "the reasoning before the calls is kept");
+}
+
+#[tokio::test]
 async fn a_responses_reference_in_a_turn_without_tool_calls_is_left_out() {
     let env = env(&[]).await;
     let r = responses(

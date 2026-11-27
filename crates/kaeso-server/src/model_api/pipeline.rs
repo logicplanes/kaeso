@@ -2428,6 +2428,31 @@ async fn attempt(
         rec.outcome().egress = Some(plan.dialect);
     }
 
+    // Whether to keep reasoning follows what the app sent: Kaeso itself may send `store: false`.
+    let carry = continuity::carry(state, caller.key_id, ingress, plan.dialect, &app_req)
+        .filter(|_| kind == RequestKind::Generate);
+    if let Some(c) = carry.filter(|c| !c.every)
+        && let Request::Generate(g) = &mut req
+    {
+        continuity::restore(state, c.key_id, g).await;
+    }
+    // Reasoning put back is input the provider bills, so limits see it before admitting.
+    let mut restored_tokens = 0;
+    if ingress == DialectId::OpenAiResponses
+        && let Request::Generate(g) | Request::CountTokens(g) = &mut req
+        && kaeso_codecs::openai_responses::has_reasoning_reference(g)
+    {
+        let resolved = continuity::resolve_references(state, caller.key_id, g)
+            .await
+            .map_err(|id| fail(Stage::Request)(unkept_reasoning(&id)))?;
+        if resolved.left_out > 0 {
+            plan.left_out.push("item_reference".to_owned());
+        }
+        restored_tokens = kaeso_core::estimate::tokens_of_bytes(
+            u64::try_from(resolved.restored_bytes).unwrap_or(u64::MAX),
+        );
+    }
+
     let admission = Admission {
         request_id: rec.outcome().request_id,
         caller: caller.clone(),
@@ -2438,10 +2463,13 @@ async fn attempt(
         worst: WorstCase::continuing(
             &req,
             request_bytes,
-            keeping.as_ref().map_or(
-                0,
-                crate::services::stored_responses::Keeping::earlier_tokens,
-            ),
+            keeping
+                .as_ref()
+                .map_or(
+                    0,
+                    crate::services::stored_responses::Keeping::earlier_tokens,
+                )
+                .saturating_add(restored_tokens),
             &eff.fields,
             &eff.provider,
         ),
@@ -2478,25 +2506,6 @@ async fn attempt(
             .await
     {
         return Err(fail(Stage::Unserved(eff.model_id.clone()))(unserved(&eff)));
-    }
-
-    let carry = continuity::carry(state, caller.key_id, ingress, plan.dialect, &req)
-        .filter(|_| kind == RequestKind::Generate);
-    if let Some(c) = carry.filter(|c| !c.every)
-        && let Request::Generate(g) = &mut req
-    {
-        continuity::restore(state, c.key_id, g).await;
-    }
-    if ingress == DialectId::OpenAiResponses
-        && let Request::Generate(g) | Request::CountTokens(g) = &mut req
-        && kaeso_codecs::openai_responses::has_reasoning_reference(g)
-    {
-        let resolved = continuity::resolve_references(state, caller.key_id, g)
-            .await
-            .map_err(|id| fail(Stage::Request)(unkept_reasoning(&id)))?;
-        if resolved.left_out > 0 {
-            plan.left_out.push("item_reference".to_owned());
-        }
     }
 
     let platform = match crate::services::agent_platform::egress(
