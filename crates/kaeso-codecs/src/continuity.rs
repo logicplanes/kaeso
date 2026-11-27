@@ -254,7 +254,7 @@ pub fn restore_reasoning(req: &mut GenerateRequest, kept: &[CarriedReasoning]) -
         if message.role != Role::Assistant || carries_reasoning(message) {
             continue;
         }
-        inserted += put_back(message, &by_call);
+        inserted += put_back(message, &by_call).0;
     }
     inserted
 }
