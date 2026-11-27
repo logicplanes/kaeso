@@ -504,6 +504,36 @@ expression: outcomes
   "n-2": {
     "rejected_by_source": "n"
   },
+  "neutral-defaults": {
+    "body": {
+      "input": [
+        {
+          "content": "Name three rivers in Europe.",
+          "role": "user"
+        }
+      ],
+      "model": "gpt-5.5",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "nextchat-defaults": {
+    "body": {
+      "input": [
+        {
+          "content": "Say hi",
+          "role": "user"
+        }
+      ],
+      "instructions": "\nYou are ChatGPT, a large language model trained by OpenAI.\nKnowledge cutoff: 2023-10\nCurrent model: gpt-4o-mini\nCurrent time: 11/27/2026, 9:41:00 AM\nLatex inline: \\(x^2\\) \nLatex block: $$e=mc^2$$\n\n",
+      "model": "gpt-4o-mini",
+      "store": false,
+      "stream": true,
+      "temperature": 0.5,
+      "top_p": 1.0
+    },
+    "path": "/v1/responses"
+  },
   "openrouter-reasoning": {
     "body": {
       "include": [
@@ -1403,9 +1433,24 @@ expression: outcomes
     "unsupported": "seed"
   },
   "providers/cerebras/store-field": {
-    "message": "`store` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
-    "param": null,
-    "unsupported": "store"
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "Say hello in two words.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 100,
+      "model": "gpt-oss-120b",
+      "reasoning": {
+        "effort": "low"
+      },
+      "store": false
+    },
+    "path": "/v1/responses"
   },
   "providers/cerebras/stream": {
     "body": {
@@ -1792,9 +1837,26 @@ expression: outcomes
     "path": "/v1/responses"
   },
   "providers/cerebras/user-hints": {
-    "message": "`service_tier` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
-    "param": null,
-    "unsupported": "service_tier"
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "Say hello in two words.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 200,
+      "model": "gpt-oss-120b",
+      "prompt_cache_key": "greetings",
+      "reasoning": {
+        "effort": "low"
+      },
+      "safety_identifier": "user-1234",
+      "store": false
+    },
+    "path": "/v1/responses"
   },
   "providers/cerebras/verbosity-field": {
     "message": "`verbosity` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
@@ -2183,9 +2245,17 @@ expression: outcomes
     "unsupported": "seed"
   },
   "providers/cohere/service-tier-field": {
-    "message": "`service_tier` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
-    "param": null,
-    "unsupported": "service_tier"
+    "body": {
+      "input": [
+        {
+          "content": "Hello",
+          "role": "user"
+        }
+      ],
+      "model": "command-a-03-2025",
+      "store": false
+    },
+    "path": "/v1/responses"
   },
   "providers/cohere/stop-string": {
     "message": "`stop sequences` is not supported by OpenAI Responses. The Responses API has no `stop` parameter. Remove the stop sequences or use the Chat Completions format.",
@@ -3262,9 +3332,9 @@ expression: outcomes
     "unsupported": "max_tokens 10"
   },
   "providers/mistral/store-field": {
-    "message": "`store` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
-    "param": null,
-    "unsupported": "store"
+    "message": "`max_tokens 10` is not supported by OpenAI Responses. OpenAI Responses needs an output limit of at least 16 tokens; raise it or route the request to another model.",
+    "param": "max_tokens",
+    "unsupported": "max_tokens 10"
   },
   "providers/mistral/stream-no-options": {
     "message": "`max_tokens 10` is not supported by OpenAI Responses. OpenAI Responses needs an output limit of at least 16 tokens; raise it or route the request to another model.",
@@ -4345,9 +4415,17 @@ expression: outcomes
     "path": "/v1/responses"
   },
   "providers/ovhcloud/recorded-service-tier": {
-    "message": "`service_tier` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
-    "param": null,
-    "unsupported": "service_tier"
+    "body": {
+      "input": [
+        {
+          "content": "Hi",
+          "role": "user"
+        }
+      ],
+      "model": "gpt-oss-20b",
+      "store": false
+    },
+    "path": "/v1/responses"
   },
   "providers/ovhcloud/recorded-thinking-length": {
     "body": {

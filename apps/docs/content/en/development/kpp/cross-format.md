@@ -8,7 +8,7 @@ An app may speak one API format while the provider speaks another. These are the
 
 | Data from another format | In a request | In a reply |
 | --- | --- | --- |
-| Extras fields | `Unsupported`, unless [allowlisted](#extras) | Left out |
+| Extras fields | `Unsupported`, unless [allowlisted](#extras) or [neutral](sampling.md#neutral-values) | Left out |
 | Unknown blocks, tools and tool choices | `Unsupported`, except [tool namespaces](#tool-namespaces), [tool search](#tool-search), [hosted web search](#hosted-web-search) and [Codex tool history](#codex-tool-history) | Unknown blocks left out, except web searches |
 | Citations | `Unsupported` | Left out |
 | Provider file ids | `Unsupported` unless the target provider issued them | — |
@@ -17,7 +17,7 @@ An app may speak one API format while the provider speaks another. These are the
 | Cache hints | Dropped where the target caches by itself | — |
 | Audio and video | Sent where the target's format and provider take them, otherwise `Unsupported` ([audio and video](#audio-and-video)) | Left out where the app's format can't carry them |
 | Audio and image output | Asked for where the target writes it, otherwise `Unsupported` ([audio and image replies](#audio-and-image-replies)) | Audio for Chat and Gemini apps, images for Gemini apps; left out elsewhere |
-| Sampling settings the target lacks | `Unsupported` | — |
+| Sampling settings the target lacks | `Unsupported`, except a penalty of 0 ([neutral values](sampling.md#neutral-values)) | — |
 | Stop reasons the app's format lacks | — | The closest one it has |
 | Thinking off for a model that always reasons | The model's lowest effort level, named in `kaeso-adapted` ([models that always reason](reasoning.md#models-that-always-reason)) | — |
 | Decision requests and answers | Mapped or refused as [decisions across formats](decisions-across-formats.md) describes | Mapped the same way |
@@ -256,7 +256,7 @@ A Codex thread that started on a GPT model holds items only OpenAI Responses has
 | `local_shell_call` | `Block::ToolCall` named `local_shell`, its `action` object as the arguments |
 | `local_shell_call_output` | `Block::ToolResult` for the call its `id` names; Codex sends a `function_call_output` instead |
 
-OpenAI gets the items as sent, and SpaceX its `custom_tool_call` and `custom_tool_call_output` items: SpaceX answers from such a history (`openai_responses/providers/xai/responses/recorded-codex-gpt-history.json`). SpaceX gets `local_shell_call` and `local_shell_call_output` as tool calls and results, as above, because it takes `shell_call` items instead. GPT's reasoning items are left out for SpaceX, which can't decrypt OpenAI's `encrypted_content` and would refuse the request ([SpaceX](openai-responses.md#spacex)). An item that doesn't have the shape above stays an unknown block and is refused like one.
+OpenAI gets the items as sent, and SpaceX its `custom_tool_call` and `custom_tool_call_output` items: SpaceX answers from such a history (`openai_responses/providers/xai/responses/recorded-codex-gpt-history.json`). SpaceX gets `local_shell_call` and `local_shell_call_output` as tool calls and results, as above, because it takes `shell_call` items instead. GPT's reasoning items are left out for SpaceX, which can't decrypt OpenAI's `encrypted_content` and would refuse the request ([SpaceX](openai-responses-providers.md#spacex)). An item that doesn't have the shape above stays an unknown block and is refused like one.
 
 ## Codex agent messages
 
@@ -359,22 +359,6 @@ Structured output going to Anthropic uses Anthropic's native structured outputs,
 - Schemas going to OpenAI from Anthropic get the name `response`, because OpenAI requires one.
 - Gemini gets a schema as `responseJsonSchema` and `json_object` as `responseMimeType: "application/json"` alone; as for Anthropic, a schema's `name` is dropped, and a `description` or `strict: false` is `Unsupported`.
 - Amazon Bedrock Converse gets no output format yet: `json_object` and schemas are `Unsupported`.
-
-## Sampling
-
-Sampling settings a target can't honour are `Unsupported`, never dropped or rescaled:
-
-| Target | Refused |
-| --- | --- |
-| Anthropic | `seed`, frequency and presence penalties, and a `temperature` outside 0 to 1, Anthropic's range |
-| OpenAI Chat Completions | `top_k`, and more than four stop sequences |
-| OpenAI Responses | `top_k`, `seed`, the penalties and stop sequences, which Responses doesn't have, and an output limit below 16 tokens, the `CreateResponse` minimum |
-| Gemini API | More than five stop sequences (`GenerationConfig.stopSequences`) |
-| Amazon Bedrock Converse | `top_k`, `seed` and the penalties, which go in a model family's own fields |
-
-Numbers keep their spelling within a dialect: `temperature: 1` comes back as `1` and `1.0` as `1.0` while the value is unchanged. Across dialects the target's own spelling is used, so `temperature: 1` from Chat reaches Anthropic as `1.0`.
-
-KPP has no `n`: a Chat request with `n` above 1 is refused when it is decoded, whatever the target. Chat's `logprobs`, `logit_bias` and `top_logprobs` are extras, which every other dialect refuses ([extras](#extras)).
 
 ## Stateful Responses features
 

@@ -746,3 +746,40 @@ async fn a_codex_request_reaches_mistral_without_web_search_and_says_so() {
     assert_ne!(r.status, StatusCode::OK, "{:?}", r.body);
     assert_eq!(r.header("kaeso-left-out"), Some("tools[1]"));
 }
+
+#[tokio::test]
+async fn a_chat_apps_neutral_values_mistral_refuses_are_left_out_and_named() {
+    let env = env().await;
+    let mut body = chat(SMALL, "Hi");
+    body["store"] = json!(false);
+    body["logit_bias"] = json!({});
+    body["metadata"] = json!({});
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(body.clone()),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    assert_eq!(r.header("kaeso-left-out"), Some("logit_bias, store"));
+    let sent = sent_to_mistral(&env, "/v1/chat/completions", SMALL);
+    assert!(
+        sent.get("store").is_none() && sent.get("logit_bias").is_none(),
+        "{sent}"
+    );
+    assert_eq!(sent["metadata"], json!({}), "Mistral takes `metadata`");
+
+    body["store"] = json!(true);
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(body),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{:?}", r.body);
+    assert_eq!(r.json()["error"]["param"], "store");
+}

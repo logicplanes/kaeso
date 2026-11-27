@@ -92,7 +92,7 @@ v1 API 以 OpenAI 的请求体提供 Responses，回复中另有 `content_filter
 | `developer` 角色 | `Role::System` | schema 列出 `system`、`user`、`assistant` 和 `tool`，因此 `system_role()` 发送 `system`。 |
 | `user` | `user` | schema 没有 `safety_identifier`，因此终端用户的 ID 以 `user` 发送（`end_user_as_user()`）。 |
 | `video_url` 部分 | `Block::Video` | `with_video_url()`。 |
-| `parallel_tool_calls`、`top_logprobs`、`logit_bias`、`metadata`、`store` 以及 schema 中没有的其他字段 | 拒绝 | DeepInfra 会悄悄丢弃未声明的字段，因此配置会拒绝它们；`parallel_tool_calls: true` 只是允许并行调用，会被省略。 |
+| `parallel_tool_calls`、`top_logprobs`、`logit_bias`、`metadata`、`store` 以及 schema 中没有的其他字段 | 拒绝 | DeepInfra 会悄悄丢弃未声明的字段，因此配置会拒绝它们；`parallel_tool_calls: true` 只是允许并行调用，会被省略，`store: false` 这样的[中性值](sampling.md#中性值)也一样。 |
 | `top_k`、`min_p`、`repetition_penalty`、`fail_fast`、`models`、`prompt_cache_options`、`cache_salt`、`chat_template_kwargs` 和 `reasoning` 对象 | extras | 当请求发往其他方言时被拒绝，与其他仅限 Chat 的字段相同。 |
 | `usage.estimated_cost`、带 `cache_write_tokens` 的 `prompt_tokens_details`、`name: null` | extras 和原始用量 | 发往其他方言时省略（`responses/greeting-published`、`responses/cached-doc`）。 |
 | 缺少 `inference` 权限范围的密钥收到的 403 `{"detail": {"error": …}}` | `KppError` | `PermissionDenied`，带 DeepInfra 的消息（`errors/missing-scope-doc`）。 |
@@ -267,7 +267,7 @@ AI Endpoints 的 Responses API 要求 `store: false`，因此不使用：Respons
 |---|---|---|
 | `message.reasoning`、`delta.reasoning`、`channel` | `Block::Reasoning`、extras | 通过配置的 `reasoning_fields`。assistant 消息接受发回的 `reasoning`。 |
 | `chat_template_kwargs`（`enable_thinking`）、`top_k`、`repetition_penalty` | extras | DeepSeek-V3.2 和 Gemma 4 只有在 `enable_thinking` 时才思考，而只有 Chat 应用能发送它。当请求发往其他方言时被拒绝。 |
-| `frequency_penalty`、`presence_penalty` | 拒绝 | SambaNova 接受并忽略它们，因此配置在发送之前拒绝它们。 |
+| `frequency_penalty`、`presence_penalty` | 拒绝 | SambaNova 接受并忽略它们，因此配置在发送之前拒绝它们；`0` 会被省略（[中性值](sampling.md#中性值)）。 |
 | 终端用户的 ID、Responses 应用的 `prompt_cache_key` | 省略 | 请求 schema 两者都没有，并拒绝未声明的属性（`without_end_user()`、`without_cache_key()`）。其他未声明的字段原样发送，由 SambaNova 自己返回 400。 |
 | `video_url` 部分 | `Block::Video` | `with_video_url()`；Gemma 4 接受视频。 |
 | 浮点数形式的 `created`、`system_fingerprint` | extras | `responses/palindrome-poem-doc`。 |
@@ -362,7 +362,7 @@ API 不在 `/v1` 下的服务商在 `Provider::api_root` 中指定其 API 根路
 | `video_url` 部分 | `Block::Video` | `with_video_url()`。 |
 | `user`、`safety_identifier`、Responses 应用的 `prompt_cache_key` | 省略 | 参考没有终端用户或缓存键字段，StepFun 会自行缓存提示（`without_end_user()`、`without_cache_key()`）。 |
 | `stream_options` | 省略 | 每个块都会主动带上累计用量（`without_stream_options()`、`streams/text-doc`）。 |
-| `presence_penalty`、`seed`、`logprobs`、`logit_bias`、`parallel_tool_calls`、`prompt_cache_key`、`store` 以及参考中没有的其他字段，消息中的 `name` | 拒绝 | 文档没有说明 StepFun 会拒绝还是丢弃未声明的字段，因此配置会在发送前拒绝它们；`parallel_tool_calls: true` 只是允许并行调用，会被省略。StepFun 指南中发送的 `tool_choice` 会照常发送。 |
+| `presence_penalty`、`seed`、`logprobs`、`logit_bias`、`parallel_tool_calls`、`prompt_cache_key`、`store` 以及参考中没有的其他字段，消息中的 `name` | 拒绝 | 文档没有说明 StepFun 会拒绝还是丢弃未声明的字段，因此配置会在发送前拒绝它们；`parallel_tool_calls: true` 只是允许并行调用，会被省略，`store: false` 这样的[中性值](sampling.md#中性值)也一样。StepFun 指南中发送的 `tool_choice` 会照常发送。 |
 | 最后一个块之前的 `finish_reason: ""` 和 `role: ""` | 无 | 与其他服务商一样，按没有值读取。 |
 | 带 `finish_reason: "stop"` 的工具调用 | `StopReason::EndTurn` | 文档中的两个工具调用回复都这样结束（`responses/tools-doc`）。Chat 映射把 `stop` 读作一轮结束，因此 Anthropic 应用会收到带 `stop_reason: "end_turn"` 的 `tool_use` 块。 |
 | 没有 `code` 的 `{"error": {"message", "type"}}` 错误 | `KppError` | 错误类型取决于状态码，StepFun 的标识位于 `type`。中国服务的 429 `project_credit_limit_exceeded` 和 `member_project_credit_limit_exceeded` 属于计费拒绝，而不是速率限制。 |

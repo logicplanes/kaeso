@@ -8,7 +8,7 @@ order: 2
 
 | 来自其他格式的数据 | 在请求中 | 在回复中 |
 | --- | --- | --- |
-| extras 字段 | `Unsupported`，除非在[允许列表](#extras)中 | 省略 |
+| extras 字段 | `Unsupported`，除非在[允许列表](#extras)中或为[中性值](sampling.md#中性值) | 省略 |
 | 未知块、工具和工具选择 | `Unsupported`，[工具命名空间](#工具命名空间)、[工具搜索](#工具搜索)、[托管网页搜索](#托管网页搜索)和 [Codex 工具历史](#codex-工具历史)除外 | 省略未知块，网页搜索除外 |
 | 引用 | `Unsupported` | 省略 |
 | 服务商文件 ID | `Unsupported`，除非由目标服务商签发 | — |
@@ -17,7 +17,7 @@ order: 2
 | 缓存提示 | 目标会自行缓存时丢弃 | — |
 | 音频和视频 | 目标格式和服务商接受时发送，否则为 `Unsupported`（[音频和视频](#音频和视频)） | 应用的格式无法承载时省略 |
 | 音频和图像输出 | 目标能生成时请求，否则为 `Unsupported`（[音频和图像回复](#音频和图像回复)） | Chat 和 Gemini 应用收到音频，Gemini 应用收到图像；其他情况省略 |
-| 目标没有的采样设置 | `Unsupported` | — |
+| 目标没有的采样设置 | `Unsupported`，惩罚值为 0 时除外（[中性值](sampling.md#中性值)） | — |
 | 应用格式中没有的停止原因 | — | 映射为该格式中最接近的一个 |
 | 对始终推理的模型关闭思考 | 该模型的最低推理强度等级，并在 `kaeso-adapted` 中说明（见[始终推理的模型](reasoning.md#始终推理的模型)） | — |
 | 决策请求和答案 | 按[跨格式的决策](decisions-across-formats.md)所述映射或拒绝 | 以同样方式映射 |
@@ -256,7 +256,7 @@ Responses 模型的搜索会像 Claude 的搜索一样到达 Anthropic 应用。
 | `local_shell_call` | 名为 `local_shell` 的 `Block::ToolCall`，其 `action` 对象作为参数 |
 | `local_shell_call_output` | 对应其 `id` 所指调用的 `Block::ToolResult`；Codex 改为发送 `function_call_output` |
 
-OpenAI 原样收到这些项，SpaceX 原样收到其中的 `custom_tool_call` 和 `custom_tool_call_output`：SpaceX 能根据这样的历史作答（`openai_responses/providers/xai/responses/recorded-codex-gpt-history.json`）。SpaceX 接受的是 `shell_call` 项，因此 `local_shell_call` 和 `local_shell_call_output` 按上文作为工具调用和结果发给它。发给 SpaceX 时会省略 GPT 的推理项，因为 SpaceX 无法解密 OpenAI 的 `encrypted_content`，会拒绝该请求（参见 [SpaceX](openai-responses.md#spacex)）。不符合上述形状的项仍是未知块，并像未知块一样被拒绝。
+OpenAI 原样收到这些项，SpaceX 原样收到其中的 `custom_tool_call` 和 `custom_tool_call_output`：SpaceX 能根据这样的历史作答（`openai_responses/providers/xai/responses/recorded-codex-gpt-history.json`）。SpaceX 接受的是 `shell_call` 项，因此 `local_shell_call` 和 `local_shell_call_output` 按上文作为工具调用和结果发给它。发给 SpaceX 时会省略 GPT 的推理项，因为 SpaceX 无法解密 OpenAI 的 `encrypted_content`，会拒绝该请求（参见 [SpaceX](openai-responses-providers.md#spacex)）。不符合上述形状的项仍是未知块，并像未知块一样被拒绝。
 
 ## Codex 智能体消息
 
@@ -359,22 +359,6 @@ OpenAI Chat 编码器还会在响应一开始就发送它的角色 chunk，而�
 - 从 Anthropic 发往 OpenAI 的 schema 会得到名称 `response`，因为 OpenAI 要求必须有名称。
 - Gemini 以 `responseJsonSchema` 接收 schema，以单独的 `responseMimeType: "application/json"` 接收 `json_object`；与 Anthropic 一样，schema 的 `name` 会被丢弃，`description` 或 `strict: false` 为 `Unsupported`。
 - Amazon Bedrock Converse 暂不接收输出格式：`json_object` 和 schema 均为 `Unsupported`。
-
-## 采样参数
-
-目标无法遵守的采样设置为 `Unsupported`，从不丢弃或重新缩放：
-
-| 目标 | 拒绝 |
-| --- | --- |
-| Anthropic | `seed`、频率惩罚和存在惩罚，以及超出 Anthropic 取值范围 0 到 1 的 `temperature` |
-| OpenAI Chat Completions | `top_k`，以及超过四个的停止序列 |
-| OpenAI Responses | `top_k`、`seed`、各项惩罚和停止序列，Responses 没有这些参数；以及低于 16 个 Token 的输出上限，即 `CreateResponse` 的最小值 |
-| Gemini API | 超过五个停止序列（`GenerationConfig.stopSequences`） |
-| Amazon Bedrock Converse | `top_k`、`seed` 和惩罚参数，它们属于各模型系列自己的字段 |
-
-数字在同一方言内保持原来的写法：只要值未改变，`temperature: 1` 回来时仍是 `1`，`1.0` 仍是 `1.0`。跨方言时使用目标自己的写法，因此来自 Chat 的 `temperature: 1` 到达 Anthropic 时是 `1.0`。
-
-KPP 没有 `n`：`n` 大于 1 的 Chat 请求在解码时就会被拒绝，与目标无关。Chat 的 `logprobs`、`logit_bias` 和 `top_logprobs` 是 extras，其他每个方言都会拒绝它们（[Extras](#extras)）。
 
 ## 有状态的 Responses 功能
 

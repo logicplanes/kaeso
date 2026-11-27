@@ -355,3 +355,134 @@ async fn token_counts_for_xai_models_are_refused_in_each_apps_format() {
     );
     assert!(env.mock.received().is_empty());
 }
+
+#[tokio::test]
+async fn nextchats_neutral_penalties_reach_xais_responses_api_left_out_and_named() {
+    let env = env().await;
+    let mut body: Value = serde_json::from_str(include_str!(
+        "../../../kaeso-codecs/fixtures/openai_chat/requests/nextchat-defaults.json"
+    ))
+    .unwrap();
+    body["model"] = json!("grok-4.3");
+    body["stream"] = json!(false);
+    body["store"] = json!(false);
+    body["service_tier"] = json!("auto");
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(body),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(
+        r.header("kaeso-left-out"),
+        Some("frequency_penalty, presence_penalty, service_tier")
+    );
+    let (path, _, sent) = sent(&env).unwrap();
+    assert_eq!(path, "/v1/responses");
+    for key in ["frequency_penalty", "presence_penalty", "service_tier"] {
+        assert!(sent.get(key).is_none(), "{key}: {sent}");
+    }
+    assert_eq!(sent["store"], json!(false));
+}
+
+fn text_of(events: &[Value], pick: impl Fn(&Value) -> Option<&str>) -> String {
+    events.iter().filter_map(pick).collect()
+}
+
+#[tokio::test]
+async fn stop_sequences_small_limits_and_seed_reach_grok_from_other_formats() {
+    let env = env().await;
+    let hello = "Hello! [mock:fixture=providers/xai/recorded-text-basic-stream]";
+
+    let mut asked = chat("grok-4.3", hello);
+    asked["stop"] = json!([" help", "never"]);
+    asked["seed"] = json!(7);
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(asked),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.header("kaeso-adapted"), Some("stop"));
+    assert_eq!(r.header("kaeso-left-out"), Some("seed"));
+    let (path, _, body) = sent(&env).unwrap();
+    assert_eq!(path, "/v1/responses");
+    assert!(
+        body.get("stop").is_none() && body.get("seed").is_none(),
+        "{body}"
+    );
+    assert_eq!(
+        body["stream"], true,
+        "Kaeso reads a reply it ends itself as a stream"
+    );
+    let reply = r.json();
+    assert_eq!(
+        reply["choices"][0]["message"]["content"],
+        "Hello! How can I"
+    );
+    assert_eq!(reply["choices"][0]["finish_reason"], "stop");
+
+    let mut streamed = messages("grok-4.3", hello);
+    streamed["stream"] = json!(true);
+    streamed["stop_sequences"] = json!(["you"]);
+    let r = call(&env, "/v1/messages", Some(&env.key), true, Some(streamed)).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.header("kaeso-adapted"), Some("stop_sequences"));
+    let events = sse_data(&r.text());
+    let text = text_of(&events, |e| e["delta"]["text"].as_str());
+    assert_eq!(text, "Hello! How can I help ");
+    let end = events
+        .iter()
+        .find(|e| e["type"] == "message_delta")
+        .unwrap();
+    assert_eq!(end["delta"]["stop_reason"], "stop_sequence");
+    assert_eq!(end["delta"]["stop_sequence"], "you");
+    assert_eq!(events.last().unwrap()["type"], "message_stop");
+
+    let mut small = chat("grok-4.3", hello);
+    small["max_tokens"] = json!(3);
+    small["stream"] = json!(true);
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(small),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.header("kaeso-adapted"), Some("max_tokens"));
+    let (_, _, body) = sent(&env).unwrap();
+    assert_eq!(body["max_output_tokens"], 16);
+    let events = sse_data(&r.text());
+    let text = text_of(&events, |e| e["choices"][0]["delta"]["content"].as_str());
+    assert_eq!(
+        text, "Hello! How",
+        "xAI's limit leaves out reasoning, and so does Kaeso's"
+    );
+    let finished = text_of(&events, |e| e["choices"][0]["finish_reason"].as_str());
+    assert_eq!(finished, "length");
+
+    env.mock.clear();
+    let r = call(
+        &env,
+        "/v1/responses",
+        Some(&env.key),
+        false,
+        Some(json!({ "model": "grok-4.3", "input": hello, "max_output_tokens": 5 })),
+    )
+    .await;
+    assert_eq!(
+        r.status,
+        StatusCode::BAD_REQUEST,
+        "a Responses app's own limit goes as it wrote it: {}",
+        r.text()
+    );
+    assert!(env.mock.received().is_empty());
+}

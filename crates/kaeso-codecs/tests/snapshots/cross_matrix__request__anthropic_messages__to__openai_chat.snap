@@ -659,9 +659,9 @@ expression: outcomes
     "path": "/v1/chat/completions"
   },
   "metadata-service-tier": {
-    "message": "`service_tier` comes from an Anthropic Messages request and has no equivalent in OpenAI Chat Completions. Remove it, or send the request to a model served through its original format.",
+    "message": "`inference_geo` comes from an Anthropic Messages request and has no equivalent in OpenAI Chat Completions. Remove it, or send the request to a model served through its original format.",
     "param": null,
-    "unsupported": "service_tier"
+    "unsupported": "inference_geo"
   },
   "mid-conversation-system-tool-results": {
     "body": {
@@ -929,6 +929,39 @@ expression: outcomes
       "stream_options": {
         "include_usage": true
       }
+    },
+    "path": "/v1/chat/completions"
+  },
+  "providers/deepseek/litellm-custom-tool": {
+    "body": {
+      "max_completion_tokens": 200,
+      "messages": [
+        {
+          "content": "Weather in Paris?",
+          "role": "user"
+        }
+      ],
+      "model": "deepseek-flash",
+      "tools": [
+        {
+          "function": {
+            "description": "Get the weather for a city.",
+            "name": "get_weather",
+            "parameters": {
+              "properties": {
+                "city": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "city"
+              ],
+              "type": "object"
+            }
+          },
+          "type": "function"
+        }
+      ]
     },
     "path": "/v1/chat/completions"
   },

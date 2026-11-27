@@ -692,9 +692,9 @@ expression: outcomes
     "path": "/v1beta/models/claude-opus-5-5:generateContent"
   },
   "metadata-service-tier": {
-    "message": "`service_tier` comes from an Anthropic Messages request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "message": "`inference_geo` comes from an Anthropic Messages request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
     "param": null,
-    "unsupported": "service_tier"
+    "unsupported": "inference_geo"
   },
   "mid-conversation-system-tool-results": {
     "body": {
@@ -1053,6 +1053,45 @@ expression: outcomes
       }
     },
     "path": "/v1beta/models/zai-org%2FGLM-5.2:streamGenerateContent?alt=sse"
+  },
+  "providers/deepseek/litellm-custom-tool": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Weather in Paris?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 200
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "Get the weather for a city.",
+              "name": "get_weather",
+              "parametersJsonSchema": {
+                "properties": {
+                  "city": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "city"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/deepseek-flash:generateContent"
   },
   "providers/deepseek/say-hello": {
     "body": {

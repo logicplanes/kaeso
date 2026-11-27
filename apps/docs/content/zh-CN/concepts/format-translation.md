@@ -28,7 +28,7 @@ KPP（Kaeso Provider Protocol）为每种 API 格式都提供一个编解码器�
 ## 三条规则
 
 1. **格式相同，没有损失。** 以原格式到达服务商的请求与发送时完全一致。只有模型名称会改为服务商的模型 ID。流始终会请求用量，但只有应用自己请求时才会看到。例外有三个。对于服务商在任何形式下都不接受其 schema 的工具，其参数根部的联合会变为一个对象，回复的 `kaeso-adapted` 响应头会注明它；没有 `type` 的根部会加上 `type: "object"`（[联合类型的工具 schema](../development/kpp/cross-format.md#联合类型的工具-schema)）。发给没有推理强度等级的模型的推理强度，以及发给不支持推理的模型的自适应思考会被省略（[没有推理强度等级的模型](../development/kpp/reasoning.md#没有推理强度等级的模型)）。Claude Opus 4.7 及更新的模型只接受默认采样设置，因此 Kaeso 会省略 `temperature`、`top_p` 和 `top_k`，思考预算则会变为自适应思考。
-2. **拒绝，而不丢弃。** 请求跨格式转换时，如果目标格式无法支持某个字段，Kaeso 会拒绝请求，并在错误中注明该字段。只有不改变模型输出内容的提示信息、目标缺少的少数可选工具，以及模型无法接受的推理设置会被省略；回复的 `kaeso-left-out` 响应头会注明这些内容（[省略的工具](../development/kpp/cross-format.md#省略的工具)）。
+2. **拒绝，而不丢弃。** 请求跨格式转换时，如果目标格式无法支持某个字段，Kaeso 会拒绝请求，并在错误中注明该字段。只有不改变模型输出内容的提示信息、目标缺少的少数可选工具、模型无法接受的推理设置，以及取值本就是 API 所用值的设置会被省略；回复的 `kaeso-left-out` 响应头会注明这些内容（[省略的工具](../development/kpp/cross-format.md#省略的工具)、[中性值](../development/kpp/sampling.md#中性值)）。
 3. **签名的推理只回到原处。** Kaeso 只会把加密或签名的推理内容发回签发它的格式和服务商。
 
 ## 能够保留的内容
@@ -37,7 +37,7 @@ KPP（Kaeso Provider Protocol）为每种 API 格式都提供一个编解码器�
 - **工具。** 函数工具、工具选择、并行工具调用、工具调用和工具结果。工具返回的图像和文件会出现在结果之后的用户消息中到达 Chat Completions 模型，因为它的工具消息只包含文本（[工具结果中的媒体](../development/kpp/cross-format.md#工具结果中的媒体)）。
 - **工具名称和调用 ID。** 目标不接受某个名称或 ID 时，Kaeso 会以固定方式改写它，并在回复中映射回原值。其他字符变为 `_`，名称被截短以符合长度要求，并附加原值的哈希。OpenAI 接受最多 64 个由字母、数字、`_` 和 `-` 组成的字符，Anthropic 最多 128 个。
 - **结构化输出。** JSON schema。
-- **采样。** 温度、Top P、最大 Token 数和停止序列，前提是目标支持。值的含义不变，但会按目标的写法写出，因此 `1` 可能以 `1.0` 到达。
+- **采样。** 温度、Top P、最大 Token 数和停止序列，前提是目标支持。值的含义不变，但会按目标的写法写出，因此 `1` 可能以 `1.0` 到达。对于通过 OpenAI Responses 提供的模型（例如 Grok），Kaeso 会在停止序列处或低于 16 个 Token 的上限处自行结束回复（[网关中的 OpenAI Responses](../development/kpp/sampling.md#网关中的-openai-responses)）。
 - **最终用户的 ID。** Anthropic 的 `metadata.user_id` 和 OpenAI 的 `safety_identifier`。OpenAI 最多接受 128 个字符，并要求发送用户 ID 的哈希，因此更长的 Anthropic ID（例如 Claude Code 的 ID）会以 SHA-256 哈希发送给 OpenAI，回复的 `kaeso-adapted` 响应头会注明这一点。
 - **推理。** 推理强度和思考预算会相互转换（[推理](#推理)）。
 - **流。** Kaeso 会把流逐个事件转换为应用的格式。
@@ -49,7 +49,7 @@ KPP（Kaeso Provider Protocol）为每种 API 格式都提供一个编解码器�
 
 ### 发往 Anthropic 的请求
 
-- `seed`、频率惩罚和存在惩罚，以及大于 1 的温度
+- `seed`、不为 0 的频率惩罚和存在惩罚，以及大于 1 的温度
 - `json_object` 输出格式，以及带有描述或带有 `strict: false` 的 JSON schema
 - 历史中的拒绝回复
 - JPEG、PNG、GIF 和 WebP 以外的图像，以及 PDF 和纯文本以外的文档
@@ -67,7 +67,7 @@ KPP（Kaeso Provider Protocol）为每种 API 格式都提供一个编解码器�
 
 ### 发往 OpenAI Responses 的请求
 
-- `top_k`、`seed`、惩罚参数和停止序列
+- `top_k` 和不为 0 的惩罚参数
 - 文本文档、文档标题、上下文和引用
 - 音频和视频，以及音频和图像输出
 
@@ -80,7 +80,7 @@ KPP（Kaeso Provider Protocol）为每种 API 格式都提供一个编解码器�
 
 ### 跨格式的请求
 
-- KPP 中没有对应位置的应用格式字段，例如 Chat Completions 的 `logprobs`、`logit_bias` 和 `service_tier`
+- KPP 中没有对应位置的应用格式字段，例如 Chat Completions 的 `logprobs`、`logit_bias` 和 `service_tier`，除非它们取 API 在没有该字段时使用的值
 - Chat Completions 已弃用的函数调用：`functions`、`function_call` 和 `function` 消息
 - 其他格式的内置工具（例如网页搜索）及其结果
 - 引用，以及来自其他服务商的文件 ID
@@ -106,6 +106,8 @@ KPP（Kaeso Provider Protocol）为每种 API 格式都提供一个编解码器�
 - 图像细节和文件名
 - Anthropic 的 `thinking.display`，以及只清除先前思考内容的 Anthropic 上下文管理
 - OpenAI 没有的工具结果错误标记；工具结果的文本仍会说明失败的内容
+- 通过 OpenAI Responses 提供的模型的 `seed`，因为那里没有对应字段
+- 取值就是 API 在没有该字段时所用值的设置，例如 `frequency_penalty: 0`、`logprobs: false` 或 `store: false`，NextChat 等聊天应用会在每个请求中发送它们；回复的 `kaeso-left-out` 响应头会列出它们（[中性值](../development/kpp/sampling.md#中性值)）
 
 转换为 Responses 的请求带有 `store: false`，因此 OpenAI 不会保存任何内容。
 
@@ -125,7 +127,7 @@ Kaeso 这样转换推理设置：
 - **推理强度和预算。** 同一请求中的推理强度优先于预算。目录条目注明时，Claude 模型不支持自适应思考。Claude 4.5 及更早版本都不支持。
 - **调整预算。** Kaeso 会按 Anthropic 的规则调整预算：至少 1,024 个 Token，且小于 `max_tokens`。当 `max_tokens` 为 1,024 或更小时，预算为 1,024，Kaeso 会把 `max_tokens` 增加 1,024，为回答保留空间。
 - **思考和采样。** 当 Kaeso 为来自其他格式的请求开启 Claude 的思考时，会省略 `temperature`、`top_p` 和 `top_k`，因为 Anthropic 会拒绝将它们与思考一起使用。Anthropic 应用自身的设置会按收到的原样发送，但发往 Claude Opus 4.7 及更新的模型时除外：这些模型不接受其中任何一项，Kaeso 会为所有应用省略它们，并在 `kaeso-left-out` 中注明。
-- **强制工具调用。** Anthropic 会拒绝预算思考与强制工具调用（`required` 或指定的工具）同时使用。这时 Kaeso 会不带思考发送请求。自适应思考则保留强制工具。
+- **强制工具调用。** Anthropic 会拒绝预算思考与强制工具调用（`required` 或指定的工具）同时使用。这时 Kaeso 会不带思考发送请求。自适应思考则保留强制工具。DeepSeek 拒绝任何思考与强制工具调用同时使用，因此对这类请求，Kaeso 会关闭 DeepSeek 的思考，并在 `kaeso-adapted` 中注明，除非请求设置了 DeepSeek 自己的 `thinking` 字段。
 - **来自其他地方的工具轮次。** 开启预算思考时，上一个助手轮次的工具调用中可能没有 Claude 可以重放的思考内容，例如这些调用由另一个服务商发出。这时 Kaeso 会不带思考发送请求。自适应思考保持开启。
 - **何时开启推理。** 目录会说明模型是否支持推理（KPMR 的 `capabilities.reasoning`）。对这样的模型，不带推理强度的 `reasoning: {summary: "auto"}` 或 OpenRouter 的 `reasoning: {enabled: true}` 会以默认深度开启 Claude 的思考：自适应思考，或 8,192 个 Token 的预算。Anthropic 应用不带推理强度开启思考时，会在下一轮收到 OpenAI 的加密推理。Kaeso 从不为不支持推理或未知是否支持推理的模型开启推理。发给这类模型的推理强度或自适应思考会被省略，`enabled` 思考或预算则会被拒绝。
 - **OpenRouter 的 `reasoning` 对象。** Chat Completions 和 Responses 应用都可以向任意模型发送 OpenRouter 的 `reasoning` 对象（`effort`、`max_tokens`、`enabled`、`exclude`）。`effort`、`max_tokens` 和 `enabled` 会像上面的原生设置一样跨格式转换；相互冲突的组合（例如同时设置 `effort` 与 `max_tokens`，或 `enabled: false` 与预算）返回 400。`exclude: true` 会在回复中隐藏推理内容，同时在用量中保留 `reasoning_tokens`。

@@ -1161,8 +1161,9 @@ pub const PROVIDERS: &[Provider] = &[
         decisions: &[],
         dialects: &[DialectId::OpenAiChat, DialectId::AnthropicMessages],
         // The Anthropic-compatible Messages API at `/anthropic/v1/messages`, every model, either auth
-        // header; it ignores `top_k`, `container` and `mcp_servers`, which are refused
-        // (https://api-docs.deepseek.com/guides/anthropic_api, read 2026-11-25).
+        // header; it ignores `top_k`, `container` and `mcp_servers`, which are refused, and
+        // answers `type: "custom"` on a client tool with 422
+        // (https://api-docs.deepseek.com/guides/anthropic_api, read 2026-11-27).
         native: &[NativeDialect::of(DialectId::AnthropicMessages).at("/anthropic/v1")],
         refused_key_messages: &[],
         context_window_messages: &[],
@@ -1174,13 +1175,13 @@ pub const PROVIDERS: &[Provider] = &[
             .system_role()
             .reasoning_fields(&["reasoning_content"])
             .tool_schema_root(ToolSchemaRoot::TypedObjectUnions)
-            .tool_patterns(ToolPatterns::Compiled),
+            .tool_patterns(ToolPatterns::Compiled)
+            .forced_tool_without_thinking(),
         responses: ResponsesProfile::compatible("DeepSeek"),
-        messages: MessagesProfile::compatible("DeepSeek").refusing(&[
-            "top_k",
-            "container",
-            "mcp_servers",
-        ]),
+        messages: MessagesProfile::compatible("DeepSeek")
+            .refusing(&["top_k", "container", "mcp_servers"])
+            .without_custom_tool_type()
+            .forced_tool_without_thinking(),
         gemini: GeminiProfile::GOOGLE_AI_STUDIO,
         account: None,
         routes: &[],
@@ -5633,7 +5634,6 @@ mod tests {
     fn mistrals_profile_answers_each_request_mistral_was_recorded_refusing() {
         for (request, param) in [
             ("requests/logit-bias", "logit_bias"),
-            ("providers/mistral/requests/store-field", "store"),
             (
                 "providers/mistral/requests/function-call-field",
                 "function_call",
@@ -5655,6 +5655,11 @@ mod tests {
                 "{request}"
             );
         }
+        let store = sent_with_profile("mistral", "providers/mistral/requests/store-field").unwrap();
+        assert!(
+            store.get("store").is_none(),
+            "store: false asks for nothing: {store}"
+        );
         let limit =
             sent_with_profile("mistral", "requests/max-completion-tokens-legacy-null").unwrap();
         assert!(limit.get("max_completion_tokens").is_none(), "{limit}");

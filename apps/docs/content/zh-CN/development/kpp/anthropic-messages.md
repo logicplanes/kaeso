@@ -51,7 +51,7 @@ Schema `CreateMessageParams` 和 `CountMessageTokensParams`。
 | 字符串形式的 `system` | `system: [Text]` | 形式标记 `system: "string"`。 |
 | 数组形式的 `system`（`RequestTextBlock[]`） | `system` | `[]` → 形式标记 `system: "array"`。 |
 | `max_tokens` | `sampling.max_output_tokens` | 生成请求必需（`CreateMessageParams`）：缺少该字段的请求在解码时即为 `InvalidRequest`（`` The request body is not a valid Anthropic Messages request: `max_tokens` is required. ``，参数 `max_tokens`），因此网关从不为 Anthropic 应用补上该字段；Token 计数没有 `max_tokens`。`0` 是有效值，即规范中的最小值：它只填充提示缓存，不生成回答。来自其他方言、没有 `sampling.max_output_tokens` 的请求在 `check()` 中为 `InvalidRequest`，并注明应用自己的字段（`max_completion_tokens` 或 `max_output_tokens`，[跨格式转换](cross-format.md#请求)）。 |
-| `temperature`、`top_p`、`top_k` | `sampling.temperature`、`.top_p`、`.top_k` | 在规范中已弃用，SDK 1.13.0 中也没有，但仍会映射。`temperature` 和 `top_p` 保留其写法：写成整数（`1`）的键会列在形式标记 `integers` 中，只要值仍是整数，就会再次写成整数，因此 `temperature: 1` 返回时仍是 `1`，而不是 `1.0`；改变后的值按新值写出。来自其他方言的请求使用 Anthropic 自己的写法（`1.0`）（[采样参数](cross-format.md#采样参数)）。 |
+| `temperature`、`top_p`、`top_k` | `sampling.temperature`、`.top_p`、`.top_k` | 在规范中已弃用，SDK 1.13.0 中也没有，但仍会映射。`temperature` 和 `top_p` 保留其写法：写成整数（`1`）的键会列在形式标记 `integers` 中，只要值仍是整数，就会再次写成整数，因此 `temperature: 1` 返回时仍是 `1`，而不是 `1.0`；改变后的值按新值写出。来自其他方言的请求使用 Anthropic 自己的写法（`1.0`）（[采样参数](sampling.md)）。 |
 | `stop_sequences` | `sampling.stop` | `[]` → verbatim。 |
 | `stream: true` | `stream = On { include_usage: true }` | Anthropic 总是报告用量。`stream: false` → verbatim。 |
 | `metadata.user_id` | `user` | `null` → verbatim（`verbatim:metadata`）；其他键 → extras `metadata.*`；存在 `metadata` 对象 → 形式标记 `objects: ["metadata"]`。 |
@@ -134,7 +134,7 @@ Schema `CreateMessageParams` 和 `CountMessageTokensParams`。
 | `thinking` `enabled`，且最后一条消息（不计其后的系统消息）返回工具结果，而最后一个助手轮次发起了工具调用，却没有以可回放的思考块（已签名的 `thinking` 或 `redacted_thinking`）开头（例如该轮次来自另一个服务商） | 请求不带 `thinking` 和 `output_config.effort` 发送 | Anthropic 会拒绝这样的请求（“a final assistant message must start with a thinking block”）；见[没有思考的工具轮次](reasoning.md#没有思考的工具轮次)。`adaptive` 思考会保留：自适应思考的文档说明它不需要开头的思考块。除此之外不做任何记录。这种情况很少见，因为 Claude 产生的思考会从 Responses 和 Anthropic 应用以[推理数据块](reasoning.md#推理数据块)的形式返回，从 Chat 应用则经由[网关的存储](reasoning.md#由网关保存的推理)返回，所以该轮次会以可回放的思考开头。该规则同样适用于来自 Anthropic 应用的请求。 |
 | `output = JsonObject` | `Unsupported`（`json_object output`） | [结构化输出](cross-format.md#结构化输出)。 |
 | `output = JsonSchema` | `output_config.format` | 丢弃 `name`；`description` 和 `strict: false` → `Unsupported`。 |
-| `sampling.seed`、`.frequency_penalty`、`.presence_penalty` | `Unsupported` | [采样参数](cross-format.md#采样参数)；不适用于 Token 计数，因为计数时会省略采样参数。 |
+| `sampling.seed`、`.frequency_penalty`、`.presence_penalty` | `Unsupported` | [采样参数](sampling.md)；不适用于 Token 计数，因为计数时会省略采样参数。值为 `0` 的惩罚参数会被省略（[中性值](sampling.md#中性值)）。 |
 | 超出 0 到 1 范围的 `sampling.temperature` | `Unsupported` | Anthropic 的范围是 0 到 1（OpenAI 允许到 2）；不会重新缩放。不适用于 Token 计数。 |
 | `user` | `metadata.user_id` | |
 | `Role::System` | 对从 Anthropic Messages 解码的请求，写为 `role: "system"` 消息；来自其他方言时，作为下一个用户轮次的文本，排在其工具结果之后 | [系统消息](cross-format.md#系统消息)。 |

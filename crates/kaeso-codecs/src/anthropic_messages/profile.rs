@@ -1,7 +1,9 @@
-use kaeso_kpp::{DialectId, KppError, ToolChoice};
+use kaeso_kpp::{DialectId, KppError, ToolChoice, ToolDef};
+use serde_json::Value;
 
 use crate::adapt::Draft;
 use crate::cross::{self, Setting};
+use crate::wire::VERBATIM_FORM_KEY;
 
 /// How a provider's Anthropic Messages API differs from Anthropic's own.
 ///
@@ -36,6 +38,13 @@ pub struct MessagesProfile {
     /// (`{"type": "video", "source": …}`); empty for a provider without video blocks, which
     /// refuses them. URL sources pass whatever they point to.
     pub video_media_types: &'static [&'static str],
+    /// Whether a model of the provider can't think while a tool is forced, as DeepSeek's
+    /// models can't; Kaeso then sends such a request with thinking disabled.
+    pub forced_tool_without_thinking: bool,
+    /// Whether the provider takes `type: "custom"`, which an app may write on its own tools,
+    /// as Anthropic's API does. A provider that reads `type` only as a server tool's, as
+    /// DeepSeek does, gets the app's tools without it; they mean the same.
+    pub custom_tool_type: bool,
 }
 
 /// The video media types MiniMax takes in a `video` block's base64 source: `MediaSource`'s
@@ -89,6 +98,8 @@ impl MessagesProfile {
         forced_tool_choice: true,
         raw_predict: false,
         video_media_types: &[],
+        forced_tool_without_thinking: false,
+        custom_tool_type: true,
     };
 
     /// Another provider's Messages API, as Anthropic's until a setting says otherwise.
@@ -130,6 +141,22 @@ impl MessagesProfile {
     #[must_use]
     pub const fn with_video(mut self, media_types: &'static [&'static str]) -> Self {
         self.video_media_types = media_types;
+        self
+    }
+
+    /// A model of the provider can't think while a tool is forced
+    /// ([`MessagesProfile::forced_tool_without_thinking`]).
+    #[must_use]
+    pub const fn forced_tool_without_thinking(mut self) -> Self {
+        self.forced_tool_without_thinking = true;
+        self
+    }
+
+    /// The provider refuses `type: "custom"` on an app's tools
+    /// ([`MessagesProfile::custom_tool_type`]).
+    #[must_use]
+    pub const fn without_custom_tool_type(mut self) -> Self {
+        self.custom_tool_type = false;
         self
     }
 
@@ -225,5 +252,38 @@ pub(crate) fn apply(d: &mut Draft<'_>, profile: &MessagesProfile) -> Result<(), 
         d.edit().extras.fields.shift_remove(&field);
         d.leave_out(field);
     }
+    if !profile.custom_tool_type {
+        without_custom_tool_type(d);
+    }
     Ok(())
+}
+
+const TYPE: &str = "type";
+
+fn custom_type(extras: &kaeso_kpp::Extras) -> bool {
+    matches!(
+        extras.form.get(VERBATIM_FORM_KEY),
+        Some(Value::Object(kept)) if kept.get(TYPE).and_then(Value::as_str) == Some("custom")
+    )
+}
+
+// DeepSeek's Anthropic endpoint reads a tool's `type` as a server tool's and answers
+// `custom` with a 422 (https://api-docs.deepseek.com/guides/anthropic_api#tools). The
+// decoder keeps an app's `type: "custom"` as form, so leaving it out drops nothing.
+fn without_custom_tool_type(d: &mut Draft<'_>) {
+    let typed = |t: &ToolDef| matches!(t, ToolDef::Function(f) if custom_type(&f.extras));
+    if !d.get().tools.iter().any(typed) {
+        return;
+    }
+    for tool in &mut d.edit().tools {
+        let ToolDef::Function(f) = tool else {
+            continue;
+        };
+        if let Some(Value::Object(kept)) = f.extras.form.get_mut(VERBATIM_FORM_KEY) {
+            kept.retain(|key, _| key != TYPE);
+            if kept.is_empty() {
+                f.extras.form.shift_remove(VERBATIM_FORM_KEY);
+            }
+        }
+    }
 }

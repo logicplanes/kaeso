@@ -634,9 +634,9 @@ expression: outcomes
     "unsupported": "max_tokens 10"
   },
   "metadata-service-tier": {
-    "message": "`service_tier` comes from an Anthropic Messages request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "message": "`inference_geo` comes from an Anthropic Messages request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
     "param": null,
-    "unsupported": "service_tier"
+    "unsupported": "inference_geo"
   },
   "mid-conversation-system-tool-results": {
     "body": {
@@ -913,6 +913,38 @@ expression: outcomes
       "model": "zai-org/GLM-5.2",
       "store": false,
       "stream": true
+    },
+    "path": "/v1/responses"
+  },
+  "providers/deepseek/litellm-custom-tool": {
+    "body": {
+      "input": [
+        {
+          "content": "Weather in Paris?",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 200,
+      "model": "deepseek-flash",
+      "store": false,
+      "tools": [
+        {
+          "description": "Get the weather for a city.",
+          "name": "get_weather",
+          "parameters": {
+            "properties": {
+              "city": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "city"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        }
+      ]
     },
     "path": "/v1/responses"
   },

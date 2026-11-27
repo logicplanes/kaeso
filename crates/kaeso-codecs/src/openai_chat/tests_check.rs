@@ -73,7 +73,7 @@ fn other_endpoints_are_refused() {
 #[test]
 fn foreign_extras_are_refused_via_cross() {
     let mut r = base();
-    r.extras = Extras::new(anthropic()).with_field("service_tier", raw("\"auto\""));
+    r.extras = Extras::new(anthropic()).with_field("service_tier", raw("\"standard_only\""));
     assert_eq!(feature(r), "service_tier");
     let mut r = base();
     r.tools.push(ToolDef::Unknown(RawItem::new(

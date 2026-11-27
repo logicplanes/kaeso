@@ -164,11 +164,11 @@ Jedes KPP-Feld ist entweder semantisch oder ein Hinweis:
 | `reasoning.summary` | Hinweis | Steuert nur, ob Zusammenfassungen zurückkommen. Anthropic: `thinking.display: "summarized"` ([lesbares Reasoning und Zusammenfassungen](reasoning.md#lesbares-reasoning-und-zusammenfassungen)). |
 | `reasoning.include_encrypted` | Hinweis | Steuert nur, ob verschlüsseltes Reasoning zurückkommt; nur OpenAI Responses ([lesbares Reasoning und Zusammenfassungen](reasoning.md#lesbares-reasoning-und-zusammenfassungen)). |
 | `sampling.max_output_tokens` | semantisch | |
-| `sampling.temperature`, `.top_p` | semantisch | Ihre Schreibweise (`1` oder `1.0`) ist Form und bleibt nur innerhalb des Dialekts erhalten ([Sampling](cross-format.md#sampling)). |
-| `sampling.top_k` | semantisch | Nur Anthropic; anderswo `Unsupported` ([Sampling](cross-format.md#sampling)). |
-| `sampling.stop` | semantisch | OpenAI Chat Completions nimmt höchstens vier; OpenAI Responses hat keine und gibt `Unsupported` zurück ([Sampling](cross-format.md#sampling)). |
-| `sampling.seed` | semantisch | Nur OpenAI Chat Completions; anderswo `Unsupported` ([Sampling](cross-format.md#sampling)). |
-| `sampling.frequency_penalty`, `.presence_penalty` | semantisch | Nur OpenAI Chat Completions; anderswo `Unsupported` ([Sampling](cross-format.md#sampling)). |
+| `sampling.temperature`, `.top_p` | semantisch | Ihre Schreibweise (`1` oder `1.0`) ist Form und bleibt nur innerhalb des Dialekts erhalten ([Sampling](sampling.md)). |
+| `sampling.top_k` | semantisch | Nur Anthropic; anderswo `Unsupported` ([Sampling](sampling.md)). |
+| `sampling.stop` | semantisch | OpenAI Chat Completions nimmt höchstens vier; OpenAI Responses hat keine und gibt `Unsupported` zurück ([Sampling](sampling.md)). |
+| `sampling.seed` | semantisch | Nur OpenAI Chat Completions; anderswo `Unsupported` ([Sampling](sampling.md)). |
+| `sampling.frequency_penalty`, `.presence_penalty` | semantisch | OpenAI Chat Completions und Gemini; anderswo `Unsupported`, außer `0`, das nichts verlangt und weggelassen wird ([neutrale Werte](sampling.md#neutrale-werte)). |
 | `user` | Hinweis | Eine Endbenutzer-ID zur Missbrauchsüberwachung; sie ändert nie die Ausgabe. Ein Anbieter, dessen Chat-Profil kein Feld für den Endbenutzer hat, erhält keine, auch nicht das `user` einer Chat-App neben `safety_identifier` ([Anbieterprofile](openai-chat-providers.md#anbieterprofile)). |
 | `stream` | semantisch | |
 | `output_modalities`, `audio_output.voice`, `.format` | semantisch | Nur Chat Completions und Gemini schreiben Audio, nur Gemini Bilder; Stimmen gehen nur an ein Ziel über, das sie nennt, und Formate werden nie umkodiert ([Audio- und Bildantworten](cross-format.md#audio--und-bildantworten)). |
@@ -290,6 +290,7 @@ Verändert ein Pull Request die Ausgabe über Dialekte hinweg, prüfen Sie den S
 - [Aufbau der Codecs](codec-design.md): Erfahren Sie, wie Typen, Streams und Wire-Structs jede Übersetzung verlustfrei halten.
 - [Formatwechsel](cross-format.md): Schlagen Sie nach, was mit Daten geschieht, die von einem API-Format in ein anderes wechseln, und warum.
 - [Reasoning über Formate hinweg](reasoning.md): Schlagen Sie nach, wie Reasoning, seine Einstellungen und seine Signaturen zwischen den Formaten wechseln.
+- [Sampling über Formate hinweg](sampling.md): Schlagen Sie nach, welche Sampling-Einstellungen jedes Format annimmt und welche Werte Kaeso weglässt.
 - [Entscheidungen über Formate hinweg](decisions-across-formats.md): Schlagen Sie nach, wie Entscheidungsanfragen und Antworten zwischen den Entscheidungsformaten wechseln.
 - [Anthropic Messages](anthropic-messages.md): Finden Sie, wohin jedes Feld des Formats Anthropic Messages in KPP gehört.
 - [Messages-Anbieter](anthropic-messages-providers.md): Sehen Sie, wie sich der Messages-Codec an jeden Anbieter anpasst, der das Format spricht.
@@ -298,6 +299,7 @@ Verändert ein Pull Request die Ausgabe über Dialekte hinweg, prüfen Sie den S
 - [Chat-Completions-Inferenz-Clouds](openai-chat-inference-clouds.md): Sehen Sie, was die Inferenz-Clouds offener Modelle zu Chat Completions ergänzen.
 - [Chat-Completions-Gateways](openai-chat-gateways.md): Sehen Sie, was die Gateways und Router, die Anfragen an andere Anbieter weitergeben, zu Chat Completions ergänzen.
 - [OpenAI Responses](openai-responses.md): Finden Sie, wohin jedes Feld des Formats Responses in KPP gehört.
+- [Responses-Anbieter](openai-responses-providers.md): Sehen Sie, wie sich der Responses-Codec an jeden Anbieter anpasst, der das Format spricht.
 - [OpenAI Embeddings](openai-embeddings.md): Finden Sie, wohin jedes Feld des Formats Embeddings in KPP gehört.
 - [Gemini API](gemini.md): Finden Sie, wohin jedes Feld der Gemini API in KPP gehört, Embeddings eingeschlossen.
 - [Amazon Bedrock Converse](bedrock-converse.md): Sehen Sie, wie Generierungsanfragen auf die Converse-API von Bedrock und ihren binären Stream abgebildet werden.
