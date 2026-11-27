@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from "@testing-library/react";
+import { cleanup, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { atFixtureTime } from "~/test/clock";
 import { ORG, OTHER_PROJECT, PROJECT, project, signedIn, whoAmI, withRights } from "~/test/fixtures";
@@ -100,6 +100,66 @@ describe("the organization overview", () => {
     const news = await screen.findByRole("group", { name: "News" });
     expect(news).toHaveAttribute("aria-busy", "true");
     expect(within(news).getByRole("button", { name: "Read what's new" })).toBeInTheDocument();
+  });
+
+  it("keeps no place for the banner while what's new loads once someone has closed one", async () => {
+    window.localStorage.setItem("kaeso:release-dismissed", "40.4.2");
+    signedIn();
+    usage();
+    models(0);
+    on("GET", "me/whats-new", () => new Promise(() => {}));
+    await renderApp(`/orgs/${ORG}`);
+    expect(await screen.findByRole("group", { name: "Activity" })).toBeInTheDocument();
+    expect(screen.queryByRole("group", { name: "News" })).not.toBeInTheDocument();
+  });
+
+  it("closes the release banner for good, until a newer release brings it back", async () => {
+    signedIn();
+    usage();
+    models(0);
+    const { user } = await renderApp(`/orgs/${ORG}`);
+    const news = await screen.findByRole("group", { name: "News" });
+    await user.click(within(news).getByRole("button", { name: "Dismiss" }));
+    expect(screen.queryByRole("group", { name: "News" })).not.toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Activity" })).toBeInTheDocument();
+    cleanup();
+
+    await renderApp(`/orgs/${ORG}`);
+    expect(await screen.findByRole("group", { name: "Activity" })).toBeInTheDocument();
+    expect(screen.queryByRole("group", { name: "News" })).not.toBeInTheDocument();
+  });
+
+  it("brings the banner back for a release newer than the one whose banner was closed", async () => {
+    window.localStorage.setItem("kaeso:release-dismissed", "40.4.2");
+    signedIn();
+    usage();
+    models(0);
+    on("GET", "me/whats-new", {
+      current: "40.4.2",
+      seen: "40.4.2",
+      releases: [
+        {
+          version: "40.5.0-rc.1",
+          published_at: "2026-10-15T12:00:00Z",
+          prerelease: true,
+          notes: "Faster lists.",
+          url: "https://github.com/logicplanes/kaeso/releases/tag/v40.5.0-rc.1",
+          art: null,
+        },
+      ],
+      running: {
+        version: "40.4.2",
+        published_at: "2026-10-14T12:00:00Z",
+        prerelease: false,
+        notes: "Search on every list.",
+        url: "https://github.com/logicplanes/kaeso/releases/tag/v40.4.2",
+        art: null,
+      },
+    });
+    await renderApp(`/orgs/${ORG}`);
+    const next = await screen.findByRole("group", { name: "News", hidden: true });
+    await waitFor(() => expect(next).toHaveTextContent("Kaeso 40.5.0-rc.1"));
+    expect(next).toHaveTextContent("New pre-release");
   });
 
   it("leaves the release banner out when what's new can't load, and shows the activity", async () => {
@@ -363,7 +423,7 @@ describe("the organization overview", () => {
     expect(news).toHaveTextContent("There's no summary of this release to show here.");
   });
 
-  it("calls a pre-release one on its artwork", async () => {
+  it("calls a pre-release one under its name", async () => {
     signedIn();
     usage();
     models(0);
@@ -382,7 +442,7 @@ describe("the organization overview", () => {
     });
     await renderApp(`/orgs/${ORG}`);
     const news = await screen.findByRole("group", { name: "News" });
-    await waitFor(() => expect(news).toHaveTextContent("Kaeso pre-release"));
+    await waitFor(() => expect(news).toHaveTextContent("Pre-release, running now"));
     expect(news).toHaveTextContent("Faster lists.");
   });
 

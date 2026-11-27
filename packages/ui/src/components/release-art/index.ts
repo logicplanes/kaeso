@@ -8,6 +8,7 @@ export {
   nextReleaseArt,
   randomReleaseArt,
   releaseArtFor,
+  releaseArtScheme,
   releaseArtGlowName,
   releaseArtGlowText,
   releaseArtSvg,
