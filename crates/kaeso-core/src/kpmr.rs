@@ -653,8 +653,12 @@ impl Catalogue {
     /// `gemini-4-carbon-high` names (`Gemini 4 Carbon (high)`).
     pub fn display_name(&self, provider: &str, id: &str) -> Option<String> {
         let (models, setting) = self.stands_for(provider, id);
+        let model = models.first()?;
+        // The provider's listing decides the setting; any listing of the same model may name it.
         let names: Vec<(&str, &str)> = models
             .iter()
+            .copied()
+            .chain(self.listed(provider, &model.id))
             .filter_map(|m| {
                 let name = m.name.as_deref().map(str::trim)?;
                 (!name.is_empty()).then_some((name, m.id.as_str()))
@@ -1022,7 +1026,7 @@ mod tests {
                 "luna-max": {"id": "luna-max", "name": "Luna Max"},
                 "plain": {"id": "plain", "name": "Plain", "capabilities": {"reasoning": false}},
                 "unnamed": {"id": "unnamed", "reasoning": {"efforts": ["low"]}},
-                "oss": {"id": "oss", "name": "oss"}
+                "oss": {"id": "oss", "name": "oss", "reasoning": {"efforts": ["low"]}}
             }},
             "anthropic": {"id": "anthropic", "models": {
                 "opus": {"id": "opus", "name": " Opus ", "capabilities": {"reasoning": true}},
@@ -1091,6 +1095,13 @@ mod tests {
             Some("Open Model"),
             "a real name first"
         );
+        assert_eq!(
+            name("openai", "oss-low").as_deref(),
+            Some("Open Model (low)"),
+            "the provider decides the setting, any listing of the model may name it"
+        );
+        assert_eq!(at("anthropic", "oss-low"), None);
+        assert_eq!(name("anthropic", "oss-low"), None);
         assert_eq!(name("openai", "unnamed"), None);
         assert_eq!(name("openai", "unnamed-low"), None);
         assert_eq!(name("openai", "luna-medium"), None);
@@ -1117,6 +1128,10 @@ mod tests {
         assert_eq!(
             c.display_name("openai", "gpt-5.1-codex-max").as_deref(),
             Some("GPT-5.1 Codex Max")
+        );
+        assert_eq!(
+            c.display_name("ovhcloud", "gpt-oss-120b-medium").as_deref(),
+            Some("GPT OSS 120B (medium)")
         );
         assert!(c.at_setting("openai", "gpt-5.1-codex-max").is_none());
     }
