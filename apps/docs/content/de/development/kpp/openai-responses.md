@@ -306,8 +306,7 @@ Beim Kodieren werden Body und Status von Fehlern, die aus einem OpenAI-Dialekt (
 | `PermissionDenied` | 403 | `request_forbidden` | `null` |
 | `NotFound` | 404 | `invalid_request_error` | `null` |
 | `RequestTooLarge` | 413 | `invalid_request_error` | `null` |
-| `RateLimited` | 429 | `rate_limit_error` | `rate_limit_exceeded` |
-| `RateLimited` mit `retryable: false` (ein Budget oder Abo, das bis zum Zurücksetzen aufgebraucht ist) | 429 | `insufficient_quota` | `insufficient_quota` |
+| `RateLimited` | 429 | `rate_limit_error`; `insufficient_quota` mit `retryable: false` | `rate_limit_exceeded`; `insufficient_quota` |
 | `Billing` | 429 | `insufficient_quota` | `insufficient_quota` |
 | `Overloaded` | 503 | `service_unavailable_error` | `server_is_overloaded` |
 | `Timeout` | 504 | `server_error` | `timeout` |
