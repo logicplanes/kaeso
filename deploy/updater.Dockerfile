@@ -37,7 +37,7 @@ RUN cargo build --profile "${PROFILE}" --locked -p kaeso-updater \
  && rm -rf target \
  && mkdir -p /dirs/kaeso /dirs/maintenance /dirs/state
 
-FROM gcr.io/distroless/cc-debian13:nonroot@sha256:cb87acc574abe719b6e5c547384defa2f7b1f24af9605d3f618cf852495d8be2
+FROM gcr.io/distroless/cc-debian13:nonroot@sha256:29ee70762214fe8190cea04ef1c0a84a8365879e047ce8f911ae5a5ab2355fa2
 ARG VERSION=dev
 LABEL org.opencontainers.image.title="Kaeso updater" \
       org.opencontainers.image.description="The optional Kaeso updater: verifies a Kaeso release and switches a Docker Compose install to it." \
