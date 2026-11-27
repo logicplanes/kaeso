@@ -25,6 +25,12 @@ function settingsApi(initial: Partial<SettingsView> = {}) {
 
 const patches = () => requests("PATCH", "instance/settings").map((r) => r.body);
 
+function section(title: string): HTMLElement {
+  const found = screen.getByRole("heading", { name: title }).closest("section");
+  if (!found) throw new Error(`no section titled ${title}`);
+  return found;
+}
+
 async function choose(user: UserEvent, select: string, option: string) {
   await user.click(screen.getByRole("combobox", { name: select }));
   await user.click(await screen.findByRole("option", { name: new RegExp(`^${option}`) }));
@@ -47,8 +53,8 @@ describe("instance general page", () => {
     expect(screen.queryByRole("button", { name: "Edit domains" })).not.toBeInTheDocument();
     expect(screen.getByRole("switch", { name: "Organizations can be deleted" })).toBeChecked();
     expect(screen.getByRole("spinbutton", { name: "Grace period" })).toHaveValue("7");
-    expect(screen.getAllByText("On")).toHaveLength(2);
-    expect(screen.queryByText("Off")).not.toBeInTheDocument();
+    expect(within(section("Sign-in methods")).getAllByText("On")).toHaveLength(2);
+    expect(within(section("Sign-in methods")).queryByText("Off")).not.toBeInTheDocument();
     expect(screen.queryByText("Single sign-on")).not.toBeInTheDocument();
     expect(screen.getByRole("combobox", { name: "Time zone" })).toHaveValue("UTC");
     expect(screen.getByText(/\(GMT\+0\)$/)).toBeInTheDocument();
@@ -60,8 +66,32 @@ describe("instance general page", () => {
     signedIn();
     settingsApi({ sign_in: { password: false, magic_link: true } });
     await renderApp(PATH);
-    expect(await screen.findByText("Off")).toBeInTheDocument();
-    expect(screen.getAllByText("On")).toHaveLength(1);
+    await screen.findByRole("heading", { name: "Sign-in methods" });
+    expect(within(section("Sign-in methods")).getByText("Off")).toBeInTheDocument();
+    expect(within(section("Sign-in methods")).getAllByText("On")).toHaveLength(1);
+  });
+
+  it("says search engines are kept out until the configuration lets them index the sign-in pages", async () => {
+    signedIn();
+    settingsApi();
+    await renderApp(PATH);
+    await screen.findByRole("heading", { name: "Search engines" });
+    const off = section("Search engines");
+    expect(within(off).getByText("Set with KAESO_SEARCH_ENGINES for the gateway and the console.")).toBeInTheDocument();
+    expect(within(off).getByText("Index the sign-in pages")).toBeInTheDocument();
+    expect(within(off).getByText("Every crawler is asked to keep out of this install.")).toBeInTheDocument();
+    expect(within(off).getByText("Off")).toBeInTheDocument();
+    expect(within(off).queryByRole("switch")).not.toBeInTheDocument();
+  });
+
+  it("says search engines may list the sign-in and sign-up pages when the configuration lets them", async () => {
+    signedIn();
+    settingsApi({ search_engines: true });
+    await renderApp(PATH);
+    await screen.findByRole("heading", { name: "Search engines" });
+    const on = section("Search engines");
+    expect(within(on).getByText("Search engines may list the sign-in and sign-up pages.")).toBeInTheDocument();
+    expect(within(on).getByText("On")).toBeInTheDocument();
   });
 
   it("shows the API's message when the settings couldn't load", async () => {

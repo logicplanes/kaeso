@@ -1,6 +1,8 @@
+import re
 import shutil
 import subprocess
 import uuid
+from contextlib import contextmanager
 from pathlib import Path
 
 import httpx
@@ -18,11 +20,20 @@ CONTEXT = [
     "deploy/console/serve.sh",
     "deploy/console/edge.sh",
 ]
+ROBOTS_META = '<!--{{with .RespHeader.Get "X-Robots-Tag"}}--><meta name="robots" content="{{html .}}" /><!--{{end}}-->'
+NOINDEX = "noindex, nofollow"
+SHARE = "/share/" + "A" * 43
 DIST = {
-    "index.html": '<!doctype html><div id="root"></div>',
+    "index.html": f'<!doctype html><head>{ROBOTS_META}</head><div id="root"></div>',
+    "share.html": f'<!doctype html><head>{ROBOTS_META}<meta property="og:type" content="website" /></head><div id="root"></div>',
     "favicon.svg": "<svg xmlns='http://www.w3.org/2000/svg'/>",
     "assets/index-a1b2c3d4.js": "export {};",
 }
+
+
+def page(robots: str | None, file: str = "index.html") -> str:
+    meta = f'<!----><meta name="robots" content="{robots}" /><!---->' if robots else "<!---->"
+    return DIST[file].replace(ROBOTS_META, meta)
 
 
 def closed(path: Path) -> None:
@@ -83,12 +94,12 @@ def test_an_image_built_from_a_umask_077_checkout_serves_the_console(image):
         for path, text in DIST.items():
             reply = httpx.get(f"{url}/{path}", timeout=5)
             assert reply.status_code == 200, f"/{path}: {reply.status_code}"
-            assert reply.text == text
-        page = httpx.get(f"{url}/keys", timeout=5)
-        assert page.text == DIST["index.html"]
-        assert "microphone=(self)" in page.headers["permissions-policy"], "the Playground records audio for transcription"
-        assert "camera=()" in page.headers["permissions-policy"]
-        assert "media-src 'self' blob:" in page.headers["content-security-policy"], "generated audio plays from blob: links"
+            assert reply.text == (page(NOINDEX, path) if path.endswith(".html") else text)
+        keys = httpx.get(f"{url}/keys", timeout=5)
+        assert keys.text == page(NOINDEX)
+        assert "microphone=(self)" in keys.headers["permissions-policy"], "the Playground records audio for transcription"
+        assert "camera=()" in keys.headers["permissions-policy"]
+        assert "media-src 'self' blob:" in keys.headers["content-security-policy"], "generated audio plays from blob: links"
         files = subprocess.run(
             ["docker", "exec", name, "stat", "-c", "%a %U %n", "/etc/caddy/Caddyfile", "/srv", "/srv/index.html", "/srv/assets"],
             check=True,
@@ -98,6 +109,97 @@ def test_an_image_built_from_a_umask_077_checkout_serves_the_console(image):
         assert files == ["444 root /etc/caddy/Caddyfile", "755 root /srv", "555 root /srv/index.html", "555 root /srv/assets"]
     finally:
         subprocess.run(["docker", "rm", "-f", name], check=False, capture_output=True)
+
+
+@contextmanager
+def console(image: str, **env: str):
+    port = free_port()
+    name = f"kaeso-console-robots-{uuid.uuid4().hex[:8]}"
+    flags = [arg for key, value in env.items() for arg in ("-e", f"{key}={value}")]
+    subprocess.run(["docker", "run", "-d", "--name", name, *flags, "-p", f"127.0.0.1:{port}:3000", image], check=True, capture_output=True)
+    try:
+        url = f"http://127.0.0.1:{port}"
+
+        def healthy() -> bool:
+            try:
+                return httpx.get(f"{url}/healthz", timeout=2).text == "ok"
+            except httpx.HTTPError:
+                return False
+
+        poll(healthy, "the console answering /healthz", seconds=30)
+        yield url
+    finally:
+        subprocess.run(["docker", "rm", "-f", name], check=False, capture_output=True)
+
+
+def robots_tag(url: str) -> str | None:
+    return httpx.get(url, timeout=5).headers.get("x-robots-tag")
+
+
+def test_by_default_every_answer_of_the_console_asks_crawlers_to_leave_it_out(image):
+    with console(image) as url:
+        robots = httpx.get(f"{url}/robots.txt", timeout=5)
+        assert robots.text == "User-agent: *\nDisallow: /\n"
+        assert robots.headers["content-type"] == "text/plain; charset=utf-8"
+        for path in ["/", "/sign-in", "/sign-up", "/keys", "/robots.txt", "/healthz", "/favicon.svg", "/assets/index-a1b2c3d4.js", SHARE]:
+            assert robots_tag(f"{url}{path}") == NOINDEX, path
+        for path in ["/sign-in", "/keys"]:
+            assert httpx.get(f"{url}{path}", timeout=5).text == page(NOINDEX), path
+        assert httpx.get(f"{url}{SHARE}", timeout=5).text == page(NOINDEX, "share.html")
+
+
+def test_with_search_engines_on_only_the_sign_in_pages_and_what_draws_them_may_be_indexed(image):
+    with console(image, KAESO_SEARCH_ENGINES=" yes ") as url:
+        robots = httpx.get(f"{url}/robots.txt", timeout=5)
+        assert robots.text.splitlines() == [
+            "User-agent: *",
+            "Allow: /sign-in$",
+            "Allow: /sign-up$",
+            "Allow: /assets/",
+            "Allow: /theme-init.js",
+            "Allow: /favicon",
+            "Allow: /apple-touch-icon.png",
+            "Disallow: /",
+        ]
+        for path in ["/sign-in", "/sign-up"]:
+            reply = httpx.get(f"{url}{path}", timeout=5)
+            assert "x-robots-tag" not in reply.headers, path
+            assert reply.text == page(None), path
+        for path in ["/favicon.svg", "/assets/index-a1b2c3d4.js"]:
+            assert robots_tag(f"{url}{path}") is None, path
+        for path in ["/", "/sign-in?next=%2Fkeys", "/keys", "/robots.txt", "/healthz", SHARE]:
+            assert robots_tag(f"{url}{path}") == NOINDEX, path
+        assert httpx.get(f"{url}/keys", timeout=5).text == page(NOINDEX)
+        assert httpx.get(f"{url}{SHARE}", timeout=5).text == page(NOINDEX, "share.html"), "a shared link is never indexed"
+
+
+def test_the_console_stops_with_a_message_when_kaeso_search_engines_isnt_true_or_false(image):
+    run = subprocess.run(["docker", "run", "--rm", "-e", "KAESO_SEARCH_ENGINES=sometimes", image], capture_output=True, text=True, timeout=60)
+    assert run.returncode == 1
+    assert 'kaeso-console: KAESO_SEARCH_ENGINES must be true or false, as for the gateway, not "sometimes"' in run.stderr
+
+
+def test_robots_txt_allows_exactly_what_the_console_serves_without_noindex():
+    caddyfile = (ROOT / "deploy" / "console" / "Caddyfile").read_text()
+    on = caddyfile[caddyfile.index("(search-engines-true) {") :]
+    on = on[: on.index("\n}\n")]
+    expression = re.search(r"@noindex not expression `(.+)`", on).group(1)
+    files_part, pages_part = expression.split(" || ")
+    files = re.findall(r"'(/[^']*)'", files_part)
+    pages = re.findall(r"'(/[^']*)'", pages_part)
+    assert pages_part.endswith("&& {query} == '')"), "a query, such as the sign-in page's next, keeps noindex"
+    allowed = [line.strip().removeprefix("Allow: ") for line in on.splitlines() if line.strip().startswith("Allow: ")]
+    assert allowed == [f"{p}$" for p in pages] + [f.removesuffix("*") for f in files]
+    assert [line.strip() for line in on.splitlines() if line.strip().startswith(("Disallow:", "User-agent:"))] == ["User-agent: *", "Disallow: /"]
+    public = {p.name for p in (ROOT / "apps" / "console" / "public").iterdir()}
+    vite = (ROOT / "apps" / "console" / "vite.config.ts").read_text()
+    for file in files:
+        name = file.removeprefix("/")
+        if name == "assets/*":
+            continue
+        shipped = any(p.startswith(name.removesuffix("*")) for p in public) or f'"{name}"' in vite
+        assert shipped, f"{file} is a file the console serves"
+    assert ROBOTS_META in vite, "the console's build writes the template these tests serve"
 
 
 def version(text: str) -> tuple[int, ...]:

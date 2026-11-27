@@ -3,6 +3,11 @@
 spec:
   name: kaeso
   region: fra
+  # The gateway and the console both read it.
+  envs:
+    - key: KAESO_SEARCH_ENGINES
+      value: "false"
+      scope: RUN_TIME
   services:
     - name: kaeso-gateway
       image:

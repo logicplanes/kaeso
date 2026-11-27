@@ -97,6 +97,29 @@ networks:
 
 Verbinden Sie den Container Ihres Proxys mit einer festen Adresse wie `172.30.84.2` mit `kaeso-proxy`, setzen Sie `KAESO_TRUSTED_PROXIES=172.30.84.2` in `.env` und leiten Sie an `kaeso-gateway:8080` und `kaeso-console:3000` weiter. Die Aliase sind nötig, weil Compose jeden Dienstnamen in jedem Netzwerk, dem der Dienst beitritt, zu einem DNS-Namen macht. In einem Netzwerk, das andere Stacks mitnutzen, könnte `gateway` sonst den Container eines anderen Stacks erreichen.
 
+## Suchmaschinen
+
+Eine Installation bleibt Suchmaschinen und KI-Crawlern verschlossen, bis Sie sie einlassen: Keine ihrer Seiten erscheint in Suchergebnissen, und keine wird zum Training von Modellen oder für die Antworten eines Assistenten angeboten. Kaeso verwahrt die Schlüssel Ihrer Anbieter und die Daten Ihrer Organisationen, daher geht seine Adresse standardmäßig niemanden sonst etwas an.
+
+Setzen Sie `KAESO_SEARCH_ENGINES=true` in `.env` und führen Sie `docker compose up -d --wait` aus, wenn man Ihre Anmeldeseite über eine Suche finden soll. Compose gibt die Variable an das Gateway und die Konsole weiter, die sie beide lesen; das Helm-Chart und die Plattform-Vorlagen setzen sie ebenfalls an einer Stelle ([Konfiguration](configuration.md#suchmaschinen)). Die Seite **Allgemein** der Instanzeinstellungen zeigt, wie sie gesetzt ist.
+
+| Was Crawler bekommen | Aus, der Standard | An |
+| --- | --- | --- |
+| `/robots.txt` | Jeder Pfad gesperrt | `/sign-in`, `/sign-up` und die Dateien, die sie darstellen, erlaubt, jeder andere Pfad gesperrt |
+| `X-Robots-Tag: noindex, nofollow` | Auf jeder Antwort | Auf jeder Antwort außer diesen Seiten und Dateien |
+| `<meta name="robots" content="noindex, nofollow">` | In jeder Seite | In jeder Seite außer diesen beiden |
+
+Auch wenn sie an ist, bleiben diese draußen:
+
+- `/sign-in` und `/sign-up` mit einer Query, weil `next` auf der Anmeldeseite die Seite nennt, auf der jemand war.
+- `/`, das abgemeldete Besucher zur Anmeldeseite schickt, und jede Seite der Konsole dahinter.
+- Geteilte Links, die für die Menschen gedacht sind, denen sie geschickt wurden.
+- Die APIs, der MCP-Server und seine Anmeldung. Das Gateway antwortet auf jede Anfrage mit `noindex`, und unter seiner eigenen Adresse sperrt seine `robots.txt` jeden Pfad.
+
+`robots.txt` nennt keinen Crawler, daher gelten ihre Regeln für jeden Crawler, der sie liest, Suchmaschinen und KI-Crawler gleichermaßen, etwa Googlebot, GPTBot und OAI-SearchBot von OpenAI, ClaudeBot von Anthropic, PerplexityBot und CCBot von Common Crawl. Crawler behalten ihre Kopie höchstens einen Tag, und die Konsole lässt sie eine Stunde gelten.
+
+Das sind Bitten, die sich gut erzogene Crawler zu Herzen nehmen, keine Zugriffskontrolle: Alles außer den Anmeldeseiten verlangt ohnehin eine Anmeldung. Eine Suchmaschine, die `robots.txt` befolgt, ruft eine gesperrte Seite nie ab und liest deshalb auch deren `noindex` nie. Verlinken andere Websites Ihre Installation, kann sie trotzdem die bloße Adresse aufführen, ohne Titel und ohne Text daraus. Ein Assistent, der einen Link öffnet, weil jemand ihn darum gebeten hat, kann `robots.txt` für diesen einen Besuch übergehen und sieht, was jeder abgemeldete Besucher sieht.
+
 ## Lange Streams
 
 Proxys und Load Balancer schließen Verbindungen, über die eine Weile keine Bytes fließen, oft nach 60 oder 100 Sekunden. Ein Modell, das vor der Antwort nachdenkt, kann länger still sein. Solange ein Stream offen ist und `KAESO_STREAMS_KEEPALIVE_INTERVAL` lang (standardmäßig 15 Sekunden) nichts geschrieben wurde, schreibt das Gateway deshalb ein Keepalive, das das SDK der App ignoriert:

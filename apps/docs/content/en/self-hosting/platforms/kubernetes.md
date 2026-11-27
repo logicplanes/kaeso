@@ -135,6 +135,7 @@ The chart sets what Kubernetes decides, and you set the rest:
 - `gateway.env` takes [settings](../configuration.md#settings) as variables, such as `KAESO_CORS_ALLOWED_ORIGINS`; `gateway.extraEnv` and `gateway.extraEnvFrom` take them in Kubernetes' own form, such as from a Secret.
 - `gateway.config` takes settings in the configuration file's form, such as `{ upstream: { request_timeout: 900s } }`. The chart renders it to a TOML file and restarts the gateways when it changes.
 - `gateway.trustedProxies` names the networks whose `X-Forwarded-For` the gateway believes. Its default covers the private ranges most pod networks use; name your ingress controller's pod network to be exact.
+- `searchEngines: true` lets search engines and AI crawlers index the sign-in and sign-up pages ([search engines](../domains-and-tls.md#search-engines)). The chart passes it to the gateway and the console, and refuses `KAESO_SEARCH_ENGINES` in `gateway.env` and `search_engines` in `gateway.config`, which would reach the gateway alone.
 - `serviceAccount.annotations` gives the pods a cloud identity, such as `eks.amazonaws.com/role-arn`.
 
 The chart sets `KAESO_UPDATES_INSTALLED_WITH` to `helm`, so the console's **Updates** page shows `helm upgrade` instead of the installer.

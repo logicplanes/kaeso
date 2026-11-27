@@ -33,6 +33,7 @@ services:
 | `KAESO_UPDATER_TOKEN`, `COMPOSE_PROFILES` | nein | Das Token, das Gateway und Updater teilen, und `updater`, um den Updater zu starten ([Der Updater](upgrades.md#der-updater)). |
 | `KAESO_DIR` | mit dem Updater | Der Ordner der Installation, der einzige, aus dem der Docker-Proxy des Updaters Bind-Mounts erlaubt. |
 | `DOCKER_SOCKET` | nein | Der Pfad des Docker-Sockets für den Updater, wenn er nicht `/var/run/docker.sock` ist. |
+| `KAESO_SEARCH_ENGINES` | nein | `true`, damit Suchmaschinen und KI-Crawler die Anmelde- und Registrierungsseite indexieren dürfen; `false`, der Standard, hält die ganze Installation von ihnen fern. Compose gibt sie an das Gateway und die Konsole weiter ([Suchmaschinen](#suchmaschinen)). |
 | `KAESO_TRUSTED_PROXIES` | nein | Die Netze von Proxys, deren `X-Forwarded-For` das Gateway vertraut, standardmäßig `127.0.0.0/8,::1/128` und `EDGE_SUBNET`. Setzen Sie es auf die Adresse Ihres eigenen Proxys ([eigener Reverse Proxy](domains-and-tls.md#eigenen-reverse-proxy-verwenden)). |
 | `EDGE_SUBNET` | nein | Das Subnetz des Netzwerks `edge`, standardmäßig `172.30.83.0/24`, dessen `X-Forwarded-For` das Gateway glaubt. Ändern Sie es, wenn der Server diesen Bereich schon nutzt. |
 | `GATEWAY_REPLICAS` | nein | Wie viele Gateways laufen, standardmäßig `1`; Caddy verteilt die Anfragen auf sie ([mehrere Gateways](scaling.md)). |
@@ -153,6 +154,14 @@ Setzen Sie diese Einstellungen, wenn Ihre Installation öffentlich ist und das R
 | --- | --- | --- | --- |
 | `KAESO_LEGAL_IMPRINT_URL`<br>`legal.imprint_url` | Text | — | Die `https`-Adresse Ihres Impressums, etwa `https://example.com/imprint`. |
 | `KAESO_LEGAL_PRIVACY_URL`<br>`legal.privacy_url` | Text | — | Die `https`-Adresse Ihrer Datenschutzerklärung, etwa `https://example.com/privacy`. |
+
+### Suchmaschinen
+
+Der Server der Konsole liest diese Einstellung ebenfalls, aus seiner Umgebung. Setzen Sie `KAESO_SEARCH_ENGINES` deshalb für Gateway und Konsole gleichermaßen, nie nur den TOML-Schlüssel, der allein das Gateway erreicht. `compose.yaml` gibt die Variable aus `.env` an beide weiter, das Helm-Chart nimmt `searchEngines`, und jede Plattform-Vorlage setzt sie an einer Stelle ([verwaltete Plattformen](platforms/index.md#was-jeder-weg-beibehält)). [Suchmaschinen](domains-and-tls.md#suchmaschinen) zeigt, was Crawler in beiden Fällen bekommen.
+
+| Variable<br>TOML-Schlüssel | Typ | Standard | Was sie bewirkt |
+| --- | --- | --- | --- |
+| `KAESO_SEARCH_ENGINES`<br>`search_engines` | Bool | `false` | Suchmaschinen und KI-Crawler die Anmelde- und Registrierungsseite der Konsole indexieren lassen, und nichts sonst. Aus bitten `robots.txt` und ein `X-Robots-Tag` auf jeder Antwort sie, die ganze Installation draußen zu lassen. Alles außer einem Bool hält Gateway und Konsole beim Start an. |
 
 ### Fehlgeschlagene Schlüsselprüfungen
 

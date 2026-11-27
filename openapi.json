@@ -48013,6 +48013,7 @@
           "org_deletion_grace_days",
           "timezone",
           "sign_in",
+          "search_engines",
           "mail",
           "exchange_rates",
           "shared_links",
@@ -48088,6 +48089,10 @@
             "example": 7,
             "maximum": 90,
             "minimum": 1
+          },
+          "search_engines": {
+            "type": "boolean",
+            "description": "Whether search engines may index the console's sign-in and sign-up pages\n(`search_engines`, read-only); off, the install asks every crawler to keep out."
           },
           "share_mark": {
             "type": "boolean",

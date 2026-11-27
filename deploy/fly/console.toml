@@ -5,6 +5,10 @@ primary_region = "fra"
 [build]
   image = "ghcr.io/logicplanes/kaeso-console:0.7.5-rc.4"
 
+[env]
+  # gateway.toml sets the same, since the gateway reads it too.
+  KAESO_SEARCH_ENGINES = "false"
+
 [checks]
   [checks.alive]
     type = "http"

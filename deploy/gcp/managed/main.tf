@@ -259,6 +259,10 @@ resource "google_cloud_run_v2_service" "gateway" {
         value = var.smtp_from
       }
       env {
+        name  = "KAESO_SEARCH_ENGINES"
+        value = tostring(var.search_engines)
+      }
+      env {
         name  = "KAESO_LOG_FORMAT"
         value = "json"
       }
@@ -317,6 +321,10 @@ resource "google_cloud_run_v2_service" "console" {
       image = local.console_image
       ports {
         container_port = 3000
+      }
+      env {
+        name  = "KAESO_SEARCH_ENGINES"
+        value = tostring(var.search_engines)
       }
       resources {
         limits = {

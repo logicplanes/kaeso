@@ -5,7 +5,7 @@ Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label: { default: Kaeso }
-        Parameters: [Domain, CertificateArn, HostedZoneId, MasterKeys, SetupEmail, ClickHouseUrl, BedrockAccess]
+        Parameters: [Domain, CertificateArn, HostedZoneId, MasterKeys, SetupEmail, ClickHouseUrl, BedrockAccess, SearchEngines]
       - Label: { default: Email }
         Parameters: [SmtpHost, SmtpPort, SmtpUser, SmtpPassword, SmtpFrom]
       - Label: { default: Sizes }
@@ -77,6 +77,11 @@ Parameters:
     Default: "false"
     AllowedValues: ["false", "true"]
     Description: Give the gateway's task role access to Amazon Bedrock, so instance admins can add Bedrock keys that sign in as the gateway's AWS identity.
+  SearchEngines:
+    Type: String
+    Default: "false"
+    AllowedValues: ["false", "true"]
+    Description: Let search engines and AI crawlers index the console's sign-in and sign-up pages; false keeps the whole install out of them.
   ConsoleCount:
     Type: Number
     Default: 1
@@ -516,6 +521,7 @@ Resources:
             - { Name: KAESO_SMTP_FROM, Value: !Ref SmtpFrom }
             - { Name: KAESO_LOG_FORMAT, Value: json }
             - { Name: KAESO_AWS_AMBIENT_CREDENTIALS, Value: !Ref BedrockAccess }
+            - { Name: KAESO_SEARCH_ENGINES, Value: !Ref SearchEngines }
           Secrets:
             - { Name: KAESO_MASTER_KEYS, ValueFrom: !Ref MasterKeysSecret }
             - { Name: KAESO_POSTGRES_URL, ValueFrom: !Ref PostgresUrlSecret }
@@ -543,6 +549,8 @@ Resources:
           Image: ghcr.io/logicplanes/kaeso-console:0.7.5-rc.4
           Essential: true
           PortMappings: [{ ContainerPort: 3000, Protocol: tcp }]
+          Environment:
+            - { Name: KAESO_SEARCH_ENGINES, Value: !Ref SearchEngines }
           LogConfiguration:
             LogDriver: awslogs
             Options:

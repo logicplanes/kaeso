@@ -13,6 +13,10 @@
       "description": "The URL people and apps use to reach Kaeso, such as https://kaeso.example.com.",
       "pattern": "^(https://.+|http://localhost(:[0-9]+)?/?)?$"
     },
+    "searchEngines": {
+      "type": "boolean",
+      "description": "Let search engines and AI crawlers index the console's sign-in and sign-up pages; the gateway and the console both read it."
+    },
     "nameOverride": {
       "type": "string"
     },

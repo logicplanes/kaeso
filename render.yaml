@@ -68,6 +68,9 @@ services:
       # Render takes the one port a private service binds on every interface as its port.
       - key: KAESO_METRICS_LISTEN
         value: 127.0.0.1:9100
+      # The console takes it from here, so it is set once.
+      - key: KAESO_SEARCH_ENGINES
+        value: "false"
       - key: KAESO_LOG_FORMAT
         value: json
 
@@ -79,6 +82,12 @@ services:
     plan: 0.5c-512mb
     region: frankfurt
     autoDeployTrigger: off
+    envVars:
+      - key: KAESO_SEARCH_ENGINES
+        fromService:
+          name: kaeso-gateway
+          type: pserv
+          envVarKey: KAESO_SEARCH_ENGINES
 
   - type: keyvalue
     name: kaeso-valkey
