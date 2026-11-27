@@ -10,6 +10,7 @@ import {
   randomReleaseArt,
   releaseArtFor,
   releaseArtGlowLight,
+  releaseArtScheme,
   releaseArtGlowText,
   serializeArt,
   RELEASE_ART_FLAT_STYLES,
@@ -148,13 +149,23 @@ describe("release artwork", () => {
   it("lights every glow so white stands out at 7:1 behind the name, and brightly enough to read as light", () => {
     for (let palette = 0; palette < art.palettes.length; palette++) {
       for (let seed = 0; seed < 60; seed++) {
-        for (const shape of ["banner", "wide"] as const) {
+        for (const shape of ["banner", "wide", "strip"] as const) {
           const light = releaseArtGlowLight({ version: 1, seed: seed * 7919 + palette, style: "glow", palette }, shape);
           expect(light.contrast, `${palette} ${seed} ${shape}`).toBeGreaterThanOrEqual(7);
           expect(light.brightest, `${palette} ${seed} ${shape}`).toBeGreaterThanOrEqual(GLOW_LEAST);
         }
       }
     }
+  });
+
+  it("names the mode words take on an artwork: light on paper, dark on ink, a glow or a style it doesn't know", () => {
+    for (let palette = 0; palette < art.palettes.length; palette++) {
+      const flat = releaseArtScheme({ version: 1, seed: 1, style: "stripes", palette });
+      const ground = serializeArt(drawReleaseArt({ version: 1, seed: 1, style: "stripes", palette }));
+      expect(flat, `${palette}`).toBe(ground.includes(`fill="${art.grounds.paper.fill}"`) ? "light" : "dark");
+      expect(releaseArtScheme({ version: 1, seed: 1, style: "glow", palette })).toBe("dark");
+    }
+    expect(releaseArtScheme({ version: 1, seed: 1, style: "future", palette: 1 } as unknown as ReleaseArtSpec)).toBe("dark");
   });
 
   it("gives each palette's glow a light of its own", () => {
@@ -279,6 +290,7 @@ describe("ReleaseArt", () => {
     expect(svg).toContain("Kaeso &amp; friends");
     expect(svg).toContain(`fill="${art.grounds.paper.fill}"`);
     expect(releaseArtSvg({ seed: "0.1.0", label: "x", shape: "wide" })).toContain('viewBox="0 0 840 360"');
+    expect(releaseArtSvg({ seed: "0.1.0", label: "x", shape: "strip" })).toContain('viewBox="0 0 1200 240"');
     expect(releaseArtSvg({ seed: "0.1.0", label: "x" })).not.toContain("<text");
   });
 });
