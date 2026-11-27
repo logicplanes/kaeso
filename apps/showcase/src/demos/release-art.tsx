@@ -87,6 +87,19 @@ export function States() {
           <ReleaseArt seed="0.4.0" label="Artwork for Kaeso 0.4.0" shape="wide" />
         </div>
       </StateSection>
+      <StateSection title="A strip keeps its left clear for an announcement's words">
+        <div className="grid w-full grid-cols-1 gap-16">
+          {[1, 5, 9].map((palette, i) => (
+            <ReleaseArt
+              key={palette}
+              seed={`0.${14 + i}.0`}
+              art={{ version: 1, seed: 6113 + i * 977, style: "glow", palette }}
+              label={`Kaeso 0.${14 + i}.0`}
+              shape="strip"
+            />
+          ))}
+        </div>
+      </StateSection>
     </>
   );
 }
