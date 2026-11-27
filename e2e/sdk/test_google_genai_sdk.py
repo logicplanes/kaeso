@@ -169,7 +169,7 @@ def test_automatic_function_calling_works_on_other_formats(gg: genai.Client, moc
     result = second["body"]["messages"][-1]["content"][0]
     assert result["type"] == "tool_result" and result["tool_use_id"] == "toolu_01VLLqZ1bfs3WXvVeYqZPtE7"
     assert "Sunny, 21 degrees fahrenheit" in str(result["content"])
-    assert r.sdk_http_response.headers["kaeso-left-out"] == "tools[0].functionDeclarations[0].responseJsonSchema"
+    assert r.sdk_http_response.headers["kaeso-left-out"] == "tools[0].functionDeclarations[0].response_json_schema"
     assert len(r.automatic_function_calling_history) == 3
 
 

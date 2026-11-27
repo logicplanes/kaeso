@@ -1,6 +1,3 @@
-//! What a Gemini app's function declarations hold besides what a function tool of another
-//! format can carry.
-
 use indexmap::IndexMap;
 use kaeso_kpp::{DialectId, GenerateRequest, ToolDef};
 use serde_json::Value;
@@ -9,17 +6,18 @@ use crate::adapt::Draft;
 
 const D: DialectId = DialectId::Gemini;
 const FORM_GROUP: &str = "group";
-/// The keys of a `FunctionDeclaration` that describe what the app's function returns
-/// (`response` as a `Schema`, `responseJsonSchema` as JSON Schema).
 const RETURN_SCHEMAS: [&str; 2] = ["response", "responseJsonSchema"];
 
-/// Where each of a Gemini app's function tools sits in its request,
-/// `tools[<tool>].functionDeclarations[<declaration>]`, by its index in `r.tools`; `None` for
-/// a tool from another format or one that isn't a function.
+// KPP's tools are one flat list; an app wrote each function in a declaration of a tool.
 pub(crate) fn wire_paths(r: &GenerateRequest) -> Vec<Option<String>> {
     if !r.extras.is_from(D) {
         return Vec::new();
     }
+    let wrapper = if r.extras.form_str(D, super::request::FORM_COUNT) == Some("wrapped") {
+        "generateContentRequest."
+    } else {
+        ""
+    };
     let mut seen: IndexMap<u64, usize> = IndexMap::new();
     r.tools
         .iter()
@@ -29,22 +27,22 @@ pub(crate) fn wire_paths(r: &GenerateRequest) -> Vec<Option<String>> {
             };
             let group = f.extras.form_value(D, FORM_GROUP).and_then(Value::as_u64)?;
             let n = seen.entry(group).or_insert(0);
-            let path = format!("tools[{group}].functionDeclarations[{n}]");
+            let path = format!("{wrapper}tools[{group}].functionDeclarations[{n}]");
             *n += 1;
             Some(path)
         })
         .collect()
 }
 
-/// Leaves out what a Gemini app's function declarations say about the value its function
-/// returns, for a request that goes to another format: the app reads that value, not the
-/// model, which calls the function without it. Each one left out is named by its path.
+// The app reads what its function returns, not the model, which calls the function without it.
 pub(crate) fn for_foreign(d: &mut Draft<'_>) {
     let r = d.get();
     if !r.extras.is_from(D) {
         return;
     }
     let paths = wire_paths(r);
+    // google-genai writes `response_json_schema`, which the decoder read as its camel-case name.
+    let snake = r.extras.form_flag(D, super::request::FORM_SDK_NAMES);
     let found: Vec<(usize, &'static str)> = r
         .tools
         .iter()
@@ -75,6 +73,10 @@ pub(crate) fn for_foreign(d: &mut Draft<'_>) {
             .cloned()
             .flatten()
             .unwrap_or_else(|| format!("tools[{i}]"));
+        let key = match key {
+            "responseJsonSchema" if snake => "response_json_schema",
+            other => other,
+        };
         d.leave_out(format!("{at}.{key}"));
     }
 }

@@ -37,7 +37,7 @@ fn sent<C: Codec>(req: &Request, ctx: EgressCtx) -> (Value, Vec<String>) {
 #[test]
 fn a_functions_return_schema_is_left_out_for_every_other_format_and_named() {
     let req = decoded("sdk-automatic-function-calling");
-    let named = ["tools[0].functionDeclarations[0].responseJsonSchema"];
+    let named = ["tools[0].functionDeclarations[0].response_json_schema"];
     let (chat, left_out) = sent::<OpenAiChat>(&req, EgressCtx::new(&req));
     assert_eq!(left_out, named);
     assert_eq!(
@@ -122,5 +122,23 @@ fn declarations_are_named_by_their_tool_and_place_in_it() {
         ),
         "{}",
         err.message
+    );
+    let wrapped = json!({"generateContentRequest": {"model": "models/m", "contents": body["contents"], "tools": [body["tools"][0]]}});
+    let count = crate::dispatch::decode_gemini_request(
+        "m",
+        GeminiAction::CountTokens,
+        &serde_json::to_vec(&wrapped).unwrap(),
+        &HeaderList::new(),
+    )
+    .unwrap();
+    let Request::CountTokens(c) = &count else {
+        panic!("not a count");
+    };
+    assert_eq!(
+        declarations::wire_paths(c),
+        [
+            Some("generateContentRequest.tools[0].functionDeclarations[0]".to_owned()),
+            Some("generateContentRequest.tools[0].functionDeclarations[1]".to_owned()),
+        ]
     );
 }
