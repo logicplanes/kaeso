@@ -1420,6 +1420,13 @@ impl Pump {
             self.done = true;
             return Some(PendingOut { bytes: out, ends });
         }
+        // Kept before the app gets the stream's end, after which its next step may come at once.
+        if ends
+            && self.broken.is_none()
+            && let Some(c) = self.carry.take()
+        {
+            c.keep().await;
+        }
         if !out.is_empty() {
             if !self.app.reply(out).await {
                 self.gone = cut_off(
@@ -1805,7 +1812,7 @@ impl Pump {
     ) {
         let ended = self.app.arrived.elapsed();
         let (estimate, reported) = self.record_outcome(assembled);
-        // Kept before the app gets the stream's end, after which its next step may come at once.
+        // A stream that ended without a stop still keeps what it had, before the app gets the end.
         if let Some(c) = self.carry.take()
             && self.broken.is_none()
         {

@@ -363,17 +363,9 @@ async fn a_streamed_responses_turn_keeps_its_reasoning_for_the_next_step() {
     let env = env(&[]).await;
     let mut body = responses_first_turn(None);
     body["stream"] = json!(true);
-    let first = responses(&env, &env.key, body).await;
-    assert_eq!(first.status, StatusCode::OK, "{}", first.text());
-    let completed = first
-        .text()
-        .split("\n\n")
-        .find_map(|frame| {
-            let data = frame.lines().find_map(|l| l.strip_prefix("data: "))?;
-            let event: Value = serde_json::from_str(data).ok()?;
-            (event["type"] == "response.completed").then(|| event["response"].clone())
-        })
-        .expect("a response.completed event");
+    // An SDK takes its next step at `response.completed`, while the body may still be open.
+    let (_, mut stream) = common::v1::open_stream(&env, "/v1/responses", false, &body).await;
+    let completed = completed_event(&mut stream).await;
     let output = completed["output"].as_array().unwrap();
     let reasoning = output.iter().find(|i| i["type"] == "reasoning").unwrap()["id"]
         .as_str()
@@ -386,11 +378,30 @@ async fn a_streamed_responses_turn_keeps_its_reasoning_for_the_next_step() {
         .as_str()
         .unwrap()
         .to_owned();
-    // The reasoning is kept before the stream ends, which an SDK's next step comes after.
     let second = responses(&env, &env.key, responses_second_turn(&reasoning, &call_id)).await;
     assert_eq!(second.status, StatusCode::OK, "{}", second.text());
     let turn = sent_assistant_turn(&env);
     assert_eq!(turn["content"][0]["type"], "thinking", "{turn}");
+    drop(stream);
+}
+
+async fn completed_event(stream: &mut axum::body::Body) -> Value {
+    use http_body_util::BodyExt;
+    let mut seen = String::new();
+    loop {
+        let frame = stream.frame().await.unwrap().unwrap();
+        if let Ok(data) = frame.into_data() {
+            seen.push_str(&String::from_utf8_lossy(&data));
+        }
+        let found = seen.split("\n\n").find_map(|frame| {
+            let data = frame.lines().find_map(|l| l.strip_prefix("data: "))?;
+            let event: Value = serde_json::from_str(data).ok()?;
+            (event["type"] == "response.completed").then(|| event["response"].clone())
+        });
+        if let Some(response) = found {
+            return response;
+        }
+    }
 }
 
 #[tokio::test]
@@ -439,12 +450,8 @@ async fn reasoning_is_kept_when_kaeso_itself_tells_the_provider_not_to_store() {
             json!({ "type": "function_call_output", "call_id": c["call_id"], "output": "18 °C" }),
         );
     }
-    let second = responses(
-        &env,
-        &env.key,
-        json!({ "model": "gpt-4o", "tools": responses_tools(), "input": input }),
-    )
-    .await;
+    let step = json!({ "model": "gpt-4o", "tools": responses_tools(), "input": input });
+    let second = responses(&env, &env.key, step.clone()).await;
     assert_eq!(second.status, StatusCode::OK, "{}", second.text());
     let sent = env.mock.last().unwrap().json();
     let types: Vec<&str> = sent["input"]
@@ -453,12 +460,30 @@ async fn reasoning_is_kept_when_kaeso_itself_tells_the_provider_not_to_store() {
         .iter()
         .filter_map(|i| i["type"].as_str())
         .collect();
+    // This reasoning has no `encrypted_content`, which OpenAI needs back under `store: false`,
+    // so the resolved reference sends nothing in its place.
     assert!(!types.contains(&"item_reference"), "{sent}");
+    assert!(!types.contains(&"reasoning"), "{sent}");
     assert_eq!(
         types.iter().filter(|t| **t == "function_call").count(),
         2,
         "{sent}"
     );
+    // The reference was resolved from what Kaeso kept: a key that holds nothing is refused.
+    let other = env
+        .app
+        .post(
+            &format!("/orgs/{}/projects/{}/keys", env.owner.org_id, env.project),
+            json!({ "name": "other" }),
+            Some(&env.owner.cookie),
+        )
+        .await
+        .body["secret"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let r = responses(&env, &other, step).await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
 }
 
 #[tokio::test]
