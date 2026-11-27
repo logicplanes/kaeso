@@ -407,7 +407,7 @@ fn decode_generation(
         if n > 1 {
             return Err(KppError::unsupported(
                 "`generationConfig.candidateCount` above 1",
-                "Kaeso returns one candidate per request, so `generationConfig.candidateCount` must be 1; send several requests for more candidates.",
+                "Kaeso returns one candidate per request, so `generationConfig.candidateCount` must be 1 or left out; send several requests for more candidates.",
             )
             .with_param("generationConfig.candidateCount"));
         }

@@ -1205,13 +1205,16 @@ fn malformed_requests_are_invalid() {
 
 #[test]
 fn n_above_1_is_refused_as_kaesos_limit_not_the_formats() {
-    let err =
-        decode(br#"{"model":"m","messages":[{"role":"user","content":"x"}],"n":2}"#).unwrap_err();
+    let (_, body) = fixtures(D, "requests", "json")
+        .into_iter()
+        .find(|(n, _)| n == "n-2")
+        .unwrap();
+    let err = decode(&body).unwrap_err();
     assert_eq!(err.unsupported_feature(), Some("n"));
     assert_eq!(err.param.as_deref(), Some("n"));
     assert_eq!(
         err.message,
-        "Kaeso returns one choice per request, so `n` must be 1; send several requests for more choices."
+        "Kaeso returns one choice per request, so `n` must be 1 or left out; send several requests for more choices."
     );
     let two = br#"{"id":"c","object":"chat.completion","created":1,"model":"m","choices":[
         {"index":0,"message":{"role":"assistant","content":"a"},"finish_reason":"stop"},

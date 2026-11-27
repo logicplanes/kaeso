@@ -208,7 +208,7 @@ fn decode_generate(
         Some(_) => {
             return Err(KppError::unsupported(
                 "n",
-                "Kaeso returns one choice per request, so `n` must be 1; send several requests for more choices.",
+                "Kaeso returns one choice per request, so `n` must be 1 or left out; send several requests for more choices.",
             )
             .with_param("n"));
         }

@@ -1,0 +1,16 @@
+{
+  "contents": [
+    {
+      "role": "user",
+      "parts": [
+        {
+          "text": "Suggest a name for a bakery."
+        }
+      ]
+    }
+  ],
+  "generationConfig": {
+    "candidateCount": 2,
+    "temperature": 1.2
+  }
+}
