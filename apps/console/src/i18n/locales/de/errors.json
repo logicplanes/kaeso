@@ -799,6 +799,7 @@
   "errors.rerankDocumentText": "Die Rerank-API von Cohere nimmt jedes Dokument nur als Text an; entfernen Sie `{field}` aus `{param}`.",
   "errors.model.rerankOnly": "Das Modell `{model}` ist ein Rerank-Modell; senden Sie es an `/v1/rerank`.",
   "errors.model.transcriptionOnly": "Das Modell `{model}` ist ein Transkriptionsmodell; senden Sie es an `/v1/audio/transcriptions`.",
+  "errors.model.transcriptionNeedsAudio": "Das Modell `{model}` transkribiert nur; senden Sie ihm Audio.",
   "errors.model.generationNoRerank": "Das Modell `{model}` ist ein Generierungsmodell und kann keine Dokumente neu ordnen.",
   "errors.model.embeddingsNoRerank": "Das Modell `{model}` ist ein Embedding-Modell und kann keine Dokumente neu ordnen.",
   "errors.modelApi.timeoutHeader": "Der Header `kaeso-timeout` muss eine ganze Zahl von Sekunden zwischen 1 und 3600 sein.",

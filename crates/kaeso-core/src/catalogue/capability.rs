@@ -179,7 +179,7 @@ pub fn prepare(
         }
         Request::CountTokens(g) => {
             refuse_decision_only(eff)?;
-            refuse_transcriber(eff)?;
+            refuse_transcriber(eff, None)?;
             let Some(dialect) = eff.provider.count_tokens_for(eff.dialect) else {
                 return Err(refuse(
                     "token counting",
@@ -519,13 +519,32 @@ fn refuse_decision_only(eff: &Effective) -> Result<(), Unsupported> {
 
 // A transcription model isn't served on the provider's generation endpoint, and a request there
 // comes back as a 404. Gemini's are, at `generateContent`, where Kaeso sends transcriptions too.
-fn refuse_transcriber(eff: &Effective) -> Result<(), Unsupported> {
+// A transcription model serves only transcriptions. One its provider serves at the generation
+// endpoint, as Google serves Gemini's at `generateContent`, takes a generation there that has
+// audio to transcribe; a token count is no transcription anywhere.
+fn refuse_transcriber(
+    eff: &Effective,
+    generation: Option<&GenerateRequest>,
+) -> Result<(), Unsupported> {
+    if !eff.transcribes_only {
+        return Ok(());
+    }
     let at_generation = eff
         .provider
         .transcriptions(&eff.model_id)
         .is_some_and(|t| t.dialect == eff.dialect);
-    if !eff.transcribes_only || at_generation {
-        return Ok(());
+    if let Some(g) = generation.filter(|_| at_generation) {
+        if g.required_capabilities().audio_input {
+            return Ok(());
+        }
+        return Err(refuse(
+            "generation",
+            Some("model"),
+            format!(
+                "The model `{}` only transcribes; send it audio.",
+                eff.model_id
+            ),
+        ));
     }
     Err(refuse(
         "generation",
@@ -905,7 +924,7 @@ fn check_generation(
 ) -> Result<(), Unsupported> {
     let name = eff.model_id.as_str();
     refuse_reranker(eff)?;
-    refuse_transcriber(eff)?;
+    refuse_transcriber(eff, Some(g))?;
     if eff.is_embeddings() {
         return Err(refuse(
             "generation",

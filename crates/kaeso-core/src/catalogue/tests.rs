@@ -1664,6 +1664,34 @@ fn transcription_models_refuse_every_generation_request_before_it_is_sent() {
     ))]));
     prepare(&mut listen, DialectId::Gemini, &gemini)
         .unwrap_or_else(|u| panic!("Gemini transcribes at generateContent: {}", u.message));
+    // There it still only transcribes: a prompt without audio, or a token count, is refused.
+    let mut text_only = Request::Generate(user(vec![Block::text("hi")]));
+    let u = prepare(&mut text_only, DialectId::Gemini, &gemini).unwrap_err();
+    assert_eq!(
+        u.message,
+        "The model `gemini-3.5-transcribe` only transcribes; send it audio."
+    );
+    let mut count = Request::CountTokens(user(vec![Block::audio(kaeso_kpp::Source::bytes(
+        "audio/wav",
+        b"RIFF".to_vec(),
+    ))]));
+    let u = prepare(&mut count, DialectId::Gemini, &gemini).unwrap_err();
+    assert!(
+        u.message.contains("is a transcription model"),
+        "{}",
+        u.message
+    );
+    // QwenCloud serves its ASR models at chat completions the same way.
+    let qwen = eff_of("alibaba", "qwen3-asr-flash");
+    assert!(qwen.transcribes_only);
+    let mut listen = Request::Generate(user(vec![Block::audio(kaeso_kpp::Source::bytes(
+        "audio/wav",
+        b"RIFF".to_vec(),
+    ))]));
+    prepare(&mut listen, DialectId::OpenAiChat, &qwen)
+        .unwrap_or_else(|u| panic!("QwenCloud transcribes at chat completions: {}", u.message));
+    let mut text_only = Request::Generate(user(vec![Block::text("hi")]));
+    assert!(prepare(&mut text_only, DialectId::OpenAiChat, &qwen).is_err());
 }
 
 #[test]
