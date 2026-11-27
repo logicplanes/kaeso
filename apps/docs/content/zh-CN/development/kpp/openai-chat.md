@@ -88,7 +88,7 @@ nav: OpenAI Chat
 
 因此，对于其他所有格式，以及配置拒绝 system、user 和 assistant 消息上 `name` 的 Chat 服务商（例如 Groq），Kaeso 会省略它。回复的 `kaeso-left-out` 响应头按应用发送的消息列出它，例如 `messages[1].name`（`openai_chat::names`）。
 
-tool 消息会保留其名称，Mistral 录制的回复表明这是允许的。其他 Chat 服务商会按原样收到名称，以 `null` 发送的 `name` 属于形式标记。Fixtures：`requests/autogen-user-name.json`、`requests/crewai-tool-name.json`。
+对于这类 Chat 服务商，tool 消息会保留其 `name`，Mistral 录制的回复表明这是允许的；其他格式则不会收到。其他 Chat 服务商会按原样收到所有名称。以 `null` 发送的 `name` 属于形式标记：凡是省略名称的地方都会省略它，但不会在响应头中列出。 Fixtures：`requests/autogen-user-name.json`、`requests/crewai-tool-name.json`。
 
 ### 内容部分
 

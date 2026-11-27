@@ -88,7 +88,7 @@ Das `name` einer Nachricht unterscheidet Teilnehmer derselben Rolle. Multi-Agent
 
 Kaeso lässt es daher für jedes andere Format weg und für einen Chat-Anbieter, dessen Profil `name` bei System-, Benutzer- und Assistentennachrichten ablehnt, etwa Groq. Der Header `kaeso-left-out` der Antwort nennt es nach der Nachricht, die die App gesendet hat, etwa `messages[1].name` (`openai_chat::names`).
 
-Tool-Nachrichten behalten ihren, wie die aufgezeichnete Antwort von Mistral zeigt. Andere Chat-Anbieter erhalten den Namen wie gesendet, und ein als `null` gesendetes `name` ist Form. Fixtures: `requests/autogen-user-name.json`, `requests/crewai-tool-name.json`.
+Bei einem solchen Chat-Anbieter behalten Tool-Nachrichten ihr `name`, wie die aufgezeichnete Antwort von Mistral zeigt; andere Formate erhalten keines. Andere Chat-Anbieter erhalten jeden Namen wie gesendet. Ein als `null` gesendetes `name` ist Form: Es fällt überall weg, wo ein Name wegfällt, ohne Eintrag im Header. Fixtures: `requests/autogen-user-name.json`, `requests/crewai-tool-name.json`.
 
 ### Inhaltsteile
 

@@ -88,7 +88,7 @@ A message's `name` tells apart participants of one role. Multi-agent frameworks 
 
 So Kaeso leaves it out for every other format, and for a Chat provider whose profile refuses `name` on system, user and assistant messages, such as Groq. The reply's `kaeso-left-out` header names it by the message the app sent, such as `messages[1].name` (`openai_chat::names`).
 
-Tool messages keep theirs, as Mistral's recorded reply shows they may. Other Chat providers get the name as sent, and a `name` sent as `null` is form. Fixtures: `requests/autogen-user-name.json`, `requests/crewai-tool-name.json`.
+At such a Chat provider, tool messages keep their `name`, as Mistral's recorded reply shows they may; other formats get none. Other Chat providers get every name as sent. A `name` sent as `null` is form: it's left out wherever a name is, without a header entry. Fixtures: `requests/autogen-user-name.json`, `requests/crewai-tool-name.json`.
 
 ### Content parts
 
