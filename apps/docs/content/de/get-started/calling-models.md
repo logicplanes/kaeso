@@ -196,6 +196,14 @@ for await (const chunk of stream) {
 }
 ```
 
+## Frameworks verwenden
+
+Frameworks, die auf diesen SDKs aufbauen, nehmen dieselbe Basis-URL und denselben Schlüssel. Einige brauchen eine eigene Einstellung:
+
+- **LangChain.** `ChatOpenAI` mit einer `base_url` fordert die Nutzung in Streams nur mit `stream_usage=True` an.
+- **LlamaIndex.** `OpenAI` lehnt Modellnamen ab, die nicht von OpenAI sind. Verwenden Sie `OpenAILike` mit `is_chat_model=True` und für Tools `is_function_calling_model=True`.
+- **LiteLLM** und die Tools, die darauf aufbauen, etwa Aider, CrewAI und DSPy. Nennen Sie das Modell `openai/<model>` mit der Basis-URL `https://kaeso.example.com/v1` oder `anthropic/<model>` mit `https://kaeso.example.com`. `completion_cost` von LiteLLM wirft für Modelle außerhalb seiner eigenen Preistabelle einen Fehler; die [Anfrageprotokolle](../console/request-logs.md) zeigen die Kosten, die Kaeso für jede Anfrage ermittelt hat.
+
 ## Antworten streamen
 
 Fordern Sie einen Stream so an, wie Ihr SDK es vorsieht. Kaeso sendet die Ereignisse, die dieses SDK erwartet, gleich welcher Anbieter das Modell bedient:

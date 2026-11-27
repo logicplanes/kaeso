@@ -196,6 +196,14 @@ for await (const chunk of stream) {
 }
 ```
 
+## 使用框架
+
+基于这些 SDK 的框架使用相同的基础 URL 和密钥。有几个需要单独设置：
+
+- **LangChain。** 带 `base_url` 的 `ChatOpenAI` 只有在 `stream_usage=True` 时才会在流中请求用量。
+- **LlamaIndex。** `OpenAI` 会拒绝不属于 OpenAI 的模型名称。请改用 `OpenAILike`，设置 `is_chat_model=True`，使用工具时再设置 `is_function_calling_model=True`。
+- **LiteLLM** 以及基于它的工具，例如 Aider、CrewAI 和 DSPy。把模型命名为 `openai/<model>` 并使用基础 URL `https://kaeso.example.com/v1`，或命名为 `anthropic/<model>` 并使用 `https://kaeso.example.com`。对于其价格表之外的模型，LiteLLM 的 `completion_cost` 会报错；[请求日志](../console/request-logs.md)显示 Kaeso 为每个请求计算的费用。
+
 ## 流式接收回复
 
 按 SDK 自己的方式请求流式回复。无论哪个服务商提供该模型，Kaeso 都会发送该 SDK 预期的事件：

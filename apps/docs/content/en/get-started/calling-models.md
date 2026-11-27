@@ -196,6 +196,14 @@ for await (const chunk of stream) {
 }
 ```
 
+## Use frameworks
+
+Frameworks built on these SDKs take the same base URL and key. A few need a setting of their own:
+
+- **LangChain.** `ChatOpenAI` with a `base_url` asks for usage in streams only with `stream_usage=True`.
+- **LlamaIndex.** `OpenAI` refuses model names that aren't OpenAI's. Use `OpenAILike` with `is_chat_model=True`, and `is_function_calling_model=True` for tools.
+- **LiteLLM** and the tools built on it, such as Aider, CrewAI and DSPy. Name the model `openai/<model>` with the base URL `https://kaeso.example.com/v1`, or `anthropic/<model>` with `https://kaeso.example.com`. LiteLLM's `completion_cost` raises an error for models outside its own price table; the [request logs](../console/request-logs.md) show Kaeso's cost for each request.
+
 ## Stream replies
 
 Ask for a stream the way your SDK does. Kaeso sends the events that SDK expects, whichever provider serves the model:

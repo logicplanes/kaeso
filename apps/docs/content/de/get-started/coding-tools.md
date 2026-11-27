@@ -1,6 +1,6 @@
 ---
 title: Coding-Tools
-description: Claude Code, Codex und andere Coding-Tools auf Ihre Installation ausrichten.
+description: Claude Code, Codex, Gemini CLI und andere Coding-Tools auf Ihre Installation ausrichten.
 order: 3
 ---
 
@@ -34,6 +34,8 @@ Mit einem OpenAI-Modell dahinter sendet Claude Code mitunter Vorabversions-Felde
 
 `WebSearch` in Claude Code nutzt die Websuche von GPT- und Grok-Modellen. Modelle, die über Chat Completions bereitgestellt werden, etwa Mistral, haben keine Websuche und beantworten `WebSearch` daher ohne zu suchen.
 
+Claude Code berechnet Token mit seiner eigenen Tabelle von Claude-Preisen, daher sind `/cost` und `total_cost_usd` für andere Modelle falsch. Die [Anfrageprotokolle](../console/request-logs.md) zeigen die Kosten, die Kaeso für jede Anfrage ermittelt hat.
+
 > [!WARNING]
 > Legen Sie den Schlüssel in Ihren Benutzereinstellungen oder Ihrem Shell-Profil ab. Die Einstellungsdatei eines Projekts wird committet, und jeder, der das Repository lesen kann, könnte den Schlüssel nutzen.
 
@@ -66,9 +68,37 @@ Modelle ohne Websuche, etwa Mistral, bekommen die Anfrage ohne sie. Claude und G
 > [!NOTE]
 > Kaeso speichert keine Antworten zwischen Zügen. Eine Anfrage, die den Anbieter bittet, eine Antwort zu speichern oder fortzusetzen (`store: true`, `previous_response_id`), lehnt Kaeso mit einem Fehler ab, der das sagt, außer das Projekt erlaubt [beim Anbieter gespeicherte Antworten](../console/organizations-and-projects.md#gespeicherte-antworten).
 
-## Entscheidungsmodelle in OpenCode
+## Gemini CLI einrichten
 
-[OpenCode](https://opencode.ai/docs/providers/) ruft Entscheidungsmodelle im System-One-Format auf, das Kaeso unter `/v1/systemone` bedient. Fügen Sie Kaeso als Anbieter hinzu und kennzeichnen Sie jedes [Entscheidungsmodell](../api/decisions.md) mit `type: "decision"`:
+Gemini CLI spricht die Gemini API. Setzen Sie die Basis-URL ohne Version, da Gemini CLI `/v1beta` selbst anhängt, und wählen Sie das Modell mit `-m`:
+
+```bash
+export GOOGLE_GEMINI_BASE_URL=https://kaeso.example.com
+export GEMINI_API_KEY=sk-kso-…
+gemini -m claude-sonnet-5-5
+```
+
+Weisen Sie Gemini CLI in `~/.gemini/settings.json` an, sich mit dem Schlüssel statt mit einem Google-Konto anzumelden:
+
+```json
+{ "security": { "auth": { "selectedType": "gemini-api-key" } } }
+```
+
+Gemini CLI sendet `topK` mit jeder Anfrage. Modelle ohne Top-k-Sampling, etwa GPT und DeepSeek, bekommen die Anfrage ohne es, und der Header `kaeso-left-out` der Antwort nennt es.
+
+## Qwen Code einrichten
+
+Qwen Code spricht OpenAI Chat Completions. Wählen Sie OpenAI als Anmeldung und das Modell mit `-m`:
+
+```bash
+export OPENAI_BASE_URL=https://kaeso.example.com/v1
+export OPENAI_API_KEY=sk-kso-…
+qwen --auth-type openai -m claude-sonnet-5-5
+```
+
+## OpenCode einrichten
+
+[OpenCode](https://opencode.ai/docs/providers/) nimmt Kaeso als Anbieter. Führen Sie Chat-Modelle mit einem leeren Eintrag auf. Entscheidungsmodelle ruft OpenCode im System-One-Format auf, das Kaeso unter `/v1/systemone` bedient, daher kennzeichnen Sie jedes [Entscheidungsmodell](../api/decisions.md) mit `type: "decision"`:
 
 ```jsonc
 {
@@ -80,6 +110,7 @@ Modelle ohne Websuche, etwa Mistral, bekommen die Anfrage ohne sie. Claude und G
       "package": "@opencode/ai/providers/openai-compatible",
       "settings": { "baseURL": "https://kaeso.example.com/v1" },
       "models": {
+        "claude-sonnet-5-5": {},
         "jev-latest": {
           "type": "decision",
           "compatibility": { "mediaInput": "assets" },
@@ -100,6 +131,16 @@ Jedes Tool, in dem Sie eine Basis-URL für OpenAI oder Anthropic setzen können,
 | --- | --- | --- |
 | OpenAI Chat Completions oder Responses | `https://kaeso.example.com/v1` | API-Schlüssel oder Bearer-Token |
 | Anthropic Messages | `https://kaeso.example.com` | API-Schlüssel (`x-api-key`) oder Bearer-Token |
+
+Manche Tools brauchen mehr als die Basis-URL:
+
+| Tool | Was Sie setzen |
+| --- | --- |
+| Crush | Einen Anbieter mit `type: "openai-compat"` und `base_url: "https://kaeso.example.com/v1"` oder mit `type: "anthropic"` und `https://kaeso.example.com`. Geben Sie jedem Modell ein `context_window` und ein `default_max_tokens`. |
+| Goose | `OPENAI_HOST=https://kaeso.example.com` ohne `/v1`: Goose hängt `v1/chat/completions` selbst an. Für Anthropic Messages stattdessen `ANTHROPIC_HOST`. |
+| Aider | `--model openai/<model>` mit `OPENAI_API_BASE=https://kaeso.example.com/v1` oder `--model anthropic/<model>` mit `ANTHROPIC_API_BASE=https://kaeso.example.com`. Fügen Sie `--no-show-model-warnings` für Modelle hinzu, die Aider nicht kennt. Seine Token-Zahlen sind eigene Schätzungen. |
+| Continue | Ein Modell mit `provider: openai` und `apiBase: https://kaeso.example.com/v1` oder mit `provider: anthropic` und `apiBase: https://kaeso.example.com/v1/`. |
+| Open WebUI | `OPENAI_API_BASE_URL=https://kaeso.example.com/v1` und `OPENAI_API_KEY`. Für seine Dokumentsuche über Kaeso `RAG_EMBEDDING_ENGINE=openai`, `RAG_OPENAI_API_BASE_URL`, `RAG_OPENAI_API_KEY` und ein Embedding-Modell des Projekts in `RAG_EMBEDDING_MODEL`. |
 
 ## Nächste Schritte
 
