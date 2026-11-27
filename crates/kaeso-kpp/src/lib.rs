@@ -78,7 +78,7 @@ pub use decision::{
     ScoreAnswer,
 };
 pub use dialect::{DialectId, Origin, UnknownDialect};
-pub use error::{ErrorKind, KppError};
+pub use error::{ErrorKind, KppError, Retry};
 pub use extras::{Extras, HEADER_PREFIX};
 pub use image::{
     GeneratedImage, ImageBackground, ImageDelivery, ImageEvent, ImageFormat, ImageInput,

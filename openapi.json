@@ -37401,7 +37401,7 @@
                   "oneOf": [
                     {
                       "$ref": "#/components/schemas/ApiKeyId",
-                      "description": "The key; `null` for requests from the Playground, which have none."
+                      "description": "The key; `null` for requests without one: those from the Playground\n(`source` `playground`) and those a source reported (`observed`)."
                     },
                     {
                       "type": "null"
@@ -40208,7 +40208,7 @@
                 },
                 "key": {
                   "type": "string",
-                  "description": "The day, the Monday of the week, the first day of the month,\n`provider/model`, provider, key id (`playground` for the requests members\nmade in the console's Playground, without a key), member (`user:<id>` or\n`service_account:<id>`), route (`<app format>:<provider format>:<provider>`,\nsuch as `openai_responses:anthropic_messages:anthropic`; both formats are\nempty for requests made before Kaeso recorded them, and the provider\nformat for requests refused before a provider was chosen), or project\nid. The filter of the same name takes it as it is."
+                  "description": "The day, the Monday of the week, the first day of the month,\n`provider/model`, provider, key id (`playground` for the requests members\nmade in the console's Playground, `source:<id>` for the requests a source\nreported; neither has a key), member (`user:<id>` or\n`service_account:<id>`), route (`<app format>:<provider format>:<provider>`,\nsuch as `openai_responses:anthropic_messages:anthropic`; both formats are\nempty for requests made before Kaeso recorded them, and the provider\nformat for requests refused before a provider was chosen), or project\nid. The filter of the same name takes it as it is."
                 },
                 "media": {
                   "$ref": "#/components/schemas/UsageMedia",
@@ -40229,7 +40229,7 @@
                 "requests": {
                   "type": "integer",
                   "format": "int64",
-                  "description": "Model requests of the group, made with a key or from the Playground:\nevery one, the gateway's own refusals (limits, unknown models,\ncapability checks) included.",
+                  "description": "Model requests of the group, made with a key, from the Playground or\nreported by a source: every one, the gateway's own refusals (limits,\nunknown models, capability checks) included.",
                   "minimum": 0
                 },
                 "tool_call_errors": {
@@ -40772,7 +40772,7 @@
             "oneOf": [
               {
                 "$ref": "#/components/schemas/ApiKeyId",
-                "description": "The key; `null` for requests from the Playground, which have none."
+                "description": "The key; `null` for requests without one: those from the Playground\n(`source` `playground`) and those a source reported (`observed`)."
               },
               {
                 "type": "null"
@@ -48013,6 +48013,7 @@
           "org_deletion_grace_days",
           "timezone",
           "sign_in",
+          "search_engines",
           "mail",
           "exchange_rates",
           "shared_links",
@@ -48088,6 +48089,10 @@
             "example": 7,
             "maximum": 90,
             "minimum": 1
+          },
+          "search_engines": {
+            "type": "boolean",
+            "description": "Whether search engines may index the console's sign-in page\n(`search_engines`, read-only); off, the install asks every crawler to keep out."
           },
           "share_mark": {
             "type": "boolean",
@@ -51173,7 +51178,7 @@
           },
           "key": {
             "type": "string",
-            "description": "The day, the Monday of the week, the first day of the month,\n`provider/model`, provider, key id (`playground` for the requests members\nmade in the console's Playground, without a key), member (`user:<id>` or\n`service_account:<id>`), route (`<app format>:<provider format>:<provider>`,\nsuch as `openai_responses:anthropic_messages:anthropic`; both formats are\nempty for requests made before Kaeso recorded them, and the provider\nformat for requests refused before a provider was chosen), or project\nid. The filter of the same name takes it as it is."
+            "description": "The day, the Monday of the week, the first day of the month,\n`provider/model`, provider, key id (`playground` for the requests members\nmade in the console's Playground, `source:<id>` for the requests a source\nreported; neither has a key), member (`user:<id>` or\n`service_account:<id>`), route (`<app format>:<provider format>:<provider>`,\nsuch as `openai_responses:anthropic_messages:anthropic`; both formats are\nempty for requests made before Kaeso recorded them, and the provider\nformat for requests refused before a provider was chosen), or project\nid. The filter of the same name takes it as it is."
           },
           "media": {
             "$ref": "#/components/schemas/UsageMedia",
@@ -51194,7 +51199,7 @@
           "requests": {
             "type": "integer",
             "format": "int64",
-            "description": "Model requests of the group, made with a key or from the Playground:\nevery one, the gateway's own refusals (limits, unknown models,\ncapability checks) included.",
+            "description": "Model requests of the group, made with a key, from the Playground or\nreported by a source: every one, the gateway's own refusals (limits,\nunknown models, capability checks) included.",
             "minimum": 0
           },
           "tool_call_errors": {

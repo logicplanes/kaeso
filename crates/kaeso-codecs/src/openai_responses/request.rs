@@ -404,6 +404,12 @@ fn tool_node(tool: &ToolDef, names: &mut Names<'_>) -> Option<Node> {
     match tool {
         ToolDef::Function(f) => {
             let mut node = function_tool_node(f, names);
+            // Responses tries strict mode for a tool without `strict`, which makes every argument
+            // required; Chat Completions, Anthropic and Gemini tools are non-strict unless they say so.
+            let foreign = f.extras.origin.as_ref().is_some_and(|o| !o.is(DIALECT));
+            if foreign && f.strict.is_none() {
+                node = node.with("strict", Node::bool(false));
+            }
             apply(&f.extras, DIALECT, "", &[], &mut node);
             Some(node)
         }
@@ -735,9 +741,6 @@ fn check_output_limit(r: &GenerateRequest) -> Result<(), KppError> {
 
 fn check_generate(r: &GenerateRequest) -> Result<(), KppError> {
     let s = &r.sampling;
-    if s.top_k.is_some() {
-        return Err(unsupported("top_k", "OpenAI models do not support top-k sampling. Remove `top_k` or route the request to an Anthropic model.").with_param("top_k"));
-    }
     if s.seed.is_some() {
         return Err(unsupported(
             "seed",

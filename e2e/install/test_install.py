@@ -365,12 +365,12 @@ def container_ids(install: Install, service: str) -> list[str]:
 def test_the_compose_runner_applies_a_changed_compose_file_through_the_proxy(install):
     compose = install.work / "compose.yaml"
     original = compose.read_text()
-    marker = "    networks: [edge]\n\n  updater-init:"
-    assert marker in original
+    marker = "      KAESO_SEARCH_ENGINES: ${KAESO_SEARCH_ENGINES:-false}\n    networks: [edge]\n\n  updater-init:"
+    assert marker in original, "the console's environment ends the console service"
     unchanged = ("gateway", "postgres", "clickhouse", "valkey", "caddy")
     before = {service: container_ids(install, service) for service in unchanged}
     try:
-        compose.write_text(original.replace(marker, "    environment:\n      KAESO_RUNNER_TEST: applied\n" + marker))
+        compose.write_text(original.replace(marker, marker.replace("    networks:", "      KAESO_RUNNER_TEST: applied\n    networks:", 1)))
         applied = as_runner(install, "up", "300")
         assert applied.returncode == 0, applied.stderr
         env = subprocess.run(

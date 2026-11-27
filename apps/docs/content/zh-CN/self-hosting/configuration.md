@@ -33,6 +33,7 @@ services:
 | `KAESO_UPDATER_TOKEN`、`COMPOSE_PROFILES` | 否 | 网关和更新器共享的令牌，以及用于启动更新器的 `updater`（[更新器](upgrades.md#更新器)）。 |
 | `KAESO_DIR` | 使用更新器时 | 实例文件夹，也是更新器的 Docker 代理唯一允许绑定挂载的来源。 |
 | `DOCKER_SOCKET` | 否 | Docker 套接字不在 `/var/run/docker.sock` 时，供更新器使用的路径。 |
+| `KAESO_SEARCH_ENGINES` | 否 | 设为 `true` 时，搜索引擎和 AI 爬虫可以将登录页面编入索引；默认的 `false` 让整个实例不被它们收录。Compose 会把它传给网关和控制台（[搜索引擎](#搜索引擎)）。 |
 | `KAESO_TRUSTED_PROXIES` | 否 | 网关信任其 `X-Forwarded-For` 的代理网段，默认为 `127.0.0.0/8,::1/128` 和 `EDGE_SUBNET`。请设为您自己代理的地址（[使用自己的反向代理](domains-and-tls.md#使用自己的反向代理)）。 |
 | `EDGE_SUBNET` | 否 | `edge` 网络的子网，默认为 `172.30.83.0/24`，网关信任来自该子网的 `X-Forwarded-For`。服务器已在使用这个网段时请修改它。 |
 | `GATEWAY_REPLICAS` | 否 | 运行多少个网关，默认 `1`；Caddy 把请求分发到它们（[多个网关](scaling.md)）。 |
@@ -153,6 +154,14 @@ Docker 会在每个服务的日志达到 10 MB 时轮转，并保留五个文件
 | --- | --- | --- | --- |
 | `KAESO_LEGAL_IMPRINT_URL`<br>`legal.imprint_url` | 文本 | — | 您的法律声明的 `https` 地址，例如 `https://example.com/imprint`。 |
 | `KAESO_LEGAL_PRIVACY_URL`<br>`legal.privacy_url` | 文本 | — | 您的隐私政策的 `https` 地址，例如 `https://example.com/privacy`。 |
+
+### 搜索引擎
+
+控制台的服务器也会从自己的环境中读取此设置，因此请为网关和控制台同样设置 `KAESO_SEARCH_ENGINES`，切勿只设置 TOML 键，因为它只到达网关。`compose.yaml` 会把 `.env` 中的变量传给两者，Helm chart 使用 `searchEngines`，每个平台模板都只在一处设置它（[托管平台](platforms/index.md#每条路径都保持的内容)）。[搜索引擎](domains-and-tls.md#搜索引擎)说明了两种情况下爬虫得到的内容。
+
+| 变量<br>TOML 键 | 类型 | 默认值 | 作用 |
+| --- | --- | --- | --- |
+| `KAESO_SEARCH_ENGINES`<br>`search_engines` | 布尔值 | `false` | 允许搜索引擎和 AI 爬虫将控制台的登录页面编入索引，其他内容一概不允许。关闭时，`robots.txt` 和每个响应上的 `X-Robots-Tag` 会要求它们不要收录整个实例。如果值不是布尔值，网关和控制台在启动时就会停止。 |
 
 ### API 密钥查找失败
 
@@ -308,7 +317,7 @@ Webhook 的地址由组织管理员选择，因此网关会像对待 MCP 服务�
 
 | 变量<br>TOML 键 | 类型 | 默认值 | 作用 |
 | --- | --- | --- | --- |
-| `KAESO_CONTINUITY_REASONING_TTL`<br>`continuity.reasoning_ttl` | 文本 | `1h` | 当 OpenAI Chat Completions 应用或 Gemini 应用调用的模型使用另一种格式时，网关保留该模型在工具调用前的推理内容的时间。`0s` 关闭此功能；否则为 1m 到 24h。 |
+| `KAESO_CONTINUITY_REASONING_TTL`<br>`continuity.reasoning_ttl` | 文本 | `1h` | 当 OpenAI Chat Completions 应用或 Gemini 应用调用的模型使用另一种格式时，以及 OpenAI Responses 应用未发送 `store: false` 时，网关保留该模型在工具调用前的推理内容的时间。`0s` 关闭此功能；否则为 1m 到 24h。 |
 
 [格式转换](../concepts/format-translation.md#chat-completions)说明了网关如何保存这段推理。
 

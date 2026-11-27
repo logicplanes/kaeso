@@ -27,7 +27,7 @@ KPP, das Kaeso Provider Protocol, hat einen Codec für jedes API-Format: OpenAI 
 
 ## Drei Regeln
 
-1. **Gleiches Format, kein Verlust.** Eine Anfrage, die den Anbieter im selben Format erreicht, in dem sie kam, kommt so an, wie sie gesendet wurde. Nur der Modellname wird zur Modell-ID des Anbieters. Ein Stream fordert immer die Nutzung an, doch die App sieht sie nur, wenn sie danach gefragt hat. Es gibt drei Ausnahmen. Bei einem Tool, dessen Schema der Anbieter in keiner Form annimmt, wird eine Union an der Wurzel seiner Parameter zu einem Objekt, das der Header `kaeso-adapted` der Antwort nennt, und eine Wurzel ohne `type` bekommt `type: "object"` ([Tool-Schemas mit Union-Wurzel](../development/kpp/cross-format.md#tool-schemas-mit-union-wurzel)). Eine Aufwandsstufe für ein Modell ohne Aufwandsstufen und adaptives Denken für ein Modell ohne Reasoning werden weggelassen ([Modelle ohne Aufwandsstufen](../development/kpp/reasoning.md#modelle-ohne-aufwandsstufen)). Claude Opus 4.7 und neuer nehmen nur ihr Standard-Sampling an, daher lässt Kaeso `temperature`, `top_p` und `top_k` weg, und ein Denk-Budget wird zu adaptivem Denken.
+1. **Gleiches Format, kein Verlust.** Eine Anfrage, die den Anbieter im selben Format erreicht, in dem sie kam, kommt so an, wie sie gesendet wurde. Nur der Modellname wird zur Modell-ID des Anbieters. Ein Stream fordert immer die Nutzung an, doch die App sieht sie nur, wenn sie danach gefragt hat. Es gibt vier Ausnahmen. Bei einem Tool, dessen Schema der Anbieter in keiner Form annimmt, wird eine Union an der Wurzel seiner Parameter zu einem Objekt, das der Header `kaeso-adapted` der Antwort nennt, und eine Wurzel ohne `type` bekommt `type: "object"` ([Tool-Schemas mit Union-Wurzel](../development/kpp/cross-format.md#tool-schemas-mit-union-wurzel)). Eine Aufwandsstufe für ein Modell ohne Aufwandsstufen und adaptives Denken für ein Modell ohne Reasoning werden weggelassen ([Modelle ohne Aufwandsstufen](../development/kpp/reasoning.md#modelle-ohne-aufwandsstufen)). Claude Opus 4.7 und neuer nehmen nur ihr Standard-Sampling an, daher lässt Kaeso `temperature`, `top_p` und `top_k` weg, und ein Denk-Budget wird zu adaptivem Denken. Ein Anbieter im Anthropic-Format, der `top_k` ignoriert, etwa DeepSeek oder MiniMax, bekommt es nicht ([Top K](../development/kpp/sampling.md#top-k)).
 2. **Ablehnen, nie weglassen.** Wechselt eine Anfrage das Format, lehnt Kaeso ein Feld, das das Ziel nicht umsetzen kann, mit einem Fehler ab, der es nennt. Weg lässt es nur Hinweise, die nicht ändern, was das Modell schreibt, die wenigen optionalen Tools, die dem Ziel fehlen, Reasoning-Einstellungen, die das Modell nicht annimmt, und Einstellungen mit dem Wert, den die API ohnehin verwendet. Diese nennt der Header `kaeso-left-out` der Antwort ([weggelassene Tools](../development/kpp/cross-format.md#weggelassene-tools), [neutrale Werte](../development/kpp/sampling.md#neutrale-werte)).
 3. **Signiertes Reasoning geht nur nach Hause.** Verschlüsseltes oder signiertes Reasoning sendet Kaeso nur an das Format und den Anbieter zurück, die es ausgegeben haben.
 
@@ -50,7 +50,7 @@ Wechselt eine Anfrage das Format, lehnt Kaeso Folgendes mit einem Fehler ab, der
 ### Anfragen an Anthropic
 
 - `seed`, Frequency- und Presence-Penalties außer 0 und eine Temperatur über 1
-- das Ausgabeformat `json_object` und ein JSON-Schema mit einer Beschreibung oder mit `strict: false`
+- das Ausgabeformat `json_object` und ein JSON-Schema ohne Schlüssel
 - Verweigerungen im Verlauf
 - Bilder außer JPEG, PNG, GIF und WebP und Dokumente außer PDF und reinem Text
 - Audio, und Video außer für MiniMax
@@ -59,7 +59,7 @@ Wechselt eine Anfrage das Format, lehnt Kaeso Folgendes mit einem Fehler ab, der
 
 ### Anfragen an OpenAI Chat Completions
 
-- `top_k` und mehr als vier Stoppsequenzen
+- mehr als vier Stoppsequenzen
 - Textdokumente, Dokument-URLs, Dokumenttitel, Kontext und Zitate
 - Bild-Datei-IDs sowie Bilder, Dokumente und Audio außerhalb von Benutzernachrichten
 - Audio außer base64-WAV und -MP3, und Video, außer für Anbieter, die mehr dokumentieren
@@ -67,7 +67,7 @@ Wechselt eine Anfrage das Format, lehnt Kaeso Folgendes mit einem Fehler ab, der
 
 ### Anfragen an OpenAI Responses
 
-- `top_k` und Penalties außer 0
+- Penalties außer 0
 - Textdokumente, Dokumenttitel, Kontext und Zitate
 - Audio und Video sowie Audio- und Bildausgabe
 
@@ -151,6 +151,12 @@ Die Metrik `kaeso_reasoning_continuity_total` zählt behaltenes, wiederhergestel
 ### Gemini-Apps
 
 Eine Gemini-App erhält kein Reasoning von einem anderen Anbieter, weil ein Thought-Part es nicht tragen kann: `google-genai` liest `thoughtSignature` als Base64. Bedient Claude oder ein OpenAI-Modell über Responses eine Gemini-App, behält das Gateway das Reasoning vor jedem Tool-Aufruf anhand der ID des Aufrufs und fügt es wieder ein, wie bei Chat Completions. Bedient ein Gemini-Modell eine Gemini-App, erreichen seine Thought Signatures die App und kommen so zurück, wie Gemini sie geschrieben hat.
+
+### Responses-Apps, die `store` anlassen
+
+Eine Responses-App, die `store` anlässt, wie das Vercel AI SDK standardmäßig, sendet das Reasoning der Antwort als `item_reference` auf seine ID zurück statt als Item selbst. Kaeso bewahrt keine Antworten auf, deshalb bewahrt das Gateway für eine solche App das Reasoning vor jedem Tool-Aufruf auf, wie für Chat Completions, und setzt es dort ein, wo der Verweis hinzeigt. Ein Verweis in einem Zug ohne Tool-Aufrufe, wo kein Modell das Reasoning zurück braucht, wird weggelassen und in `kaeso-left-out` genannt.
+
+Ist das Reasoning weg, weil es abgelaufen ist, ein anderer Schlüssel den Zug sendet oder die App vorher `store: false` gesendet hat, lehnt Kaeso die Anfrage mit `400` ab und verlangt die Items selbst, wie SDKs sie mit `store: false` senden. Ein Verweis auf etwas anderes als Reasoning bleibt abgelehnt ([gespeicherte Antworten](../console/organizations-and-projects.md#gespeicherte-antworten)).
 
 ### Lesbares Reasoning
 

@@ -268,6 +268,10 @@ Wenn Codex Subagenten startet, schreiben sich die Agenten mit `agent_message`-In
 
 Ein `encrypted_content`, das Chiffretext ist (eine ununterbrochene Base64-Folge), kann nur OpenAI lesen; überall sonst ist es `Unsupported`, ebenso ein Teil anderen Typs. Fixtures: `openai_responses/providers/xai/requests/codex-multi-agent.json` (die erste Anfrage eines Subagenten) und `codex-multi-agent-root.json` (ein späterer Zug des Root-Agenten).
 
+## Strikte Tools
+
+Ein Funktions-Tool aus Chat Completions, Anthropic oder Gemini ist nicht strikt, außer es sagt es, während Responses für ein Tool ohne `strict` den Strict-Modus versucht, der jedes Argument zur Pflicht macht ([Function Calling](https://developers.openai.com/api/docs/guides/function-calling#strict-mode)). Der Responses-Encoder sendet ein Tool aus einem anderen Dialekt ohne `strict` daher mit `strict: false`, sodass das Modell optionale Argumente weglassen kann.
+
 ## Argumente von Tool-Aufrufen
 
 Die Argumente eines Tool-Aufrufs sind in jedem Format ein JSON-Objekt. Chat Completions und Responses übertragen sie als String, sodass ein Aufruf mit Text ankommen kann, der keines ist. Kaeso behandelt solchen Text auf jedem Weg gleich:
@@ -355,9 +359,9 @@ Der Encoder für OpenAI Chat sendet seinen Rollen-Chunk außerdem, sobald die An
 Strukturierte Ausgabe an Anthropic nutzt die nativen Structured Outputs von Anthropic, nie eine Nachbildung über ein erzwungenes Tool.
 
 - Das Ausgabeformat `json_object` hat bei Anthropic keine Entsprechung und ist `Unsupported`.
-- Das Ausgabeformat von Anthropic ist nur ein Schema: Der `name` eines Schemas wird weggelassen, während eine `description` oder `strict: false` `Unsupported` ist.
+- Das Ausgabeformat von Anthropic ist nur ein Schema: Der `name` eines Schemas wird weggelassen, seine `description` steht vor der eigenen des Schemas, und `strict: false` wird strikt bedient. Ein Schema aus einem anderen Format wird in die Teilmenge umgeschrieben, die Claude annimmt, wie es die SDKs von Anthropic tun ([Anfragen aus anderen Dialekten](anthropic-messages.md#anfragen-aus-anderen-dialekten)).
 - Schemas, die von Anthropic an OpenAI gehen, bekommen den Namen `response`, weil OpenAI einen verlangt.
-- Gemini bekommt ein Schema als `responseJsonSchema` und `json_object` als `responseMimeType: "application/json"` allein; wie bei Anthropic entfällt der `name` eines Schemas, und eine `description` oder `strict: false` ist `Unsupported`.
+- Gemini bekommt ein Schema als `responseJsonSchema` und `json_object` als `responseMimeType: "application/json"` allein; wie bei Anthropic entfällt der `name` eines Schemas, seine `description` steht vor der eigenen des Schemas, und `strict: false` wird strikt bedient.
 - Amazon Bedrock Converse bekommt noch kein Ausgabeformat: `json_object` und Schemas sind `Unsupported`.
 
 ## Zustandsbehaftete Responses-Funktionen

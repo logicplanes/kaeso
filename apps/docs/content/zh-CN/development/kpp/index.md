@@ -165,7 +165,7 @@ KPP 的值和错误都按值返回。`KppError` 和部分枚举变体较大，�
 | `reasoning.include_encrypted` | 提示 | 只控制是否返回加密的推理；仅限 OpenAI Responses（[可读推理与摘要](reasoning.md#可读推理与摘要)）。 |
 | `sampling.max_output_tokens` | 语义 | |
 | `sampling.temperature`、`.top_p` | 语义 | 它们的写法（`1` 还是 `1.0`）属于形式，只在同一方言内保留（[采样参数](sampling.md)）。 |
-| `sampling.top_k` | 语义 | 仅限 Anthropic；其他目标返回 `Unsupported`（[采样参数](sampling.md)）。 |
+| `sampling.top_k` | 提示 | 发给 Anthropic、Gemini 和接受它的 Chat Completions 服务商；其他目标会省略它并在 `kaeso-left-out` 中注明（[top K](sampling.md#top-k)）。 |
 | `sampling.stop` | 语义 | OpenAI Chat Completions 最多接受四个；OpenAI Responses 没有该参数，返回 `Unsupported`（[采样参数](sampling.md)）。 |
 | `sampling.seed` | 语义 | 仅限 OpenAI Chat Completions；其他目标返回 `Unsupported`（[采样参数](sampling.md)）。 |
 | `sampling.frequency_penalty`、`.presence_penalty` | 语义 | OpenAI Chat Completions 和 Gemini；其他目标返回 `Unsupported`，但值为 `0` 时不提出任何要求，会被省略（[中性值](sampling.md#中性值)）。 |

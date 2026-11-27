@@ -268,6 +268,10 @@ Codex 运行子智能体时，智能体之间用 `agent_message` 输入 item 通
 
 若 `encrypted_content` 是密文（一段连续的 base64），只有 OpenAI 能读取，因此在其他地方都是 `Unsupported`，其他类型的部分同样如此。Fixtures：`openai_responses/providers/xai/requests/codex-multi-agent.json`（子智能体的第一次请求）和 `codex-multi-agent-root.json`（根智能体之后的一轮）。
 
+## 严格模式工具
+
+来自 Chat Completions、Anthropic 或 Gemini 的函数工具，除非另有说明，都不是严格模式；而 Responses 会对未设 `strict` 的工具尝试严格模式，使每个参数都变为必填（[function calling](https://developers.openai.com/api/docs/guides/function-calling#strict-mode)）。因此，Responses 编码器把来自其他方言、未设 `strict` 的工具以 `strict: false` 发送，让模型可以省略可选参数。
+
 ## 工具调用参数
 
 在每种格式中，工具调用的参数都是一个 JSON 对象。Chat Completions 和 Responses 以字符串传递参数，因此调用到达时携带的文本可能不是对象。Kaeso 在每条路径上都以相同方式处理这类文本：
@@ -355,9 +359,9 @@ OpenAI Chat 编码器还会在响应一开始就发送它的角色 chunk，而�
 发往 Anthropic 的结构化输出使用 Anthropic 原生的结构化输出，从不通过强制工具来模拟。
 
 - 输出格式 `json_object` 在 Anthropic 中没有对应项，为 `Unsupported`。
-- Anthropic 的输出格式只有一个 schema：schema 的 `name` 会被丢弃，而 `description` 或 `strict: false` 为 `Unsupported`。
+- Anthropic 的输出格式只有一个 schema：schema 的 `name` 会被丢弃，其 `description` 放在 schema 自身的描述之前，`strict: false` 按严格处理。来自其他格式的 schema 会像 Anthropic 的 SDK 那样改写为 Claude 接受的子集（[来自其他方言的请求](anthropic-messages.md#来自其他方言的请求)）。
 - 从 Anthropic 发往 OpenAI 的 schema 会得到名称 `response`，因为 OpenAI 要求必须有名称。
-- Gemini 以 `responseJsonSchema` 接收 schema，以单独的 `responseMimeType: "application/json"` 接收 `json_object`；与 Anthropic 一样，schema 的 `name` 会被丢弃，`description` 或 `strict: false` 为 `Unsupported`。
+- Gemini 以 `responseJsonSchema` 接收 schema，以单独的 `responseMimeType: "application/json"` 接收 `json_object`；与 Anthropic 一样，schema 的 `name` 会被丢弃，其 `description` 放在 schema 自身的描述之前，`strict: false` 按严格处理。
 - Amazon Bedrock Converse 暂不接收输出格式：`json_object` 和 schema 均为 `Unsupported`。
 
 ## 有状态的 Responses 功能

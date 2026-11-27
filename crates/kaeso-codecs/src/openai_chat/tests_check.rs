@@ -84,10 +84,39 @@ fn foreign_extras_are_refused_via_cross() {
 }
 
 #[test]
-fn top_k_is_refused() {
+fn top_k_is_left_out_by_the_apps_name_for_it() {
+    for (origin, named) in [
+        (DialectId::AnthropicMessages, "top_k"),
+        (DialectId::Gemini, "generationConfig.topK"),
+    ] {
+        let mut r = base();
+        r.extras = Extras::new(Origin::new(origin));
+        r.sampling.top_k = Some(40);
+        r.sampling.top_p = Some(0.95);
+        let req = Request::Generate(r);
+        OpenAiChat::check(&req, &EgressCtx::new(&req)).unwrap();
+        let mut ctx = EgressCtx::new(&req);
+        let out = OpenAiChat::encode_request(&req, &mut ctx).unwrap();
+        let body: serde_json::Value = serde_json::from_slice(&out.body).unwrap();
+        assert!(body.get("top_k").is_none(), "{body}");
+        assert_eq!(body["top_p"], 0.95, "{body}");
+        assert_eq!(ctx.left_out, [named]);
+    }
+}
+
+#[test]
+fn a_provider_that_takes_top_k_gets_it_from_every_format() {
     let mut r = base();
+    r.extras = Extras::new(Origin::new(DialectId::Gemini));
     r.sampling.top_k = Some(40);
-    assert_eq!(feature(r), "top_k");
+    let req = Request::Generate(r);
+    let profile = ChatProfile::compatible("Example Cloud").with_top_k();
+    let mut ctx = EgressCtx::new(&req).with_chat_profile(profile);
+    OpenAiChat::check(&req, &ctx).unwrap();
+    let out = OpenAiChat::encode_request(&req, &mut ctx).unwrap();
+    let body: serde_json::Value = serde_json::from_slice(&out.body).unwrap();
+    assert_eq!(body["top_k"], 40, "{body}");
+    assert!(ctx.left_out.is_empty());
 }
 
 #[test]

@@ -42,6 +42,9 @@ spec:
             - name: http
               containerPort: 3000
               protocol: TCP
+          env:
+            - name: KAESO_SEARCH_ENGINES
+              value: {{ .Values.searchEngines | quote }}
           {{- if .Values.console.preStopSeconds }}
           lifecycle:
             preStop:

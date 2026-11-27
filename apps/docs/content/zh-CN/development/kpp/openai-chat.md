@@ -108,7 +108,6 @@ nav: OpenAI Chat
 - 图像或其他输出模态、没有声音的音频输出、OpenAI 未列出的声音，以及没有音频输出时的音频设置；
 - 助手消息之外的拒绝和引用；
 - 其他方言的引用（通过 `check_foreign`）；
-- `top_k`（[采样参数](sampling.md)）；
 - 未知的推理模式，以及规范枚举之外的推理强度。
 
 预算和 `disabled` 会被转换（[推理强度与预算](reasoning.md#推理强度与预算)）。以下提示字段则会被丢弃：
@@ -118,7 +117,8 @@ nav: OpenAI Chat
 - `ToolResult::is_error`，其信息由错误内容承载（[工具错误](cross-format.md#工具错误)）；
 - 其他方言的 `reasoning.summary` 和 `reasoning.include_encrypted`，因为 Chat 没有请求它们的字段（[可读推理与摘要](reasoning.md#可读推理与摘要)）；
 - OpenAI Responses 的 `web_search` 工具和 `web_search_call` 项，因为 Chat 没有托管网页搜索（[省略的工具](cross-format.md#省略的工具)）；
-- OpenAI Responses 的 `text.verbosity`，除非服务商配置接受 `verbosity`（[条件条目](cross-format.md#条件条目)）。
+- OpenAI Responses 的 `text.verbosity`，除非服务商配置接受 `verbosity`（[条件条目](cross-format.md#条件条目)）；
+- Chat 没有的 `top_k`，除非服务商配置接受它（`with_top_k()`）；会在 `kaeso-left-out` 中注明（[top K](sampling.md#top-k)）。
 
 OpenAI Responses 的 `custom_tool_call` 和 `local_shell_call` 项及其输出会变为工具调用和 `tool` 消息（[Codex 工具历史](cross-format.md#codex-工具历史)）。
 
@@ -237,6 +237,8 @@ Anthropic 和 Responses 在块开始时就要给出两者，因此解码器按�
 
 只有应用请求了用量时才会写入用量（`EncodeCtx::stream` 带 `include_usage`）。此时每个 chunk 都有 `usage: null`，最后一个 `choices: []` 的 chunk 携带用量。来自其他方言时，这是最新的用量；后面的报告没有输入计数时，输入计数取自 `ResponseStart`。
 
+像 DeepSeek 和 Mistral 那样把用量放在结束 chunk 上的 Chat 服务商，其自身的流也得到同样的形式：该 chunk 以 `usage: null` 发送，用量则放在 `[DONE]` 之前一个单独的 `choices: []` chunk 中。结束 chunk 会等待下一个 chunk，因此服务商自己的 `choices: []` 用量 chunk 以及更早 chunk 上的累计用量都按原样发送。`passthrough::for_stream`（不解码即转发同一方言的流）也这样处理，此类 fixture 的往返测试预期的就是这种形式（`test_support::chat_usage_in_its_own_chunk`）。
+
 ## 错误（`ErrorResponse`）
 
 错误体为 `{error: {message, type, param, code}}`。
@@ -254,7 +256,7 @@ Anthropic 和 Responses 在块开始时就要给出两者，因此解码器按�
 | 403 | `PermissionDenied` | 403 `request_forbidden` |
 | 404 | `NotFound` | 404 `invalid_request_error` |
 | 413 | `RequestTooLarge` | 413 `invalid_request_error` |
-| 429 | `RateLimited` | 429 `rate_limit_error`，code `rate_limit_exceeded` |
+| 429 | `RateLimited` | 429 `rate_limit_error`，code `rate_limit_exceeded`；带 `retry: after_reset`（在重置前已用尽的配额）时为 429 `insufficient_quota`，code `insufficient_quota` |
 | 503 | `Overloaded` | 503 `service_unavailable_error`，code `server_is_overloaded` |
 | 408、504、`code` `vector_store_timeout` | `Timeout` | 504 `server_error`，code `timeout` |
 | 其他 | `ProviderError` | 其 5xx 状态码（503 除外）或 500，`server_error` |

@@ -135,6 +135,7 @@ chart 设置由 Kubernetes 决定的部分，其余由您设置：
 - `gateway.env` 以变量形式接收[设置](../configuration.md#设置)，例如 `KAESO_CORS_ALLOWED_ORIGINS`；`gateway.extraEnv` 和 `gateway.extraEnvFrom` 以 Kubernetes 自身的形式接收，例如来自 Secret。
 - `gateway.config` 以配置文件的形式接收设置，例如 `{ upstream: { request_timeout: 900s } }`。chart 会把它渲染为 TOML 文件，并在其变化时重启网关。
 - `gateway.trustedProxies` 指定网关信任其 `X-Forwarded-For` 的网络。默认值涵盖大多数 Pod 网络使用的私有地址段；如需精确，请填写您的 Ingress 控制器所在的 Pod 网络。
+- `searchEngines: true` 允许搜索引擎和 AI 爬虫将登录页面编入索引（[搜索引擎](../domains-and-tls.md#搜索引擎)）。chart 会把它传给网关和控制台，并拒绝 `gateway.env` 中的 `KAESO_SEARCH_ENGINES` 和 `gateway.config` 中的 `search_engines`，因为它们只会到达网关。
 - `serviceAccount.annotations` 为 Pod 提供云身份，例如 `eks.amazonaws.com/role-arn`。
 
 chart 会把 `KAESO_UPDATES_INSTALLED_WITH` 设为 `helm`，因此控制台的**更新**页面会显示 `helm upgrade`，而不是安装脚本。

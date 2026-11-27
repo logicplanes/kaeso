@@ -1,0 +1,59 @@
+{
+  "model": "claude-haiku-5-5",
+  "stream": false,
+  "messages": [
+    {
+      "role": "user",
+      "content": "Describe Tokyo."
+    }
+  ],
+  "response_format": {
+    "type": "json_schema",
+    "json_schema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "country": {
+            "description": "ISO country name",
+            "title": "Country",
+            "type": "string"
+          },
+          "population": {
+            "minimum": 0,
+            "title": "Population",
+            "type": "integer"
+          },
+          "rating": {
+            "maximum": 5,
+            "minimum": 1,
+            "title": "Rating",
+            "type": "number"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 3,
+            "title": "Tags",
+            "type": "array"
+          }
+        },
+        "required": [
+          "name",
+          "country",
+          "population",
+          "rating",
+          "tags"
+        ],
+        "title": "City",
+        "type": "object",
+        "additionalProperties": false
+      },
+      "name": "City",
+      "strict": true
+    }
+  }
+}

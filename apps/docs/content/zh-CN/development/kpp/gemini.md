@@ -50,16 +50,16 @@ Schema `GenerateContentRequest`。
 | 含其他键（`googleSearch`、`urlContext`、`codeExecution`、`googleMaps`、`fileSearch`、`computerUse`、`mcpServers`、`googleSearchRetrieval`）或 `functionDeclarations` 为空的 `tools[]` | `ToolDef::Unknown`（原样） | 跨方言时被拒绝。 |
 | `functionDeclarations[].name`、`.description` | `name`、`description` | |
 | `functionDeclarations[].parametersJsonSchema` | `parameters` | 完整的 JSON Schema。外来工具总是得到 `parametersJsonSchema`，因此不会因 OpenAPI 子集而丢失内容。 |
-| `functionDeclarations[].parameters`（OpenAPI `Schema`） | `parameters` | 形式标记 `schema: "parameters"`，使 Gemini 在 `parameters` 中收回它。其他方言按原样把它当作 JSON Schema 接收；需要标准类型名的服务商会拒绝 `OBJECT` 这样的大写类型名。旁边同时有 `parametersJsonSchema` 时 → 字段 `parameters`。 |
+| `functionDeclarations[].parameters`（OpenAPI `Schema`） | `parameters` | 形式标记 `schema: "parameters"`，使 Gemini 在 `parameters` 中收回它。其他方言收到的是 JSON Schema（[schema](#schema)）。旁边同时有 `parametersJsonSchema` 时 → 字段 `parameters`。 |
 | `functionDeclarations[].response`、`.responseJsonSchema`、`.behavior` | 工具的字段 | |
 | `toolConfig.functionCallingConfig` `mode: AUTO` / `NONE` / `ANY` | `tool_choice` `Auto` / `None` / `Required` | |
 | `mode: ANY` 且 `allowedFunctionNames` 只有一项 | `ToolChoice::Tool(name)` | |
 | `mode: VALIDATED`、带多个名称的 `ANY`，以及其他任何组合 | `ToolChoice::Unknown`（原样） | 跨方言时被拒绝。 |
 | `toolConfig.retrievalConfig`、`.includeServerSideToolInvocations` | 字段 `toolConfig.*` | |
-| `generationConfig.temperature`、`.topP`、`.topK`、`.maxOutputTokens`、`.stopSequences`、`.seed`、`.presencePenalty`、`.frequencyPenalty` | `sampling.*` | 数字在方言内保留写法（形式标记 `integers`）。 |
+| `generationConfig.temperature`、`.topP`、`.topK`、`.maxOutputTokens`、`.stopSequences`、`.seed`、`.presencePenalty`、`.frequencyPenalty` | `sampling.*` | 数字在方言内保留写法（形式标记 `integers`）。没有 top-k 的目标会省略 `topK`（[top K](sampling.md#top-k)）。 |
 | `generationConfig.candidateCount` | 形式标记 `candidate_count` | 大于 1 → 解码时为 `Unsupported`，与 Chat 的 `n` 相同（[采样参数](sampling.md)）。 |
 | `responseMimeType: application/json` 加 `responseJsonSchema` | `output = JsonSchema` | |
-| `responseMimeType: application/json` 加 `responseSchema` | `output = JsonSchema` | 形式标记 `schema: "responseSchema"`；其他方言按原样收到 OpenAPI schema。 |
+| `responseMimeType: application/json` 加 `responseSchema` | `output = JsonSchema` | 形式标记 `schema: "responseSchema"`；其他方言收到的是 JSON Schema（[schema](#schema)）。 |
 | 只有 `responseMimeType: application/json` | `output = JsonObject` | |
 | 其他任何 `responseMimeType`，以及没有 `application/json` 的 schema | 字段 `generationConfig.*` | |
 | `generationConfig.thinkingConfig` | `reasoning` | 见[思考](#思考)。 |
@@ -112,7 +112,9 @@ Schema `Part`。一个 part 恰好带有 `text`、`inlineData`、`fileData`、`f
 - 不是对象的**参数**会变为对象，与 Anthropic 相同（[工具调用参数](cross-format.md#工具调用参数)）。
 - **图像 URL** 按 URL 的文件扩展名得到 `fileData.mimeType`（`.png`、`.jpg`、`.jpeg`、`.webp`、`.gif`、`.heic`、`.heif`；文档另有 `.pdf`、`.txt`），这是文件输入指南的要求；没有这类扩展名的图像 URL 为 `Unsupported`。文本文档以 Base64 `inlineData` 发送。
 - **音频和视频 URL** 以同样方式得到它，依据音频和视频指南中支持的格式（`.wav`、`.mp3`、`.aiff`、`.aac`、`.ogg`、`.flac`、`.m4a`、`.opus`、`.webm`；`.mp4`、`.mpeg`、`.mpg`、`.mov`、`.avi`、`.flv`、`.webm`、`.wmv`、`.3gp`）。YouTube URL 不带 MIME 类型发送；没有已知扩展名的其他 URL 为 `Unsupported`。Base64 音频和视频以带媒体类型的 `inlineData` 发送。工具结果中的音频和视频为 `Unsupported`。
-- 以 `Unsupported` **拒绝**：Gemini 没有对应 part 的拒答块（与 Anthropic 相同）、文档的标题、上下文或引用、超过五个停止序列（`GenerationConfig.stopSequences`）、`parallel_tool_calls: false`、带描述或 `strict: false` 的输出 schema，以及 Gemini 没有对应设置的推理强度或思考模式。
+- **输出 schema。** OpenAI schema 的 `description` 放在 schema 自身的 `description` 之前，`strict: false` 按严格处理，因为 Gemini 总会强制执行 `responseJsonSchema`；两者都会在 `kaeso-adapted` 中按应用的字段注明。
+- **输出 schema。** OpenAI schema 的 `description` 放在 schema 自身的 `description` 之前，`strict: false` 按严格处理，因为 Gemini 总会强制执行 `responseJsonSchema`；两者都会在 `kaeso-adapted` 中按应用的字段注明。
+- 以 `Unsupported` **拒绝**：Gemini 没有对应 part 的拒答块（与 Anthropic 相同）、文档的标题、上下文或引用、超过五个停止序列（`GenerationConfig.stopSequences`）、`parallel_tool_calls: false`，以及 Gemini 没有对应设置的推理强度或思考模式。
 - **严格工具。** 带 `strict: true` 的函数工具在自动 `tool_choice` 下发送 `mode: VALIDATED`，按 schema 校验调用。
 - **托管网页搜索**会被[省略](cross-format.md#省略的工具)。
 - **缓存提示**会被丢弃：Gemini 会隐式缓存。
@@ -121,9 +123,26 @@ Schema `Part`。一个 part 恰好带有 `text`、`inlineData`、`fileData`、`f
 
 ### 来自 google-genai 的请求
 
-`google-genai` 2.32.0 会以 snake case 写出部分键，API 也接受它们，因为 proto JSON 接受每个字段的原始名称：`inlineData` 和 `fileData` 中的 `mime_type` 和 `file_uri`，`thinkingConfig` 中的 `include_thoughts`、`thinking_budget` 和 `thinking_level`，以及 `functionDeclarations` 中的 `parameters_json_schema` 和 `response_json_schema`。`gemini::sdk` 以 camel case 名称读取它们，并设置形式标记 `sdk_names`。发往 Gemini 的请求会按应用的写法把它们写回。
+`google-genai` 2.32.0 会以 snake case 写出部分键，API 也接受它们，因为 proto JSON 接受每个字段的原始名称：`inlineData` 和 `fileData` 中的 `mime_type` 和 `file_uri`，`thinkingConfig` 中的 `include_thoughts`、`thinking_budget` 和 `thinking_level`，以及 `functionDeclarations` 中的 `parameters_json_schema` 和 `response_json_schema`。`gemini::sdk` 以 camel case 名称读取它们，并设置形式标记 `sdk_names`。发往 Gemini 的请求会按应用的写法把它们写回。在 `Schema` 内部，google-genai 同样以 snake case 写出 `property_ordering`、`any_of` 和各项数量；解码器按原样保留它们，[schema 转换](#schema)会读取两种写法。
 
 该 SDK 还会以浮点数发送 `topK`，例如 `20.0`。KPP 把整数值的浮点数读作整数，带形式标记 `top_k_float`，发往 Gemini 时再写回浮点数；带小数部分的值为 `InvalidRequest`。fixture `requests/sdk-tools-snake-case.json` 来自 `google-genai` 2.32.0。
+
+### Schema
+
+Gemini 的 `Schema`（位于 `functionDeclarations[].parameters` 和 `generationConfig.responseSchema` 中）是 OpenAPI 3.0 的子集。发往其他方言的请求收到的是 JSON Schema，依据 discovery 文档的 `Schema`（revision `20261125`）和 google-genai 3.6.1 的 `Schema.json_schema`。Gemini 收到的是应用写的原样。
+
+| `Schema` | JSON Schema |
+|---|---|
+| `type` `STRING`、`NUMBER`、`INTEGER`、`BOOLEAN`、`ARRAY`、`OBJECT`、`NULL`，不论大小写 | 小写的名称；`TYPE_UNSPECIFIED` 会被省略。 |
+| `nullable: true` | `null` 加入类型（`["integer", "null"]`）、enum 的取值，或作为分支加入没有类型的 `anyOf`。此时 enum 不带 `type`：Anthropic 会拒绝取值不匹配类型列表中每个类型的 enum。`nullable: false` 会被省略。 |
+| `propertyOrdering` | 决定 `properties` 的顺序，之后被省略。 |
+| `format: enum` | 被省略：只用 `enum` 就能限定取值。 |
+| `INTEGER` 或 `NUMBER` 的 `enum` | 取值写成数字；Gemini 把它们写成字符串，例如 `["101", "201"]`。 |
+| `minItems`、`maxItems`、`minLength`、`maxLength`、`minProperties`、`maxProperties` | 数字；discovery 文档把它们定为 int64，proto JSON 会写成字符串。 |
+| `example` | `examples: [<example>]` |
+| google-genai 的 snake case 键，例如 `property_ordering`、`any_of` 和 `max_items` | camel case。 |
+| `properties`、`items`、`anyOf` | 其中每个 schema 都按同样方式转换。 |
+| 其他任何键，例如 `description`、`title`、`default`、`pattern`、`minimum` 或其他 `format` | 按原样保留在原位置。 |
 
 ### 思考
 

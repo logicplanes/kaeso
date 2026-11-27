@@ -34,6 +34,7 @@ export default defineRailway((ctx) => {
       KAESO_POSTGRES_URL: db.env.DATABASE_URL,
       KAESO_VALKEY_URL: cache.env.REDIS_URL,
       KAESO_TRUSTED_PROXIES: TRUSTED_PROXIES,
+      KAESO_SEARCH_ENGINES: "false",
       KAESO_LOG_FORMAT: "json",
     },
   });
@@ -41,7 +42,8 @@ export default defineRailway((ctx) => {
   const console = service("kaeso-console", {
     source: image(CONSOLE_IMAGE, { autoUpdates: { type: "disabled" } }),
     healthcheck: "/healthz",
-    env: { PORT: "3000" },
+    // Set once, on the gateway.
+    env: { PORT: "3000", KAESO_SEARCH_ENGINES: "${{kaeso-gateway.KAESO_SEARCH_ENGINES}}" },
   });
 
   const edge = service("kaeso-edge", {

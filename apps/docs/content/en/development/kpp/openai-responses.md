@@ -94,7 +94,7 @@ The error names the field, never a parser position, and sets `param`: `` The req
 
 `check()` also refuses, for requests from any dialect:
 
-- `sampling.top_k`, `seed`, `frequency_penalty`, `presence_penalty` and stop sequences, which the Responses API doesn't have ([sampling](sampling.md)); a penalty of `0` is left out ([neutral values](sampling.md#neutral-values));
+- `seed`, `frequency_penalty`, `presence_penalty` and stop sequences, which the Responses API doesn't have ([sampling](sampling.md)); a penalty of `0` is left out ([neutral values](sampling.md#neutral-values));
 - unknown reasoning modes, named by their wire value;
 - text documents, document `title`/`context`/`citations`, and text image sources;
 - audio and video blocks, because `InputContent` has only `input_text`, `input_image` and `input_file` (`audio block`, `video block`); OpenRouter's `input_audio` and `input_video` parts, which OpenAI doesn't have, stay `Block::Unknown`;
@@ -118,7 +118,8 @@ A reasoning config from another dialect is sent as its effort: an explicit effor
 | `reasoning` (`ReasoningItem`) | `Block::Reasoning` (origin `openai_responses`) in the current assistant message | A Kaeso-invented id (`rs_kaeso_…`) is not kept (form `kaeso_id`); such an item without `encrypted_content` is not sent to the provider at all, since it would have neither an `id` nor content OpenAI can use. `id` → opaque `OpenAiReasoningItemId`, `encrypted_content` → opaque `OpenAiEncryptedReasoning`, `summary[].text` → `summary`, `content[].text` → `text`; `status` and part `type`s: form; unknown keys: extras. Replayed only to `openai_responses` with the same provider ([reasoning](reasoning.md)). An item whose `encrypted_content` is a reasoning blob (`kpp:reasoning:v1:…`, another dialect's reasoning Kaeso gave the app, see [reasoning blobs](reasoning.md#reasoning-blobs)) decodes to the original block inside it, origin included (for example Claude's signed thinking), whatever the rest of the item says. In requests Kaeso sends with `store: false` (from other dialects, see [Responses storage and ids](cross-format.md#responses-storage-and-ids)), reasoning without encrypted content is not sent, because OpenAI can't resolve the item id. |
 | `custom_tool_call`, `custom_tool_call_output`, `local_shell_call`, `local_shell_call_output` | as below; for Anthropic and Chat Completions, tool calls and results ([Codex tool history](cross-format.md#codex-tool-history)) | |
 | `agent_message` (Codex's messages between agents) | as below; for every provider but OpenAI, a message ([Codex agent messages](cross-format.md#codex-agent-messages)) | |
-| `item_reference` and every other item type (server-tool calls and outputs, `compaction`, future types) | a message with one `Block::Unknown`, form `raw_item` | Role `Assistant` for types ending in `_call`, `mcp_list_tools`, `mcp_approval_request`; otherwise `User`. The role only matters to KPP validation, because these items never go to another dialect. Same-dialect only; SpaceX takes only the types it lists, and Kaeso refuses any other before sending ([SpaceX](openai-responses-providers.md#spacex)). |
+| `item_reference` to a reasoning item (`rs_…`, no other field) | a `Block::Reasoning` that stands for it in the turn of the calls that follow, form `item_reference` ([reasoning kept by the gateway](reasoning.md#reasoning-kept-by-the-gateway)) | Written back as it was; refused for other dialects. |
+| Other `item_reference` items and every other item type (server-tool calls and outputs, `compaction`, future types) | a message with one `Block::Unknown`, form `raw_item` | Role `Assistant` for types ending in `_call`, `mcp_list_tools`, `mcp_approval_request`; otherwise `User`. The role only matters to KPP validation, because these items never go to another dialect. Same-dialect only; SpaceX takes only the types it lists, and Kaeso refuses any other before sending ([SpaceX](openai-responses-providers.md#spacex)). |
 | items that don't parse as their type (for example a `function_call_output` with `call_id: null`) | `Block::Unknown` (as above) | Lossless; the provider judges them. |
 
 Grouping: consecutive `function_call` and `reasoning` items join the current assistant message, and consecutive `function_call_output` items join the current user message. A message item joins a message of its role that holds no message item yet; system and developer items never join.
@@ -306,7 +307,7 @@ Encoding replays the body and status of errors that came from an OpenAI dialect 
 | `PermissionDenied` | 403 | `request_forbidden` | `null` |
 | `NotFound` | 404 | `invalid_request_error` | `null` |
 | `RequestTooLarge` | 413 | `invalid_request_error` | `null` |
-| `RateLimited` | 429 | `rate_limit_error` | `rate_limit_exceeded` |
+| `RateLimited` | 429 | `rate_limit_error`; `insufficient_quota` with `retry: after_reset` | `rate_limit_exceeded`; `insufficient_quota` |
 | `Billing` | 429 | `insufficient_quota` | `insufficient_quota` |
 | `Overloaded` | 503 | `service_unavailable_error` | `server_is_overloaded` |
 | `Timeout` | 504 | `server_error` | `timeout` |
