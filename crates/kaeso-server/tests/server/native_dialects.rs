@@ -133,6 +133,28 @@ async fn what_deepseek_ignores_is_refused_before_anything_is_sent() {
 }
 
 #[tokio::test]
+async fn an_anthropic_apps_custom_tools_reach_deepseek_without_their_type() {
+    let env = env_with("deepseek", &[("deepseek-flash", json!({}))]).await;
+    let mut body = messages("deepseek-flash", "Weather in Paris?");
+    body["tools"] = json!([{
+        "type": "custom", "name": "get_weather",
+        "input_schema": {"type": "object", "properties": {"city": {"type": "string"}}}
+    }]);
+    let r = call(&env, "/v1/messages", Some(&env.key), true, Some(body)).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.header("kaeso-left-out"), None);
+    let sent = env.mock.last().unwrap();
+    assert_eq!(sent.path, "/anthropic/v1/messages");
+    assert_eq!(
+        sent.json()["tools"],
+        json!([{
+            "name": "get_weather",
+            "input_schema": {"type": "object", "properties": {"city": {"type": "string"}}}
+        }])
+    );
+}
+
+#[tokio::test]
 async fn only_moonshots_k3_models_go_to_its_messages_api() {
     let env = env_with(
         "moonshotai",

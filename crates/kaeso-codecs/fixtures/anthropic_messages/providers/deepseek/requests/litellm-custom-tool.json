@@ -1,0 +1,33 @@
+{
+  "model": "deepseek-flash",
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "Weather in Paris?"
+        }
+      ]
+    }
+  ],
+  "max_tokens": 200,
+  "tools": [
+    {
+      "name": "get_weather",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "city": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "city"
+        ]
+      },
+      "type": "custom",
+      "description": "Get the weather for a city."
+    }
+  ]
+}
