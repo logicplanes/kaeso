@@ -37,7 +37,7 @@ KPP, the Kaeso Provider Protocol, has a codec for each API format: OpenAI Chat C
 - **Tools.** Function tools, tool choice, parallel tool calls, tool calls and tool results. Images and files a tool returned reach a Chat Completions model in the user message after the results, because its tool messages hold only text ([media in tool results](../development/kpp/cross-format.md#media-in-tool-results)).
 - **Tool names and call ids.** When the target doesn't accept a name or id, Kaeso rewrites it in a fixed way and maps it back in the reply. Other characters become `_`, the name is cut to fit, and a hash of the original is added. OpenAI accepts up to 64 letters, digits, `_` and `-`, Anthropic up to 128.
 - **Structured output.** JSON schemas.
-- **Sampling.** Temperature, top P, maximum tokens and stop sequences, where the target has them. A value keeps its meaning but is written as the target writes it, so `1` can arrive as `1.0`.
+- **Sampling.** Temperature, top P, maximum tokens and stop sequences, where the target has them. A value keeps its meaning but is written as the target writes it, so `1` can arrive as `1.0`. For a model served through OpenAI Responses, such as Grok, Kaeso ends the reply itself at a stop sequence or at a limit below 16 tokens ([OpenAI Responses in the gateway](../development/kpp/sampling.md#openai-responses-in-the-gateway)).
 - **The end user's id.** Anthropic's `metadata.user_id` and OpenAI's `safety_identifier`. OpenAI takes at most 128 characters and asks for a hash of the user's id, so a longer Anthropic id, such as Claude Code's, reaches it as its SHA-256 hash, which the reply's `kaeso-adapted` header names.
 - **Reasoning.** Efforts and thinking budgets convert into each other ([reasoning](#reasoning)).
 - **Streams.** Kaeso translates them event by event into the app's format.
@@ -67,7 +67,7 @@ When a request crosses formats, Kaeso refuses these with an error that names the
 
 ### Requests to OpenAI Responses
 
-- `top_k`, `seed`, penalties other than 0 and stop sequences
+- `top_k` and penalties other than 0
 - text documents, document titles, context and citations
 - audio and video, and audio and image output
 
@@ -106,6 +106,7 @@ When the target has no place for them, Kaeso leaves out hints that don't change 
 - image detail and file names
 - Anthropic's `thinking.display`, and Anthropic context management that only clears earlier thinking
 - the error flag of a tool result, which OpenAI doesn't have; the result's text still says what failed
+- `seed` for a model served through OpenAI Responses, which has no field for it
 - settings sent at the value the API uses when they are absent, such as `frequency_penalty: 0`, `logprobs: false` or `store: false`, which chat apps such as NextChat send with every request; the reply's `kaeso-left-out` header names them ([neutral values](../development/kpp/sampling.md#neutral-values))
 
 Requests translated into Responses carry `store: false`, so OpenAI keeps nothing.
@@ -126,7 +127,7 @@ Kaeso converts reasoning settings like this:
 - **Effort and budget.** An effort wins over a budget in the same request. A Claude model has no adaptive thinking when its catalogue entry says so. Claude 4.5 and earlier have none.
 - **Fitting a budget.** Kaeso fits a budget to Anthropic's rules: at least 1,024 tokens, and less than `max_tokens`. When `max_tokens` is 1,024 or less, the budget is 1,024 and Kaeso raises `max_tokens` by 1,024, so the answer keeps its room.
 - **Thinking and sampling.** When Kaeso turns Claude's thinking on for a request from another format, it leaves out `temperature`, `top_p` and `top_k`. Anthropic refuses them together with thinking. An Anthropic app's own settings go out as received, except to Claude Opus 4.7 and later, which take none of them: Kaeso leaves them out for every app and names them in `kaeso-left-out`.
-- **Forced tool calls.** Anthropic refuses budget thinking together with a forced tool call (`required` or a named tool). Kaeso then sends the request without thinking. Adaptive thinking keeps the forced tool.
+- **Forced tool calls.** Anthropic refuses budget thinking together with a forced tool call (`required` or a named tool). Kaeso then sends the request without thinking. Adaptive thinking keeps the forced tool. DeepSeek refuses any thinking together with a forced tool call, so Kaeso turns DeepSeek's thinking off for such a request and names it in `kaeso-adapted`, unless the request sets DeepSeek's own `thinking` field.
 - **Tool turns from elsewhere.** With budget thinking on, the last assistant turn's tool calls may hold no thinking that Claude can replay, for example because another provider made them. Kaeso then sends the request without thinking. Adaptive thinking stays on.
 - **When reasoning turns on.** The catalogue says whether a model reasons (KPMR's `capabilities.reasoning`). For such a model, `reasoning: {summary: "auto"}` or OpenRouter's `reasoning: {enabled: true}` without an effort turns Claude's thinking on at its default depth: adaptive thinking, or the 8,192-token budget. An Anthropic app that turns thinking on without an effort gets OpenAI's encrypted reasoning back for the next turn. Kaeso never turns reasoning on for a model that doesn't reason or isn't known to. It leaves out an effort or adaptive thinking for such a model, and refuses `enabled` thinking or a budget.
 - **OpenRouter's `reasoning` object.** Chat Completions and Responses apps can send OpenRouter's `reasoning` object (`effort`, `max_tokens`, `enabled`, `exclude`) to any model. `effort`, `max_tokens` and `enabled` translate across formats like the native settings above; conflicting combinations such as `effort` with `max_tokens` or `enabled: false` with a budget get 400. `exclude: true` hides reasoning from the reply while keeping `reasoning_tokens` in usage.

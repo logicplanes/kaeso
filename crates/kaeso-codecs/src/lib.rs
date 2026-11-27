@@ -28,6 +28,7 @@ pub mod testing;
 mod tool_patterns;
 mod tool_roots;
 mod tool_search;
+mod tool_thinking;
 mod verbosity;
 mod video_jobs;
 mod web_search;

@@ -275,3 +275,38 @@ async fn deepseeks_refusal_of_a_thinking_tool_choice_reaches_both_apps_as_400() 
     assert_eq!(r.json()["type"], "error");
     assert_eq!(r.json()["error"]["type"], "invalid_request_error");
 }
+
+#[tokio::test]
+async fn a_forced_tool_reaches_deepseek_with_thinking_off_from_every_format() {
+    let (env, deepseek) = env_with_deepseek().await;
+    let tool = json!({"type": "function", "function": {"name": "get_weather",
+        "parameters": {"type": "object", "properties": {"city": {"type": "string"}}}}});
+    for choice in [
+        json!("required"),
+        json!({"type": "function", "function": {"name": "get_weather"}}),
+    ] {
+        let mut body = chat(FLASH, "Weather in Paris?");
+        body["tools"] = json!([tool]);
+        body["tool_choice"] = choice.clone();
+        let r = call(
+            &env,
+            "/v1/chat/completions",
+            Some(&env.key),
+            false,
+            Some(body),
+        )
+        .await;
+        assert_eq!(r.status, StatusCode::OK, "{choice}: {}", r.text());
+        assert_eq!(r.header("kaeso-adapted"), Some("reasoning_effort"));
+        let sent = deepseek.last().unwrap().json();
+        assert_eq!(sent["reasoning_effort"], "none", "{sent}");
+        assert_eq!(sent["tool_choice"], choice);
+    }
+    let mut body = messages(FLASH, "Weather in Paris?");
+    body["tools"] = json!([{"name": "get_weather", "input_schema": {"type": "object"}}]);
+    body["tool_choice"] = json!({"type": "any"});
+    let r = call(&env, "/v1/messages", Some(&env.key), true, Some(body)).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.header("kaeso-adapted"), Some("thinking"));
+    assert_eq!(deepseek.last().unwrap().json()["reasoning_effort"], "none");
+}

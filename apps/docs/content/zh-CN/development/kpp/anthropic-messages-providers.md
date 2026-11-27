@@ -17,6 +17,8 @@ nav: Messages 服务商
 | `sampling_fixed_at(values)` | 拒绝与服务商始终使用的采样值（`FixedValue`，以千分之一为单位）不同的 `temperature` 或 `top_p`；该值本身按原样发送。 | 服务商忽略该字段，因此只有它自己的值会被遵守。 |
 | `auto_tool_choice_only()` | 拒绝任何格式中不为 `auto` 的 `tool_choice`。 | 无论应用要求什么，服务商都会自己选择工具。 |
 | `with_video(media_types)` | 把 `Block::Video` 作为 `video` 块发送；其他媒体类型的 base64 来源为 `Unsupported`。 | 只有在文档中写明该块的服务商才会收到它。 |
+| `forced_tool_without_thinking()` | 当请求的 `tool_choice` 强制使用某个工具（`any` 或指定的工具）时，以 `thinking: {"type": "disabled"}` 发送，并在 `kaeso-adapted` 中注明应用的推理字段。 | 该服务商会拒绝在模型思考时强制使用工具，而其模型除非被告知不要思考，否则都会思考。 |
+| `without_custom_tool_type()` | 发送应用的工具时不带 `type: "custom"`，解码器把它保存为形式标记。 | 没有 `type` 的工具本来就是 `custom`；只把 `type` 当作服务端工具来读的服务商会拒绝它。 |
 | `raw_predict()` | 将生成请求发送到 `{base_path}/{model}:rawPredict`（流式时为 `:streamRawPredict`），不含 `model`；将 Token 计数发送到 `{base_path}/count-tokens:rawPredict`，保留 `model`；两者都带上 `anthropic_version` `vertex-2023-10-16`，除非应用自己发送了。Google 格式的错误按 Gemini 错误读取。 | Google 平台提供 Claude 的方式（[使用 Claude](https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/partner-models/claude/use-claude)、[计算 Token](https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/partner-models/claude/count-tokens)、Anthropic 的 SDK）。Gemini Enterprise Agent Platform 使用它，并拒绝 [Anthropic 列为](https://platform.claude.com/docs/en/build-with-claude/claude-models-on-google-cloud/google-managed)不可用的 `mcp_servers` 和 `container`。 |
 
 拒绝发生在为目标调整请求时、编码之前，因此不会发送任何内容，拒绝以应用自己的格式送达。
@@ -49,7 +51,7 @@ QwenCloud 的 Messages API 以 DashScope 的错误体 `{"request_id", "code", "m
 | 服务商 | 设置 | 来源 |
 |---|---|---|
 | Amazon Bedrock（`amazon-bedrock`） | 拒绝 `mcp_servers` 和 `container` | Anthropic 关于 bedrock-runtime 的 [Claude on Amazon Bedrock](https://platform.claude.com/docs/en/build-with-claude/claude-on-amazon-bedrock-legacy) 页面，2026-11-14 阅读，其中列出 MCP 连接器和 Agent Skills 不受支持 |
-| DeepSeek（`deepseek`） | 拒绝 `top_k`、`container` 和 `mcp_servers` | DeepSeek 的 [Anthropic API](https://api-docs.deepseek.com/guides/anthropic_api) 页面，2026-11-25 阅读，其中将这三个字段列为被忽略 |
+| DeepSeek（`deepseek`） | 拒绝 `top_k`、`container` 和 `mcp_servers`；`without_custom_tool_type()`, `forced_tool_without_thinking()` | DeepSeek 的 [Anthropic API](https://api-docs.deepseek.com/guides/anthropic_api) 页面，2026-11-27 阅读，其中将这三个字段列为被忽略，并说明客户端工具带 `type: "custom"` 会返回 422 |
 | MiniMax（`minimax`） | 拒绝 `top_k`、`stop_sequences`、`mcp_servers`、`container` 和 `context_management`；`sampling_fixed_at([("temperature", 1), ("top_p", 0.95)])`；`auto_tool_choice_only()`；`with_video(MINIMAX_VIDEO_MEDIA_TYPES)` | MiniMax 的 [Anthropic API 兼容性](https://platform.minimax.io/docs/api-reference/text-anthropic-api)页面（2026-11-08 阅读），其表格将 `temperature`、`top_p`、`top_k`、`stop_sequences`、`mcp_servers`、`context_management` 和 `container` 列为被忽略，说明 MiniMax 始终使用 1 的 `temperature` 和 0.95 的 `top_p`，并且 `tool_choice` 只支持 `auto` |
 | Ollama Cloud（`ollama-cloud`） | `auto_tool_choice_only()` | Ollama 的 [Anthropic 兼容性](https://docs.ollama.com/api/anthropic-compatibility.md)页面，2026-11-25 阅读，其中将 `tool_choice` 列为不支持 |
 

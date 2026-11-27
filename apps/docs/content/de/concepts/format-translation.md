@@ -37,7 +37,7 @@ KPP, das Kaeso Provider Protocol, hat einen Codec für jedes API-Format: OpenAI 
 - **Tools.** Funktions-Tools, Tool-Auswahl, parallele Tool-Aufrufe, Tool-Aufrufe und Tool-Ergebnisse. Bilder und Dateien, die ein Tool zurückgegeben hat, erreichen ein Chat-Completions-Modell in der Benutzernachricht nach den Ergebnissen, weil seine Tool-Nachrichten nur Text enthalten ([Medien in Tool-Ergebnissen](../development/kpp/cross-format.md#medien-in-tool-ergebnissen)).
 - **Tool-Namen und Aufruf-IDs.** Nimmt das Ziel einen Namen oder eine ID nicht an, schreibt Kaeso sie auf feste Weise um und übersetzt sie in der Antwort zurück. Andere Zeichen werden zu `_`, der Name wird passend gekürzt, und ein Hash des Originals wird angehängt. OpenAI nimmt bis zu 64 Buchstaben, Ziffern, `_` und `-` an, Anthropic bis zu 128.
 - **Strukturierte Ausgabe.** JSON-Schemas.
-- **Sampling.** Temperatur, Top P, maximale Token und Stoppsequenzen, wo das Ziel sie hat. Ein Wert behält seine Bedeutung, wird aber so geschrieben, wie das Ziel ihn schreibt. `1` kann also als `1.0` ankommen.
+- **Sampling.** Temperatur, Top P, maximale Token und Stoppsequenzen, wo das Ziel sie hat. Ein Wert behält seine Bedeutung, wird aber so geschrieben, wie das Ziel ihn schreibt. `1` kann also als `1.0` ankommen. Bei einem Modell, das über OpenAI Responses bedient wird, etwa Grok, beendet Kaeso die Antwort selbst an einer Stoppsequenz oder an einem Limit unter 16 Token ([OpenAI Responses im Gateway](../development/kpp/sampling.md#openai-responses-im-gateway)).
 - **Die ID des Endnutzers.** `metadata.user_id` bei Anthropic und `safety_identifier` bei OpenAI. OpenAI nimmt höchstens 128 Zeichen an und bittet um einen Hash der Nutzer-ID, daher erreicht eine längere Anthropic-ID, etwa die von Claude Code, OpenAI als ihr SHA-256-Hash; der Header `kaeso-adapted` der Antwort nennt das.
 - **Reasoning.** Aufwandsstufen und Denk-Budgets werden ineinander umgerechnet ([Reasoning](#reasoning)).
 - **Streams.** Kaeso übersetzt sie Event für Event in das Format der App.
@@ -67,7 +67,7 @@ Wechselt eine Anfrage das Format, lehnt Kaeso Folgendes mit einem Fehler ab, der
 
 ### Anfragen an OpenAI Responses
 
-- `top_k`, `seed`, Penalties außer 0 und Stoppsequenzen
+- `top_k` und Penalties außer 0
 - Textdokumente, Dokumenttitel, Kontext und Zitate
 - Audio und Video sowie Audio- und Bildausgabe
 
@@ -106,6 +106,7 @@ Hat das Ziel keinen Platz für sie, lässt Kaeso Hinweise weg, die nicht ändern
 - Bilddetail und Dateinamen
 - `thinking.display` von Anthropic und Kontextverwaltung von Anthropic, die nur früheres Denken entfernt
 - das Fehler-Flag eines Tool-Ergebnisses, das OpenAI nicht kennt; der Text des Ergebnisses sagt weiterhin, was fehlschlug
+- `seed` für ein Modell, das über OpenAI Responses bedient wird, weil es dort kein Feld dafür gibt
 - Einstellungen mit dem Wert, den die API ohne sie verwendet, etwa `frequency_penalty: 0`, `logprobs: false` oder `store: false`, die Chat-Apps wie NextChat mit jeder Anfrage senden; der Header `kaeso-left-out` der Antwort nennt sie ([neutrale Werte](../development/kpp/sampling.md#neutrale-werte))
 
 Anfragen, die in Responses übersetzt werden, tragen `store: false`, sodass OpenAI nichts speichert.
@@ -126,7 +127,7 @@ So rechnet Kaeso Reasoning-Einstellungen um:
 - **Aufwandsstufe und Budget.** Eine Aufwandsstufe hat Vorrang vor einem Budget in derselben Anfrage. Ein Claude-Modell hat kein adaptives Denken, wenn sein Katalogeintrag das sagt. Claude 4.5 und früher haben keines.
 - **Ein Budget anpassen.** Kaeso passt ein Budget an die Regeln von Anthropic an: mindestens 1.024 Token und weniger als `max_tokens`. Ist `max_tokens` 1.024 oder kleiner, beträgt das Budget 1.024, und Kaeso erhöht `max_tokens` um 1.024, damit die Antwort ihren Platz behält.
 - **Denken und Sampling.** Schaltet Kaeso das Denken von Claude für eine Anfrage aus einem anderen Format ein, lässt es `temperature`, `top_p` und `top_k` weg. Anthropic lehnt sie zusammen mit Denken ab. Die eigenen Einstellungen einer Anthropic-App gehen so hinaus, wie sie kamen, außer an Claude Opus 4.7 und neuer, die keine davon annehmen: Kaeso lässt sie für jede App weg und nennt sie in `kaeso-left-out`.
-- **Erzwungene Tool-Aufrufe.** Anthropic lehnt Denken mit Budget zusammen mit einem erzwungenen Tool-Aufruf ab (`required` oder ein benanntes Tool). Kaeso sendet die Anfrage dann ohne Denken. Adaptives Denken behält das erzwungene Tool.
+- **Erzwungene Tool-Aufrufe.** Anthropic lehnt Denken mit Budget zusammen mit einem erzwungenen Tool-Aufruf ab (`required` oder ein benanntes Tool). Kaeso sendet die Anfrage dann ohne Denken. Adaptives Denken behält das erzwungene Tool. DeepSeek lehnt jedes Denken zusammen mit einem erzwungenen Tool-Aufruf ab, daher schaltet Kaeso das Denken von DeepSeek für eine solche Anfrage ab und nennt es in `kaeso-adapted`, außer die Anfrage setzt das eigene `thinking`-Feld von DeepSeek.
 - **Tool-Züge von anderswo.** Bei eingeschaltetem Denken mit Budget enthalten die Tool-Aufrufe des letzten Assistenten-Zugs vielleicht kein Denken, das Claude wiedergeben kann, etwa weil ein anderer Anbieter sie erzeugt hat. Kaeso sendet die Anfrage dann ohne Denken. Adaptives Denken bleibt eingeschaltet.
 - **Wann Reasoning eingeschaltet wird.** Der Katalog sagt, ob ein Modell Reasoning nutzt (`capabilities.reasoning` in KPMR). Bei einem solchen Modell schaltet `reasoning: {summary: "auto"}` oder OpenRouters `reasoning: {enabled: true}` ohne Aufwandsstufe das Denken von Claude in seiner Standardtiefe ein: adaptives Denken oder das Budget von 8.192 Token. Eine Anthropic-App, die Denken ohne Aufwandsstufe einschaltet, erhält das verschlüsselte Reasoning von OpenAI für den nächsten Zug zurück. Kaeso schaltet Reasoning nie für ein Modell ein, das kein Reasoning nutzt oder von dem das nicht bekannt ist. Eine Aufwandsstufe oder adaptives Denken für ein solches Modell lässt Kaeso weg; `enabled`-Denken oder ein Budget lehnt es ab.
 - **OpenRouters `reasoning`-Objekt.** Chat-Completions- und Responses-Apps können OpenRouters `reasoning`-Objekt (`effort`, `max_tokens`, `enabled`, `exclude`) an jedes Modell senden. `effort`, `max_tokens` und `enabled` werden wie die nativen Einstellungen oben zwischen Formaten übersetzt; widersprüchliche Kombinationen wie `effort` mit `max_tokens` oder `enabled: false` mit einem Budget erhalten 400. `exclude: true` verbirgt Reasoning aus der Antwort, behält aber `reasoning_tokens` in der Nutzung.
