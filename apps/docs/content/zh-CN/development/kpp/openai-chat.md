@@ -237,6 +237,8 @@ Anthropic 和 Responses 在块开始时就要给出两者，因此解码器按�
 
 只有应用请求了用量时才会写入用量（`EncodeCtx::stream` 带 `include_usage`）。此时每个 chunk 都有 `usage: null`，最后一个 `choices: []` 的 chunk 携带用量。来自其他方言时，这是最新的用量；后面的报告没有输入计数时，输入计数取自 `ResponseStart`。
 
+像 DeepSeek 和 Mistral 那样把用量放在结束 chunk 上的 Chat 服务商，其自身的流也得到同样的形式：该 chunk 以 `usage: null` 发送，用量则放在 `[DONE]` 之前一个单独的 `choices: []` chunk 中。结束 chunk 会等待下一个 chunk，因此服务商自己的 `choices: []` 用量 chunk 以及更早 chunk 上的累计用量都按原样发送。`passthrough::for_stream`（不解码即转发同一方言的流）也这样处理，此类 fixture 的往返测试预期的就是这种形式（`test_support::chat_usage_in_its_own_chunk`）。
+
 ## 错误（`ErrorResponse`）
 
 错误体为 `{error: {message, type, param, code}}`。

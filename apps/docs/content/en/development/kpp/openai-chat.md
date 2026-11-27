@@ -237,6 +237,8 @@ While such left-out content arrives, the encoder writes paced SSE comments (`: k
 
 Usage is written only when the app asked for it (`EncodeCtx::stream` with `include_usage`). Every chunk then has `usage: null`, and a final `choices: []` chunk carries the usage. From other dialects this is the latest usage, with the input counts from `ResponseStart` when the later report has none.
 
+A Chat provider that puts the usage on the chunk that finishes, as DeepSeek and Mistral do, gets the same shape for its own streams: that chunk goes with `usage: null`, and the usage in a chunk of its own with `choices: []` before `[DONE]`. The finishing chunk waits for the next one, so a provider's own `choices: []` usage chunk, and running usage on earlier chunks, go as sent. `passthrough::for_stream`, which forwards a stream of the same dialect without decoding it, does the same, and the round trip of such a fixture expects this shape (`test_support::chat_usage_in_its_own_chunk`).
+
 ## Errors (`ErrorResponse`)
 
 The error body is `{error: {message, type, param, code}}`.
