@@ -1,10 +1,11 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { createRef, forwardRef } from "react";
 import { LinkProvider, type LinkComponentProps } from "../../utils/link-provider.js";
 import { Menu } from "../menu/menu.js";
+import { icons } from "../../icons/vocabulary.js";
 import { BrandWordmark, KAESO_SIDEBAR_VARIANTS, Sidebar, useSidebar } from "./sidebar.js";
 
 function State() {
@@ -109,6 +110,22 @@ describe("Sidebar", () => {
     );
     expect(screen.getByRole("link", { name: "Request logs" })).toHaveAttribute("aria-current", "page");
     expect(screen.getByRole("link", { name: "Usage" })).not.toHaveAttribute("aria-current");
+  });
+  it("puts an action at the foot as a lone icon named by its label", async () => {
+    const onClick = vi.fn();
+    render(
+      <Sidebar.Provider shortcut={false}>
+        <Sidebar aria-label="Console" resizable={false}>
+          <Sidebar.Footer>
+            <Sidebar.Action icon={icons.search} label="Search" shortcut={["mod", "k"]} onClick={onClick} />
+          </Sidebar.Footer>
+        </Sidebar>
+      </Sidebar.Provider>,
+    );
+    const search = screen.getByRole("button", { name: "Search" });
+    expect(search).not.toHaveTextContent("Search");
+    fireEvent.click(search);
+    expect(onClick).toHaveBeenCalledOnce();
   });
   it("shows the wordmark as the home link and keeps the circles", () => {
     render(
