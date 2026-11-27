@@ -98,7 +98,7 @@ Every chat format reaches every chat model, but providers don't all offer the sa
   - Each image and each PDF page counts 1,600 tokens.
   - Each message and each tool adds four tokens. Instructions a provider adds for tools of its own accord aren't known, so a request with tools can count more at the provider.
 
-  The answer carries `kaeso-adapted: count_estimated`. Kaeso doesn't read the length of audio or video, so a request that holds either gets 400: "The model `…` cannot count tokens, and Kaeso can't estimate the tokens of audio or video."
+  The answer carries `kaeso-adapted: count_estimated`. Kaeso doesn't read the length of audio or video, so a request that holds either gets 400: "The model `…` cannot count tokens, and Kaeso can't estimate audio or video."
 - **Embeddings.** Only providers whose formats include Embeddings have embeddings models, which `/v1/embeddings` calls. Chat formats can't call an embeddings model, and a chat model creates no embeddings.
 - **Rerank.** Rerank models, which KPMR gives the kind `reranking`, serve only `/v1/rerank`, and only on providers whose rerank API Kaeso calls ([Rerank API](../api/rerank.md)).
 - **Images, audio, video and music.** Only providers that offer them serve the media APIs, and Kaeso refuses a request for the others before sending it. [APIs by provider](provider-apis.md) shows which provider serves which.

@@ -211,11 +211,6 @@ async fn a_refused_token_reaches_apps_as_the_refused_key_and_what_the_router_lac
     env.mock.clear();
     for (path, anthropic, body) in [
         (
-            "/v1/messages/count_tokens",
-            true,
-            json!({ "model": GPT_OSS, "messages": [{ "role": "user", "content": "Hello" }] }),
-        ),
-        (
             "/v1/embeddings",
             false,
             json!({ "model": GPT_OSS, "input": "Hello" }),
@@ -229,5 +224,14 @@ async fn a_refused_token_reaches_apps_as_the_refused_key_and_what_the_router_lac
         let r = call(&env, path, Some(&env.key), anthropic, Some(body)).await;
         assert!(r.status.is_client_error(), "{path}: {}", r.text());
     }
+    let r = call(
+        &env,
+        "/v1/messages/count_tokens",
+        Some(&env.key),
+        true,
+        Some(json!({ "model": GPT_OSS, "messages": [{ "role": "user", "content": "Hello" }] })),
+    )
+    .await;
+    assert!(r.estimated_count() > 0);
     assert!(env.mock.received().is_empty());
 }

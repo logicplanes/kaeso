@@ -209,7 +209,7 @@ pub fn prepare(
                         "token counting",
                         Some("model"),
                         format!(
-                            "The model `{name}` cannot count tokens, and Kaeso can't estimate the tokens of audio or video."
+                            "The model `{name}` cannot count tokens, and Kaeso can't estimate audio or video."
                         ),
                     )
                 })?),

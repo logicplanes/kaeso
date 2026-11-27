@@ -430,7 +430,7 @@
   "errors.model.noReasoning": "The model `{model}` does not support reasoning.",
   "errors.model.noStructured": "The model `{model}` does not support structured output (a JSON schema).",
   "errors.model.noText": "The model `{model}` does not produce text.",
-  "errors.model.noTokenCount": "The model `{model}` cannot count tokens, and Kaeso can't estimate the tokens of audio or video.",
+  "errors.model.noTokenCount": "The model `{model}` cannot count tokens, and Kaeso can't estimate audio or video.",
   "errors.model.noTools": "The model `{model}` does not support tool calling.",
   "errors.model.noVideo": "The model `{model}` does not accept video.",
   "errors.model.noVideoOutput": "The model `{model}` does not make videos.",

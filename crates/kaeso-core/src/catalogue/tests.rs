@@ -1759,7 +1759,7 @@ fn a_provider_without_token_counting_gets_kaesos_estimate_of_count_requests() {
     assert_eq!(u.param, Some("model"));
     assert_eq!(
         u.message,
-        "The model `voxtral-small-2507` cannot count tokens, and Kaeso can't estimate the tokens of audio or video."
+        "The model `voxtral-small-2507` cannot count tokens, and Kaeso can't estimate audio or video."
     );
     let mut counted = Request::CountTokens(user(vec![Block::text("hi")]));
     let plan = prepare(
@@ -2493,7 +2493,11 @@ fn agent_platform_models_go_in_the_format_of_their_family_and_count_where_it_cou
     );
     let mut count = Request::CountTokens(GenerateRequest::new("meta/llama"));
     let plan = prepare(&mut count, DialectId::AnthropicMessages, &llama).unwrap();
-    assert_eq!(plan.estimated_count, Some(0), "Kaeso estimates, here an empty request");
+    assert_eq!(
+        plan.estimated_count,
+        Some(0),
+        "Kaeso estimates, here an empty request"
+    );
     let mut count = Request::CountTokens(GenerateRequest::new("claude-opus-4-5@20251101"));
     let plan = prepare(&mut count, DialectId::AnthropicMessages, &claude).unwrap();
     assert_eq!(
