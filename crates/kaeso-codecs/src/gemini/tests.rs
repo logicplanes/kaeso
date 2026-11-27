@@ -10,7 +10,8 @@ use crate::test_support::{assert_json_eq, assert_sse_eq, encoded_error, fixtures
 const DIR: &str = "gemini";
 const MODEL: &str = "gemini-3.5-flash";
 
-// Request fixtures the codec refuses, with the parameter it names.
+// Requests a real app may send but Kaeso refuses when decoding, so they can't round-trip;
+// `rejected_request_fixtures_name_the_parameter` checks the refusal names the parameter instead.
 const REJECTED_REQUESTS: &[(&str, &str)] =
     &[("candidate-count-2", "generationConfig.candidateCount")];
 
