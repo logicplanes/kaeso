@@ -88,12 +88,16 @@ export const docs = {
   },
   Announcement: {
     description:
-      "One piece of news across the top of a home page: a title set large and tight, what kind of news it is under it (never above it: no eyebrows), a line and an action beside its artwork, such as a new release with a flush `ReleaseArt`. The artwork leaves on narrow screens.",
+      "One piece of news across the top of a home page: a title set large and tight, what kind of news it is under it (never above it: no eyebrows), a line and an action, all lying on its artwork, such as a new release on a `ReleaseArt` strip. It can be closed.",
     props: {
       actions: "One or two buttons.",
-      art: "The artwork on the right, 16:9 at 320px: a `ReleaseArt` with `flush`, so the whole cover shows.",
+      art: 'The artwork behind the words, filling the announcement: a `ReleaseArt` with `shape="strip"` and `flush`, which keeps its left clear for them.',
       description: "One line, two at most; it keeps the room of two, so the announcement is as tall while it loads as after.",
       eyebrow: 'What kind of news: "New release". It stands under the title as a small label, never above it.',
+      onDismiss:
+        "Shows a close button in the top right corner and is called when it is pressed; the app remembers which news was closed and leaves the announcement out.",
+      scheme:
+        "The mode the words and buttons take on the artwork, whatever the page's: `releaseArtScheme` of the art, `light` on a paper ground and `dark` on ink or a glow.",
       title: "The news itself.",
     },
   },
