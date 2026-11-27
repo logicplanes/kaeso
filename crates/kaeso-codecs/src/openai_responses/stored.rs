@@ -293,6 +293,63 @@ mod tests {
     }
 
     #[test]
+    fn a_stateless_provider_gets_kept_reasoning_it_can_read_in_its_payload() {
+        let vercel = kaeso_kpp::Origin::new(DIALECT).with_provider("vercel");
+        let id = kaeso_kpp::Opaque::new(
+            vercel.clone(),
+            kaeso_kpp::OpaqueKind::OpenAiReasoningItemId,
+            "rs_kaeso_00000000000000000000000000000001_0",
+        );
+        let mut id_only = kaeso_kpp::ReasoningBlock::new(vercel.clone());
+        id_only.opaque.push(id);
+        let mut readable = id_only.clone();
+        readable.text.push("Paris first.".into());
+        let mut encrypted = id_only.clone();
+        encrypted.opaque.push(kaeso_kpp::Opaque::new(
+            vercel,
+            kaeso_kpp::OpaqueKind::OpenAiEncryptedReasoning,
+            "gAAAAAB-sealed",
+        ));
+        for (block, want) in [
+            (id_only, None),
+            (
+                readable,
+                Some((
+                    "content",
+                    serde_json::json!([{"type": "reasoning_text", "text": "Paris first."}]),
+                )),
+            ),
+            (
+                encrypted,
+                Some(("encrypted_content", serde_json::json!("gAAAAAB-sealed"))),
+            ),
+        ] {
+            let mut g = decoded(&tool_loop());
+            let kept = [crate::continuity::CarriedReasoning::new(
+                "call_00000000000000000000000001",
+                vec![block],
+            )];
+            crate::continuity::resolve_reasoning_references(&mut g, &kept, true).unwrap();
+            let req = Request::Generate(g);
+            let mut ctx = EgressCtx::new(&req).with_provider("vercel");
+            let enc = super::super::OpenAiResponses::encode_request(&req, &mut ctx).unwrap();
+            let sent: serde_json::Value = serde_json::from_slice(&enc.body).unwrap();
+            let items = sent["input"].as_array().unwrap();
+            assert!(
+                items.iter().all(|i| i["type"] != "item_reference"),
+                "{sent}"
+            );
+            let reasoning = items.iter().find(|i| i["type"] == "reasoning");
+            match want {
+                None => assert!(reasoning.is_none(), "{sent}"),
+                Some((field, value)) => {
+                    assert_eq!(reasoning.map(|r| &r[field]), Some(&value), "{sent}");
+                }
+            }
+        }
+    }
+
+    #[test]
     fn other_references_stay_unknown_items() {
         for item in [
             r#"{"type":"item_reference","id":"msg_1"}"#,

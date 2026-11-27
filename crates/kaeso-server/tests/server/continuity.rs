@@ -361,8 +361,8 @@ async fn a_responses_app_that_references_its_reasoning_keeps_claudes_thinking() 
 #[tokio::test]
 async fn a_streamed_responses_turn_keeps_its_reasoning_for_the_next_step() {
     let env = env(&[]).await;
-    // The provider's last event waits until the next step is answered, so the reasoning must be
-    // kept by the time the app reads `response.completed`.
+    // The provider's stream stays open, its end unread, until the next step is answered, so the
+    // reasoning must be kept before the upstream body closes.
     let gate =
         common::v1::hold_back_the_end(&env, "anthropic_messages", "thinking-interleaved-tools");
     let mut body = responses_first_turn(None);
