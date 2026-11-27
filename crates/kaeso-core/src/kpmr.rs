@@ -622,14 +622,18 @@ impl Catalogue {
     }
 
     /// The models an id stands for and the setting it names: the models listed under the id,
-    /// or, for an id no provider lists, the models it names at a setting they take.
+    /// or, for an id no provider lists, the models it names at a setting they take. Providers
+    /// list the same model with different settings, so the provider's own listing decides.
     fn stands_for(&self, provider: &str, id: &str) -> (Vec<&Model>, Option<IdSetting>) {
         if self.lists(id) {
             return (self.listed(provider, id), None);
         }
         match IdSetting::split(id) {
             Some((base, setting)) => {
-                let mut models = self.listed(provider, base);
+                let mut models = match self.model(provider, base) {
+                    Some(own) => vec![own],
+                    None => self.listed(provider, base),
+                };
                 models.retain(|m| setting.fits_model(m));
                 (models, Some(setting))
             }
@@ -1023,25 +1027,37 @@ mod tests {
             "anthropic": {"id": "anthropic", "models": {
                 "opus": {"id": "opus", "name": " Opus ", "capabilities": {"reasoning": true}},
                 "luna-high": {"id": "luna-high", "name": "Someone else's model"},
-                "oss": {"id": "oss", "name": "Open Model"}
+                "oss": {"id": "oss", "name": "Open Model"},
+                "luna": {"id": "luna", "name": "Luna", "reasoning": {"efforts": ["medium"]}}
             }}
         }"#,
         );
         let c = parse(&doc, &known_ids()).unwrap().catalogue;
         let at = |p: &str, id: &str| c.at_setting(p, id).map(|(m, s)| (m.id.as_str(), s));
-        assert_eq!(
-            at("openai", "luna-low"),
-            Some(("luna", IdSetting::Effort("low")))
-        );
+        let low = Some(("luna", IdSetting::Effort("low")));
+        let medium = Some(("luna", IdSetting::Effort("medium")));
+        assert_eq!(at("openai", "luna-low"), low);
         assert_eq!(
             at("anthropic", "opus-thinking"),
             Some(("opus", IdSetting::Thinking))
         );
+        assert_eq!(at("anthropic", "luna-medium"), medium);
+        assert_eq!(
+            at("openai", "luna-medium"),
+            None,
+            "the provider's own listing decides"
+        );
         assert_eq!(
             at("anthropic", "luna-low"),
-            Some(("luna", IdSetting::Effort("low"))),
+            None,
+            "the provider's own listing decides"
+        );
+        assert_eq!(
+            at("zeta", "luna-low"),
+            low,
             "another provider's model of that id"
         );
+        assert_eq!(at("zeta", "luna-medium"), medium);
         assert_eq!(
             at("zeta", "opus-thinking"),
             Some(("opus", IdSetting::Thinking))
@@ -1049,7 +1065,6 @@ mod tests {
         for none in [
             "luna",
             "luna-max",
-            "luna-medium",
             "luna-high",
             "plain-thinking",
             "plain-low",
@@ -1079,6 +1094,10 @@ mod tests {
         assert_eq!(name("openai", "unnamed"), None);
         assert_eq!(name("openai", "unnamed-low"), None);
         assert_eq!(name("openai", "luna-medium"), None);
+        assert_eq!(
+            name("anthropic", "luna-medium").as_deref(),
+            Some("Luna (medium)")
+        );
         assert_eq!(name("openai", "made-up"), None);
     }
 

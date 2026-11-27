@@ -118,10 +118,18 @@ export function OrgUsageBreakdown({
       );
     }
     if (by === "model") {
-      const [provider, ...rest] = r.key.split("/");
+      const [provider = "", ...rest] = r.key.split("/");
       const model = rest.join("/");
-      if (!provider || !model) return <Text tone="secondary">{t("orgHome.noModel", "No model")}</Text>;
-      return <ModelLabel provider={provider} providerName={providers.name(provider)} model={model} {...(r.name && r.name !== model ? { name: r.name } : {})} />;
+      if (!model) return <Text tone="secondary">{t("orgHome.noModel", "No model")}</Text>;
+      return (
+        <ModelLabel
+          provider={provider}
+          providerName={providers.name(provider)}
+          model={model}
+          mark={!!provider}
+          {...(r.name && r.name !== model ? { name: r.name } : {})}
+        />
+      );
     }
     if (by === "billed_to") {
       if (r.key === "none") return <Text tone="secondary">{t("orgHome.noProviderSent", "No provider")}</Text>;

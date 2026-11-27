@@ -118,6 +118,7 @@ export function DimensionView({ o, dim }: { o: Overview; dim: Dimension }) {
           provider={provider}
           providerName={o.providers.name(provider)}
           model={model}
+          mark={!!provider}
           {...(e.name !== model ? { name: e.name } : {})}
         />
       );

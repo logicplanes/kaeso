@@ -104,7 +104,14 @@ function entityLabel(o: Overview, dim: Ranked, { key, name: kpmrName }: UsageRow
     if (!model) return <Text tone="secondary">{o.modelName(key)}</Text>;
     const name = o.modelName(key, kpmrName);
     return (
-      <ModelLabel className="max-w-full" provider={provider} providerName={o.providers.name(provider)} model={model} {...(name !== model ? { name } : {})} />
+      <ModelLabel
+        className="max-w-full"
+        provider={provider}
+        providerName={o.providers.name(provider)}
+        model={model}
+        mark={!!provider}
+        {...(name !== model ? { name } : {})}
+      />
     );
   }
   if (dim === "project") {

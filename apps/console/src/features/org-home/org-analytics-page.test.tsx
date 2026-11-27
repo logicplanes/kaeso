@@ -420,16 +420,19 @@ describe("organization analytics", () => {
         usageRow("google/gemini-4-carbon", { requests: 20, name: "Gemini 4 Carbon" }),
         usageRow("acme/house-model", { requests: 10 }),
         usageRow("ovhcloud/gpt-oss-120b", { requests: 5, name: "gpt-oss-120b" }),
+        usageRow("/gpt-oss-20b", { requests: 3, name: "GPT OSS 20B" }),
       ]),
     });
     await renderApp(`/orgs/${ORG}/analytics?${PERIOD}`);
     const top = await screen.findByRole("list", { name: "Models by requests" });
-    await waitFor(() => expect(within(top).getAllByRole("listitem")).toHaveLength(4));
-    const [high, carbon, house, oss] = within(top).getAllByRole("listitem");
+    await waitFor(() => expect(within(top).getAllByRole("listitem")).toHaveLength(5));
+    const [high, carbon, house, oss, unnamedProvider] = within(top).getAllByRole("listitem");
     expect(high).toHaveTextContent(/Gemini 4 Carbon \(high\)gemini-4-carbon-high/);
     expect(carbon).toHaveTextContent(/Gemini 4 Carbon(?! \()gemini-4-carbon/);
     expect(house).toHaveTextContent(/^house-model/);
     expect(oss).toHaveTextContent(/^gpt-oss-120b(?!gpt)/);
+    expect(unnamedProvider).toHaveTextContent(/^GPT OSS 20Bgpt-oss-20b/);
+    expect(unnamedProvider?.querySelector("[role=img]")).toBeNull();
 
     await breakdown();
     fireEvent.click(screen.getByRole("radio", { name: "By model" }));
@@ -439,6 +442,8 @@ describe("organization analytics", () => {
       expect(within(table).getByText("gemini-4-carbon-high")).toBeInTheDocument();
       expect(within(table).getByText("house-model")).toBeInTheDocument();
       expect(within(table).getAllByText("gpt-oss-120b")).toHaveLength(1);
+      expect(within(table).getByText("GPT OSS 20B")).toBeInTheDocument();
+      expect(within(table).queryByText("No model")).not.toBeInTheDocument();
     });
   });
 

@@ -481,6 +481,8 @@ async fn usage_by_model_names_the_models_kpmr_knows_and_models_named_at_a_settin
         ("anthropic", "claude-opus-4-6-xhigh"),
         ("azure", "gpt-5.1-codex-max"),
         ("google", "made-up-model-high"),
+        ("alibaba", "qwen3-vl-235b-a22b-thinking"),
+        ("venice", "qwen3-vl-235b-a22b-thinking"),
     ]
     .map(|(provider, model)| kaeso_store::pg::limits::UsageRow {
         provider: provider.into(),
@@ -507,6 +509,10 @@ async fn usage_by_model_names_the_models_kpmr_knows_and_models_named_at_a_settin
             names,
             [
                 (
+                    "alibaba/qwen3-vl-235b-a22b-thinking",
+                    &json!("Qwen3-VL 235B-A22B (thinking)")
+                ),
+                (
                     "anthropic/claude-opus-4-6-thinking",
                     &json!("Claude Opus 4.6 (thinking)")
                 ),
@@ -518,6 +524,8 @@ async fn usage_by_model_names_the_models_kpmr_knows_and_models_named_at_a_settin
                     &json!("Gemini 4 Carbon (high)")
                 ),
                 ("google/made-up-model-high", &Value::Null),
+                // Venice lists the model without reasoning, whatever Alibaba says.
+                ("venice/qwen3-vl-235b-a22b-thinking", &Value::Null),
             ],
             "{scope}"
         );

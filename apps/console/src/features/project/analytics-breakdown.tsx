@@ -151,7 +151,14 @@ export function Breakdown({
       const name = modelName(r.key, r.name);
       if (!model) return <Text tone="secondary">{name}</Text>;
       return (
-        <ModelLabel className="max-w-full" provider={provider} providerName={providers.name(provider)} model={model} {...(name !== model ? { name } : {})} />
+        <ModelLabel
+          className="max-w-full"
+          provider={provider}
+          providerName={providers.name(provider)}
+          model={model}
+          mark={!!provider}
+          {...(name !== model ? { name } : {})}
+        />
       );
     }
     if (by === "key") return <Text truncate>{keyName(r.key)}</Text>;

@@ -1300,9 +1300,8 @@ async fn record_request(
     let mut priced = priced_as(model.clone()).await;
     let mut effort = r.reasoning_effort.as_deref().and_then(effort_level);
     let mut model = model;
-    // A model named at a setting, such as `gemini-3.8-flash-low`, is one model at that setting:
-    // logged under the model the catalogue or KPMR knows, when it takes the setting and nobody
-    // lists the whole name.
+    // Antigravity names one model per setting (`gemini-3.8-flash-low`); logged as is, each level
+    // would count as a model of its own, without a price.
     if priced.prices.is_none()
         && !r.unguessed
         && let Some((base, setting)) = IdSetting::split(&model)
