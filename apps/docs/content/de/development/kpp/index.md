@@ -165,7 +165,7 @@ Jedes KPP-Feld ist entweder semantisch oder ein Hinweis:
 | `reasoning.include_encrypted` | Hinweis | Steuert nur, ob verschlüsseltes Reasoning zurückkommt; nur OpenAI Responses ([lesbares Reasoning und Zusammenfassungen](reasoning.md#lesbares-reasoning-und-zusammenfassungen)). |
 | `sampling.max_output_tokens` | semantisch | |
 | `sampling.temperature`, `.top_p` | semantisch | Ihre Schreibweise (`1` oder `1.0`) ist Form und bleibt nur innerhalb des Dialekts erhalten ([Sampling](sampling.md)). |
-| `sampling.top_k` | semantisch | Nur Anthropic; anderswo `Unsupported` ([Sampling](sampling.md)). |
+| `sampling.top_k` | Hinweis | Geht an Anthropic, Gemini und Anbieter von Chat Completions, die ihn annehmen; anderswo weggelassen und in `kaeso-left-out` genannt ([Top K](sampling.md#top-k)). |
 | `sampling.stop` | semantisch | OpenAI Chat Completions nimmt höchstens vier; OpenAI Responses hat keine und gibt `Unsupported` zurück ([Sampling](sampling.md)). |
 | `sampling.seed` | semantisch | Nur OpenAI Chat Completions; anderswo `Unsupported` ([Sampling](sampling.md)). |
 | `sampling.frequency_penalty`, `.presence_penalty` | semantisch | OpenAI Chat Completions und Gemini; anderswo `Unsupported`, außer `0`, das nichts verlangt und weggelassen wird ([neutrale Werte](sampling.md#neutrale-werte)). |

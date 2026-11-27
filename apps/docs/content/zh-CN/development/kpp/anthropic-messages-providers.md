@@ -13,7 +13,7 @@ nav: Messages 服务商
 
 | 设置 | 编码器的行为 | 为什么允许 |
 |---|---|---|
-| `refusing(fields)` | 拒绝设置了这些字段之一的请求，字段使用 Anthropic 中的名称：`top_k`、`stop_sequences`（按应用的写法命名，例如 Chat 应用的 `stop`），或 Anthropic 应用的某个顶层字段，例如 `container`：`` `top_k` is not supported by Example Cloud; remove it from the request. `` 在跨格式时可以省略的字段，例如 Claude Code 只清除思考内容的 `context_management`（[extras](cross-format.md#extras)），会被省略并在 `kaeso-left-out` 中注明；它的其他取值会被拒绝，并附上针对 Claude Code 的提示。 | 这些字段是语义字段，接受却不处理它们的服务商会悄悄丢弃它们。 |
+| `refusing(fields)` | 拒绝设置了这些字段之一的请求，字段使用 Anthropic 中的名称：`stop_sequences`（按应用的写法命名，例如 Chat 应用的 `stop`），或 Anthropic 应用的某个顶层字段，例如 `container`：`` `container` is not supported by Example Cloud; remove it from the request. `` 提示字段 `top_k` 会被省略，并按应用的写法在 `kaeso-left-out` 中注明（[top K](sampling.md#top-k)）。在跨格式时可以省略的字段，例如 Claude Code 只清除思考内容的 `context_management`（[extras](cross-format.md#extras)），会被省略并在 `kaeso-left-out` 中注明；它的其他取值会被拒绝，并附上针对 Claude Code 的提示。 | 这些字段是语义字段，接受却不处理它们的服务商会悄悄丢弃它们。 |
 | `sampling_fixed_at(values)` | 拒绝与服务商始终使用的采样值（`FixedValue`，以千分之一为单位）不同的 `temperature` 或 `top_p`；该值本身按原样发送。 | 服务商忽略该字段，因此只有它自己的值会被遵守。 |
 | `auto_tool_choice_only()` | 拒绝任何格式中不为 `auto` 的 `tool_choice`。 | 无论应用要求什么，服务商都会自己选择工具。 |
 | `with_video(media_types)` | 把 `Block::Video` 作为 `video` 块发送；其他媒体类型的 base64 来源为 `Unsupported`。 | 只有在文档中写明该块的服务商才会收到它。 |
@@ -51,8 +51,8 @@ QwenCloud 的 Messages API 以 DashScope 的错误体 `{"request_id", "code", "m
 | 服务商 | 设置 | 来源 |
 |---|---|---|
 | Amazon Bedrock（`amazon-bedrock`） | 拒绝 `mcp_servers` 和 `container` | Anthropic 关于 bedrock-runtime 的 [Claude on Amazon Bedrock](https://platform.claude.com/docs/en/build-with-claude/claude-on-amazon-bedrock-legacy) 页面，2026-11-14 阅读，其中列出 MCP 连接器和 Agent Skills 不受支持 |
-| DeepSeek（`deepseek`） | 拒绝 `top_k`、`container` 和 `mcp_servers`；`without_custom_tool_type()`, `forced_tool_without_thinking()` | DeepSeek 的 [Anthropic API](https://api-docs.deepseek.com/guides/anthropic_api) 页面，2026-11-27 阅读，其中将这三个字段列为被忽略，并说明客户端工具带 `type: "custom"` 会返回 422 |
-| MiniMax（`minimax`） | 拒绝 `top_k`、`stop_sequences`、`mcp_servers`、`container` 和 `context_management`；`sampling_fixed_at([("temperature", 1), ("top_p", 0.95)])`；`auto_tool_choice_only()`；`with_video(MINIMAX_VIDEO_MEDIA_TYPES)` | MiniMax 的 [Anthropic API 兼容性](https://platform.minimax.io/docs/api-reference/text-anthropic-api)页面（2026-11-08 阅读），其表格将 `temperature`、`top_p`、`top_k`、`stop_sequences`、`mcp_servers`、`context_management` 和 `container` 列为被忽略，说明 MiniMax 始终使用 1 的 `temperature` 和 0.95 的 `top_p`，并且 `tool_choice` 只支持 `auto` |
+| DeepSeek（`deepseek`） | 拒绝 `container` 和 `mcp_servers`，省略 `top_k`；`without_custom_tool_type()`, `forced_tool_without_thinking()` | DeepSeek 的 [Anthropic API](https://api-docs.deepseek.com/guides/anthropic_api) 页面，2026-11-27 阅读，其中将这三个字段列为被忽略，并说明客户端工具带 `type: "custom"` 会返回 422 |
+| MiniMax（`minimax`） | 拒绝 `stop_sequences`、`mcp_servers`、`container` 和 `context_management`，省略 `top_k`；`sampling_fixed_at([("temperature", 1), ("top_p", 0.95)])`；`auto_tool_choice_only()`；`with_video(MINIMAX_VIDEO_MEDIA_TYPES)` | MiniMax 的 [Anthropic API 兼容性](https://platform.minimax.io/docs/api-reference/text-anthropic-api)页面（2026-11-08 阅读），其表格将 `temperature`、`top_p`、`top_k`、`stop_sequences`、`mcp_servers`、`context_management` 和 `container` 列为被忽略，说明 MiniMax 始终使用 1 的 `temperature` 和 0.95 的 `top_p`，并且 `tool_choice` 只支持 `auto` |
 | Ollama Cloud（`ollama-cloud`） | `auto_tool_choice_only()` | Ollama 的 [Anthropic 兼容性](https://docs.ollama.com/api/anthropic-compatibility.md)页面，2026-11-25 阅读，其中将 `tool_choice` 列为不支持 |
 
 ## Amazon Bedrock

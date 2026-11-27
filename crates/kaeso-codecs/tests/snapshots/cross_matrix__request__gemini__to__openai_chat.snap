@@ -57,6 +57,95 @@ expression: outcomes
     },
     "path": "/v1/chat/completions"
   },
+  "gemini-cli-turn": {
+    "body": {
+      "messages": [
+        {
+          "content": "You are Gemini CLI, an autonomous CLI agent specializing in software engineering tasks. You are currently operating in **Default** mode. Your primary goal is to help users safely and effectively.",
+          "role": "system"
+        },
+        {
+          "content": [
+            {
+              "text": "<session_context>\nThis is the Gemini CLI. We are setting up the context for our chat.\nToday's date is Friday, November 27, 2026 (formatted according to the user's locale).\nMy operating system is: linux\nThe project's temporary directory is: /home/user/.gemini/tmp/project\n- **Workspace Directories:**\n  - /home/user/project\n- **Directory Structure:**\n\n/home/user/project/\n├───calc.py\n└───test_calc.py\n\n\n</session_context>",
+              "type": "text"
+            },
+            {
+              "text": "hi",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "temperature": 1.0,
+      "tools": [
+        {
+          "function": {
+            "description": "Manages your narrative flow. Include `title` and `summary` only when starting a new Chapter (logical phase) or shifting strategic intent.",
+            "name": "update_topic",
+            "parameters": {
+              "properties": {
+                "strategic_intent": {
+                  "description": "A mandatory one-sentence statement of your immediate intent.",
+                  "type": "string"
+                },
+                "summary": {
+                  "description": "(OPTIONAL) A detailed summary (5-10 sentences) covering both the work completed in the previous topic and the strategic intent of the new topic. This is required when transitioning between topics to maintain continuity.",
+                  "type": "string"
+                },
+                "title": {
+                  "description": "The title of the new topic or chapter.",
+                  "type": "string"
+                },
+                "wait_for_previous": {
+                  "description": "Set to true to wait for all previously requested tools in this turn to complete before starting. Set to false (or omit) to run in parallel. Use true when this tool depends on the output of previous tools.",
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "strategic_intent"
+              ],
+              "type": "object"
+            }
+          },
+          "type": "function"
+        },
+        {
+          "function": {
+            "description": "Reads and returns the content of a specified file. If the file is large, the content will be truncated. The tool's response will clearly indicate if truncation has occurred and will provide details on how to read more of the file using the 'start_line' and 'end_line' parameters. Handles text, images (PNG, JPG, GIF, WEBP, SVG, BMP), audio files (MP3, WAV, AIFF, AAC, OGG, FLAC), and PDF files. For text files, it can read specific line ranges.",
+            "name": "read_file",
+            "parameters": {
+              "properties": {
+                "end_line": {
+                  "description": "Optional: The 1-based line number to end reading at (inclusive).",
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "file_path": {
+                  "description": "The path to the file to read.",
+                  "type": "string"
+                },
+                "start_line": {
+                  "description": "Optional: The 1-based line number to start reading from.",
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "file_path"
+              ],
+              "type": "object"
+            }
+          },
+          "type": "function"
+        }
+      ],
+      "top_p": 0.95
+    },
+    "path": "/v1/chat/completions"
+  },
   "history-without-ids": {
     "body": {
       "messages": [
@@ -582,9 +671,27 @@ expression: outcomes
     "path": "/v1/chat/completions"
   },
   "system-instruction": {
-    "message": "`top_k` is not supported by OpenAI Chat Completions. Remove `top_k`, or route the request to an Anthropic model.",
-    "param": "top_k",
-    "unsupported": "top_k"
+    "body": {
+      "max_completion_tokens": 512,
+      "messages": [
+        {
+          "content": "You are a terse assistant. Answer in one sentence.",
+          "role": "system"
+        },
+        {
+          "content": "What is the capital of France?",
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "seed": 42,
+      "stop": [
+        "STOP"
+      ],
+      "temperature": 0.7,
+      "top_p": 0.95
+    },
+    "path": "/v1/chat/completions"
   },
   "text-simple": {
     "body": {

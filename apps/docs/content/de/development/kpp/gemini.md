@@ -56,7 +56,7 @@ Schema `GenerateContentRequest`.
 | `mode: ANY` mit einem Eintrag in `allowedFunctionNames` | `ToolChoice::Tool(name)` | |
 | `mode: VALIDATED`, `ANY` mit mehreren Namen, jede andere Kombination | `ToolChoice::Unknown` (roh) | Über Dialekte hinweg abgelehnt. |
 | `toolConfig.retrievalConfig`, `.includeServerSideToolInvocations` | Felder `toolConfig.*` | |
-| `generationConfig.temperature`, `.topP`, `.topK`, `.maxOutputTokens`, `.stopSequences`, `.seed`, `.presencePenalty`, `.frequencyPenalty` | `sampling.*` | Zahlen behalten ihre Schreibweise im Dialekt (Form `integers`). |
+| `generationConfig.temperature`, `.topP`, `.topK`, `.maxOutputTokens`, `.stopSequences`, `.seed`, `.presencePenalty`, `.frequencyPenalty` | `sampling.*` | Zahlen behalten ihre Schreibweise im Dialekt (Form `integers`). `topK` wird für ein Ziel ohne Top-k weggelassen ([Top K](sampling.md#top-k)). |
 | `generationConfig.candidateCount` | Form `candidate_count` | Über 1 → `Unsupported` beim Dekodieren, wie `n` bei Chat ([Sampling](sampling.md)). |
 | `responseMimeType: application/json` mit `responseJsonSchema` | `output = JsonSchema` | |
 | `responseMimeType: application/json` mit `responseSchema` | `output = JsonSchema` | Form `schema: "responseSchema"`; andere Dialekte bekommen es als JSON Schema ([Schemas](#schemas)). |

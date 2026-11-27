@@ -8,7 +8,8 @@ use serde_json::{Map, Value};
 
 use crate::codec::EgressCtx;
 use crate::cross::{
-    CHAT_ASSISTANT_BOOKKEEPING, OPENAI_CACHE_KEY, check_message_extras, is_chat_bookkeeping,
+    CHAT_ASSISTANT_BOOKKEEPING, OPENAI_CACHE_KEY, Setting, app_field, check_message_extras,
+    is_chat_bookkeeping,
 };
 use crate::openai_chat::ChatProfile;
 use crate::openai_responses::{InputItems, ReasoningReplay, history, namespaces, replay};
@@ -125,6 +126,7 @@ pub(crate) fn for_target<'a>(
     }
     neutral::left_out(&mut draft, target, ctx);
     inline_tools::for_foreign(&mut draft, target)?;
+    top_k_left_out(&mut draft, target, ctx);
     match target {
         DialectId::AnthropicMessages => {
             if ctx.messages_profile.forced_tool_without_thinking {
@@ -516,5 +518,33 @@ fn parallel_permission_left_out(d: &mut Draft<'_>, chat: &ChatProfile) {
     {
         d.edit().parallel_tool_calls = None;
         d.leave_out(PARALLEL_TOOL_CALLS.to_owned());
+    }
+}
+
+const TOP_K: &str = "top_k";
+
+// Gemini CLI sends `topK` with every request, with no switch per model, and Google itself
+// ignores it on its newest models (`GenerationConfig.topK`); a target without top-k sampling,
+// or a provider that ignores it, answers without it instead of refusing the app.
+fn top_k_left_out(d: &mut Draft<'_>, target: DialectId, ctx: &EgressCtx) {
+    if d.get().sampling.top_k.is_none() || takes_top_k(target, ctx) {
+        return;
+    }
+    let r = d.get();
+    let field = if crate::gemini::request::wrapped_count(r) {
+        "generateContentRequest.generationConfig.topK"
+    } else {
+        app_field(r, Setting::TopK, target)
+    };
+    d.edit().sampling.top_k = None;
+    d.leave_out(field.to_owned());
+}
+
+fn takes_top_k(target: DialectId, ctx: &EgressCtx) -> bool {
+    match target {
+        DialectId::AnthropicMessages => !ctx.messages_profile.refused_fields.contains(&TOP_K),
+        DialectId::OpenAiChat => ctx.chat_profile.request.top_k,
+        DialectId::OpenAiResponses | DialectId::BedrockConverse => false,
+        _ => true,
     }
 }
