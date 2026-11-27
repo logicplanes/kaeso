@@ -37,7 +37,7 @@ KPP, the Kaeso Provider Protocol, has a codec for each API format: OpenAI Chat C
 - **Tools.** Function tools, tool choice, parallel tool calls, tool calls and tool results. Images and files a tool returned reach a Chat Completions model in the user message after the results, because its tool messages hold only text ([media in tool results](../development/kpp/cross-format.md#media-in-tool-results)).
 - **Tool names and call ids.** When the target doesn't accept a name or id, Kaeso rewrites it in a fixed way and maps it back in the reply. Other characters become `_`, the name is cut to fit, and a hash of the original is added. OpenAI accepts up to 64 letters, digits, `_` and `-`, Anthropic up to 128.
 - **Structured output.** JSON schemas.
-- **Sampling.** Temperature, top P, maximum tokens and stop sequences, where the target has them. A value keeps its meaning but is written as the target writes it, so `1` can arrive as `1.0`.
+- **Sampling.** Temperature, top P, maximum tokens and stop sequences, where the target has them. A value keeps its meaning but is written as the target writes it, so `1` can arrive as `1.0`. For a model served through OpenAI Responses, such as Grok, Kaeso ends the reply itself at a stop sequence or at a limit below 16 tokens ([OpenAI Responses in the gateway](../development/kpp/sampling.md#openai-responses-in-the-gateway)).
 - **The end user's id.** Anthropic's `metadata.user_id` and OpenAI's `safety_identifier`. OpenAI takes at most 128 characters and asks for a hash of the user's id, so a longer Anthropic id, such as Claude Code's, reaches it as its SHA-256 hash, which the reply's `kaeso-adapted` header names.
 - **Reasoning.** Efforts and thinking budgets convert into each other ([reasoning](#reasoning)).
 - **Streams.** Kaeso translates them event by event into the app's format.
@@ -67,7 +67,7 @@ When a request crosses formats, Kaeso refuses these with an error that names the
 
 ### Requests to OpenAI Responses
 
-- `top_k`, `seed`, penalties other than 0 and stop sequences
+- `top_k` and penalties other than 0
 - text documents, document titles, context and citations
 - audio and video, and audio and image output
 
@@ -106,6 +106,7 @@ When the target has no place for them, Kaeso leaves out hints that don't change 
 - image detail and file names
 - Anthropic's `thinking.display`, and Anthropic context management that only clears earlier thinking
 - the error flag of a tool result, which OpenAI doesn't have; the result's text still says what failed
+- `seed` for a model served through OpenAI Responses, which has no field for it
 - settings sent at the value the API uses when they are absent, such as `frequency_penalty: 0`, `logprobs: false` or `store: false`, which chat apps such as NextChat send with every request; the reply's `kaeso-left-out` header names them ([neutral values](../development/kpp/sampling.md#neutral-values))
 
 Requests translated into Responses carry `store: false`, so OpenAI keeps nothing.

@@ -37,7 +37,7 @@ KPP, das Kaeso Provider Protocol, hat einen Codec für jedes API-Format: OpenAI 
 - **Tools.** Funktions-Tools, Tool-Auswahl, parallele Tool-Aufrufe, Tool-Aufrufe und Tool-Ergebnisse. Bilder und Dateien, die ein Tool zurückgegeben hat, erreichen ein Chat-Completions-Modell in der Benutzernachricht nach den Ergebnissen, weil seine Tool-Nachrichten nur Text enthalten ([Medien in Tool-Ergebnissen](../development/kpp/cross-format.md#medien-in-tool-ergebnissen)).
 - **Tool-Namen und Aufruf-IDs.** Nimmt das Ziel einen Namen oder eine ID nicht an, schreibt Kaeso sie auf feste Weise um und übersetzt sie in der Antwort zurück. Andere Zeichen werden zu `_`, der Name wird passend gekürzt, und ein Hash des Originals wird angehängt. OpenAI nimmt bis zu 64 Buchstaben, Ziffern, `_` und `-` an, Anthropic bis zu 128.
 - **Strukturierte Ausgabe.** JSON-Schemas.
-- **Sampling.** Temperatur, Top P, maximale Token und Stoppsequenzen, wo das Ziel sie hat. Ein Wert behält seine Bedeutung, wird aber so geschrieben, wie das Ziel ihn schreibt. `1` kann also als `1.0` ankommen.
+- **Sampling.** Temperatur, Top P, maximale Token und Stoppsequenzen, wo das Ziel sie hat. Ein Wert behält seine Bedeutung, wird aber so geschrieben, wie das Ziel ihn schreibt. `1` kann also als `1.0` ankommen. Bei einem Modell, das über OpenAI Responses bedient wird, etwa Grok, beendet Kaeso die Antwort selbst an einer Stoppsequenz oder an einem Limit unter 16 Token ([OpenAI Responses im Gateway](../development/kpp/sampling.md#openai-responses-im-gateway)).
 - **Die ID des Endnutzers.** `metadata.user_id` bei Anthropic und `safety_identifier` bei OpenAI. OpenAI nimmt höchstens 128 Zeichen an und bittet um einen Hash der Nutzer-ID, daher erreicht eine längere Anthropic-ID, etwa die von Claude Code, OpenAI als ihr SHA-256-Hash; der Header `kaeso-adapted` der Antwort nennt das.
 - **Reasoning.** Aufwandsstufen und Denk-Budgets werden ineinander umgerechnet ([Reasoning](#reasoning)).
 - **Streams.** Kaeso übersetzt sie Event für Event in das Format der App.
@@ -67,7 +67,7 @@ Wechselt eine Anfrage das Format, lehnt Kaeso Folgendes mit einem Fehler ab, der
 
 ### Anfragen an OpenAI Responses
 
-- `top_k`, `seed`, Penalties außer 0 und Stoppsequenzen
+- `top_k` und Penalties außer 0
 - Textdokumente, Dokumenttitel, Kontext und Zitate
 - Audio und Video sowie Audio- und Bildausgabe
 
@@ -106,6 +106,7 @@ Hat das Ziel keinen Platz für sie, lässt Kaeso Hinweise weg, die nicht ändern
 - Bilddetail und Dateinamen
 - `thinking.display` von Anthropic und Kontextverwaltung von Anthropic, die nur früheres Denken entfernt
 - das Fehler-Flag eines Tool-Ergebnisses, das OpenAI nicht kennt; der Text des Ergebnisses sagt weiterhin, was fehlschlug
+- `seed` für ein Modell, das über OpenAI Responses bedient wird, weil es dort kein Feld dafür gibt
 - Einstellungen mit dem Wert, den die API ohne sie verwendet, etwa `frequency_penalty: 0`, `logprobs: false` oder `store: false`, die Chat-Apps wie NextChat mit jeder Anfrage senden; der Header `kaeso-left-out` der Antwort nennt sie ([neutrale Werte](../development/kpp/sampling.md#neutrale-werte))
 
 Anfragen, die in Responses übersetzt werden, tragen `store: false`, sodass OpenAI nichts speichert.

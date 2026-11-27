@@ -1161,8 +1161,9 @@ pub const PROVIDERS: &[Provider] = &[
         decisions: &[],
         dialects: &[DialectId::OpenAiChat, DialectId::AnthropicMessages],
         // The Anthropic-compatible Messages API at `/anthropic/v1/messages`, every model, either auth
-        // header; it ignores `top_k`, `container` and `mcp_servers`, which are refused
-        // (https://api-docs.deepseek.com/guides/anthropic_api, read 2026-11-25).
+        // header; it ignores `top_k`, `container` and `mcp_servers`, which are refused, and
+        // answers `type: "custom"` on a client tool with 422
+        // (https://api-docs.deepseek.com/guides/anthropic_api, read 2026-11-27).
         native: &[NativeDialect::of(DialectId::AnthropicMessages).at("/anthropic/v1")],
         refused_key_messages: &[],
         context_window_messages: &[],
@@ -1179,6 +1180,7 @@ pub const PROVIDERS: &[Provider] = &[
         responses: ResponsesProfile::compatible("DeepSeek"),
         messages: MessagesProfile::compatible("DeepSeek")
             .refusing(&["top_k", "container", "mcp_servers"])
+            .without_custom_tool_type()
             .forced_tool_without_thinking(),
         gemini: GeminiProfile::GOOGLE_AI_STUDIO,
         account: None,

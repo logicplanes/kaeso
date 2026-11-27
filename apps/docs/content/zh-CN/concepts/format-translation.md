@@ -37,7 +37,7 @@ KPP（Kaeso Provider Protocol）为每种 API 格式都提供一个编解码器�
 - **工具。** 函数工具、工具选择、并行工具调用、工具调用和工具结果。工具返回的图像和文件会出现在结果之后的用户消息中到达 Chat Completions 模型，因为它的工具消息只包含文本（[工具结果中的媒体](../development/kpp/cross-format.md#工具结果中的媒体)）。
 - **工具名称和调用 ID。** 目标不接受某个名称或 ID 时，Kaeso 会以固定方式改写它，并在回复中映射回原值。其他字符变为 `_`，名称被截短以符合长度要求，并附加原值的哈希。OpenAI 接受最多 64 个由字母、数字、`_` 和 `-` 组成的字符，Anthropic 最多 128 个。
 - **结构化输出。** JSON schema。
-- **采样。** 温度、Top P、最大 Token 数和停止序列，前提是目标支持。值的含义不变，但会按目标的写法写出，因此 `1` 可能以 `1.0` 到达。
+- **采样。** 温度、Top P、最大 Token 数和停止序列，前提是目标支持。值的含义不变，但会按目标的写法写出，因此 `1` 可能以 `1.0` 到达。对于通过 OpenAI Responses 提供的模型（例如 Grok），Kaeso 会在停止序列处或低于 16 个 Token 的上限处自行结束回复（[网关中的 OpenAI Responses](../development/kpp/sampling.md#网关中的-openai-responses)）。
 - **最终用户的 ID。** Anthropic 的 `metadata.user_id` 和 OpenAI 的 `safety_identifier`。OpenAI 最多接受 128 个字符，并要求发送用户 ID 的哈希，因此更长的 Anthropic ID（例如 Claude Code 的 ID）会以 SHA-256 哈希发送给 OpenAI，回复的 `kaeso-adapted` 响应头会注明这一点。
 - **推理。** 推理强度和思考预算会相互转换（[推理](#推理)）。
 - **流。** Kaeso 会把流逐个事件转换为应用的格式。
@@ -67,7 +67,7 @@ KPP（Kaeso Provider Protocol）为每种 API 格式都提供一个编解码器�
 
 ### 发往 OpenAI Responses 的请求
 
-- `top_k`、`seed`、不为 0 的惩罚参数和停止序列
+- `top_k` 和不为 0 的惩罚参数
 - 文本文档、文档标题、上下文和引用
 - 音频和视频，以及音频和图像输出
 
@@ -106,6 +106,7 @@ KPP（Kaeso Provider Protocol）为每种 API 格式都提供一个编解码器�
 - 图像细节和文件名
 - Anthropic 的 `thinking.display`，以及只清除先前思考内容的 Anthropic 上下文管理
 - OpenAI 没有的工具结果错误标记；工具结果的文本仍会说明失败的内容
+- 通过 OpenAI Responses 提供的模型的 `seed`，因为那里没有对应字段
 - 取值就是 API 在没有该字段时所用值的设置，例如 `frequency_penalty: 0`、`logprobs: false` 或 `store: false`，NextChat 等聊天应用会在每个请求中发送它们；回复的 `kaeso-left-out` 响应头会列出它们（[中性值](../development/kpp/sampling.md#中性值)）
 
 转换为 Responses 的请求带有 `store: false`，因此 OpenAI 不会保存任何内容。

@@ -2427,6 +2427,20 @@ async fn attempt(
         }
         rec.outcome().egress = Some(plan.dialect);
     }
+    if plan.dialect == DialectId::OpenAiResponses
+        && let Request::Generate(g) = &mut req
+    {
+        let fit =
+            kaeso_core::catalogue::capability::fit_responses(g, ingress, &eff, output_cap.take());
+        output_cap = fit.cap;
+        plan.adapted.extend(fit.adapted);
+        plan.left_out.extend(fit.left_out);
+        if output_cap.is_some() {
+            g.stream = StreamMode::on(true);
+        }
+    }
+    // A reply Kaeso ends itself is read as a stream, so the provider stops when Kaeso does.
+    let streams_upstream = chatgpt.is_some() || output_cap.is_some();
 
     // Whether to keep reasoning follows what the app sent: Kaeso itself may send `store: false`.
     let carry = continuity::carry(state, caller.key_id, ingress, plan.dialect, &app_req)
@@ -2747,7 +2761,7 @@ async fn attempt(
     let sent_at = Instant::now();
     rec.sent_at = Some(sent_at);
     rec.outcome().overhead = Some(rec.own_time(sent_at));
-    let gathers = chatgpt.is_some() && !stream && kind == RequestKind::Generate;
+    let gathers = streams_upstream && !stream && kind == RequestKind::Generate;
     let deadline = tokio::time::Instant::now() + timeouts.request;
     let late = |_: tokio::time::error::Elapsed| {
         let e = UpstreamError::Timeout("request");
@@ -2789,7 +2803,7 @@ async fn attempt(
         sigv4,
         request: Outgoing::from(encoded),
         stream: match kind {
-            RequestKind::Generate => stream || chatgpt.is_some(),
+            RequestKind::Generate => stream || streams_upstream,
             RequestKind::Image | RequestKind::Transcription => !ectx.stream.is_off(),
             RequestKind::Speech => dispatch::reads_reply_as_stream(plan.dialect, &ectx),
             RequestKind::Decide => false,
@@ -2893,7 +2907,7 @@ async fn attempt(
     };
 
     match resp.body {
-        ResponseBody::Stream(chunks) if success && chatgpt.is_some() && !stream => {
+        ResponseBody::Stream(chunks) if success && streams_upstream && !stream => {
             let decoder =
                 dispatch::stream_decoder(plan.dialect, &ectx).map_err(fail(Stage::Reply))?;
             let max = state.config.body_limits.provider_response.as_usize();
