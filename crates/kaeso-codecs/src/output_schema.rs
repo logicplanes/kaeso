@@ -105,6 +105,7 @@ impl Place {
 
 impl Rewrite {
     fn node(&mut self, node: &mut Map<String, Value>, place: &Place) -> Result<(), Unfit> {
+        self.flatten_all_of(node, place)?;
         self.merge_all_of(node, place)?;
         // Claude closes every object, so one that lists no keys could only ever be `{}`.
         if !place.at.is_empty()
@@ -194,6 +195,31 @@ impl Rewrite {
             r.strip_prefix(&target)
                 .is_some_and(|rest| rest.is_empty() || rest.starts_with('/'))
         })
+    }
+
+    // Claude answers a nested `allOf` with 400 "nested allOf is not supported" (checked 2026-11-27).
+    fn flatten_all_of(
+        &mut self,
+        node: &mut Map<String, Value>,
+        place: &Place,
+    ) -> Result<(), Unfit> {
+        let nested = matches!(node.get("allOf"), Some(Value::Array(parts))
+            if parts.iter().any(|p| matches!(p, Value::Object(o) if all_of_only(o))));
+        if !nested {
+            return Ok(());
+        }
+        if self.points_into(&place.field("allOf").ptr) {
+            return Err(Unfit::ObjectBranches(within(&place.at, "allOf")));
+        }
+        if let Some(Value::Array(parts)) = node.remove("allOf") {
+            let mut flat = Vec::with_capacity(parts.len());
+            for part in parts {
+                flat_parts(part, &mut flat);
+            }
+            node.insert("allOf".to_owned(), Value::Array(flat));
+            self.changed = true;
+        }
+        Ok(())
     }
 
     // `allOf` applies every branch to one value, so closing each object branch on its own would
@@ -369,37 +395,30 @@ fn join_object(node: &mut Map<String, Value>, branch: Map<String, Value>) {
 
 // A property several branches define takes all of their schemas in one flat `allOf`.
 fn combine(own: &mut Value, schema: Value) {
-    if all_of_only(own).is_none() {
-        let first = std::mem::take(own);
-        *own = serde_json::json!({ "allOf": [first] });
-    }
-    let added = match schema {
-        Value::Object(mut s) if all_of_only_map(&s) => match s.remove("allOf") {
-            Some(Value::Array(parts)) => parts,
-            _ => Vec::new(),
-        },
-        other => vec![other],
+    let mut parts = Vec::new();
+    flat_parts(std::mem::take(own), &mut parts);
+    flat_parts(schema, &mut parts);
+    *own = match parts.len() {
+        1 => parts.pop().unwrap_or_default(),
+        _ => serde_json::json!({ "allOf": parts }),
     };
-    if let Some(all) = all_of_only(own) {
-        for part in added {
-            if !all.contains(&part) {
-                all.push(part);
+}
+
+fn flat_parts(schema: Value, out: &mut Vec<Value>) {
+    match schema {
+        Value::Object(mut s) if all_of_only(&s) => {
+            if let Some(Value::Array(parts)) = s.remove("allOf") {
+                for part in parts {
+                    flat_parts(part, out);
+                }
             }
         }
+        other if !out.contains(&other) => out.push(other),
+        _ => {}
     }
 }
 
-fn all_of_only(schema: &mut Value) -> Option<&mut Vec<Value>> {
-    match schema {
-        Value::Object(o) if all_of_only_map(o) => match o.get_mut("allOf") {
-            Some(Value::Array(all)) => Some(all),
-            _ => None,
-        },
-        _ => None,
-    }
-}
-
-fn all_of_only_map(o: &Map<String, Value>) -> bool {
+fn all_of_only(o: &Map<String, Value>) -> bool {
     o.len() == 1 && matches!(o.get("allOf"), Some(Value::Array(_)))
 }
 
@@ -969,6 +988,18 @@ mod tests {
         };
         assert_eq!(joined(&list, &one), Some(3));
         assert_eq!(joined(&one, &list), Some(3));
+
+        let nested = with_schema(json!({"name": "x", "schema": {
+            "type": "object", "properties": {"zip": {"allOf": [
+                {"allOf": [{"type": "string"}, {"maxLength": 12}]}, {"maxLength": 10}
+            ]}}
+        }}));
+        let (schema, _) = claude_schema(&nested);
+        assert_eq!(
+            schema["properties"]["zip"],
+            json!({"allOf": [{"type": "string"}, {"maxLength": 12}, {"maxLength": 10}]}),
+            "Claude refuses a nested allOf"
+        );
     }
 
     #[test]
