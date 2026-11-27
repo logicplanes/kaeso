@@ -580,6 +580,14 @@ async fn resolve(
             ),
         ));
     }
+    if eff.transcribes_only {
+        return Err(at_line(
+            n,
+            format!(
+                "The model `{model}` is a transcription model; send it to `/v1/audio/transcriptions`."
+            ),
+        ));
+    }
     let credential = crate::services::credentials::for_provider(
         state,
         OrgId::from_uuid(caller.org_id),

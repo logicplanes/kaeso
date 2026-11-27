@@ -70,7 +70,7 @@ console.log(transcript.text);
 - **流式。** OpenAI、Mistral、Z.ai 和 MiniMax 以流式返回转写稿；Kaeso 把它们写成 `transcript.text.delta` 和 `transcript.text.done`。其他服务商一次性返回，应用会得到一个增量和结束事件。
 - **翻译**只发给有翻译端点的服务商：OpenAI、Groq 和 Together AI。
 - **QwenCloud 的**文件转写模型（`*-filetrans`）只回复异步任务，其流式和实时模型只接受 WebSocket 连接，因此会被拒绝。
-- **转写模型只做转写。** [KPMR](../kpmr/index.md) 将类型标为 `transcription` 的模型，或 KPMR 未列出、接受音频而不接受文本的模型，会在发送任何内容之前拒绝 Chat、Responses、Messages、Gemini 和令牌计数请求：“The model `grok-voice-transcribe-2.0` is a transcription model; send it to `/v1/audio/transcriptions`.”
+- **转写模型只做转写。** 这是指 [KPMR](../kpmr/index.md) 将类型标为 `transcription` 的模型，或 KPMR 未列出、接受音频而不接受文本并返回文本的模型。这类模型会在发送任何内容之前拒绝 Chat、Responses、Messages 和令牌计数请求：“The model `grok-voice-transcribe-2.0` is a transcription model; send it to `/v1/audio/transcriptions`.” Gemini 的转写模型例外：Google 在 `generateContent` 上提供它们，因此 Gemini 应用在那里调用它们。
 
 ## 服务商
 

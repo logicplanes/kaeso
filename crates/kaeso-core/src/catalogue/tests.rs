@@ -1630,6 +1630,13 @@ fn transcription_models_refuse_every_generation_request_before_it_is_sent() {
         ));
         prepare(&mut transcribe, DialectId::OpenAiTranscriptions, &voice)
             .unwrap_or_else(|u| panic!("{model} transcribes: {}", u.message));
+        let mut count = Request::CountTokens(user(vec![Block::text("hi")]));
+        let u = prepare(&mut count, DialectId::AnthropicMessages, &voice).unwrap_err();
+        assert!(
+            u.message.contains("is a transcription model"),
+            "{model}: {}",
+            u.message
+        );
     }
     assert!(!eff_of("openai", "gpt-4o").transcribes_only);
 
@@ -1640,6 +1647,23 @@ fn transcription_models_refuse_every_generation_request_before_it_is_sent() {
     assert!(eff(&custom).transcribes_only);
     custom.overrides.input_modalities = Some(vec!["audio".into(), "text".into()]);
     assert!(!eff(&custom).transcribes_only);
+    custom.overrides.input_modalities = Some(vec!["audio".into()]);
+    custom.overrides.output_modalities = Some(vec!["audio".into()]);
+    assert!(
+        !eff(&custom).transcribes_only,
+        "speech to speech is no transcription"
+    );
+
+    // Gemini serves its transcription models at `generateContent`, where Kaeso sends their
+    // transcriptions too, so a Gemini app's call there goes through.
+    let gemini = eff_of("google", "gemini-3.5-transcribe");
+    assert!(gemini.transcribes_only);
+    let mut listen = Request::Generate(user(vec![Block::audio(kaeso_kpp::Source::bytes(
+        "audio/wav",
+        b"RIFF".to_vec(),
+    ))]));
+    prepare(&mut listen, DialectId::Gemini, &gemini)
+        .unwrap_or_else(|u| panic!("Gemini transcribes at generateContent: {}", u.message));
 }
 
 #[test]

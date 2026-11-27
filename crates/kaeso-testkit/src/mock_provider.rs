@@ -1710,7 +1710,6 @@ fn is_unserved(path: &str, body: &[u8]) -> bool {
     named.is_some_and(|m| m.starts_with(UNSERVED_PREFIX))
 }
 
-// A field of a multipart upload, as a transcription names its model.
 fn form_field(body: &[u8], name: &str) -> Option<String> {
     let text = String::from_utf8_lossy(body);
     let start = format!("name=\"{name}\"\r\n\r\n");

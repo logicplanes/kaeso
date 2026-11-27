@@ -1128,9 +1128,7 @@ pub struct Effective {
     pub model_id: String,
     pub fields: Fields,
     pub dialect: DialectId,
-    /// The model only turns speech into text, served by a transcription API and not by the
-    /// provider's generation API: KPMR's `transcription` kind, or for a model KPMR doesn't list,
-    /// one that takes audio and no text.
+    // KPMR's `transcription` kind, or for a model KPMR doesn't list, audio in and only text out.
     pub transcribes_only: bool,
 }
 
@@ -1233,9 +1231,14 @@ pub fn effective(
         .flatten();
     let transcribes_only = match kpmr {
         Some(m) => m.kind.as_deref() == Some(TRANSCRIPTION),
-        None => fields.input_modalities.as_ref().is_some_and(|inputs| {
-            inputs.iter().any(|m| m == "audio") && !inputs.iter().any(|m| m == "text")
-        }),
+        None => {
+            let has = |list: &Option<Vec<String>>, m: &str| {
+                list.as_ref().is_some_and(|l| l.iter().any(|x| x == m))
+            };
+            has(&fields.input_modalities, "audio")
+                && !has(&fields.input_modalities, "text")
+                && has(&fields.output_modalities, "text")
+        }
     };
     Some(Effective {
         id: entry.id,
@@ -1247,7 +1250,6 @@ pub fn effective(
     })
 }
 
-/// KPMR's kind of a model that turns speech into text.
 const TRANSCRIPTION: &str = "transcription";
 
 pub fn preview(provider: &str, model: &str, snapshot: &kpmr::Catalogue) -> Option<Fields> {

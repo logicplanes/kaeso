@@ -49,7 +49,9 @@ enum Listing {
 
 type ListingKey = (String, DialectId, KeyInUse);
 
-type ProbeKey = (String, DialectId, KeyInUse, String);
+// Whether the model only transcribes is part of the key: a project's own settings can make the
+// same model id one, and an unlisted transcription model is no verdict for the others.
+type ProbeKey = (String, DialectId, KeyInUse, String, bool);
 
 #[derive(Debug)]
 pub struct Listings(Cache<ListingKey, Arc<Listing>>);
@@ -107,6 +109,7 @@ impl Recall {
             eff.dialect,
             credential.key(),
             eff.model_id.clone(),
+            eff.transcribes_only,
         );
         self.probes
             .get_with(key, probe(state, credential, eff, &self.listings))
@@ -400,9 +403,8 @@ pub async fn probe(
     }
 }
 
-// A model the provider's listing leaves out. A transcription model may still be served: the
-// listing is of the generation endpoint's models, and xAI's names its image and video models but
-// none of its voice models (`fixtures/openai_chat/providers/xai/models/list-recorded.json`).
+// A listing of the generation endpoint's models may leave out transcription models it serves:
+// xAI's names none of its voice models (`providers/xai/models/list-recorded.json`).
 fn unlisted(eff: &Effective) -> Probe {
     if eff.transcribes_only {
         return Probe::Inconclusive(KppError::provider(

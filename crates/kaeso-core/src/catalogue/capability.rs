@@ -179,6 +179,7 @@ pub fn prepare(
         }
         Request::CountTokens(g) => {
             refuse_decision_only(eff)?;
+            refuse_transcriber(eff)?;
             let Some(dialect) = eff.provider.count_tokens_for(eff.dialect) else {
                 return Err(refuse(
                     "token counting",
@@ -516,10 +517,14 @@ fn refuse_decision_only(eff: &Effective) -> Result<(), Unsupported> {
     ))
 }
 
-// A transcription model isn't served on the provider's generation endpoint; a request there
-// would come back as a 404 for a model the project has.
+// A transcription model isn't served on the provider's generation endpoint, and a request there
+// comes back as a 404. Gemini's are, at `generateContent`, where Kaeso sends transcriptions too.
 fn refuse_transcriber(eff: &Effective) -> Result<(), Unsupported> {
-    if !eff.transcribes_only {
+    let at_generation = eff
+        .provider
+        .transcriptions(&eff.model_id)
+        .is_some_and(|t| t.dialect == eff.dialect);
+    if !eff.transcribes_only || at_generation {
         return Ok(());
     }
     Err(refuse(
