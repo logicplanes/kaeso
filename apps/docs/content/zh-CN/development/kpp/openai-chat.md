@@ -108,7 +108,6 @@ nav: OpenAI Chat
 - 图像或其他输出模态、没有声音的音频输出、OpenAI 未列出的声音，以及没有音频输出时的音频设置；
 - 助手消息之外的拒绝和引用；
 - 其他方言的引用（通过 `check_foreign`）；
-- `top_k`（[采样参数](sampling.md)）；
 - 未知的推理模式，以及规范枚举之外的推理强度。
 
 预算和 `disabled` 会被转换（[推理强度与预算](reasoning.md#推理强度与预算)）。以下提示字段则会被丢弃：
@@ -118,7 +117,8 @@ nav: OpenAI Chat
 - `ToolResult::is_error`，其信息由错误内容承载（[工具错误](cross-format.md#工具错误)）；
 - 其他方言的 `reasoning.summary` 和 `reasoning.include_encrypted`，因为 Chat 没有请求它们的字段（[可读推理与摘要](reasoning.md#可读推理与摘要)）；
 - OpenAI Responses 的 `web_search` 工具和 `web_search_call` 项，因为 Chat 没有托管网页搜索（[省略的工具](cross-format.md#省略的工具)）；
-- OpenAI Responses 的 `text.verbosity`，除非服务商配置接受 `verbosity`（[条件条目](cross-format.md#条件条目)）。
+- OpenAI Responses 的 `text.verbosity`，除非服务商配置接受 `verbosity`（[条件条目](cross-format.md#条件条目)）；
+- Chat 没有的 `top_k`，除非服务商配置接受它（`with_top_k()`）；会在 `kaeso-left-out` 中注明（[top K](sampling.md#top-k)）。
 
 OpenAI Responses 的 `custom_tool_call` 和 `local_shell_call` 项及其输出会变为工具调用和 `tool` 消息（[Codex 工具历史](cross-format.md#codex-工具历史)）。
 
