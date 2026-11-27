@@ -87,7 +87,7 @@ Diese lehnt Kaeso in jedem Format ab, auch wenn das Format gleich bleibt:
 
 ### Token-Zählung
 
-`/v1/messages/count_tokens`, `/v1/responses/input_tokens` und `:countTokens` von Gemini fragen den Anbieter des Modells nach der Zahl. Hat der Anbieter keinen Endpunkt zum Zählen von Token, lehnt Kaeso die Anfrage mit 400 ab, und die Meldung sagt, dass das Modell keine Token zählen kann. Kaeso schätzt die Zahl nicht, denn eine Schätzung trifft nie genau die Zahl des Anbieters.
+`/v1/messages/count_tokens`, `/v1/responses/input_tokens` und `:countTokens` von Gemini fragen den Anbieter des Modells nach der Zahl. Hat der Anbieter keinen Endpunkt zum Zählen von Token, prüft Kaeso die Anfrage so, wie das Modell sie nehmen würde, und antwortet im Format der App mit einer eigenen Schätzung, ohne etwas zu senden. Die Antwort trägt `kaeso-adapted: count_estimated`, denn eine Schätzung trifft nie genau die Zahl des Anbieters. Wie die Schätzung Text, Tools, Bilder und Dokumente zählt, steht unter [Token-Zählung](providers.md). Audio und Video, deren Länge Kaeso nicht liest, lassen sich nicht schätzen: Eine solche Anfrage bekommt 400.
 
 ## Prompt-Caching
 

@@ -1,12 +1,114 @@
 use kaeso_kpp::{
-    Block, BlockDelta, BlockStop, Delta, ResponseDelta, ResponseStop, StopReason, StreamEvent,
-    Usage,
+    Block, BlockDelta, BlockStop, Delta, GenerateRequest, OutputSpec, ResponseDelta,
+    ResponseStop, Source, StopReason, StreamEvent, ToolDef, Usage,
 };
 
 pub const BYTES_PER_TOKEN: u64 = 4;
 
 pub fn tokens_of_bytes(bytes: u64) -> u64 {
     bytes.div_ceil(BYTES_PER_TOKEN)
+}
+
+/// What an image, and each page of a document, counts in [`input_tokens`]: about what Claude
+/// counts for an image of 1.15 megapixels, which is more than other providers count for most
+/// images (https://platform.claude.com/docs/en/build-with-claude/vision#calculate-image-costs).
+pub const MEDIA_TOKENS: u64 = 1_600;
+
+// The tokens a tokenizer writes around each message and each tool: its role, separators and
+// the tool's framing.
+const FRAMING_TOKENS: u64 = 4;
+
+/// Kaeso's estimate of a request's input tokens, for a model whose provider can't count them.
+/// Text counts by its length: a token for every four bytes of ASCII, which is close for English
+/// and code, and one for every other character, which is close for Chinese, Japanese and
+/// Korean. Tool definitions, tool calls and schemas count as their JSON text. Each image and
+/// each page of a PDF counts [`MEDIA_TOKENS`], as does a document Kaeso can't read the pages of.
+/// Each message and each tool adds a few tokens of framing. `None` when the request holds audio
+/// or video, whose length Kaeso doesn't read.
+pub fn input_tokens(g: &GenerateRequest) -> Option<u64> {
+    let mut n = blocks_tokens(&g.system)?;
+    for m in &g.messages {
+        n = n
+            .saturating_add(FRAMING_TOKENS)
+            .saturating_add(blocks_tokens(&m.blocks)?);
+    }
+    for tool in &g.tools {
+        let t = match tool {
+            ToolDef::Function(f) => text_tokens(&f.name)
+                .saturating_add(f.description.as_deref().map_or(0, text_tokens))
+                .saturating_add(f.parameters.as_ref().map_or(0, |p| text_tokens(p.get()))),
+            ToolDef::Unknown(raw) => text_tokens(raw.raw.get()),
+            _ => 0,
+        };
+        n = n.saturating_add(FRAMING_TOKENS).saturating_add(t);
+    }
+    if let OutputSpec::JsonSchema(spec) = &g.output {
+        n = n.saturating_add(text_tokens(spec.schema.get()));
+    }
+    Some(n)
+}
+
+fn blocks_tokens(blocks: &[Block]) -> Option<u64> {
+    blocks
+        .iter()
+        .try_fold(0u64, |n, b| Some(n.saturating_add(block_tokens(b)?)))
+}
+
+fn block_tokens(block: &Block) -> Option<u64> {
+    Some(match block {
+        Block::Text(t) => text_tokens(&t.text),
+        Block::Refusal(r) => text_tokens(&r.text),
+        Block::Image(_) => MEDIA_TOKENS,
+        Block::Document(d) => {
+            let title = d.title.as_deref().map_or(0, text_tokens);
+            title.saturating_add(match &d.source {
+                Source::Text(t) => text_tokens(&t.data),
+                Source::Base64(b) if b.media_type.starts_with("text/") => {
+                    text_tokens(&String::from_utf8_lossy(&b.data))
+                }
+                Source::Base64(b) => pdf_pages(&b.data).saturating_mul(MEDIA_TOKENS),
+                _ => MEDIA_TOKENS,
+            })
+        }
+        Block::ToolCall(c) => text_tokens(&c.name).saturating_add(text_tokens(c.arguments.get())),
+        Block::ToolResult(r) => blocks_tokens(&r.content)?,
+        Block::Reasoning(r) => r
+            .summary
+            .iter()
+            .chain(&r.text)
+            .fold(0u64, |n, s| n.saturating_add(text_tokens(s))),
+        Block::Unknown(raw) => text_tokens(raw.raw.get()),
+        Block::Json(j) => text_tokens(j.data.get()),
+        Block::Audio(_) | Block::Video(_) => return None,
+        _ => return None,
+    })
+}
+
+fn text_tokens(text: &str) -> u64 {
+    let ascii = text.bytes().filter(u8::is_ascii).count();
+    let other = text.chars().filter(|c| !c.is_ascii()).count();
+    tokens_of_bytes(u64::try_from(ascii).unwrap_or(u64::MAX))
+        .saturating_add(u64::try_from(other).unwrap_or(u64::MAX))
+}
+
+// A PDF's pages, by its page objects (`/Type /Page`, not `/Pages`); at least one, so a file
+// that isn't a PDF counts as one page.
+fn pdf_pages(data: &[u8]) -> u64 {
+    let mut pages = 0u64;
+    let mut rest = data;
+    while let Some(at) = find(rest, b"/Type") {
+        let after = rest.get(at.saturating_add(5)..).unwrap_or_default();
+        let name = after.trim_ascii_start();
+        if name.starts_with(b"/Page") && !name.get(5..).unwrap_or_default().starts_with(b"s") {
+            pages = pages.saturating_add(1);
+        }
+        rest = after;
+    }
+    pages.max(1)
+}
+
+fn find(haystack: &[u8], needle: &[u8]) -> Option<usize> {
+    haystack.windows(needle.len()).position(|w| w == needle)
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -594,5 +696,51 @@ mod tests {
         assert_eq!(text_of(&out), "これで");
         assert_eq!(begun("これで終", "終わり"), "終".len());
         assert_eq!(begun("abc", "終わり"), 0);
+
+    fn user(blocks: Vec<Block>) -> kaeso_kpp::GenerateRequest {
+        kaeso_kpp::GenerateRequest::new("m")
+            .with_message(kaeso_kpp::Message::new(kaeso_kpp::Role::User, blocks))
+    }
+
+    #[test]
+    fn a_request_is_estimated_from_its_text_media_and_tools() {
+        let text = user(vec![Block::text("Hello, world!")]);
+        assert_eq!(input_tokens(&text), Some(4 + 4), "13 bytes and a message");
+        let chinese = user(vec![Block::text("你好，世界")]);
+        assert_eq!(input_tokens(&chinese), Some(5 + 4), "a token per character");
+
+        let mut tools = user(vec![Block::text("Hi")]);
+        let mut f = kaeso_kpp::FunctionTool::new(
+            "get_weather",
+            Some(kaeso_kpp::RawJson::from_string(r#"{"type":"object"}"#.to_owned()).unwrap()),
+        );
+        f.description = Some("Weather".into());
+        tools.tools.push(ToolDef::Function(f));
+        // "Hi" 1 + message 4, then the tool: name 3 + description 2 + schema 5 + framing 4.
+        assert_eq!(input_tokens(&tools), Some(5 + 14));
+
+        let image = user(vec![Block::image(Source::Url("https://example.com/a.png".into()))]);
+        assert_eq!(input_tokens(&image), Some(MEDIA_TOKENS + 4));
+        let pdf = b"%PDF-1.7 1 0 obj << /Type /Pages /Kids [2 0 R 3 0 R 4 0 R] >> \
+            2 0 obj << /Type /Page >> 3 0 obj <</Type/Page>> 4 0 obj << /Type  /Page /Parent 1 0 R >>";
+        let doc = user(vec![Block::Document(kaeso_kpp::DocumentBlock::new(Source::bytes(
+            "application/pdf",
+            pdf.to_vec(),
+        )))]);
+        assert_eq!(input_tokens(&doc), Some(3 * MEDIA_TOKENS + 4), "three pages");
+        let plain = user(vec![Block::Document(kaeso_kpp::DocumentBlock::new(Source::text(
+            "text/plain",
+            "abcdefgh",
+        )))]);
+        assert_eq!(input_tokens(&plain), Some(2 + 4));
+
+        let audio = user(vec![Block::audio(Source::Url("https://example.com/a.mp3".into()))]);
+        assert_eq!(input_tokens(&audio), None, "audio has no length Kaeso reads");
+        let mut nested = user(vec![Block::tool_result("call_1", vec![Block::audio(Source::Url(
+            "https://example.com/a.mp3".into(),
+        ))], false)]);
+        assert_eq!(input_tokens(&nested), None);
+        nested.messages[0].blocks = vec![Block::tool_result("call_1", vec![Block::text("12345678")], false)];
+        assert_eq!(input_tokens(&nested), Some(2 + 4));
     }
 }

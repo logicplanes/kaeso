@@ -94,6 +94,10 @@ fn forced_choice(choice: Option<&ToolChoice>, ingress: DialectId) -> Option<&'st
     }
 }
 
+/// What `kaeso-adapted` names for a count Kaeso estimated because the model's provider can't
+/// count.
+pub const COUNT_ESTIMATED: &str = "count_estimated";
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Plan {
     pub dialect: DialectId,
@@ -102,6 +106,9 @@ pub struct Plan {
     pub reasoning: Option<bool>,
     pub left_out: Vec<String>,
     pub adapted: Vec<String>,
+    /// Kaeso's estimate of a count request's input tokens, for a model whose provider can't
+    /// count them: the gateway answers with it and sends nothing.
+    pub estimated_count: Option<u64>,
 }
 
 pub fn prepare(
@@ -152,6 +159,7 @@ pub fn prepare(
                 reasoning: None,
                 left_out: Vec::new(),
                 adapted: Vec::new(),
+                estimated_count: None,
             })
         }
         Request::Generate(g) => {
@@ -179,17 +187,12 @@ pub fn prepare(
                 reasoning: eff.fields.reasoning,
                 left_out,
                 adapted,
+                estimated_count: None,
             })
         }
         Request::CountTokens(g) => {
             refuse_decision_only(eff)?;
-            let Some(dialect) = eff.provider.count_tokens_for(eff.dialect) else {
-                return Err(refuse(
-                    "token counting",
-                    Some("model"),
-                    format!("The model `{name}` cannot count tokens."),
-                ));
-            };
+            let counts = eff.provider.count_tokens_for(eff.dialect);
             let mut adapted = adaptive_to_budget(g, ingress, eff);
             adapted.extend(budget_to_adaptive(g, ingress, eff));
             let left_out = leave_out_reasoning(g, ingress, eff);
@@ -197,13 +200,31 @@ pub fn prepare(
             adapted.extend(lowest_effort_for_off(g, ingress, eff));
             adapted.extend(fit_end_user(g, ingress, eff));
             check_generation(g, ingress, eff)?;
+            // A provider without a count endpoint gets nothing: the request is checked as the
+            // model would take it, and Kaeso answers with its own estimate.
+            let estimated_count = match counts {
+                Some(_) => None,
+                None => Some(crate::estimate::input_tokens(g).ok_or_else(|| {
+                    refuse(
+                        "token counting",
+                        Some("model"),
+                        format!(
+                            "The model `{name}` cannot count tokens, and Kaeso can't estimate the tokens of audio or video."
+                        ),
+                    )
+                })?),
+            };
+            if estimated_count.is_some() {
+                adapted.push(COUNT_ESTIMATED.to_owned());
+            }
             Ok(Plan {
-                dialect,
+                dialect: counts.unwrap_or(eff.dialect),
                 adaptive_thinking,
                 thinking_binding,
                 reasoning: eff.fields.reasoning,
                 left_out,
                 adapted,
+                estimated_count,
             })
         }
         Request::Image(r) => {
@@ -252,6 +273,7 @@ pub fn prepare(
                 reasoning: None,
                 left_out: Vec::new(),
                 adapted: Vec::new(),
+                estimated_count: None,
             })
         }
         Request::Speech(r) => {
@@ -549,6 +571,7 @@ fn media_plan(dialect: DialectId) -> Plan {
         reasoning: None,
         left_out: Vec::new(),
         adapted: Vec::new(),
+        estimated_count: None,
     }
 }
 

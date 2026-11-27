@@ -2480,6 +2480,24 @@ async fn attempt(
         return Err(fail(Stage::Unserved(eff.model_id.clone()))(unserved(&eff)));
     }
 
+    // The model's provider can't count tokens: Kaeso answers with its estimate, named in
+    // `kaeso-adapted`, and sends nothing.
+    if let Some(tokens) = plan.estimated_count {
+        let reply = Reply::CountTokens(kaeso_kpp::CountTokensResponse::new(tokens));
+        let out = dispatch::encode_response(
+            ingress,
+            &reply,
+            &EncodeCtx::for_request(Arc::clone(&app_req)),
+        )
+        .map_err(fail(Stage::Reply))?;
+        let mut served = served.clone();
+        served.left_out.clone_from(&plan.left_out);
+        served.adapted.clone_from(&plan.adapted);
+        return answer_with(state, rec, reply, out, None, &served)
+            .await
+            .map_err(fail(Stage::Reply));
+    }
+
     let carry = caller.key_id.filter(|_| {
         continuity::applies(state, ingress, plan.dialect) && kind == RequestKind::Generate
     });

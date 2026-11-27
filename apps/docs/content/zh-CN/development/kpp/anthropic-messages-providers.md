@@ -63,7 +63,7 @@ QwenCloud 的 Messages API 以 DashScope 的错误体 `{"request_id", "code", "m
 |---|---|---|
 | `bedrock-runtime.{region}.amazonaws.com` 上 `/anthropic/v1/messages` 的 Messages | `EgressCtx::api_root` | `/anthropic/v1` 取代 `/v1`；密钥作为 `x-api-key` 发送，`model` 保留在请求体中，`anthropic-version` 为 `2023-06-01`，与 AWS 的 `curl` 示例一致。 |
 | 以 403 `permission_error` 返回的被拒绝密钥 | `KppError` | 按类型为 `PermissionDenied`；网关把 Bedrock 针对格式错误、未签名和未知密钥的消息视为被拒绝的密钥（`errors/recorded-*-key*`）。 |
-| `POST /v1/messages/count_tokens` | — | bedrock-runtime 只在 `/model/{modelId}/count-tokens` 以自有格式计数，Anthropic 格式的计数只在 bedrock-mantle 上提供（见[计算 Token](https://docs.aws.amazon.com/bedrock/latest/userguide/count-tokens.html)），因此 Kaeso 拒绝 Token 计数。 |
+| `POST /v1/messages/count_tokens` | — | bedrock-runtime 只在 `/model/{modelId}/count-tokens` 以自有格式计数，Anthropic 格式的计数只在 bedrock-mantle 上提供（见[计算 Token](https://docs.aws.amazon.com/bedrock/latest/userguide/count-tokens.html)），因此 Kaeso 自行估算 Token 计数。 |
 | 流 | Anthropic 的 SSE | AWS 对此路径的流只说明 Anthropic SDK 可以使用它，没有更多描述。 |
 
 ## Vercel
@@ -75,7 +75,7 @@ QwenCloud 的 Messages API 以 DashScope 的错误体 `{"request_id", "code", "m
 | 回复中的 `provider_metadata` | extras | Anthropic 应用原样收到。 |
 | 没有 `signature` 的 `thinking` 块 | `Block::Reasoning` | Anthropic 应用按 Vercel 发送的样子收到。 |
 | OpenAI 封装中的错误 | `KppError` | 见[错误](anthropic-messages.md#错误)。 |
-| `POST /v1/messages/count_tokens` | — | Vercel 只对 Claude 模型精确计数，其余为估算，因此 Kaeso 拒绝所有 Vercel 模型的 Token 计数。 |
+| `POST /v1/messages/count_tokens` | — | Vercel 只对 Claude 模型精确计数，其余为估算，因此 Kaeso 对所有 Vercel 模型都自行估算 Token 计数。 |
 
 ## Z.ai
 
@@ -85,7 +85,7 @@ QwenCloud 的 Messages API 以 DashScope 的错误体 `{"request_id", "code", "m
 |---|---|---|
 | OpenAI 封装中作为 `error.type` 的 Z.ai 数字错误码（`errors/recorded-invalid-api-key`） | `KppError` 类别 | Z.ai 对某些错误码使用的状态码在 Anthropic 的表中含义不同，例如余额不足时返回 429。以错误码为准：`1113`、`1309` 和 `1314` → `Billing`；`1211` → `NotFound`；`1220`、`1311` 和 `1315` → `PermissionDenied`；`1261` → `ContextTooLong`；`1301` → `ContentFiltered`；`1305` → `Overloaded`；`1000`、`1001`、`1003` 和 `1005` → `Authentication`。其他错误码按状态码处理。 |
 | `{"code", "msg", "success": false}`，也可能带 HTTP 200（`errors/list-invalid-api-key`） | `KppError` | Z.ai 的平台封装，它在检查密钥之前用它回应自己不提供的路径，其中包括 `GET /v1/models`。`decode_models` 和 `decode_model` 无论状态码如何都把它读作错误，因此用错误的密钥检查模型时会报告密钥被拒绝。 |
-| `POST /v1/messages/count_tokens` | — | 没有相关说明；Kaeso 在发送任何内容之前拒绝 Z.ai 模型的 Token 计数。 |
+| `POST /v1/messages/count_tokens` | — | 没有相关说明；Kaeso 不发送任何内容，自行估算 Z.ai 模型的 Token 计数。 |
 ## MiniMax
 
 来源：MiniMax 的 [Anthropic API 兼容性](https://platform.minimax.io/docs/api-reference/text-anthropic-api)页面及其 [OpenAPI 文档](https://platform.minimax.io/docs/api-reference/text/api/openapi-chat-anthropic.json)（2026-11-08 阅读）、`fixtures/anthropic_messages/providers/minimax/` 中取自该文档的示例，以及用一个虚构密钥实时录制的一个错误。Messages 是 MiniMax 的 `generation` 方言，地址为 `https://api.minimax.io/anthropic`，用于 `MiniMax-M3` 和 `MiniMax-M3.1-Flash`。
@@ -97,7 +97,7 @@ QwenCloud 的 Messages API 以 DashScope 的错误体 `{"request_id", "code", "m
 | `message_start` 中的 `service_tier` | extras | `streams/image-url-stream`。 |
 | `video` 内容块（请求） | `Block::Video` | MiniMax 自己的块；只有 MiniMax 的配置会发送它，Anthropic 会拒绝它。 |
 | `thinking.type` `adaptive` 和 `output_config.effort`（请求） | `reasoning` | MiniMax 只说明了 `adaptive` 和 `disabled`；`MiniMax-M3.1-Flash` 以 400 拒绝 `disabled`，该错误会送达应用。 |
-| `POST /v1/messages/count_tokens` | — | MiniMax 文档中的响应把计数放在 `usage` 下而不是顶层，因此 Kaeso 在发送任何内容之前拒绝 MiniMax 模型的 Token 计数。 |
+| `POST /v1/messages/count_tokens` | — | MiniMax 文档中的响应把计数放在 `usage` 下而不是顶层，因此 Kaeso 不发送任何内容，自行估算 MiniMax 模型的 Token 计数。 |
 | `GET /v1/models`、`GET /v1/models/{model_id}` | `ModelList`、`ModelInfo` | Anthropic 的结构（`models/list-documented`、`models/retrieve-documented`）；错误的密钥会得到 401，因此**检查可用性**能发现它。 |
 | 错误 | `KppError` | Anthropic 的结构，带有 MiniMax 自己的 `request_id`（`errors/recorded-invalid-api-key`）。 |
 
@@ -111,7 +111,7 @@ QwenCloud 的 Messages API 以 DashScope 的错误体 `{"request_id", "code", "m
 | 用量为零的 `message_start`，计数在唯一的 `message_delta` 中 | `Usage` | 与兼容性页面描述一致；`cache_creation_input_tokens` 始终为 0。 |
 | `document` 块、来源为文件的 `image` 块、服务器工具、思考时强制的 `tool_choice` 或预填充 | 发送 | Fireworks 返回 400，该错误会到达应用。 |
 | 带 `request_id` 的 Anthropic 封装中的错误（`errors/recorded-invalid-api-key`） | `KppError` | 未知的模型或路径会得到 Fireworks 自己的 `{"error": {"code": …}}` 正文，按 OpenAI 的格式读取。 |
-| `POST /v1/messages/count_tokens` | — | Fireworks 返回 404，因此 Kaeso 在发送任何内容之前拒绝Token 计数。 |
+| `POST /v1/messages/count_tokens` | — | Fireworks 返回 404，因此 Kaeso 不发送任何内容，自行估算 Token 计数。 |
 
 ## SambaNova
 

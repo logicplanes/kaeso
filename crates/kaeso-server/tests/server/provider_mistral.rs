@@ -660,33 +660,31 @@ async fn embeddings_come_back_as_base64_when_the_app_asks_although_mistral_sends
 }
 
 #[tokio::test]
-async fn token_counts_for_mistral_models_are_refused_in_the_apps_format() {
+async fn token_counts_for_mistral_models_are_kaesos_estimate_in_the_apps_format() {
+    // Mistral has no count endpoint: Kaeso estimates, says so, and sends nothing.
     let env = env().await;
     env.mock.clear();
-    let expected = format!("The model `{SMALL}` cannot count tokens.");
     let r = call(
         &env,
         "/v1/messages/count_tokens",
         Some(&env.key),
         true,
-        Some(json!({ "model": SMALL, "messages": [{ "role": "user", "content": "Hi" }] })),
+        Some(json!({ "model": SMALL, "messages": [{ "role": "user", "content": "Name one planet." }] })),
     )
     .await;
-    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
-    assert_eq!(r.json()["error"]["message"], expected);
+    assert_eq!(r.estimated_count(), 4 + 4, "16 bytes of text and one message");
+    assert_eq!(r.json(), json!({ "input_tokens": 8 }));
+    assert_eq!(r.header("kaeso-provider"), Some("mistral"));
     let r = call(
         &env,
         "/v1/responses/input_tokens",
         Some(&env.key),
         false,
-        Some(json!({ "model": SMALL, "input": "Hi" })),
+        Some(json!({ "model": SMALL, "input": "Name one planet." })),
     )
     .await;
-    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
-    assert_eq!(
-        (&r.json()["error"]["message"], &r.json()["error"]["param"]),
-        (&json!(expected), &json!("model"))
-    );
+    assert_eq!(r.estimated_count(), 8);
+    assert_eq!(r.json()["object"], "response.input_tokens");
     assert!(env.mock.received().is_empty());
 }
 

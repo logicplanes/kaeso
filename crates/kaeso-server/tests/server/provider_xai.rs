@@ -315,7 +315,7 @@ async fn a_wrong_xai_key_is_reported_as_a_refused_key() {
 }
 
 #[tokio::test]
-async fn token_counts_for_xai_models_are_refused_in_each_apps_format() {
+async fn token_counts_for_xai_models_are_estimated_in_each_apps_format() {
     let env = env().await;
     env.mock.clear();
     let r = call(
@@ -329,14 +329,7 @@ async fn token_counts_for_xai_models_are_refused_in_each_apps_format() {
         })),
     )
     .await;
-    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
-    let body = r.json();
-    assert_eq!(body["type"], "error");
-    assert_eq!(body["error"]["type"], "invalid_request_error");
-    assert_eq!(
-        body["error"]["message"],
-        "The model `grok-4.3` cannot count tokens."
-    );
+    assert!(r.estimated_count() > 0);
 
     let r = call(
         &env,
@@ -346,13 +339,7 @@ async fn token_counts_for_xai_models_are_refused_in_each_apps_format() {
         Some(json!({ "model": "grok-4.3", "input": "Hello" })),
     )
     .await;
-    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
-    let error = &r.json()["error"];
-    assert_eq!(error["type"], "invalid_request_error");
-    assert_eq!(
-        error["message"],
-        "The model `grok-4.3` cannot count tokens."
-    );
+    assert!(r.estimated_count() > 0);
     assert!(env.mock.received().is_empty());
 }
 

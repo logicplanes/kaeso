@@ -245,6 +245,22 @@ impl Answer {
     pub fn header(&self, name: &str) -> Option<&str> {
         self.headers.get(name).and_then(|v| v.to_str().ok())
     }
+    /// The count of an answer Kaeso estimated because the model's provider can't count tokens,
+    /// from the format's field, after checking that `kaeso-adapted` says so.
+    pub fn estimated_count(&self) -> u64 {
+        assert_eq!(self.status, StatusCode::OK, "{}", self.text());
+        assert!(
+            self.header("kaeso-adapted")
+                .is_some_and(|a| a.split(',').any(|x| x.trim() == "count_estimated")),
+            "{:?}",
+            self.headers
+        );
+        let v = self.json();
+        v["input_tokens"]
+            .as_u64()
+            .or_else(|| v["totalTokens"].as_u64())
+            .unwrap_or_else(|| panic!("no count in {v}"))
+    }
 }
 
 pub async fn call(

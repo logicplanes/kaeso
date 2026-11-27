@@ -1716,7 +1716,7 @@ fn duties_fill_what_kpp_cannot_know() {
 }
 
 #[test]
-fn a_provider_without_token_counting_refuses_count_requests_and_still_generates() {
+fn a_provider_without_token_counting_gets_kaesos_estimate_of_count_requests() {
     let mut e = eff(&entry("openai", "gpt-4o"));
     e.provider = ProviderRef::BuiltIn(Box::leak(Box::new(provider::Provider {
         count_tokens: None,
@@ -1726,15 +1726,38 @@ fn a_provider_without_token_counting_refuses_count_requests_and_still_generates(
         DialectId::AnthropicMessages,
         DialectId::OpenAiChat,
         DialectId::OpenAiResponses,
+        DialectId::Gemini,
     ] {
-        let mut count = Request::CountTokens(user(vec![Block::text("hi")]));
-        let u = prepare(&mut count, ingress, &e).unwrap_err();
-        assert_eq!(u.capability, "token counting");
-        assert_eq!(u.param, Some("model"));
-        assert_eq!(u.message, "The model `gpt-4o` cannot count tokens.");
+        let mut count = Request::CountTokens(user(vec![Block::text("Hello, world!")]));
+        let plan = prepare(&mut count, ingress, &e).unwrap();
+        assert_eq!(plan.estimated_count, Some(8), "{ingress}");
+        assert!(plan.adapted.iter().any(|a| a == "count_estimated"), "{ingress}");
         let mut generate = Request::Generate(user(vec![Block::text("hi")]));
-        assert!(prepare(&mut generate, ingress, &e).is_ok(), "{ingress}");
+        let plan = prepare(&mut generate, ingress, &e).unwrap();
+        assert_eq!(plan.estimated_count, None);
+        // The request is checked as the model would take it first.
+        let mut audio = Request::CountTokens(user(vec![Block::audio(Source::Url(
+            "https://example.com/a.mp3".into(),
+        ))]));
+        let u = prepare(&mut audio, ingress, &e).unwrap_err();
+        assert_eq!(u.message, "The model `gpt-4o` does not accept audio.", "{ingress}");
     }
+    // Mistral counts no tokens, and Voxtral listens.
+    let speaks = eff(&entry("mistral", "voxtral-small-2507"));
+    let mut audio = Request::CountTokens(user(vec![Block::audio(Source::Url(
+        "https://example.com/a.mp3".into(),
+    ))]));
+    let u = prepare(&mut audio, DialectId::OpenAiChat, &speaks).unwrap_err();
+    assert_eq!(u.capability, "token counting");
+    assert_eq!(u.param, Some("model"));
+    assert_eq!(
+        u.message,
+        "The model `voxtral-small-2507` cannot count tokens, and Kaeso can't estimate the tokens of audio or video."
+    );
+    let mut counted = Request::CountTokens(user(vec![Block::text("hi")]));
+    let plan = prepare(&mut counted, DialectId::OpenAiResponses, &eff(&entry("openai", "gpt-4o")))
+        .unwrap();
+    assert_eq!(plan.estimated_count, None, "OpenAI counts itself");
 }
 
 fn refusal(
@@ -2138,8 +2161,8 @@ fn a_custom_provider_counts_tokens_only_when_it_names_its_generation_dialect() {
     e.custom = true;
     let e = effective(&e, &snapshot(), &org).unwrap();
     let mut count = Request::CountTokens(user(vec![Block::text("hi")]));
-    let u = prepare(&mut count, DialectId::AnthropicMessages, &e).unwrap_err();
-    assert_eq!(u.message, "The model `claude-x` cannot count tokens.");
+    let plan = prepare(&mut count, DialectId::AnthropicMessages, &e).unwrap();
+    assert_eq!(plan.estimated_count, Some(5), "Kaeso estimates instead");
     assert!(
         Fields {
             egress_dialect: Some(DialectId::OpenAiChat),

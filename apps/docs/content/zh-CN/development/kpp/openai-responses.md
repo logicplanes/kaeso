@@ -393,5 +393,5 @@ order: 7
 | `response.reasoning.delta` 和 `response.reasoning.done` 事件 | 与 `response.reasoning_text.delta` 和 `response.reasoning_text.done` 相同 | Vercel 对 OpenAI 推理文本事件的命名，字段相同；Responses 应用原样收到 Vercel 发送的事件，其他方言得到推理内容（`streams/recorded-reasoning-stream`）。 |
 | 带 `content`（`reasoning_text`）、不带 `encrypted_content` 的 `reasoning` 项 | 与 OpenAI 相同 | 请求要求时，OpenAI 的模型会加上 `encrypted_content`（`responses/recorded-gpt-reasoning-encrypted`）。 |
 | 回复中的 `provider_metadata`、`usage.input_tokens_details.cache_write_tokens` | extras、用量的 `raw` | 与 Chat Completions 相同。 |
-| `POST /v1/responses/input_tokens` | — | Vercel 返回 404，Kaeso 在发送任何内容之前就拒绝为 Vercel 模型计数 Token。 |
+| `POST /v1/responses/input_tokens` | — | Vercel 返回 404，Kaeso 不发送任何内容，自行估算 Vercel 模型的 Token 数。 |
 | 错误 | `KppError` | OpenAI 的错误结构，带 Vercel 自己的 `type`，与 [Chat Completions](openai-chat-gateways.md#vercel) 相同。 |

@@ -87,7 +87,7 @@ KPP（Kaeso Provider Protocol）为每种 API 格式都提供一个编解码器�
 
 ### Token 计数
 
-`/v1/messages/count_tokens`、`/v1/responses/input_tokens` 和 Gemini 的 `:countTokens` 会向模型的服务商请求计数。如果服务商没有计数 Token 的端点，Kaeso 会以 400 拒绝请求，并在消息中说明该模型无法计数 Token。Kaeso 不会估算计数，因为估算值永远无法与服务商自己的结果一致。
+`/v1/messages/count_tokens`、`/v1/responses/input_tokens` 和 Gemini 的 `:countTokens` 会向模型的服务商请求计数。如果服务商没有计数 Token 的端点，Kaeso 会按模型接收请求的方式检查请求，然后不发送任何内容，以应用的格式返回自己的估算。由于估算值永远无法与服务商自己的计数完全一致，响应带有 `kaeso-adapted: count_estimated`。估算如何计算文本、工具、图片和文档，见 [Token 计数](providers.md)。Kaeso 不读取音频和视频的时长，因此无法估算：这类请求返回 400。
 
 ## 提示词缓存
 

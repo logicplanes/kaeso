@@ -221,4 +221,4 @@ Sources: Upstage's [API reference](https://console.upstage.ai/api/chat) and its 
 | 401 `invalid_api_key` with `param: ""` | `KppError` | A refused key; a missing key gets the same body (`errors/recorded-invalid-api-key`). |
 | `GET /v1/models` | `ModelList` | Needs a key and isn't in the reference, so the listing is partial; there is no `GET /v1/models/{model}` (404 `text/plain`). |
 
-Upstage also serves a stateless Responses API and an Anthropic Messages endpoint, which Kaeso doesn't use: Responses and Anthropic apps reach Upstage through Chat Completions. It has no token count, so Kaeso refuses token counts. Its embeddings use OpenAI's form ([OpenAI Embeddings](openai-embeddings.md#upstage)); its document parsing and OCR APIs aren't OpenAI formats.
+Upstage also serves a stateless Responses API and an Anthropic Messages endpoint, which Kaeso doesn't use: Responses and Anthropic apps reach Upstage through Chat Completions. It has no token count, so Kaeso estimates token counts itself. Its embeddings use OpenAI's form ([OpenAI Embeddings](openai-embeddings.md#upstage)); its document parsing and OCR APIs aren't OpenAI formats.
