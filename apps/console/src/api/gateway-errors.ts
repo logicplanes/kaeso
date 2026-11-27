@@ -950,6 +950,9 @@ const messages = (): Rule[] => [
     t("errors.model.decisionOnly", "The model `{model}` is a decision model; send it to `/v1/decisions` or `/v1/systemone`.", v),
   ),
   rule("errors.model.rerankOnly", (v) => t("errors.model.rerankOnly", "The model `{model}` is a rerank model; send it to `/v1/rerank`.", v)),
+  rule("errors.model.transcriptionOnly", (v) =>
+    t("errors.model.transcriptionOnly", "The model `{model}` is a transcription model; send it to `/v1/audio/transcriptions`.", v),
+  ),
   rule("errors.model.generationNoRerank", (v) =>
     t("errors.model.generationNoRerank", "The model `{model}` is a generation model; it cannot rerank documents.", v),
   ),

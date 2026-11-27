@@ -1059,3 +1059,102 @@ async fn groq_json_and_text_transcriptions_are_priced_by_groqs_own_length() {
     assert_eq!(o.media.as_ref().unwrap().input_ms, 3320);
     assert!(kaeso_server::services::usage::cost_known(&o));
 }
+
+async fn availability_of(env: &Env, model: &str) -> Value {
+    let r = env
+        .app
+        .get(
+            &format!("/orgs/{}/projects/{}/models", env.owner.org_id, env.project),
+            &env.owner.cookie,
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    r.body["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|m| m["model_id"] == model)
+        .unwrap()["availability"]
+        .clone()
+}
+
+#[tokio::test]
+async fn a_transcription_model_refuses_chat_and_keeps_its_availability() {
+    let env = env().await;
+    let refused =
+        "The model `whisper-1` is a transcription model; send it to `/v1/audio/transcriptions`.";
+    for (path, anthropic, body) in [
+        (
+            "/v1/chat/completions",
+            false,
+            json!({ "model": "whisper-1", "messages": [{ "role": "user", "content": "hi" }] }),
+        ),
+        (
+            "/v1/responses",
+            false,
+            json!({ "model": "whisper-1", "input": "hi" }),
+        ),
+        (
+            "/v1/messages",
+            true,
+            json!({ "model": "whisper-1", "max_tokens": 16, "messages": [{ "role": "user", "content": "hi" }] }),
+        ),
+    ] {
+        let r = call(&env, path, Some(&env.key), anthropic, Some(body)).await;
+        assert_eq!(r.status, StatusCode::BAD_REQUEST, "{path}: {}", r.text());
+        assert_eq!(r.json()["error"]["message"], refused, "{path}");
+    }
+    assert!(
+        env.mock.received().is_empty(),
+        "nothing reached the provider"
+    );
+    assert_eq!(availability_of(&env, "whisper-1").await, "unchecked");
+    let r = upload(&env, "/v1/audio/transcriptions", &[("model", "whisper-1")]).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+
+    // A transcription model the provider's listing leaves out may still be served: its 404
+    // reaches the app as sent and the model keeps its availability.
+    let r = env
+        .app
+        .post(
+            &format!("/orgs/{}/projects/{}/models", env.owner.org_id, env.project),
+            json!({
+                "provider": "openai", "model_id": "unserved-ears", "custom": true,
+                "overrides": { "input_modalities": ["audio"], "output_modalities": ["text"] }
+            }),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
+    for _ in 0..2 {
+        let r = upload(
+            &env,
+            "/v1/audio/transcriptions",
+            &[("model", "unserved-ears")],
+        )
+        .await;
+        assert_eq!(r.status, StatusCode::NOT_FOUND, "{}", r.text());
+        assert!(
+            !r.json()["error"]["message"]
+                .as_str()
+                .unwrap()
+                .contains("does not serve"),
+            "{}",
+            r.text()
+        );
+    }
+    assert!(
+        env.mock
+            .received()
+            .iter()
+            .any(|r| r.method == "GET" && r.path == "/v1/models/unserved-ears"),
+        "the model was checked"
+    );
+    assert_eq!(availability_of(&env, "unserved-ears").await, "unchecked");
+    let listed = call(&env, "/v1/models?limit=100", Some(&env.key), false, None).await;
+    assert!(
+        listed.text().contains("\"unserved-ears\""),
+        "{}",
+        listed.text()
+    );
+}

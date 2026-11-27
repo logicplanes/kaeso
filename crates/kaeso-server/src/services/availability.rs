@@ -351,7 +351,7 @@ pub async fn probe(
         return match listing.as_ref() {
             Listing::Complete(ids) => match eff.provider.listing().serves(ids, &eff.model_id) {
                 Some(true) => Probe::Served,
-                Some(false) => Probe::Unserved,
+                Some(false) => unlisted(eff),
                 None => Probe::Inconclusive(KppError::provider(
                     "the account's model listing leaves the model out, and it may still serve it",
                 )),
@@ -392,12 +392,24 @@ pub async fn probe(
     match listing.as_ref() {
         Listing::Complete(ids) => match eff.provider.listing().serves(ids, eff.sent_model()) {
             Some(true) => Probe::Served,
-            Some(false) => Probe::Unserved,
+            Some(false) => unlisted(eff),
             None => Probe::Inconclusive(not_found),
         },
         Listing::Failed(e) if e.kind == ErrorKind::Authentication => Probe::Failed(e.clone()),
         Listing::Unfinished | Listing::Failed(_) => Probe::Inconclusive(not_found),
     }
+}
+
+// A model the provider's listing leaves out. A transcription model may still be served: the
+// listing is of the generation endpoint's models, and xAI's names its image and video models but
+// none of its voice models (`fixtures/openai_chat/providers/xai/models/list-recorded.json`).
+fn unlisted(eff: &Effective) -> Probe {
+    if eff.transcribes_only {
+        return Probe::Inconclusive(KppError::provider(
+            "the provider's model listing leaves out transcription models it may still serve",
+        ));
+    }
+    Probe::Unserved
 }
 
 // A listing of the models a provider offers rather than the ones the key can call, such as

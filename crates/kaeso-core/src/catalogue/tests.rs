@@ -1596,6 +1596,53 @@ fn eff_of(provider: &str, model: &str) -> Effective {
 }
 
 #[test]
+fn transcription_models_refuse_every_generation_request_before_it_is_sent() {
+    for (provider, model) in [
+        ("xai", "grok-voice-transcribe-2.0"),
+        ("openai", "whisper-1"),
+        ("openai", "gpt-4o-transcribe"),
+    ] {
+        let voice = eff_of(provider, model);
+        assert!(voice.transcribes_only, "{model}");
+        for ingress in [
+            DialectId::OpenAiChat,
+            DialectId::OpenAiResponses,
+            DialectId::AnthropicMessages,
+            DialectId::Gemini,
+        ] {
+            let mut chat = Request::Generate(user(vec![Block::text("hi")]));
+            let u = prepare(&mut chat, ingress, &voice).unwrap_err();
+            assert_eq!(
+                u.message,
+                format!(
+                    "The model `{model}` is a transcription model; send it to `/v1/audio/transcriptions`."
+                ),
+                "{model} from {ingress:?}"
+            );
+            assert_eq!(u.param, Some("model"));
+        }
+        let mut transcribe = Request::Transcription(kaeso_kpp::TranscriptionRequest::new(
+            model,
+            kaeso_kpp::TranscriptionOperation::Transcribe,
+            kaeso_kpp::AudioInput::new(kaeso_kpp::Source::Url(
+                "https://example.com/memo.wav".into(),
+            )),
+        ));
+        prepare(&mut transcribe, DialectId::OpenAiTranscriptions, &voice)
+            .unwrap_or_else(|u| panic!("{model} transcribes: {}", u.message));
+    }
+    assert!(!eff_of("openai", "gpt-4o").transcribes_only);
+
+    let mut custom = entry("openai", "ears-1");
+    custom.custom = true;
+    custom.overrides.input_modalities = Some(vec!["audio".into()]);
+    custom.overrides.output_modalities = Some(vec!["text".into()]);
+    assert!(eff(&custom).transcribes_only);
+    custom.overrides.input_modalities = Some(vec!["audio".into(), "text".into()]);
+    assert!(!eff(&custom).transcribes_only);
+}
+
+#[test]
 fn cohere_models_speak_chat_completions_and_think_at_none_or_high() {
     let command = eff(&entry("cohere", "command-a-03-2025"));
     assert_eq!(command.dialect, DialectId::OpenAiChat);

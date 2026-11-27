@@ -516,6 +516,22 @@ fn refuse_decision_only(eff: &Effective) -> Result<(), Unsupported> {
     ))
 }
 
+// A transcription model isn't served on the provider's generation endpoint; a request there
+// would come back as a 404 for a model the project has.
+fn refuse_transcriber(eff: &Effective) -> Result<(), Unsupported> {
+    if !eff.transcribes_only {
+        return Ok(());
+    }
+    Err(refuse(
+        "generation",
+        Some("model"),
+        format!(
+            "The model `{}` is a transcription model; send it to `/v1/audio/transcriptions`.",
+            eff.model_id
+        ),
+    ))
+}
+
 fn refuse_reranker(eff: &Effective) -> Result<(), Unsupported> {
     if !eff.is_rerank() {
         return Ok(());
@@ -884,6 +900,7 @@ fn check_generation(
 ) -> Result<(), Unsupported> {
     let name = eff.model_id.as_str();
     refuse_reranker(eff)?;
+    refuse_transcriber(eff)?;
     if eff.is_embeddings() {
         return Err(refuse(
             "generation",

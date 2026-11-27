@@ -70,6 +70,7 @@ Keys, model resolution with aliases and routes, limits and budgets, request logs
 - **Streaming.** OpenAI, Mistral, Z.ai and MiniMax stream their transcripts; Kaeso writes them as `transcript.text.delta` and `transcript.text.done`. Other providers answer whole, and the app gets one delta and the end.
 - **Translations** go only to providers with a translations endpoint: OpenAI, Groq and Together AI.
 - **QwenCloud's** file transcription models (`*-filetrans`) answer only asynchronous tasks, and its streaming and real-time models only WebSocket connections, so they are refused.
+- **Transcription models only transcribe.** A model whose [KPMR](../kpmr/index.md) kind is `transcription`, or a model KPMR doesn't list that takes audio and no text, refuses chat, Responses, Messages, Gemini and token count requests before anything is sent: "The model `grok-voice-transcribe-2.0` is a transcription model; send it to `/v1/audio/transcriptions`.".
 
 ## Providers
 

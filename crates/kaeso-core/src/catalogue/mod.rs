@@ -1128,6 +1128,10 @@ pub struct Effective {
     pub model_id: String,
     pub fields: Fields,
     pub dialect: DialectId,
+    /// The model only turns speech into text, served by a transcription API and not by the
+    /// provider's generation API: KPMR's `transcription` kind, or for a model KPMR doesn't list,
+    /// one that takes audio and no text.
+    pub transcribes_only: bool,
 }
 
 impl Effective {
@@ -1220,14 +1224,31 @@ pub fn effective(
     let dialect = fields
         .egress_dialect
         .unwrap_or_else(|| provider.dialect_for(entry.called()));
+    let kpmr = (provider.custom().is_none() && !entry.custom)
+        .then(|| {
+            snapshot
+                .model(&entry.provider, entry.called())
+                .or(entry.last_known.as_ref())
+        })
+        .flatten();
+    let transcribes_only = match kpmr {
+        Some(m) => m.kind.as_deref() == Some(TRANSCRIPTION),
+        None => fields.input_modalities.as_ref().is_some_and(|inputs| {
+            inputs.iter().any(|m| m == "audio") && !inputs.iter().any(|m| m == "text")
+        }),
+    };
     Some(Effective {
         id: entry.id,
         provider,
         model_id: entry.called().to_owned(),
         fields,
         dialect,
+        transcribes_only,
     })
 }
+
+/// KPMR's kind of a model that turns speech into text.
+const TRANSCRIPTION: &str = "transcription";
 
 pub fn preview(provider: &str, model: &str, snapshot: &kpmr::Catalogue) -> Option<Fields> {
     snapshot.model(provider, model).map(Fields::from_kpmr)
