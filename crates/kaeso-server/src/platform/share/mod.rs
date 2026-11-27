@@ -782,15 +782,6 @@ async fn viewer_is_member(state: &AppState, ctx: &Ctx, org: Uuid) -> ApiResult<b
     Ok(seen_by(state, user.uuid(), org, None).await?.is_some())
 }
 
-fn robots<T: IntoResponse>(body: T) -> Response {
-    let mut resp = body.into_response();
-    resp.headers_mut().insert(
-        header::HeaderName::from_static("x-robots-tag"),
-        HeaderValue::from_static("noindex, nofollow"),
-    );
-    resp
-}
-
 #[utoipa::path(
     get,
     path = "/share/{token}",
@@ -855,7 +846,7 @@ pub async fn open(
     }
     audit.write(&mut tx).await?;
     tx.commit().await?;
-    Ok(robots(Json(SharedView {
+    Ok(Json(SharedView {
         kind: link.kind.clone(),
         title: link.title.clone(),
         organization,
@@ -874,7 +865,8 @@ pub async fn open(
         previous_days: data.previous_days,
         breakdowns: data.breakdowns,
         limits: data.limits,
-    })))
+    })
+    .into_response())
 }
 
 #[utoipa::path(
@@ -908,7 +900,7 @@ pub async fn preview(
         image::series(&data.days, window, &link.metric)
     };
     let png = image::render(&values).map_err(ApiError::internal)?;
-    Ok(robots((
+    Ok((
         [
             (header::CONTENT_TYPE, HeaderValue::from_static("image/png")),
             (
@@ -917,5 +909,6 @@ pub async fn preview(
             ),
         ],
         png,
-    )))
+    )
+        .into_response())
 }
