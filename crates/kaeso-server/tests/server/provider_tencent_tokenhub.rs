@@ -205,14 +205,14 @@ async fn thinking_turned_off_gets_hy3s_lowest_level_and_a_level_it_takes_is_sent
 }
 
 #[tokio::test]
-async fn fields_tokenhub_would_ignore_are_refused_before_anything_is_sent() {
+async fn fields_tokenhub_would_ignore_are_refused_unless_they_ask_for_nothing() {
     let env = env().await;
     for (field, value) in [
         ("logit_bias", json!({ "50256": -100 })),
         ("store", json!(true)),
         ("metadata", json!({ "team": "search" })),
         ("service_tier", json!("priority")),
-        ("modalities", json!(["text"])),
+        ("modalities", json!(["text", "audio"])),
     ] {
         env.mock.clear();
         let mut body = chat(HY4, "Hello");
@@ -232,6 +232,24 @@ async fn fields_tokenhub_would_ignore_are_refused_before_anything_is_sent() {
         );
         assert!(env.mock.received().is_empty(), "{field}");
     }
+    let mut body = chat(HY4, "Hello");
+    body["modalities"] = json!(["text"]);
+    body["store"] = json!(false);
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(body),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.header("kaeso-left-out"), Some("store, modalities"));
+    let sent = sent_to_tokenhub(&env, "/v1/chat/completions");
+    assert!(
+        sent.get("modalities").is_none() && sent.get("store").is_none(),
+        "{sent}"
+    );
 }
 
 #[tokio::test]
