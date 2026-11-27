@@ -361,9 +361,17 @@ async fn a_responses_app_that_references_its_reasoning_keeps_claudes_thinking() 
 #[tokio::test]
 async fn a_streamed_responses_turn_keeps_its_reasoning_for_the_next_step() {
     let env = env(&[]).await;
+    // The provider's last event waits until the next step is answered, so the reasoning must be
+    // kept by the time the app reads `response.completed`.
+    let gate =
+        common::v1::hold_back_the_end(&env, "anthropic_messages", "thinking-interleaved-tools");
     let mut body = responses_first_turn(None);
     body["stream"] = json!(true);
-    // An SDK takes its next step at `response.completed`, while the body may still be open.
+    body["input"] = json!(format!(
+        "{} {}",
+        body["input"].as_str().unwrap(),
+        gate.steps_marker()
+    ));
     let (_, mut stream) = common::v1::open_stream(&env, "/v1/responses", false, &body).await;
     let completed = completed_event(&mut stream).await;
     let output = completed["output"].as_array().unwrap();
@@ -379,6 +387,7 @@ async fn a_streamed_responses_turn_keeps_its_reasoning_for_the_next_step() {
         .unwrap()
         .to_owned();
     let second = responses(&env, &env.key, responses_second_turn(&reasoning, &call_id)).await;
+    gate.finish();
     assert_eq!(second.status, StatusCode::OK, "{}", second.text());
     let turn = sent_assistant_turn(&env);
     assert_eq!(turn["content"][0]["type"], "thinking", "{turn}");

@@ -289,8 +289,8 @@ pub struct Resolved {
 /// `item_reference` points to it, in place of the references, and leaves out references in
 /// turns without tool calls. The error is the id of the first reference in a turn with tool
 /// calls that has nothing kept. For a Responses provider that keeps nothing (`stateless`), kept
-/// reasoning without its encrypted content answers the reference but isn't sent: the provider
-/// could only look it up by id.
+/// reasoning with neither its text nor its encrypted content answers the reference but isn't
+/// sent: the provider could only look it up by id.
 pub fn resolve_reasoning_references(
     req: &mut GenerateRequest,
     kept: &[CarriedReasoning],
@@ -430,7 +430,10 @@ fn put_back(
                         continue;
                     }
                     inserted += 1;
-                    if stateless && r.opaque_of(OpaqueKind::OpenAiEncryptedReasoning).is_none() {
+                    if stateless
+                        && r.text.is_empty()
+                        && r.opaque_of(OpaqueKind::OpenAiEncryptedReasoning).is_none()
+                    {
                         continue;
                     }
                     bytes = bytes.saturating_add(size(&r));
@@ -884,7 +887,11 @@ mod tests {
             OpaqueKind::OpenAiEncryptedReasoning,
             "gAAAA",
         ));
-        for (block, sent) in [(id_only, false), (encrypted, true)] {
+        let mut readable = id_only.clone();
+        readable
+            .text
+            .push("Vercel sends its reasoning as text.".into());
+        for (block, sent) in [(id_only, false), (encrypted, true), (readable, true)] {
             let kept = [CarriedReasoning::new("c1", vec![block.clone()])];
             let mut req = GenerateRequest::new("m");
             req.messages = vec![

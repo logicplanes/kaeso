@@ -2457,8 +2457,10 @@ async fn attempt(
         && kaeso_codecs::openai_responses::has_reasoning_reference(g)
     {
         // A Responses provider that keeps nothing of this request can't look reasoning up by id.
-        let stateless = plan.dialect == DialectId::OpenAiResponses
-            && !keeping.as_ref().is_some_and(|k| k.records);
+        // A count stands for the generation it counts, which the provider would keep alike.
+        let kept_there = keeping.is_some()
+            && kaeso_codecs::openai_responses::stored_state(g).store != Some(false);
+        let stateless = plan.dialect == DialectId::OpenAiResponses && !kept_there;
         let resolved = continuity::resolve_references(state, caller.key_id, g, stateless)
             .await
             .map_err(|id| fail(Stage::Request)(unkept_reasoning(&id)))?;
