@@ -8,7 +8,7 @@ use serde_json::{Value, json};
 
 use super::OpenAiChat;
 use crate::codec::{Codec, EgressCtx, EncodeCtx};
-use crate::test_support::{assert_sse_eq, fixtures};
+use crate::test_support::{assert_sse_eq, chat_usage_in_its_own_chunk, fixtures};
 use crate::testing::sse_items;
 
 const D: &str = "openai_chat";
@@ -72,9 +72,43 @@ fn frames(bytes: &[u8]) -> Vec<Value> {
 fn every_stream_fixture_round_trips() {
     for (name, bytes) in fixtures(D, "streams", "sse") {
         let events = decode_whole(&bytes);
-        let out = encode(&events, include_usage(&bytes));
-        assert_sse_eq(&name, &bytes, &out);
+        let include_usage = include_usage(&bytes);
+        let out = encode(&events, include_usage);
+        let expected = if include_usage {
+            chat_usage_in_its_own_chunk(&bytes)
+        } else {
+            bytes.clone()
+        };
+        assert_sse_eq(&name, &expected, &out);
     }
+}
+
+#[test]
+fn a_finish_chunk_with_the_usage_is_followed_by_a_usage_chunk_of_its_own() {
+    let moved: Vec<String> = fixtures(D, "streams", "sse")
+        .into_iter()
+        .filter(|(_, bytes)| include_usage(bytes) && chat_usage_in_its_own_chunk(bytes) != *bytes)
+        .map(|(name, _)| name)
+        .collect();
+    for name in [
+        "providers/deepseek/recorded-stream-include-usage",
+        "providers/mistral/recorded-stream-include-usage",
+    ] {
+        assert!(moved.iter().any(|m| m == name), "{name} not in {moved:?}");
+    }
+    let (_, bytes) = fixtures(D, "streams", "sse")
+        .into_iter()
+        .find(|(n, _)| n == "providers/mistral/recorded-stream-include-usage")
+        .unwrap();
+    let out = encode(&decode_whole(&bytes), true);
+    let chunks = frames(&out);
+    let last = &chunks[chunks.len() - 2];
+    assert_eq!(last["choices"], json!([]), "{last}");
+    assert_eq!(last["usage"]["total_tokens"], 35, "{last}");
+    let finish = &chunks[chunks.len() - 3];
+    assert_eq!(finish["choices"][0]["finish_reason"], "stop", "{finish}");
+    assert_eq!(finish["usage"], Value::Null, "{finish}");
+    assert_eq!(chunks[chunks.len() - 1], json!("[DONE]"));
 }
 
 #[test]
@@ -1068,7 +1102,11 @@ fn running_usage_is_reported_once_after_the_last_block_stops() {
         ]
     );
     assert_eq!(usage_deltas(&events), [(Some(StopReason::EndTurn), 3)]);
-    assert_sse_eq("replay", sse.as_bytes(), &encode(&events, true));
+    assert_sse_eq(
+        "replay",
+        &chat_usage_in_its_own_chunk(sse.as_bytes()),
+        &encode(&events, true),
+    );
 }
 
 #[test]
