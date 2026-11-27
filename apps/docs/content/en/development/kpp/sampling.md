@@ -15,13 +15,23 @@ Sampling settings a target can't honour are `Unsupported`, never dropped or resc
 | --- | --- |
 | Anthropic | `seed`, frequency and presence penalties, and a `temperature` outside 0 to 1, Anthropic's range |
 | OpenAI Chat Completions | `top_k`, and more than four stop sequences |
-| OpenAI Responses | `top_k`, `seed`, the penalties and stop sequences, which Responses doesn't have, and an output limit below 16 tokens, the `CreateResponse` minimum |
+| OpenAI Responses | `top_k`, `seed`, the penalties and stop sequences, which Responses doesn't have, and an output limit below 16 tokens, the `CreateResponse` minimum; the gateway serves all but `top_k` and the penalties ([OpenAI Responses in the gateway](#openai-responses-in-the-gateway)) |
 | Gemini API | More than five stop sequences (`GenerationConfig.stopSequences`) |
 | Amazon Bedrock Converse | `top_k`, `seed` and the penalties, which go in a model family's own fields |
 
 Numbers keep their spelling within a dialect: `temperature: 1` comes back as `1` and `1.0` as `1.0` while the value is unchanged. Across dialects the target's own spelling is used, so `temperature: 1` from Chat reaches Anthropic as `1.0`.
 
 KPP has no `n`: a Chat request with `n` above 1 is refused when it is decoded, whatever the target. Chat's `logprobs`, `logit_bias` and `top_logprobs` are extras, which every other dialect refuses ([extras](cross-format.md#extras)) unless they hold their [neutral value](#neutral-values).
+
+## OpenAI Responses in the gateway
+
+The Responses codec refuses stop sequences, `seed` and an output limit below 16 tokens. When the gateway sends a request from another format to a model served through Responses, such as Grok, it serves them instead:
+
+- **Stop sequences.** The request goes without them, and Kaeso ends the reply itself before the first stop sequence in its text. Open blocks stop, and the reply stops as the app's format says: `finish_reason: "stop"`, or `stop_reason: "stop_sequence"` with `stop_sequence` set. Text that could begin a stop sequence waits for the next delta, so a sequence split across deltas still ends the reply. Reasoning and tool arguments never end it. `kaeso-adapted` names the app's field, such as `stop`.
+- **Output limits below 16 tokens.** Kaeso sends 16 and ends the reply at the app's limit, with the format's length reason. For a provider whose limit leaves out reasoning, such as xAI, reasoning doesn't count. `kaeso-adapted` names the app's field, such as `max_tokens`. A Responses app's own limit below 16 is still refused.
+- **`seed`.** Left out and named in `kaeso-left-out`: OpenAI treats it as best effort, and Responses has no field for it.
+
+Kaeso reads such a reply as a stream, also when the app asked for none, so the provider stops when Kaeso ends the reply. Kaeso estimates the usage from what it read, as for a [ChatGPT plan's output limit](openai-responses.md#chatgpt-plan-usage).
 
 ## Neutral values
 

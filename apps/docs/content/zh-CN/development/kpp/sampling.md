@@ -15,13 +15,23 @@ order: 3
 | --- | --- |
 | Anthropic | `seed`、频率惩罚和存在惩罚，以及超出 Anthropic 取值范围 0 到 1 的 `temperature` |
 | OpenAI Chat Completions | `top_k`，以及超过四个的停止序列 |
-| OpenAI Responses | `top_k`、`seed`、各项惩罚和停止序列，Responses 没有这些参数；以及低于 16 个 Token 的输出上限，即 `CreateResponse` 的最小值 |
+| OpenAI Responses | `top_k`、`seed`、各项惩罚和停止序列，Responses 没有这些参数；以及低于 16 个 Token 的输出上限，即 `CreateResponse` 的最小值；除 `top_k` 和各项惩罚外，网关都会处理（[网关中的 OpenAI Responses](#网关中的-openai-responses)） |
 | Gemini API | 超过五个停止序列（`GenerationConfig.stopSequences`） |
 | Amazon Bedrock Converse | `top_k`、`seed` 和惩罚参数，它们属于各模型系列自己的字段 |
 
 数字在同一方言内保持原来的写法：只要值未改变，`temperature: 1` 回来时仍是 `1`，`1.0` 仍是 `1.0`。跨方言时使用目标自己的写法，因此来自 Chat 的 `temperature: 1` 到达 Anthropic 时是 `1.0`。
 
 KPP 没有 `n`：`n` 大于 1 的 Chat 请求在解码时就会被拒绝，与目标无关。Chat 的 `logprobs`、`logit_bias` 和 `top_logprobs` 是 extras，其他每个方言都会拒绝它们（[Extras](cross-format.md#extras)），除非它们取[中性值](#中性值)。
+
+## 网关中的 OpenAI Responses
+
+Responses 编解码器会拒绝停止序列、`seed` 和低于 16 个 Token 的输出上限。当网关把其他格式的请求发给通过 Responses 提供的模型（例如 Grok）时，会改为由自己处理：
+
+- **停止序列。** 请求不带停止序列发送，Kaeso 在回复文本中出现第一个停止序列之前自行结束回复。打开的块会结束，回复按应用格式的方式结束：`finish_reason: "stop"`，或带有 `stop_sequence` 的 `stop_reason: "stop_sequence"`。可能是停止序列开头的文本会等待下一个增量，因此分散在多个增量中的停止序列同样会结束回复。推理内容和工具参数不会结束回复。`kaeso-adapted` 会注明应用中的字段名，例如 `stop`。
+- **低于 16 个 Token 的输出上限。** Kaeso 发送 16，并在应用的上限处以该格式的长度原因结束回复。对于上限不计推理的服务商（例如 xAI），推理内容不计入。`kaeso-adapted` 会注明应用中的字段名，例如 `max_tokens`。Responses 应用自己设置的低于 16 的上限仍会被拒绝。
+- **`seed`。** 会被省略，并在 `kaeso-left-out` 中注明：OpenAI 只尽力而为地遵循它，而 Responses 没有对应字段。
+
+Kaeso 会以流的方式读取这类回复，即使应用没有要求流式输出，这样 Kaeso 结束回复时服务商也会停止生成。Kaeso 根据已读取的内容估算用量，与 [ChatGPT 套餐的输出上限](openai-responses.md#chatgpt-套餐用量)相同。
 
 ## 中性值
 

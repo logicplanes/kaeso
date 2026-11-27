@@ -118,7 +118,7 @@ Eine Reasoning-Konfiguration aus einem anderen Dialekt wird als ihre Aufwandsstu
 | `reasoning` (`ReasoningItem`) | `Block::Reasoning` (Ursprung `openai_responses`) in der aktuellen Assistentennachricht | Eine von Kaeso erfundene ID (`rs_kaeso_…`) wird nicht behalten (Form `kaeso_id`); ein solches Item ohne `encrypted_content` wird gar nicht an den Anbieter gesendet, weil es weder eine `id` noch Inhalt hätte, mit dem OpenAI etwas anfangen kann. `id` → opake `OpenAiReasoningItemId`, `encrypted_content` → opakes `OpenAiEncryptedReasoning`, `summary[].text` → `summary`, `content[].text` → `text`; `status` und die `type`s der Parts: Form; unbekannte Schlüssel: Extras. Wird nur an `openai_responses` beim selben Anbieter zurückgespielt ([Reasoning](reasoning.md)). Ein Item, dessen `encrypted_content` ein Reasoning-Blob ist (`kpp:reasoning:v1:…`, Reasoning eines anderen Dialekts, das Kaeso der App gegeben hat, siehe [Reasoning-Blobs](reasoning.md#reasoning-blobs)), wird zum ursprünglichen Block darin dekodiert, einschließlich Ursprung (zum Beispiel Claudes signiertes Thinking), egal was der Rest des Items sagt. In Anfragen, die Kaeso mit `store: false` sendet (aus anderen Dialekten, siehe [Speicherung und IDs bei Responses](cross-format.md#speicherung-und-ids-bei-responses)), wird Reasoning ohne verschlüsselten Inhalt nicht gesendet, weil OpenAI die Item-ID nicht auflösen kann. |
 | `custom_tool_call`, `custom_tool_call_output`, `local_shell_call`, `local_shell_call_output` | wie unten; für Anthropic und Chat Completions Tool-Aufrufe und -Ergebnisse ([Tool-Verlauf von Codex](cross-format.md#tool-verlauf-von-codex)) | |
 | `agent_message` (Nachrichten zwischen Codex-Agenten) | wie unten; für jeden Anbieter außer OpenAI eine Nachricht ([Agentennachrichten von Codex](cross-format.md#agentennachrichten-von-codex)) | |
-| `item_reference` und jeder andere Item-Typ (Aufrufe und Ausgaben von Server-Tools, `compaction`, künftige Typen) | eine Nachricht mit einem `Block::Unknown`, Form `raw_item` | Rolle `Assistant` für Typen, die auf `_call` enden, sowie `mcp_list_tools` und `mcp_approval_request`; sonst `User`. Die Rolle zählt nur für die KPP-Validierung, weil diese Items nie an einen anderen Dialekt gehen. Nur im selben Dialekt; SpaceX nimmt nur die Typen an, die es auflistet, und Kaeso lehnt jeden anderen vor dem Senden ab ([SpaceX](#spacex)). |
+| `item_reference` und jeder andere Item-Typ (Aufrufe und Ausgaben von Server-Tools, `compaction`, künftige Typen) | eine Nachricht mit einem `Block::Unknown`, Form `raw_item` | Rolle `Assistant` für Typen, die auf `_call` enden, sowie `mcp_list_tools` und `mcp_approval_request`; sonst `User`. Die Rolle zählt nur für die KPP-Validierung, weil diese Items nie an einen anderen Dialekt gehen. Nur im selben Dialekt; SpaceX nimmt nur die Typen an, die es auflistet, und Kaeso lehnt jeden anderen vor dem Senden ab ([SpaceX](openai-responses-providers.md#spacex)). |
 | Items, die sich nicht als ihr Typ parsen lassen (zum Beispiel ein `function_call_output` mit `call_id: null`) | `Block::Unknown` (wie oben) | Verlustfrei; der Anbieter beurteilt sie. |
 
 Gruppierung: Aufeinanderfolgende `function_call`- und `reasoning`-Items kommen in die aktuelle Assistentennachricht, aufeinanderfolgende `function_call_output`-Items in die aktuelle Benutzernachricht. Ein Nachrichten-Item kommt in eine Nachricht seiner Rolle, die noch kein Nachrichten-Item enthält; System- und Developer-Items kommen nie in eine bestehende Nachricht.
@@ -354,44 +354,4 @@ Weil die Route nur streamt, fasst das Gateway ihren Stream zu einer Antwort zusa
 
 ## Anbieter mit diesem Format
 
-Andere Anbieter als OpenAI, die Responses bereitstellen, zeichnen in `fixtures/openai_responses/providers/<id>/` auf ([Fixtures](fixtures.md)). Ihre zusätzlichen Felder folgen den Regeln oben; dieser Abschnitt nennt, was jeder Anbieter hinzufügt.
-
-Jeder Anbieter in `PROVIDERS` nennt in seinem Feld `responses` ein `kaeso_codecs::openai_responses::ResponsesProfile`, und das Gateway übergibt es mit `EgressCtx::with_responses_profile` dem Encoder. `ResponsesProfile::OPENAI`, der Standard, sendet Anfragen so, wie die App sie geschrieben hat. `ResponsesProfile::compatible(name)` unterscheidet sich in `tool_namespaces: false` ([Tool-Namespaces](cross-format.md#tool-namespaces)) und `stores_responses: false`, da nur von OpenAI bekannt ist, dass es Antworten für `previous_response_id` aufbewahrt; eigene Anbieter bekommen `compatible`, da nur OpenAI Namespaces dokumentiert.
-
-| Einstellung | Was der Encoder tut |
-|---|---|
-| `xai_web_search()` | Sendet die gehostete Suche als `web_search`-Tool von xAI ([gehostete Websuche](cross-format.md#gehostete-websuche)). |
-| `without_null_reasoning_content()` | Lässt ein ausdrückliches `content: null` eines Reasoning-Items weg, das die App zurücksendet. |
-| `tool_schema_root(root)` | Führt eine Union an der Wurzel eines Funktions-Tools, die der Anbieter nicht annimmt, zu einem Objekt-Schema zusammen; `ToolSchemaRoot::ObjectUnions` behält eine Union eingebetteter Objekte ([Tool-Schemas mit Union-Wurzel](cross-format.md#tool-schemas-mit-union-wurzel)). |
-| `without_openai_encrypted_reasoning()` | Lässt Reasoning-Items weg, die die App mit OpenAIs `encrypted_content` zurücksendet. Er ist ein Fernet-Token ([Fernet-Spezifikation](https://github.com/fernet/spec/blob/master/Spec.md)) und beginnt daher mit `gAAAAA`, wie in jeder Aufnahme von OpenAI in `fixtures/openai_responses/`. |
-
-### SpaceX
-
-Quellen: die [Responses-Referenz](https://docs.x.ai/developers/rest-api-reference/inference/responses) und der [Vergleich mit Chat Completions](https://docs.x.ai/developers/model-capabilities/text/comparison) von xAI, gelesen am 2026-10-19, und die Live-Aufzeichnungen in `fixtures/openai_responses/providers/xai/`. Responses ist der `generation`-Dialekt von SpaceX.
-
-| SpaceX-Feld | KPP | Hinweise |
-|---|---|---|
-| `reasoning`-Items mit `summary` und `encrypted_content`, das `grok-4.3` immer sendet | wie bei OpenAI | Ein `encrypted_content`, das ein anderer Anbieter geschrieben hat, lehnt SpaceX mit einem 400 `invalid-argument` ab (`errors/recorded-reasoning-encrypted.json`, für den von OpenAI). Der Verlauf einer App sagt nicht, welcher Anbieter ein Item geschrieben hat, daher werden Items mit dem von OpenAI weggelassen (`without_openai_encrypted_reasoning()`), etwa wenn ein Codex-Thread von GPT zu Grok wechselt. |
-| `web_search_call`-Items, `url_citation`-Annotationen | wie bei OpenAI | |
-| `namespace`-Tools (Anfrage) | zu Funktions-Tools umbenannt | SpaceX lehnt sie mit 422 ab (`unknown variant namespace`); sein Profil ist `compatible` ([Tool-Namespaces](cross-format.md#tool-namespaces)). |
-| `web_search`-Tool (Anfrage) | das Tool von xAI (`xai_web_search()`) | SpaceX lehnt `external_web_access` ab (`Argument not supported: external_web_access`) und sucht immer live ([gehostete Websuche](cross-format.md#gehostete-websuche)). |
-| Tool-Parameter mit einer Union an der Wurzel, deren Zweige nicht alle eingebettete Objekte sind, oder mit `allOf` an der Wurzel (Anfrage) | ein Objekt-Schema (`tool_schema_root(ToolSchemaRoot::ObjectUnions)`) | SpaceX lehnt sie mit `invalid_client_tool_schema` ab ([Tool-Schemas mit Union-Wurzel](cross-format.md#tool-schemas-mit-union-wurzel)). |
-| `content: null` an einem zurückgesendeten `reasoning`-Item (Anfrage) | weggelassen (`without_null_reasoning_content()`) | Codex sendet seine früheren Reasoning-Items so zurück. Mit dem `null` kann SpaceX den `encrypted_content` des Items nicht lesen (`Could not decode the compaction blob`). |
-| `usage.num_sources_used`, `num_server_side_tools_used`, `server_side_tool_usage_details`, `cost_in_usd_ticks`, `context_details` | `raw` der Nutzung | Responses-Apps erhalten sie zurück; die Token-Zahlen sind wie oben typisiert. |
-| Typen von Input-Items (Anfrage) | nur `XAI_INPUT_ITEMS` (`xai_input_items()`) | SpaceX lehnt jeden anderen Typ mit einem 422 ab, der die angenommenen auflistet (`errors/recorded-codex-agent-message.json`), und nimmt auch `custom_tool_call_output` an, das diese Liste auslässt (`responses/recorded-codex-gpt-history.json`). Codex' `agent_message` wird zu einer Nachricht, `local_shell_call` und `local_shell_call_output` zu einem Funktionsaufruf und seiner Ausgabe; jeder andere Typ ist vor dem Senden `Unsupported`. |
-| `tool_choice` in einer Anfrage ohne Tools (Anfrage) | weggelassen | SpaceX lehnt es ab (`A tool_choice was set on the request but no tools were specified`), wie es die Hilfsaufrufe von Codex senden ([weggelassene Tools](cross-format.md#weggelassene-tools)). |
-| `presence_penalty` (Anfrage) | Extras | SpaceX ignoriert es und gibt `0.0` zurück. |
-| `max_output_tokens` (Anfrage) | `sampling.max_output_tokens` | SpaceX wendet es nur auf die sichtbare Ausgabe an, nicht auf Reasoning-Token (Responses-Referenz), wie bei [Chat Completions](openai-chat-providers.md#spacex). |
-| `{"error": "<message>"}` | `KppError` | Siehe die Fehlertabelle oben. |
-
-### Vercel
-
-Quellen: Vercels Seiten zur [OpenAI Responses API](https://vercel.com/docs/ai-gateway/sdks-and-apis/responses), gelesen am 2026-10-29, und die Live-Aufzeichnungen in `fixtures/openai_responses/providers/vercel/`. Ein Vercel-Modell wird als Responses gesendet, wenn sein Wert **Sendet als** das sagt; Vercels `generation`-Dialekt ist Chat Completions. Sein Profil ist `compatible`.
-
-| Vercel-Feld | KPP | Hinweise |
-|---|---|---|
-| Ereignisse `response.reasoning.delta` und `response.reasoning.done` | wie `response.reasoning_text.delta` und `response.reasoning_text.done` | Vercels Namen für OpenAIs Ereignisse zum Reasoning-Text, mit denselben Feldern; Responses-Apps erhalten sie so, wie Vercel sie geschickt hat, andere Dialekte erhalten das Reasoning (`streams/recorded-reasoning-stream`). |
-| `reasoning`-Items mit `content` (`reasoning_text`) und ohne `encrypted_content` | wie bei OpenAI | Die Modelle von OpenAI fügen `encrypted_content` hinzu, wenn die Anfrage danach fragt (`responses/recorded-gpt-reasoning-encrypted`). |
-| `provider_metadata` an der Antwort, `usage.input_tokens_details.cache_write_tokens` | Extras, `raw` der Nutzung | Wie bei Chat Completions. |
-| `POST /v1/responses/input_tokens` | — | Vercel antwortet mit 404, und Kaeso lehnt die Token-Zählung für Vercel-Modelle ab, bevor etwas gesendet wird. |
-| Fehler | `KppError` | OpenAIs Hülle mit Vercels eigenem `type`, wie bei [Chat Completions](openai-chat-gateways.md#vercel). |
+Anbieter außer OpenAI, die Responses bedienen, und wie der Codec sich an jeden anpasst, stehen unter [Responses-Anbieter](openai-responses-providers.md).
