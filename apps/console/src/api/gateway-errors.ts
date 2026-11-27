@@ -3,7 +3,7 @@ import { locale, t } from "~/i18n";
 import english from "~/i18n/locales/en/errors.json";
 
 type Values = Record<string, string>;
-type Convert = "limit" | "who" | "whoList" | "number" | "date" | "codeList" | "toolChoice" | "timeoutStage" | "wait";
+type Convert = "limit" | "who" | "whoList" | "number" | "date" | "codeList" | "codeChoice" | "toolChoice" | "timeoutStage" | "wait";
 
 type ErrorKey = keyof typeof english;
 
@@ -294,6 +294,10 @@ const messages = (): Rule[] => [
   rule("errors.fieldUnknown", (v) => t("errors.fieldUnknown", "`{name}` is not a field of this request.", v)),
   rule("errors.fieldGivenTwice", (v) => t("errors.fieldGivenTwice", "`{name}` is given more than once.", v)),
   rule("errors.fieldWrongType", (v) => t("errors.fieldWrongType", "`{name}` has a value of the wrong type or form.", v)),
+  rule("errors.fieldOneOf", (v) => t("errors.fieldOneOf", "`{name}` must be one of {values}.", v), { values: "codeChoice" }),
+  rule("errors.fieldString", (v) => t("errors.fieldString", "`{name}` must be a string.", v)),
+  rule("errors.fieldArray", (v) => t("errors.fieldArray", "`{name}` must be an array.", v)),
+  rule("errors.fieldObject", (v) => t("errors.fieldObject", "`{name}` must be an object.", v)),
   rule("errors.fieldTrueOrFalse", (v) => t("errors.fieldTrueOrFalse", "`{name}` must be `true` or `false`.", v)),
   rule("errors.fieldWholeNumber", (v) => t("errors.fieldWholeNumber", "`{name}` must be a whole number.", v)),
   rule("errors.fieldOutOfRange", (v) => t("errors.fieldOutOfRange", "`{name}` is out of range.", v)),
@@ -1387,6 +1391,13 @@ const compiled = () =>
 
 const codeSpans = /^`[^`]+`( `[^`]+`)*$/;
 
+function codeSpanList(value: string, type: "conjunction" | "disjunction"): string | undefined {
+  const parts = value.split(", ");
+  if (!parts.every((p) => codeSpans.test(p))) return undefined;
+  const joined = new Intl.ListFormat(locale(), { type }).format(parts);
+  return joined.replace(/([\u4e00-\u9fff])`/g, "$1 `").replace(/`([\u4e00-\u9fff])/g, "` $1");
+}
+
 const converters: Record<Convert, (value: string) => string | undefined> = {
   limit: (value) => apply(compiled().limits, value),
   who: (value) => apply(compiled().owners, value),
@@ -1394,12 +1405,8 @@ const converters: Record<Convert, (value: string) => string | undefined> = {
     const parts = value.split(", ").map((part) => apply(compiled().ownerAmounts, part));
     return parts.every((p) => p !== undefined) ? new Intl.ListFormat(locale(), { type: "conjunction" }).format(parts as string[]) : undefined;
   },
-  codeList: (value) => {
-    const parts = value.split(", ");
-    if (!parts.every((p) => codeSpans.test(p))) return undefined;
-    const joined = new Intl.ListFormat(locale(), { type: "conjunction" }).format(parts);
-    return joined.replace(/([\u4e00-\u9fff])`/g, "$1 `").replace(/`([\u4e00-\u9fff])/g, "` $1");
-  },
+  codeList: (value) => codeSpanList(value, "conjunction"),
+  codeChoice: (value) => codeSpanList(value, "disjunction"),
   toolChoice: (value) => apply(compiled().toolChoices, value) ?? (codeSpans.test(value) ? value : undefined),
   timeoutStage: (value) => apply(compiled().timeoutStages, value),
   number: (value) => (/^\d+(\.\d+)?$/.test(value) ? formatNumber(Number(value), { maximumFractionDigits: 9 }) : value),

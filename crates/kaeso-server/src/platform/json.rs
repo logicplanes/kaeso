@@ -2,6 +2,10 @@ use axum::extract::rejection::JsonRejection;
 use axum::extract::{FromRequest, Request};
 use serde::Deserialize;
 use serde::de::{DeserializeOwned, Deserializer, MapAccess, Visitor};
+use serde_json::Value;
+use serde_json::error::Category;
+use serde_json::value::RawValue;
+use serde_path_to_error::Segment;
 
 use super::error::ApiError;
 
@@ -42,13 +46,12 @@ where
     type Rejection = ApiError;
 
     async fn from_request(req: Request, state: &S) -> Result<Self, Self::Rejection> {
-        match axum::Json::<T>::from_request(req, state).await {
-            Ok(axum::Json(v)) => Ok(Body(v)),
+        match axum::Json::<Box<RawValue>>::from_request(req, state).await {
+            Ok(axum::Json(raw)) => read(raw.get()).map(Body),
             Err(JsonRejection::MissingJsonContentType(_)) => Err(ApiError::bad_request(
                 "Send the body as JSON with `Content-Type: application/json`.",
             )),
-            Err(JsonRejection::JsonDataError(e)) => Err(data_error(&e.body_text())),
-            Err(JsonRejection::JsonSyntaxError(_)) => {
+            Err(JsonRejection::JsonDataError(_) | JsonRejection::JsonSyntaxError(_)) => {
                 Err(ApiError::bad_request("The body is not valid JSON."))
             }
             Err(JsonRejection::BytesRejection(e))
@@ -66,15 +69,21 @@ where
     }
 }
 
-pub(crate) fn data_error(text: &str) -> ApiError {
-    let text = text
-        .strip_prefix("Failed to deserialize the JSON body into the target type: ")
-        .unwrap_or(text);
-    let text = text.rsplit_once(" at line ").map_or(text, |(t, _)| t);
-    let (path, detail) = match text.split_once(": ") {
-        Some((p, d)) if !p.contains(' ') => (Some(p), d),
-        _ => (None, text),
+// `json` is valid JSON, so every error is about a field.
+pub(crate) fn read<T: DeserializeOwned>(json: &str) -> Result<T, ApiError> {
+    let at = |e: &PathError| {
+        let path = e.path();
+        (!path.iter().all(|s| matches!(s, Segment::Unknown))).then(|| path.to_string())
     };
+    let e = match serde_path_to_error::deserialize(&mut serde_json::Deserializer::from_str(json)) {
+        Ok(v) => return Ok(v),
+        Err(e) => e,
+    };
+    let path = at(&e);
+    let detail = e.inner().to_string();
+    let detail = detail
+        .rsplit_once(" at line ")
+        .map_or(detail.as_str(), |(t, _)| t);
     let quoted = |prefix: &str| {
         detail
             .strip_prefix(prefix)
@@ -82,16 +91,76 @@ pub(crate) fn data_error(text: &str) -> ApiError {
     };
     if let Some(field) = quoted("missing field `") {
         let field = path.map_or_else(|| field.to_owned(), |p| format!("{p}.{field}"));
-        return ApiError::invalid(&field, format!("`{field}` is required."));
+        return Err(ApiError::invalid(&field, format!("`{field}` is required.")));
     }
     if let Some(field) = quoted("unknown field `") {
-        let field = path.unwrap_or(field);
-        return ApiError::invalid(field, format!("`{field}` is not a field of this request."));
+        let field = path.as_deref().unwrap_or(field);
+        return Err(ApiError::invalid(
+            field,
+            format!("`{field}` is not a field of this request."),
+        ));
     }
-    match path {
-        Some(p) => ApiError::invalid(p, format!("`{p}` has a value of the wrong type or form.")),
-        None => ApiError::bad_request("The body does not have the shape this endpoint expects."),
-    }
+    let Some(p) = path else {
+        return Err(ApiError::bad_request(
+            "The body does not have the shape this endpoint expects.",
+        ));
+    };
+    // serde_json refuses a value of the wrong JSON type where an enum goes as a syntax error
+    // that names nothing it takes; a string that is no variant makes it list the variants.
+    let refused = |value: Value| -> Option<PathError> {
+        let mut doc: Value = serde_json::from_str(json).ok()?;
+        *slot(&mut doc, e.path())? = value;
+        serde_path_to_error::deserialize::<_, T>(&doc)
+            .err()
+            .filter(|again| at(again).as_deref() == Some(p.as_str()))
+    };
+    let variants = |detail: &str| -> Option<Vec<String>> {
+        let list = detail
+            .strip_prefix("unknown variant `")?
+            .split_once("`, expected ")?
+            .1;
+        let mut names: Vec<String> = list
+            .split('`')
+            .skip(1)
+            .step_by(2)
+            .map(|n| format!("`{n}`"))
+            .collect();
+        if refused(Value::Null).is_none() {
+            names.push("`null`".to_owned());
+        }
+        Some(names)
+    };
+    let names = if e.inner().classify() == Category::Syntax {
+        refused(Value::String(String::new())).and_then(|again| variants(&again.inner().to_string()))
+    } else {
+        variants(detail)
+    };
+    let message = match (names, detail.rsplit_once(", expected ").map(|(_, x)| x)) {
+        (Some(names), _) => format!("`{p}` must be one of {}.", names.join(", ")),
+        (None, Some("a boolean")) => format!("`{p}` must be `true` or `false`."),
+        (None, Some("a string")) => format!("`{p}` must be a string."),
+        (None, Some("a sequence")) => format!("`{p}` must be an array."),
+        (None, Some(x)) if x == "a map" || x.starts_with("struct ") => {
+            format!("`{p}` must be an object.")
+        }
+        (None, Some(x)) if INTEGERS.contains(&x) => format!("`{p}` must be a whole number."),
+        _ => format!("`{p}` has a value of the wrong type or form."),
+    };
+    Err(ApiError::invalid(&p, message))
+}
+
+type PathError = serde_path_to_error::Error<serde_json::Error>;
+
+const INTEGERS: [&str; 10] = [
+    "u8", "u16", "u32", "u64", "usize", "i8", "i16", "i32", "i64", "isize",
+];
+
+fn slot<'a>(doc: &'a mut Value, path: &serde_path_to_error::Path) -> Option<&'a mut Value> {
+    path.iter().try_fold(doc, |v, s| match s {
+        Segment::Seq { index } => v.get_mut(*index),
+        Segment::Map { key } => v.get_mut(key.as_str()),
+        Segment::Enum { .. } | Segment::Unknown => None,
+    })
 }
 
 #[cfg(test)]
@@ -108,6 +177,20 @@ mod tests {
     }
 
     #[derive(Debug, Deserialize)]
+    #[serde(rename_all = "snake_case")]
+    enum Auth {
+        Bearer,
+        XApiKey,
+        None,
+    }
+
+    #[derive(Debug, Deserialize)]
+    #[serde(rename_all = "snake_case")]
+    enum Format {
+        OpenaiEmbeddings,
+    }
+
+    #[derive(Debug, Deserialize)]
     #[serde(deny_unknown_fields)]
     struct Create {
         name: String,
@@ -115,17 +198,22 @@ mod tests {
         rights: Vec<String>,
         #[serde(default)]
         limits: Vec<Limit>,
+        #[serde(default)]
+        auth: Option<Auth>,
+        #[serde(default)]
+        embeddings: Option<Format>,
+        #[serde(default)]
+        modes: Vec<Auth>,
+        #[serde(default)]
+        on: Option<bool>,
+        #[serde(default)]
+        max: Option<u32>,
     }
 
     fn reject(body: &str) -> (String, Option<String>) {
-        let Err(JsonRejection::JsonDataError(e)) =
-            axum::Json::<Create>::from_bytes(body.as_bytes())
-        else {
-            panic!("{body} is not a data error");
-        };
-        match data_error(&e.body_text()) {
-            ApiError::InvalidRequest { message, param } => (message, param),
-            other => panic!("{other:?}"),
+        match read::<Create>(body) {
+            Err(ApiError::InvalidRequest { message, param }) => (message, param),
+            other => panic!("{body}: {other:?}"),
         }
     }
 
@@ -146,19 +234,13 @@ mod tests {
 
     #[test]
     fn a_body_that_flattens_shared_fields_refuses_any_other() {
-        let axum::Json(read) =
-            axum::Json::<Flattening>::from_bytes(br#"{"name": "a", "code": "123456"}"#).unwrap();
+        let read_back: Flattening = read(r#"{"name": "a", "code": "123456"}"#).unwrap();
         assert_eq!(
-            (read.name.as_str(), read.shared.code.as_deref()),
+            (read_back.name.as_str(), read_back.shared.code.as_deref()),
             ("a", Some("123456"))
         );
-        let Err(JsonRejection::JsonDataError(e)) =
-            axum::Json::<Flattening>::from_bytes(br#"{"name": "a", "cdoe": "123456"}"#)
-        else {
-            panic!("an unknown field was accepted");
-        };
-        match data_error(&e.body_text()) {
-            ApiError::InvalidRequest { message, param } => {
+        match read::<Flattening>(r#"{"name": "a", "cdoe": "123456"}"#) {
+            Err(ApiError::InvalidRequest { message, param }) => {
                 assert_eq!(message, "`cdoe` is not a field of this request.");
                 assert_eq!(param.as_deref(), Some("cdoe"));
             }
@@ -168,18 +250,26 @@ mod tests {
 
     #[test]
     fn a_valid_body_is_read_whole() {
-        let axum::Json(create) = axum::Json::<Create>::from_bytes(
-            br#"{"name": "a", "rights": ["x"], "limits": [{"kind": "k"}]}"#,
+        let create: Create = read(
+            r#"{"name": "a", "rights": ["x"], "limits": [{"kind": "k"}], "auth": "x_api_key"}"#,
         )
         .unwrap();
         assert_eq!(create.name, "a");
         assert_eq!(create.rights, ["x"]);
         assert_eq!(create.limits.len(), 1);
         assert_eq!(create.limits[0].kind, "k");
+        assert!(matches!(create.auth, Some(Auth::XApiKey)));
+        let more: Create = read(
+            r#"{"name": "a", "embeddings": "openai_embeddings", "modes": ["bearer", "none"], "on": true, "max": 3}"#,
+        )
+        .unwrap();
+        assert!(matches!(more.embeddings, Some(Format::OpenaiEmbeddings)));
+        assert!(matches!(more.modes[..], [Auth::Bearer, Auth::None]));
+        assert_eq!((more.on, more.max), (Some(true), Some(3)));
     }
 
     #[test]
-    fn data_errors_name_the_field() {
+    fn data_errors_name_the_field_and_what_it_takes() {
         for (body, message, param) in [
             (r#"{}"#, "`name` is required.", Some("name")),
             (
@@ -194,8 +284,53 @@ mod tests {
             ),
             (
                 r#"{"name": "a", "rights": ["x", 3]}"#,
-                "`rights[1]` has a value of the wrong type or form.",
+                "`rights[1]` must be a string.",
                 Some("rights[1]"),
+            ),
+            (
+                r#"{"name": "a", "embeddings": true}"#,
+                "`embeddings` must be one of `openai_embeddings`, `null`.",
+                Some("embeddings"),
+            ),
+            (
+                r#"{"name": "a", "embeddings": "openai"}"#,
+                "`embeddings` must be one of `openai_embeddings`, `null`.",
+                Some("embeddings"),
+            ),
+            (
+                r#"{"name": "a", "auth": 5}"#,
+                "`auth` must be one of `bearer`, `x_api_key`, `none`, `null`.",
+                Some("auth"),
+            ),
+            (
+                r#"{"name": "a", "modes": ["bearer", ["x"]]}"#,
+                "`modes[1]` must be one of `bearer`, `x_api_key`, `none`.",
+                Some("modes[1]"),
+            ),
+            (
+                r#"{"name": "a", "modes": "bearer"}"#,
+                "`modes` must be an array.",
+                Some("modes"),
+            ),
+            (
+                r#"{"name": "a", "limits": ["k"]}"#,
+                "`limits[0]` must be an object.",
+                Some("limits[0]"),
+            ),
+            (
+                r#"{"name": "a", "on": "yes"}"#,
+                "`on` must be `true` or `false`.",
+                Some("on"),
+            ),
+            (
+                r#"{"name": "a", "max": -1}"#,
+                "`max` must be a whole number.",
+                Some("max"),
+            ),
+            (
+                r#"{"name": "a", "max": 1.5}"#,
+                "`max` must be a whole number.",
+                Some("max"),
             ),
             (
                 r#""x""#,
@@ -206,6 +341,7 @@ mod tests {
             let (m, p) = reject(body);
             assert_eq!(m, message, "{body}");
             assert_eq!(p.as_deref(), param, "{body}");
+            assert!(m.chars().count() <= 120, "{m}");
         }
     }
 }

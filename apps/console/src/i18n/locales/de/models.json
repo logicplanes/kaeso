@@ -138,6 +138,7 @@
   "models.priceTier": "Über {context}: {input} / {output}",
   "models.priceWithCache": "{unit}; {cache}",
   "models.problem.format": "Ein eigenes Modell braucht das Format, in dem Kaeso es anspricht.",
+  "models.problem.contextLimit": "Ein eigenes Embedding-Modell braucht sein Kontextlimit.",
   "models.problem.limits": "Ein eigenes Modell braucht sein Kontext- und Ausgabelimit.",
   "models.problem.modalities": "Ein eigenes Modell braucht seine Eingaben und Ausgaben.",
   "models.problem.price": "Preise sind Dezimalbeträge, etwa 3,00.",
