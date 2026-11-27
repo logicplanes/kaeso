@@ -9,7 +9,8 @@ use kaeso_codecs::openai_responses::OpenAiResponses;
 use kaeso_codecs::{Codec, EgressCtx, HeaderList, dispatch};
 use kaeso_kpp::{
     Block, DialectId, DocumentBlock, ErrorKind, GenerateRequest, ImageOperation, Message, Origin,
-    RawItem, RawJson, Request, RequestKind, Role, Source, StreamMode, VideoOperation, VideoRequest,
+    RawItem, RawJson, Request, RequestKind, Retry, Role, Source, StreamMode, VideoOperation,
+    VideoRequest,
 };
 
 const DIALECTS: [DialectId; 6] = [
@@ -123,6 +124,105 @@ fn both_openai_dialects_write_the_same_retry_headers() {
         headers(DialectId::OpenAiChat)
     );
     assert_eq!(headers(DialectId::AnthropicMessages), ["retry-after=2"]);
+}
+
+fn should_retry_of(dialect: DialectId, err: &kaeso_kpp::KppError) -> Option<String> {
+    let plain = dispatch::encode_error(dialect, err);
+    let tagged = dispatch::encode_error_for_request(dialect, err, "req_kaeso_1");
+    let said = plain.headers.get(kaeso_codecs::SHOULD_RETRY_HEADER);
+    assert_eq!(
+        tagged.headers.get(kaeso_codecs::SHOULD_RETRY_HEADER),
+        said,
+        "{dialect:?}"
+    );
+    assert_eq!(
+        plain.headers.get_all("x-should-retry").count(),
+        usize::from(said.is_some())
+    );
+    said.map(str::to_owned)
+}
+
+#[test]
+fn every_dialect_tells_clients_not_to_retry_what_a_retry_cant_fix() {
+    use kaeso_kpp::KppError;
+    let lasting = [
+        KppError::new(ErrorKind::Authentication, "Bad key.").with_status(401),
+        KppError::new(ErrorKind::PermissionDenied, "No.").with_status(403),
+        KppError::new(ErrorKind::NotFound, "No such model.").with_status(404),
+        KppError::invalid_request("Bad request."),
+        KppError::unsupported("top_k", "No `top_k`."),
+        KppError::new(ErrorKind::ContextTooLong, "Too long."),
+        KppError::new(ErrorKind::Billing, "Top up."),
+        KppError::new(ErrorKind::RateLimited, "Budget used up.").with_retry(Retry::AfterReset),
+        KppError::provider("The provider refused this project's provider key.")
+            .with_status(502)
+            .with_retry(Retry::Futile),
+        KppError::new(ErrorKind::RateLimited, "Ask for fewer tokens.").with_retry(Retry::Futile),
+        KppError::new(ErrorKind::RateLimited, "Plan limit.")
+            .with_retry_after(std::time::Duration::from_secs(61)),
+    ];
+    let passing = [
+        KppError::new(ErrorKind::RateLimited, "Slow down.")
+            .with_retry_after(std::time::Duration::from_secs(60)),
+        KppError::new(ErrorKind::Overloaded, "Busy."),
+        KppError::new(ErrorKind::Timeout, "Late."),
+        KppError::provider("Upstream broke.").with_status(502),
+    ];
+    let conflict = KppError::invalid_request("Conflict.")
+        .with_status(409)
+        .with_origin(DialectId::AnthropicMessages);
+    for dialect in DialectId::ALL {
+        for err in &lasting {
+            assert_eq!(
+                should_retry_of(dialect, err).as_deref(),
+                Some("false"),
+                "{dialect:?} {err:?}"
+            );
+        }
+        for err in &passing {
+            assert_eq!(should_retry_of(dialect, err), None, "{dialect:?} {err:?}");
+        }
+        let kept = dispatch::encode_error(dialect, &conflict).status == 409;
+        assert_eq!(
+            should_retry_of(dialect, &conflict).as_deref(),
+            if kept { None } else { Some("false") },
+            "{dialect:?}"
+        );
+        let stated = KppError::new(ErrorKind::NotFound, "Back soon.").with_retry(Retry::Helps);
+        assert_eq!(should_retry_of(dialect, &stated).as_deref(), Some("true"));
+    }
+}
+
+#[test]
+fn a_rate_limit_that_lasts_is_a_used_up_quota_in_the_openai_formats() {
+    let err = kaeso_kpp::KppError::new(ErrorKind::RateLimited, "Budget used up.")
+        .with_status(429)
+        .with_retry(Retry::AfterReset)
+        .with_retry_after(std::time::Duration::from_secs(3_600));
+    for dialect in [DialectId::OpenAiChat, DialectId::OpenAiResponses] {
+        let out = dispatch::encode_error(dialect, &err);
+        assert_eq!(out.status, 429, "{dialect:?}");
+        assert_eq!(out.headers.get("retry-after"), Some("3600"));
+        let body: serde_json::Value = serde_json::from_slice(&out.body).unwrap();
+        assert_eq!(body["error"]["type"], "insufficient_quota", "{dialect:?}");
+        assert_eq!(body["error"]["code"], "insufficient_quota", "{dialect:?}");
+    }
+    let out = dispatch::encode_error(DialectId::AnthropicMessages, &err);
+    assert_eq!(out.status, 429);
+    let body: serde_json::Value = serde_json::from_slice(&out.body).unwrap();
+    assert_eq!(body["error"]["type"], "rate_limit_error");
+    for not_used_up in [
+        kaeso_kpp::KppError::new(ErrorKind::RateLimited, "Slow down."),
+        kaeso_kpp::KppError::new(ErrorKind::RateLimited, "Ask for fewer tokens.")
+            .with_retry(Retry::Futile),
+    ] {
+        let out = dispatch::encode_error(DialectId::OpenAiChat, &not_used_up);
+        let body: serde_json::Value = serde_json::from_slice(&out.body).unwrap();
+        assert_eq!(
+            body["error"]["code"], "rate_limit_exceeded",
+            "{not_used_up:?}"
+        );
+    }
 }
 
 #[test]

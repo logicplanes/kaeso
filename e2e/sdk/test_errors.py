@@ -38,8 +38,8 @@ def test_not_found(oa, an):
 
 def test_refused_by_kpp_before_sending(an, mock):
     with pytest.raises(anthropic.BadRequestError) as e:
-        an.messages.create(model="gpt-4o", max_tokens=10, messages=user("x"), extra_body={"top_k": 5})
-    assert "top_k" in str(e.value)
+        an.messages.create(model="gpt-4o", max_tokens=10, messages=user("x"), extra_body={"container": "container_011"})
+    assert "container" in str(e.value)
     assert mock.received() == []
 
 

@@ -122,7 +122,11 @@ fn keep_alive_comments_sent_while_busy_round_trip_and_change_no_event() {
             .collect::<Vec<_>>()
     };
     assert_eq!(typed(&events), typed(&plain));
-    assert_sse_eq("keep-alive", &waited, &encode_stream(&events));
+    assert_sse_eq(
+        "keep-alive",
+        &crate::test_support::chat_usage_in_its_own_chunk(&waited),
+        &encode_stream(&events),
+    );
 }
 
 #[test]

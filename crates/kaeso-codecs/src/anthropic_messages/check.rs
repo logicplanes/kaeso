@@ -80,20 +80,6 @@ pub(crate) fn check_output(r: &GenerateRequest) -> Result<(), KppError> {
             "Anthropic has no JSON mode without a schema. Send a JSON schema (structured outputs) instead.",
         )
         .with_param(param)),
-        OutputSpec::JsonSchema(spec) if spec.description.is_some() => Err(KppError::unsupported_by(
-            "output schema description",
-            D,
-            "Anthropic structured outputs take a schema only. Move the description into the prompt or the schema's own `description`.",
-        )
-        .with_param(param)),
-        OutputSpec::JsonSchema(spec) if spec.strict == Some(false) => {
-            Err(KppError::unsupported_by(
-                "non-strict output schema",
-                D,
-                "Anthropic always enforces the output schema. Set `strict: true` or remove it.",
-            )
-            .with_param(param))
-        }
         _ => Ok(()),
     }
 }

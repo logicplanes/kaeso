@@ -248,7 +248,8 @@ fn every_reply_and_stream_of_these_providers_round_trips_under_its_profile() {
                 continue;
             }
             let out = encode_stream(DialectId::OpenAiChat, &stream(provider, &bytes));
-            assert_sse_eq(&name, &bytes, &out);
+            let expected = crate::test_support::chat_usage_in_its_own_chunk(&bytes);
+            assert_sse_eq(&name, &expected, &out);
         }
     }
 }

@@ -7,7 +7,7 @@ use axum::http::{HeaderMap, HeaderValue, StatusCode, header};
 use axum::response::Response;
 use bytes::Bytes;
 use futures::StreamExt;
-use kaeso_codecs::continuity::reasoning_for_tool_calls;
+use kaeso_codecs::continuity::{every_reasoning_for_tool_calls, reasoning_for_tool_calls};
 use kaeso_codecs::gemini::GeminiAction;
 use kaeso_codecs::{EgressCtx, EncodeCtx, HeaderList, dispatch};
 use kaeso_core::catalogue::Entry;
@@ -710,6 +710,7 @@ pub(super) fn limited(refusal: super::hooks::Refusal) -> KppError {
     if let Some(r) = refusal.retry_after {
         e = e.with_retry_after(r);
     }
+    e.retry = refusal.retry;
     if let Some(p) = refusal.param {
         e = e.with_param(p);
     }
@@ -818,7 +819,8 @@ pub(crate) fn upstream_error_from(e: &UpstreamError, provider: &ProviderRef) -> 
             format!(
                 "The custom provider `{id}` is at an address this install does not allow; ask its operator."
             ),
-        ),
+        )
+        .with_retry(kaeso_kpp::Retry::Futile),
         other => upstream_error(other),
     }
 }
@@ -840,7 +842,7 @@ fn refused_custom_key(err: &KppError, provider: &ProviderRef, keyless: bool) -> 
             "The custom provider `{id}` refused this project's key; ask an organization admin to check it under Providers."
         )
     };
-    Some(error(ErrorKind::ProviderError, 502, message))
+    Some(error(ErrorKind::ProviderError, 502, message).with_retry(kaeso_kpp::Retry::Futile))
 }
 
 fn unreadable(err: KppError, provider: &ProviderRef, dialect: DialectId) -> KppError {
@@ -897,7 +899,8 @@ async fn entra_token(
             crate::services::notifications::system::account_signed_out(state, org, id).await;
             Err((
                 Stage::SignedOut(crate::services::credentials::ENTRA_ID),
-                error(ErrorKind::ProviderError, 502, ENTRA_REFUSED),
+                error(ErrorKind::ProviderError, 502, ENTRA_REFUSED)
+                    .with_retry(kaeso_kpp::Retry::Futile),
             ))
         }
         Err(e) => {
@@ -919,7 +922,20 @@ pub(crate) fn refused_key(err: &KppError) -> Option<KppError> {
         ErrorKind::Billing => ACCOUNT_REFUSED,
         _ => return None,
     };
-    Some(error(ErrorKind::ProviderError, 502, message))
+    Some(error(ErrorKind::ProviderError, 502, message).with_retry(kaeso_kpp::Retry::Futile))
+}
+
+// An `item_reference` to reasoning Kaeso no longer keeps for this key: kept for
+// `continuity.reasoning_ttl`, or never, for another key or with continuity off.
+fn unkept_reasoning(id: &str) -> KppError {
+    error(
+        ErrorKind::InvalidRequest,
+        400,
+        format!(
+            "Kaeso no longer keeps the reasoning `{id}` points to; send the items themselves in `input`, as SDKs do with `store: false`."
+        ),
+    )
+    .with_param("input")
 }
 
 // Kaeso keeps no conversations, and a thread at Anthropic under the organization's key could be
@@ -2206,7 +2222,8 @@ async fn attempt(
                         "Custom providers are turned off on this install, so `{}` cannot be called.",
                         entry.provider
                     ),
-                ),
+                )
+                .with_retry(kaeso_kpp::Retry::Futile),
                 Stage::CustomProvidersOff,
             );
         }
@@ -2215,7 +2232,8 @@ async fn attempt(
                 ErrorKind::ProviderError,
                 500,
                 format!("The provider `{}` is not available.", entry.provider),
-            ),
+            )
+            .with_retry(kaeso_kpp::Retry::Futile),
             Stage::Setup,
         )
     })?;
@@ -2341,28 +2359,28 @@ async fn attempt(
     )
     .await
     .map_err(|e| match e {
-        CredentialError::Missing { .. } => fail(Stage::MissingCredential(eff.provider.name().to_owned()))(error(ErrorKind::ProviderError, 502, e.to_string())),
+        CredentialError::Missing { .. } => fail(Stage::MissingCredential(eff.provider.name().to_owned()))(error(ErrorKind::ProviderError, 502, e.to_string()).with_retry(kaeso_kpp::Retry::Futile)),
         CredentialError::Crypto(_) => {
             tracing::error!(provider = eff.provider.id(), "a provider credential cannot be decrypted");
-            fail(Stage::Credential)(error(ErrorKind::ProviderError, 500, "Kaeso cannot decrypt the provider credential. The operator must check the configured master keys."))
+            fail(Stage::Credential)(error(ErrorKind::ProviderError, 500, "Kaeso cannot decrypt the provider credential. The operator must check the configured master keys.").with_retry(kaeso_kpp::Retry::Futile))
         }
         CredentialError::Store(err) => {
             tracing::error!(error = %err, "cannot load a provider credential");
             fail(Stage::Credential)(error(ErrorKind::ProviderError, 503, "Kaeso cannot load the provider credential right now. Try again shortly."))
         }
         CredentialError::SignedOut { product } if product == crate::services::credentials::ENTRA_ID => {
-            fail(Stage::SignedOut(product))(error(ErrorKind::ProviderError, 502, ENTRA_REFUSED))
+            fail(Stage::SignedOut(product))(error(ErrorKind::ProviderError, 502, ENTRA_REFUSED).with_retry(kaeso_kpp::Retry::Futile))
         }
         CredentialError::SignedOut { product } => fail(Stage::SignedOut(product))(error(
             ErrorKind::ProviderError,
             502,
             format!("The {product} account of this project's {provider} key is signed out. Ask an organization admin to sign in again under Providers.", provider = eff.provider.name()),
-        )),
+        ).with_retry(kaeso_kpp::Retry::Futile)),
         CredentialError::NoApiAccess { product } => fail(Stage::NoApiAccess(product))(error(
             ErrorKind::ProviderError,
             502,
             format!("The {product} plan of this project's {provider} key has no API access. Ask an organization admin to add an API key under Providers.", provider = eff.provider.name()),
-        )),
+        ).with_retry(kaeso_kpp::Retry::Futile)),
         CredentialError::Unrenewed { product } => fail(Stage::Credential)(error(
             ErrorKind::ProviderError,
             503,
@@ -2385,6 +2403,7 @@ async fn attempt(
             provider: &eff.provider,
             model: &eff.model_id,
             credential: &credential,
+            resolves_reasoning: true,
         },
         &req,
     )
@@ -2444,6 +2463,36 @@ async fn attempt(
     // A reply Kaeso ends itself is read as a stream, so the provider stops when Kaeso does.
     let streams_upstream = chatgpt.is_some() || output_cap.is_some();
 
+    // Whether to keep reasoning follows what the app sent: Kaeso itself may send `store: false`.
+    let carry = continuity::carry(state, caller.key_id, ingress, plan.dialect, &app_req)
+        .filter(|_| kind == RequestKind::Generate);
+    if let Some(c) = carry.filter(|c| !c.every)
+        && let Request::Generate(g) = &mut req
+    {
+        continuity::restore(state, c.key_id, g).await;
+    }
+    // Reasoning put back is input the provider bills, so limits see it before admitting.
+    let mut restored_tokens = 0;
+    if ingress == DialectId::OpenAiResponses
+        && let Request::Generate(g) | Request::CountTokens(g) = &mut req
+        && kaeso_codecs::openai_responses::has_reasoning_reference(g)
+    {
+        // A Responses provider that keeps nothing of this request can't look reasoning up by id.
+        // A count stands for the generation it counts, which the provider would keep alike.
+        let kept_there = keeping.is_some()
+            && kaeso_codecs::openai_responses::stored_state(g).store != Some(false);
+        let stateless = plan.dialect == DialectId::OpenAiResponses && !kept_there;
+        let resolved = continuity::resolve_references(state, caller.key_id, g, stateless)
+            .await
+            .map_err(|id| fail(Stage::Request)(unkept_reasoning(&id)))?;
+        if resolved.left_out > 0 {
+            plan.left_out.push("item_reference".to_owned());
+        }
+        restored_tokens = kaeso_core::estimate::tokens_of_bytes(
+            u64::try_from(resolved.restored_bytes).unwrap_or(u64::MAX),
+        );
+    }
+
     let admission = Admission {
         request_id: rec.outcome().request_id,
         caller: caller.clone(),
@@ -2454,10 +2503,13 @@ async fn attempt(
         worst: WorstCase::continuing(
             &req,
             request_bytes,
-            keeping.as_ref().map_or(
-                0,
-                crate::services::stored_responses::Keeping::earlier_tokens,
-            ),
+            keeping
+                .as_ref()
+                .map_or(
+                    0,
+                    crate::services::stored_responses::Keeping::earlier_tokens,
+                )
+                .saturating_add(restored_tokens),
             &eff.fields,
             &eff.provider,
         ),
@@ -2494,15 +2546,6 @@ async fn attempt(
             .await
     {
         return Err(fail(Stage::Unserved(eff.model_id.clone()))(unserved(&eff)));
-    }
-
-    let carry = caller.key_id.filter(|_| {
-        continuity::applies(state, ingress, plan.dialect) && kind == RequestKind::Generate
-    });
-    if let Some(key_id) = carry
-        && let Request::Generate(g) = &mut req
-    {
-        continuity::restore(state, key_id, g).await;
     }
 
     let platform = match crate::services::agent_platform::egress(
@@ -2703,11 +2746,14 @@ async fn attempt(
                 .map(crate::services::provider_accounts::Hosts::api_base)
                 .and_then(Result::ok)
                 .ok_or_else(|| {
-                    fail(Stage::Setup)(error(
-                        ErrorKind::ProviderError,
-                        500,
-                        "No base URL is configured for this provider.",
-                    ))
+                    fail(Stage::Setup)(
+                        error(
+                            ErrorKind::ProviderError,
+                            500,
+                            "No base URL is configured for this provider.",
+                        )
+                        .with_retry(kaeso_kpp::Retry::Futile),
+                    )
                 })?,
         ),
         None => None,
@@ -2719,11 +2765,14 @@ async fn attempt(
         (None, None, None) => match &keyed {
             Some(base) => base,
             None => base_url(state, &eff.provider).ok_or_else(|| {
-                fail(Stage::Setup)(error(
-                    ErrorKind::ProviderError,
-                    500,
-                    "No base URL is configured for this provider.",
-                ))
+                fail(Stage::Setup)(
+                    error(
+                        ErrorKind::ProviderError,
+                        500,
+                        "No base URL is configured for this provider.",
+                    )
+                    .with_retry(kaeso_kpp::Retry::Futile),
+                )
             })?,
         },
     };
@@ -3089,7 +3138,7 @@ async fn attempt(
                 limits: None,
             };
             let keepalive = state.config.streams.keepalive_interval;
-            let carry = carry.map(|key_id| continuity::StreamCarry::new(state.clone(), key_id));
+            let carry = carry.map(|c| continuity::StreamCarry::new(state.clone(), c));
             let parts = stream::Parts {
                 chunks,
                 mode,
@@ -3205,21 +3254,23 @@ async fn attempt(
                         Probe::Inconclusive(_) | Probe::Failed(_) => {}
                     }
                 }
-                if let Some(refused) =
+                if let Some(mut refused) =
                     refused_custom_key(&err, &eff.provider, credential.is_keyless())
                         .or_else(|| refused_key(&err))
                         .map(|r| {
                             if credential.method == AuthMethod::AzureServicePrincipal {
                                 error(ErrorKind::ProviderError, 502, AZURE_ROLE_REFUSED)
+                                    .with_retry(kaeso_kpp::Retry::Futile)
                             } else {
                                 r
                             }
                         })
                 {
                     // Temporary AWS credentials AWS refused, expired ones included, are fetched
-                    // again for the next request.
+                    // again for the next request, so a retry may pass.
                     if credential.method == kaeso_core::provider::AuthMethod::AwsRole {
                         crate::services::aws_auth::forget(&credential);
+                        refused.retry = None;
                     }
                     let said = redacted(err);
                     tracing::warn!(provider, status, kind = said.kind.as_str(), upstream = %said.message, "the provider refused the project's provider key");
@@ -3424,6 +3475,17 @@ async fn hold(
         .hold(&state.valkey, at, reach, held.clone(), now)
         .await;
     Some((reach, held))
+}
+
+// How long a hold keeps the step from being tried, as `Retry-After` tells an app: whole
+// seconds, rounded up.
+fn held_for(held: &cooldowns::Held, now: OffsetDateTime) -> Option<Duration> {
+    let left = held.until - now;
+    let secs = left.whole_seconds() + i64::from(left.subsec_nanoseconds() > 0);
+    u64::try_from(secs)
+        .ok()
+        .filter(|s| *s > 0)
+        .map(Duration::from_secs)
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -3657,6 +3719,9 @@ async fn route(
             }),
         });
         if let Some((reach, held)) = hold(state, &at, &failure, status).await {
+            if failure.stage == Stage::PlanLimit && failure.err.retry_after.is_none() {
+                failure.err.retry_after = held_for(&held, state.clock.now());
+            }
             held_steps.add(&at, reach, held);
         }
         let falls = i + 1 < plan.len()
@@ -3748,7 +3813,7 @@ async fn reply_with(
     reply: Reply,
     out: Result<Vec<u8>, KppError>,
     counter: InputCounter,
-    carry: Option<uuid::Uuid>,
+    carry: Option<continuity::Carry>,
     served: &Served,
 ) -> Result<Done, KppError> {
     record_usage(rec, &reply, counter).await;
@@ -3771,13 +3836,18 @@ async fn answer_with(
     rec: &mut Recording,
     reply: Reply,
     out: Vec<u8>,
-    carry: Option<uuid::Uuid>,
+    carry: Option<continuity::Carry>,
     served: &Served,
 ) -> Result<Done, KppError> {
-    if let Some(key_id) = carry
+    if let Some(c) = carry
         && let Reply::Generate(r) = &reply
     {
-        continuity::keep(state, key_id, &reasoning_for_tool_calls(&r.blocks)).await;
+        let kept = if c.every {
+            every_reasoning_for_tool_calls(&r.blocks)
+        } else {
+            reasoning_for_tool_calls(&r.blocks)
+        };
+        continuity::keep(state, c.key_id, &kept).await;
     }
     let reply_kind = reply.kind();
     // Speech is audio and a transcript may be plain text or events: the app's codec names the
@@ -3890,7 +3960,7 @@ async fn replay(
     rec: &mut Recording,
     stored: response_cache::Stored,
     encode_ctx: &EncodeCtx,
-    carry: Option<uuid::Uuid>,
+    carry: Option<continuity::Carry>,
     served: &Served,
 ) -> Result<Done, KppError> {
     let age = stored.age(state.clock.now());
@@ -4235,6 +4305,7 @@ mod tests {
             status,
             message: "m".into(),
             retry_after: Some(Duration::from_secs(5)),
+            retry: None,
             param: None,
             left: None,
         };
@@ -4253,6 +4324,13 @@ mod tests {
         );
         assert_eq!(limited(refusal(403)).kind, ErrorKind::PermissionDenied);
         assert_eq!(limited(refusal(429)).kind, ErrorKind::RateLimited);
+        assert_eq!(limited(refusal(429)).retry, None);
+        let used_up = limited(super::super::hooks::Refusal {
+            retry: Some(kaeso_kpp::Retry::AfterReset),
+            ..refusal(429)
+        });
+        assert_eq!(used_up.retry, Some(kaeso_kpp::Retry::AfterReset));
+        assert_eq!(used_up.retry_after, Some(Duration::from_secs(5)));
     }
 
     #[test]

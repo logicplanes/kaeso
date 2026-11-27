@@ -65,6 +65,24 @@ def test_every_service_has_a_health_check_for_wait_to_wait_for():
     assert not own & images
 
 
+@pytest.mark.parametrize("value", [None, "true"])
+def test_one_line_in_env_lets_search_engines_in_for_the_gateway_and_the_console_alike(value):
+    services = config(values={"KAESO_SEARCH_ENGINES": value})["services"]
+    expected = value or "false"
+    assert services["gateway"]["environment"]["KAESO_SEARCH_ENGINES"] == expected
+    assert services["console"]["environment"]["KAESO_SEARCH_ENGINES"] == expected
+
+
+def test_caddy_and_the_updating_page_ask_crawlers_to_leave_their_own_answers_out():
+    caddyfile = config()["configs"]["caddyfile"]["content"]
+    errors = caddyfile[caddyfile.index("handle_errors") :]
+    assert '\t\t\tX-Robots-Tag "noindex, nofollow"\n' in errors[: errors.index("}")]
+    maintenance = caddyfile[caddyfile.index("handle /kaeso-maintenance.json") :]
+    assert 'header X-Robots-Tag "noindex, nofollow"' in maintenance[: maintenance.index("}")]
+    page = config()["configs"]["updating_page"]["content"]
+    assert '<meta name="robots" content="noindex, nofollow">' in page
+
+
 def test_caddy_reports_healthy_from_a_site_of_its_own_on_the_loopback_address():
     caddy = config()["services"]["caddy"]
     check = caddy["healthcheck"]["test"]

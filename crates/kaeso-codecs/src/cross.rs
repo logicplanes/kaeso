@@ -529,6 +529,7 @@ pub(crate) enum Setting {
     AudioFormat,
     FrequencyPenalty,
     PresencePenalty,
+    TopK,
 }
 
 pub(crate) fn app_field(r: &GenerateRequest, setting: Setting, target: DialectId) -> &'static str {
@@ -568,6 +569,8 @@ pub(crate) fn app_field(r: &GenerateRequest, setting: Setting, target: DialectId
         (Setting::FrequencyPenalty, _) => "frequency_penalty",
         (Setting::PresencePenalty, G) => "generationConfig.presencePenalty",
         (Setting::PresencePenalty, _) => "presence_penalty",
+        (Setting::TopK, G) => "generationConfig.topK",
+        (Setting::TopK, _) => "top_k",
     }
 }
 
@@ -779,7 +782,16 @@ fn check_generate(r: &GenerateRequest, target: &Origin) -> Result<(), KppError> 
 fn check_block(block: &Block, target: &Origin, path: &str) -> Result<(), KppError> {
     let dialect = target.dialect;
     match block {
-        Block::Reasoning(_) => Ok(()),
+        Block::Reasoning(r) => match crate::openai_responses::reasoning_reference(r) {
+            Some(id) if dialect != DialectId::OpenAiResponses => Err(foreign(
+                format!("`item_reference` `{id}`"),
+                &Origin::new(DialectId::OpenAiResponses),
+                dialect,
+                path,
+                "Send the reasoning item itself in `input`, as SDKs do with `store: false`.",
+            )),
+            _ => Ok(()),
+        },
         Block::Unknown(item) => {
             if item.origin.is(dialect) {
                 return Ok(());

@@ -58,6 +58,9 @@ const CONTEXT_TOO_LONG: &str = "prompt is too long";
 // Anthropic answers an empty credit balance with 400 `invalid_request_error`, not the 402
 // `billing_error` its errors page documents (fixtures/anthropic_messages/errors/billing-credit-balance.json).
 const CREDIT_BALANCE: &str = "Your credit balance is too low";
+// Anthropic's 429 for an organization past its monthly spend cap, which lasts until the cap
+// resets (https://platform.claude.com/docs/en/api/rate-limits#reaching-your-spend-cap).
+const SPEND_CAP: &str = "enforced_spend_limit_reached";
 
 fn wire_for_kind(kind: &ErrorKind) -> (u16, &'static str) {
     match kind {
@@ -128,6 +131,13 @@ fn decode_body(body: &[u8], status: Option<u16>) -> KppError {
                 e.known.error.message.clone()
             };
             let mut err = KppError::new(kind, message).with_origin(origin);
+            let code = raw
+                .as_ref()
+                .and_then(|v| v.pointer("/error/details/error_code"))
+                .and_then(Value::as_str);
+            if code == Some(SPEND_CAP) {
+                err.retry = Some(kaeso_kpp::Retry::AfterReset);
+            }
             err.raw = raw;
             err
         }

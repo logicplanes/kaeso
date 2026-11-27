@@ -241,7 +241,7 @@ fn anthropic_fixture_requests_encode_or_name_the_feature() {
     assert!(
         refused
             .iter()
-            .any(|(_, f)| f.as_deref() == Some("top_k") || f.as_deref() == Some("token counting"))
+            .any(|(_, f)| f.as_deref() == Some("token counting"))
     );
 }
 

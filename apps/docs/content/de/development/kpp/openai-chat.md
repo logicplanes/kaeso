@@ -108,7 +108,6 @@ Für KPP aus anderen Dialekten lehnt `check()` ab:
 - eine Bild- oder andere Ausgabemodalität, Audio ohne Stimme, eine Stimme, die OpenAI nicht nennt, und Audioeinstellungen ohne Audioausgabe;
 - Verweigerungen und Zitate außerhalb von Assistentennachrichten;
 - über `check_foreign` die Zitate anderer Dialekte;
-- `top_k` ([Sampling](sampling.md));
 - unbekannte Reasoning-Modi und Aufwandsstufen außerhalb des Enums der Spezifikation.
 
 Budgets und `disabled` werden umgerechnet ([Aufwand und Budget](reasoning.md#aufwand-und-budget)). Diese Hinweise werden stattdessen verworfen:
@@ -118,7 +117,8 @@ Budgets und `disabled` werden umgerechnet ([Aufwand und Budget](reasoning.md#auf
 - `ToolResult::is_error`, dessen Information der Fehlerinhalt trägt ([Tool-Fehler](cross-format.md#tool-fehler));
 - `reasoning.summary` und `reasoning.include_encrypted` anderer Dialekte, weil Chat kein Feld hat, das sie anfordert ([lesbares Reasoning und Zusammenfassungen](reasoning.md#lesbares-reasoning-und-zusammenfassungen));
 - ein `web_search`-Tool und `web_search_call`-Items von OpenAI Responses, weil Chat keine gehostete Websuche hat ([weggelassene Tools](cross-format.md#weggelassene-tools));
-- ein `text.verbosity` von OpenAI Responses, außer das Anbieterprofil nimmt `verbosity` an ([bedingte Einträge](cross-format.md#bedingte-einträge)).
+- ein `text.verbosity` von OpenAI Responses, außer das Anbieterprofil nimmt `verbosity` an ([bedingte Einträge](cross-format.md#bedingte-einträge));
+- `top_k`, das es in Chat nicht gibt, außer das Anbieterprofil nimmt es an (`with_top_k()`); in `kaeso-left-out` genannt ([Top K](sampling.md#top-k)).
 
 `custom_tool_call`- und `local_shell_call`-Items von OpenAI Responses und ihre Ausgaben werden zu Tool-Aufrufen und `tool`-Nachrichten ([Tool-Verlauf von Codex](cross-format.md#tool-verlauf-von-codex)).
 
@@ -237,6 +237,8 @@ Während solche weggelassenen Inhalte ankommen, schreibt der Encoder getaktete S
 
 Nutzung wird nur geschrieben, wenn die App danach gefragt hat (`EncodeCtx::stream` mit `include_usage`). Jeder Chunk hat dann `usage: null`, und ein letzter Chunk mit `choices: []` trägt die Nutzung. Aus anderen Dialekten ist das die zuletzt gemeldete Nutzung, mit den Eingabezahlen aus `ResponseStart`, wenn die spätere Meldung keine hat.
 
+Ein Chat-Anbieter, der die Nutzung an den abschließenden Chunk hängt, wie DeepSeek und Mistral, bekommt für seine eigenen Streams dieselbe Form: Dieser Chunk geht mit `usage: null`, und die Nutzung in einem eigenen Chunk mit `choices: []` vor `[DONE]`. Der abschließende Chunk wartet auf den nächsten, sodass ein eigener `choices: []`-Nutzungschunk des Anbieters und laufende Nutzung an früheren Chunks unverändert bleiben. `passthrough::for_stream`, das einen Stream desselben Dialekts weiterleitet, ohne ihn zu dekodieren, macht es genauso, und der Round Trip eines solchen Fixtures erwartet diese Form (`test_support::chat_usage_in_its_own_chunk`).
+
 ## Fehler (`ErrorResponse`)
 
 Der Fehler-Body ist `{error: {message, type, param, code}}`.
@@ -254,7 +256,7 @@ Der Fehler-Body ist `{error: {message, type, param, code}}`.
 | 403 | `PermissionDenied` | 403 `request_forbidden` |
 | 404 | `NotFound` | 404 `invalid_request_error` |
 | 413 | `RequestTooLarge` | 413 `invalid_request_error` |
-| 429 | `RateLimited` | 429 `rate_limit_error`, Code `rate_limit_exceeded` |
+| 429 | `RateLimited` | 429 `rate_limit_error`, Code `rate_limit_exceeded`; mit `retry: after_reset`, ein bis zum Zurücksetzen aufgebrauchtes Kontingent, 429 `insufficient_quota`, Code `insufficient_quota` |
 | 503 | `Overloaded` | 503 `service_unavailable_error`, Code `server_is_overloaded` |
 | 408, 504, `code` `vector_store_timeout` | `Timeout` | 504 `server_error`, Code `timeout` |
 | andere | `ProviderError` | sein 5xx-Status (außer 503) oder 500, `server_error` |

@@ -328,9 +328,17 @@ fn every_error_fixture_round_trips_with_status_and_retry_after() {
             headers.get("retry-after"),
             "{name}"
         );
+        if let Some(said) = headers.get(crate::SHOULD_RETRY_HEADER) {
+            let sent = crate::dispatch::encode_error(A, &err);
+            assert_eq!(
+                sent.headers.get(crate::SHOULD_RETRY_HEADER),
+                Some(said),
+                "{name}"
+            );
+        }
         n += 1;
     }
-    assert!(n >= 14, "{n}");
+    assert!(n >= 15, "{n}");
 }
 
 #[test]
@@ -537,4 +545,25 @@ fn a_request_with_a_thread_says_so() {
             "{body}"
         );
     }
+}
+
+#[test]
+fn a_spend_cap_lasts_until_it_resets_and_is_a_used_up_quota_for_openai_apps() {
+    let (_, body) = fixtures(DIALECT, "errors", "json")
+        .into_iter()
+        .find(|(n, _)| n == "rate-limit-spend-cap")
+        .unwrap();
+    let err = AnthropicMessages::decode_error(429, &HeaderList::new(), &body);
+    assert_eq!(err.kind, kaeso_kpp::ErrorKind::RateLimited);
+    assert_eq!(err.retry, Some(kaeso_kpp::Retry::AfterReset));
+    let sent = crate::dispatch::encode_error(DialectId::OpenAiChat, &err);
+    assert_eq!(sent.headers.get(crate::SHOULD_RETRY_HEADER), Some("false"));
+    let v: Value = serde_json::from_slice(&sent.body).unwrap();
+    assert_eq!(v["error"]["code"], "insufficient_quota");
+    let (_, plain) = fixtures(DIALECT, "errors", "json")
+        .into_iter()
+        .find(|(n, _)| n == "rate-limit")
+        .unwrap();
+    let limited = AnthropicMessages::decode_error(429, &HeaderList::new(), &plain);
+    assert_eq!(limited.retry, None);
 }

@@ -1,0 +1,38 @@
+{
+  "contents": [
+    {
+      "parts": [
+        {
+          "text": "Two primary colors."
+        }
+      ],
+      "role": "user"
+    }
+  ],
+  "generationConfig": {
+    "maxOutputTokens": 800,
+    "responseMimeType": "application/json",
+    "responseSchema": {
+      "type": "ARRAY",
+      "items": {
+        "type": "OBJECT",
+        "properties": {
+          "color": {
+            "type": "STRING"
+          },
+          "hex": {
+            "type": "STRING",
+            "nullable": true
+          }
+        },
+        "required": [
+          "color"
+        ],
+        "propertyOrdering": [
+          "color",
+          "hex"
+        ]
+      }
+    }
+  }
+}

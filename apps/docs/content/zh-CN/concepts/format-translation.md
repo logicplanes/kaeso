@@ -27,7 +27,7 @@ KPP（Kaeso Provider Protocol）为每种 API 格式都提供一个编解码器�
 
 ## 三条规则
 
-1. **格式相同，没有损失。** 以原格式到达服务商的请求与发送时完全一致。只有模型名称会改为服务商的模型 ID。流始终会请求用量，但只有应用自己请求时才会看到。例外有三个。对于服务商在任何形式下都不接受其 schema 的工具，其参数根部的联合会变为一个对象，回复的 `kaeso-adapted` 响应头会注明它；没有 `type` 的根部会加上 `type: "object"`（[联合类型的工具 schema](../development/kpp/cross-format.md#联合类型的工具-schema)）。发给没有推理强度等级的模型的推理强度，以及发给不支持推理的模型的自适应思考会被省略（[没有推理强度等级的模型](../development/kpp/reasoning.md#没有推理强度等级的模型)）。Claude Opus 4.7 及更新的模型只接受默认采样设置，因此 Kaeso 会省略 `temperature`、`top_p` 和 `top_k`，思考预算则会变为自适应思考。
+1. **格式相同，没有损失。** 以原格式到达服务商的请求与发送时完全一致。只有模型名称会改为服务商的模型 ID。流始终会请求用量，但只有应用自己请求时才会看到。例外有四个。对于服务商在任何形式下都不接受其 schema 的工具，其参数根部的联合会变为一个对象，回复的 `kaeso-adapted` 响应头会注明它；没有 `type` 的根部会加上 `type: "object"`（[联合类型的工具 schema](../development/kpp/cross-format.md#联合类型的工具-schema)）。发给没有推理强度等级的模型的推理强度，以及发给不支持推理的模型的自适应思考会被省略（[没有推理强度等级的模型](../development/kpp/reasoning.md#没有推理强度等级的模型)）。Claude Opus 4.7 及更新的模型只接受默认采样设置，因此 Kaeso 会省略 `temperature`、`top_p` 和 `top_k`，思考预算则会变为自适应思考。忽略 `top_k` 的 Anthropic 格式服务商（例如 DeepSeek 或 MiniMax）不会收到它（[top K](../development/kpp/sampling.md#top-k)）。
 2. **拒绝，而不丢弃。** 请求跨格式转换时，如果目标格式无法支持某个字段，Kaeso 会拒绝请求，并在错误中注明该字段。只有不改变模型输出内容的提示信息、目标缺少的少数可选工具、模型无法接受的推理设置，以及取值本就是 API 所用值的设置会被省略；回复的 `kaeso-left-out` 响应头会注明这些内容（[省略的工具](../development/kpp/cross-format.md#省略的工具)、[中性值](../development/kpp/sampling.md#中性值)）。
 3. **签名的推理只回到原处。** Kaeso 只会把加密或签名的推理内容发回签发它的格式和服务商。
 
@@ -50,7 +50,7 @@ KPP（Kaeso Provider Protocol）为每种 API 格式都提供一个编解码器�
 ### 发往 Anthropic 的请求
 
 - `seed`、不为 0 的频率惩罚和存在惩罚，以及大于 1 的温度
-- `json_object` 输出格式，以及带有描述或带有 `strict: false` 的 JSON schema
+- `json_object` 输出格式，以及没有列出任何键的 JSON schema
 - 历史中的拒绝回复
 - JPEG、PNG、GIF 和 WebP 以外的图像，以及 PDF 和纯文本以外的文档
 - 音频，以及 MiniMax 以外的视频
@@ -59,7 +59,7 @@ KPP（Kaeso Provider Protocol）为每种 API 格式都提供一个编解码器�
 
 ### 发往 OpenAI Chat Completions 的请求
 
-- `top_k` 和超过四个的停止序列
+- 超过四个的停止序列
 - 文本文档、文档 URL、文档标题、上下文和引用
 - 图像文件 ID，以及用户消息之外的图像、文档和音频
 - base64 WAV 和 MP3 以外的音频，以及视频，文档中写明支持更多的服务商除外
@@ -67,7 +67,7 @@ KPP（Kaeso Provider Protocol）为每种 API 格式都提供一个编解码器�
 
 ### 发往 OpenAI Responses 的请求
 
-- `top_k` 和不为 0 的惩罚参数
+- 不为 0 的惩罚参数
 - 文本文档、文档标题、上下文和引用
 - 音频和视频，以及音频和图像输出
 
@@ -151,6 +151,12 @@ Chat Completions 没有推理字段。当 Claude，或经由 Responses 的 OpenA
 ### Gemini 应用
 
 Gemini 应用收不到其他服务商的推理，因为思考 part 无法承载它：`google-genai` 会把 `thoughtSignature` 当作 base64 读取。当 Claude，或经由 Responses 的 OpenAI 模型，为 Gemini 应用提供服务时，网关会按工具调用的 ID 保存每次工具调用之前的推理，并像对 Chat Completions 一样把它放回。当 Gemini 模型为 Gemini 应用提供服务时，它的思考签名会按 Gemini 写出的原样到达应用并返回。
+
+### 保持 `store` 开启的 Responses 应用
+
+保持 `store` 开启的 Responses 应用（Vercel AI SDK 默认如此）会把回复中的推理作为指向其 ID 的 `item_reference` 发回，而不是发回 item 本身。Kaeso 不保留回复，因此网关会像对 Chat Completions 一样，为这类应用保留每次工具调用之前的推理，并把它放回引用所指的位置。没有工具调用的轮次中的引用会被省略并在 `kaeso-left-out` 中注明，因为没有模型需要取回那里的推理。
+
+当推理已不在时（已过期、由另一个密钥发送该轮次，或应用此前发送了 `store: false`），Kaeso 会以 `400` 拒绝请求，并要求直接发送这些 item，就像 SDK 在 `store: false` 时那样。指向推理以外内容的引用仍会被拒绝（[存储的回复](../console/organizations-and-projects.md#存储的回复)）。
 
 ### 可读的推理
 

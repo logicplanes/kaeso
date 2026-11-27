@@ -133,10 +133,7 @@ export function useOverview(scope: Scope, search: PeriodSearch) {
   };
   const keyName = (id: string) => {
     if (id === "playground") return t("project.overview.playground", "Playground");
-    if (id.startsWith("source:")) {
-      const source = sources.source(id.slice(7));
-      return source ? t("project.analytics.sourceKey", "{name} (source)", { name: source.name }) : t("project.analytics.aSource", "A source");
-    }
+    if (id.startsWith("source:")) return sources.asKey(id.slice(7));
     const key = keys.data?.find((k) => k.id === id);
     return key ? keyLabel(key) : id;
   };
