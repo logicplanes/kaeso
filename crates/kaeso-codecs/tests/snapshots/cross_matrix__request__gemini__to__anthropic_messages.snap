@@ -345,6 +345,7 @@ expression: outcomes
         "format": {
           "schema": {
             "items": {
+              "additionalProperties": false,
               "properties": {
                 "color": {
                   "type": "string"
@@ -457,6 +458,7 @@ expression: outcomes
       "output_config": {
         "format": {
           "schema": {
+            "additionalProperties": false,
             "properties": {
               "color": {
                 "enum": [

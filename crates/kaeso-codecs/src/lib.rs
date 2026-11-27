@@ -20,6 +20,7 @@ mod models;
 pub mod multipart;
 mod neutral;
 mod openai_models;
+mod output_schema;
 pub mod passthrough;
 mod scan;
 pub mod sse;
