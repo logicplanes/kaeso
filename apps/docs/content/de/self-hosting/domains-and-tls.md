@@ -105,8 +105,8 @@ Setzen Sie `KAESO_SEARCH_ENGINES=true` in `.env` und führen Sie `docker compose
 
 | Was Crawler bekommen | Aus, der Standard | An |
 | --- | --- | --- |
-| `/robots.txt` | Jeder Pfad gesperrt | `/sign-in` und die Dateien, die sie darstellen, erlaubt, jeder andere Pfad gesperrt |
-| `X-Robots-Tag: noindex, nofollow` | Auf jeder Antwort | Auf jeder Antwort außer dieser Seite und ihren Dateien |
+| `/robots.txt` | Jeder Pfad gesperrt | `/sign-in` und die Pfade der Dateien, die sie darstellen, etwa `/assets/`, erlaubt; jeder andere Pfad gesperrt |
+| `X-Robots-Tag: noindex, nofollow` | Auf jeder Antwort | Auf jeder Antwort außer dieser Seite und den Dateien, die es unter diesen Pfaden gibt |
 | `<meta name="robots" content="noindex, nofollow">` | In jeder Seite | In jeder Seite außer der Anmeldeseite |
 
 Auch wenn sie an ist, bleiben diese draußen:

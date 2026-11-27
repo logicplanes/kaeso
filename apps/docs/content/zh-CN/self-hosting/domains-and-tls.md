@@ -105,8 +105,8 @@ networks:
 
 | 爬虫得到的内容 | 关闭（默认） | 开启 |
 | --- | --- | --- |
-| `/robots.txt` | 禁止所有路径 | 允许 `/sign-in` 以及显示它所需的文件，禁止其他所有路径 |
-| `X-Robots-Tag: noindex, nofollow` | 每个响应都带有 | 除该页面及其文件外，每个响应都带有 |
+| `/robots.txt` | 禁止所有路径 | 允许 `/sign-in` 以及显示它所需文件的路径（例如 `/assets/`），禁止其他所有路径 |
+| `X-Robots-Tag: noindex, nofollow` | 每个响应都带有 | 除该页面以及这些路径下实际存在的文件外，每个响应都带有 |
 | `<meta name="robots" content="noindex, nofollow">` | 每个页面都带有 | 除登录页面外，每个页面都带有 |
 
 即使开启，以下内容仍然不会被收录：

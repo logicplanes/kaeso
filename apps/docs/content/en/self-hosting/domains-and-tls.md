@@ -105,8 +105,8 @@ Set `KAESO_SEARCH_ENGINES=true` in `.env` and run `docker compose up -d --wait` 
 
 | What crawlers get | Off, the default | On |
 | --- | --- | --- |
-| `/robots.txt` | Every path disallowed | `/sign-in` and the files that draw it allowed, every other path disallowed |
-| `X-Robots-Tag: noindex, nofollow` | On every response | On every response but that page and its files |
+| `/robots.txt` | Every path disallowed | `/sign-in` and the paths of the files that draw it, such as `/assets/`, allowed; every other path disallowed |
+| `X-Robots-Tag: noindex, nofollow` | On every response | On every response but that page and the files that exist under those paths |
 | `<meta name="robots" content="noindex, nofollow">` | In every page | In every page but the sign-in page |
 
 When it's on, these still stay out:
