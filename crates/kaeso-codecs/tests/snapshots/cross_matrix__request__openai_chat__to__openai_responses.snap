@@ -166,6 +166,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -238,6 +239,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -301,6 +303,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -708,6 +711,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -1696,6 +1700,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -1856,6 +1861,7 @@ expression: outcomes
         {
           "description": "Get the current time.",
           "name": "get_time",
+          "strict": false,
           "type": "function"
         }
       ]
@@ -1903,6 +1909,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -1955,6 +1962,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -2286,6 +2294,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -2511,6 +2520,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -2544,6 +2554,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -2577,6 +2588,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -2610,6 +2622,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -2740,6 +2753,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -2909,6 +2923,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -2963,6 +2978,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -3454,6 +3470,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -3509,6 +3526,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -3692,6 +3710,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -3725,6 +3744,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -3778,6 +3798,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -3825,6 +3846,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -3928,6 +3950,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -4194,6 +4217,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -4233,6 +4257,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -4280,6 +4305,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -4415,6 +4441,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -4627,6 +4654,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -4665,6 +4693,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -4746,6 +4775,7 @@ expression: outcomes
             },
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -4932,6 +4962,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -5158,6 +5189,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -5202,6 +5234,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -5365,6 +5398,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -5417,6 +5451,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -5546,6 +5581,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -5708,6 +5744,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -5752,6 +5789,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         },
         {
@@ -5769,6 +5807,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -5965,6 +6004,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -6009,6 +6049,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -6287,6 +6328,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         },
         {
@@ -6313,6 +6355,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
