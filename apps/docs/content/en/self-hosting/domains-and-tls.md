@@ -99,26 +99,27 @@ Join your proxy's container to `kaeso-proxy` at a fixed address, such as `172.30
 
 ## Search engines
 
-An install stays out of search engines and AI crawlers until you let them in: none of its pages shows up in search results, and none is offered for training models or for an assistant's answers. Kaeso holds your provider keys and your organizations' data, so by default its address is nobody else's to find.
+An install asks search engines and AI crawlers to stay out until you let them in: they index none of its pages, and none is offered for training models or for an assistant's answers. Kaeso holds your provider keys and your organizations' data, so by default its address is nobody else's to find.
 
 Set `KAESO_SEARCH_ENGINES=true` in `.env` and run `docker compose up -d --wait` when people should find your sign-in page by searching for it. Compose passes the variable to the gateway and the console, which both read it; the Helm chart and the platform templates set it in one place too ([configuration](configuration.md#search-engines)). The **General** page of the instance settings shows which way it is set.
 
 | What crawlers get | Off, the default | On |
 | --- | --- | --- |
-| `/robots.txt` | Every path disallowed | `/sign-in`, `/sign-up` and the files that draw them allowed, every other path disallowed |
-| `X-Robots-Tag: noindex, nofollow` | On every response | On every response but those pages and files |
-| `<meta name="robots" content="noindex, nofollow">` | In every page | In every page but those two |
+| `/robots.txt` | Every path disallowed | `/sign-in` and the files that draw it allowed, every other path disallowed |
+| `X-Robots-Tag: noindex, nofollow` | On every response | On every response but that page and its files |
+| `<meta name="robots" content="noindex, nofollow">` | In every page | In every page but the sign-in page |
 
 When it's on, these still stay out:
 
-- `/sign-in` and `/sign-up` with a query, since the sign-in page's `next` names the page someone was on.
+- `/sign-in` with a query, since its `next` names the page someone was on.
+- `/sign-up`. Only the Platform API says whether your install takes sign-ups, and crawlers may not ask it, so they would see a form that an install by invitation doesn't offer.
 - `/`, which sends a signed-out visitor to the sign-in page, and every page of the console behind it.
 - Shared links, which are meant for the people they were sent to.
 - The APIs, the MCP server and its sign-in. The gateway answers `noindex` on every response, and on its own address its `robots.txt` disallows every path.
 
 `robots.txt` names no crawler, so its rules hold for every crawler that reads it, search engines and AI crawlers alike, such as Googlebot, OpenAI's GPTBot and OAI-SearchBot, Anthropic's ClaudeBot, PerplexityBot and Common Crawl's CCBot. Crawlers keep their copy for a day at most, and the console lets them keep it for an hour.
 
-These are requests that well-behaved crawlers follow, not access control: everything but the sign-in pages needs a sign-in anyway. A search engine that obeys `robots.txt` never fetches a disallowed page, so it never reads that page's `noindex` either. When other sites link to your install, it may still list the bare address, without a title or any text from it. An assistant that opens a link because someone asked it to may ignore `robots.txt` for that one visit, and sees what any signed-out visitor sees.
+These are requests that well-behaved crawlers follow, not access control: everything but the sign-in pages needs a sign-in anyway. A search engine that obeys `robots.txt` never fetches a disallowed page, so it never reads that page's `noindex` either. So when other sites link to your install, it may still list the bare address, without a title or any text from it. An assistant that opens a link because someone asked it to may ignore `robots.txt` for that one visit, and sees what any signed-out visitor sees.
 
 ## Long streams
 

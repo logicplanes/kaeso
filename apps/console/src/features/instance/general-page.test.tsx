@@ -71,26 +71,26 @@ describe("instance general page", () => {
     expect(within(section("Sign-in methods")).getAllByText("On")).toHaveLength(1);
   });
 
-  it("says search engines are kept out until the configuration lets them index the sign-in pages", async () => {
+  it("says search engines are kept out until the configuration lets them index the sign-in page", async () => {
     signedIn();
     settingsApi();
     await renderApp(PATH);
     await screen.findByRole("heading", { name: "Search engines" });
     const off = section("Search engines");
     expect(within(off).getByText("Set with KAESO_SEARCH_ENGINES for the gateway and the console.")).toBeInTheDocument();
-    expect(within(off).getByText("Index the sign-in pages")).toBeInTheDocument();
+    expect(within(off).getByText("Index the sign-in page")).toBeInTheDocument();
     expect(within(off).getByText("Every crawler is asked to keep out of this install.")).toBeInTheDocument();
     expect(within(off).getByText("Off")).toBeInTheDocument();
     expect(within(off).queryByRole("switch")).not.toBeInTheDocument();
   });
 
-  it("says search engines may list the sign-in and sign-up pages when the configuration lets them", async () => {
+  it("says search engines may list the sign-in page when the configuration lets them", async () => {
     signedIn();
     settingsApi({ search_engines: true });
     await renderApp(PATH);
     await screen.findByRole("heading", { name: "Search engines" });
     const on = section("Search engines");
-    expect(within(on).getByText("Search engines may list the sign-in and sign-up pages.")).toBeInTheDocument();
+    expect(within(on).getByText("Search engines may list the sign-in page.")).toBeInTheDocument();
     expect(within(on).getByText("On")).toBeInTheDocument();
   });
 

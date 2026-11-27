@@ -49,7 +49,7 @@ variable "clickhouse_url" {
 }
 
 variable "search_engines" {
-  description = "Let search engines and AI crawlers index the console's sign-in and sign-up pages; false keeps the whole install out of them."
+  description = "Let search engines and AI crawlers index the console's sign-in page; false keeps the whole install out of them."
   type        = bool
   default     = false
 }

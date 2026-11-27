@@ -15,7 +15,7 @@
     },
     "searchEngines": {
       "type": "boolean",
-      "description": "Let search engines and AI crawlers index the console's sign-in and sign-up pages; the gateway and the console both read it."
+      "description": "Let search engines and AI crawlers index the console's sign-in page; the gateway and the console both read it."
     },
     "nameOverride": {
       "type": "string"

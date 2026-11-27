@@ -245,7 +245,7 @@
   "instance.searchEnginesHint": "通过网关和控制台的 KAESO_SEARCH_ENGINES 设置。",
   "instance.searchEnginesIndex": "将登录页面编入索引",
   "instance.searchEnginesOff": "已要求所有爬虫不要访问此实例。",
-  "instance.searchEnginesOn": "搜索引擎可以收录登录和注册页面。",
+  "instance.searchEnginesOn": "搜索引擎可以收录登录页面。",
   "instance.searchOrgs": "搜索组织",
   "instance.searchUsers": "搜索用户",
   "instance.sendInvitation": "发送邀请",

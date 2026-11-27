@@ -48092,7 +48092,7 @@
           },
           "search_engines": {
             "type": "boolean",
-            "description": "Whether search engines may index the console's sign-in and sign-up pages\n(`search_engines`, read-only); off, the install asks every crawler to keep out."
+            "description": "Whether search engines may index the console's sign-in page\n(`search_engines`, read-only); off, the install asks every crawler to keep out."
           },
           "share_mark": {
             "type": "boolean",

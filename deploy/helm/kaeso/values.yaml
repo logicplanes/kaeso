@@ -5,8 +5,8 @@
 # The URL people and apps use to reach Kaeso, such as https://kaeso.example.com. Required.
 publicUrl: ""
 
-# Let search engines and AI crawlers index the console's sign-in and sign-up pages. Off, the gateway
-# and the console ask every crawler to keep the whole install out. Both read it, so set it here.
+# Let search engines and AI crawlers index the console's sign-in page. Off, the gateway and the
+# console ask every crawler to keep the whole install out. Both read it, so set it here.
 # https://docs.kaeso.app/self-hosting/configuration#search-engines
 searchEngines: false
 

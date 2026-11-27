@@ -69,7 +69,7 @@ pub struct SettingsView {
     pub timezone: String,
     #[doc = "Sign-in methods (read-only)."]
     pub sign_in: SignInMethods,
-    #[doc = "Whether search engines may index the console's sign-in and sign-up pages\n\
+    #[doc = "Whether search engines may index the console's sign-in page\n\
         (`search_engines`, read-only); off, the install asks every crawler to keep out."]
     pub search_engines: bool,
     #[doc = "The org whose single sign-on may administer the instance\n\

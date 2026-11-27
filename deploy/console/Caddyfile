@@ -18,10 +18,11 @@
 	}
 }
 
-# The sign-in and sign-up pages without a query, and the files that draw them, are the only ones
-# without noindex, and the only ones robots.txt allows; the sign-in page's `next` names other pages.
+# The sign-in page without a query, and the files that draw it, are the only answers without noindex,
+# and the only ones robots.txt allows. A query's `next` names another page; the sign-up page isn't one,
+# since only the Platform API, which crawlers may not fetch, says whether it is open.
 (search-engines-true) {
-	@noindex not expression `path('/assets/*', '/theme-init.js', '/favicon*', '/apple-touch-icon.png') || (path('/sign-in', '/sign-up') && {query} == '')`
+	@noindex not expression `(path('/sign-in') && {query} == '') || (path('/assets/*', '/theme-init.js', '/favicon*', '/apple-touch-icon.png') && file())`
 	header @noindex X-Robots-Tag "noindex, nofollow"
 	handle /robots.txt {
 		header Content-Type "text/plain; charset=utf-8"
@@ -29,7 +30,6 @@
 		respond <<TXT
 			User-agent: *
 			Allow: /sign-in$
-			Allow: /sign-up$
 			Allow: /assets/
 			Allow: /theme-init.js
 			Allow: /favicon

@@ -81,7 +81,7 @@ Parameters:
     Type: String
     Default: "false"
     AllowedValues: ["false", "true"]
-    Description: Let search engines and AI crawlers index the console's sign-in and sign-up pages; false keeps the whole install out of them.
+    Description: Let search engines and AI crawlers index the console's sign-in page; false keeps the whole install out of them.
   ConsoleCount:
     Type: Number
     Default: 1

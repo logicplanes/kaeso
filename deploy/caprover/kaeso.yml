@@ -208,5 +208,5 @@ caproverOneClickApp:
     - id: $$cap_search_engines
       label: Search engines
       defaultValue: "false"
-      description: true lets search engines and AI crawlers index the sign-in and sign-up pages; false keeps the whole install out of them.
+      description: true lets search engines and AI crawlers index the sign-in page; false keeps the whole install out of them.
       validRegex: /^(true|false)$/

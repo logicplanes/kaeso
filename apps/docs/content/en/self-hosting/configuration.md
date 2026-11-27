@@ -33,7 +33,7 @@ Apply a change with `docker compose up -d --wait`. A gateway setting written onl
 | `KAESO_UPDATER_TOKEN`, `COMPOSE_PROFILES` | no | The token the gateway and the updater share, and `updater` to start the updater ([the updater](upgrades.md#the-updater)). |
 | `KAESO_DIR` | with the updater | The install's folder, the only folder the updater's Docker proxy allows bind mounts from. |
 | `DOCKER_SOCKET` | no | The path of Docker's socket for the updater, when it isn't `/var/run/docker.sock`. |
-| `KAESO_SEARCH_ENGINES` | no | `true` to let search engines and AI crawlers index the sign-in and sign-up pages; `false`, the default, keeps the whole install out of them. Compose passes it to the gateway and the console ([search engines](#search-engines)). |
+| `KAESO_SEARCH_ENGINES` | no | `true` to let search engines and AI crawlers index the sign-in page; `false`, the default, keeps the whole install out of them. Compose passes it to the gateway and the console ([search engines](#search-engines)). |
 | `KAESO_TRUSTED_PROXIES` | no | The networks of proxies whose `X-Forwarded-For` the gateway believes, `127.0.0.0/8,::1/128` and `EDGE_SUBNET` by default. Set it to your own proxy's address ([your own reverse proxy](domains-and-tls.md#use-your-own-reverse-proxy)). |
 | `EDGE_SUBNET` | no | The subnet of the `edge` network, `172.30.83.0/24` by default, whose `X-Forwarded-For` the gateway believes. Change it when the server already uses that range. |
 | `GATEWAY_REPLICAS` | no | How many gateways run, `1` by default; Caddy spreads requests over them ([several gateways](scaling.md)). |
@@ -161,7 +161,7 @@ The console's server reads this setting too, from its environment, so set `KAESO
 
 | Variable<br>TOML key | Type | Default | What it does |
 | --- | --- | --- | --- |
-| `KAESO_SEARCH_ENGINES`<br>`search_engines` | bool | `false` | Let search engines and AI crawlers index the console's sign-in and sign-up pages, and nothing else. Off, `robots.txt` and an `X-Robots-Tag` on every response ask them to keep the whole install out. Anything but a bool stops the gateway and the console at startup. |
+| `KAESO_SEARCH_ENGINES`<br>`search_engines` | bool | `false` | Let search engines and AI crawlers index the console's sign-in page, and nothing else. Off, `robots.txt` and an `X-Robots-Tag` on every response ask them to keep the whole install out. Anything but a bool stops the gateway and the console at startup. |
 
 ### API key failures
 

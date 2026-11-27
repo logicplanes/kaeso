@@ -148,26 +148,26 @@ def test_by_default_every_answer_of_the_console_asks_crawlers_to_leave_it_out(im
         assert httpx.get(f"{url}{SHARE}", timeout=5).text == page(NOINDEX, "share.html")
 
 
-def test_with_search_engines_on_only_the_sign_in_pages_and_what_draws_them_may_be_indexed(image):
+def test_with_search_engines_on_only_the_sign_in_page_and_what_draws_it_may_be_indexed(image):
     with console(image, KAESO_SEARCH_ENGINES=" yes ") as url:
         robots = httpx.get(f"{url}/robots.txt", timeout=5)
         assert robots.text.splitlines() == [
             "User-agent: *",
             "Allow: /sign-in$",
-            "Allow: /sign-up$",
             "Allow: /assets/",
             "Allow: /theme-init.js",
             "Allow: /favicon",
             "Allow: /apple-touch-icon.png",
             "Disallow: /",
         ]
-        for path in ["/sign-in", "/sign-up"]:
-            reply = httpx.get(f"{url}{path}", timeout=5)
-            assert "x-robots-tag" not in reply.headers, path
-            assert reply.text == page(None), path
+        reply = httpx.get(f"{url}/sign-in", timeout=5)
+        assert "x-robots-tag" not in reply.headers
+        assert reply.text == page(None)
         for path in ["/favicon.svg", "/assets/index-a1b2c3d4.js"]:
             assert robots_tag(f"{url}{path}") is None, path
-        for path in ["/", "/sign-in?next=%2Fkeys", "/keys", "/robots.txt", "/healthz", SHARE]:
+        noindex = ["/", "/sign-in?next=%2Fkeys", "/keys", "/robots.txt", "/healthz", SHARE]
+        sign_up_and_missing_files = ["/sign-up", "/favicon-missing.png", "/theme-init.js", "/apple-touch-icon.png", "/assets/missing.js"]
+        for path in noindex + sign_up_and_missing_files:
             assert robots_tag(f"{url}{path}") == NOINDEX, path
         assert httpx.get(f"{url}/keys", timeout=5).text == page(NOINDEX)
         assert httpx.get(f"{url}{SHARE}", timeout=5).text == page(NOINDEX, "share.html"), "a shared link is never indexed"
@@ -184,10 +184,11 @@ def test_robots_txt_allows_exactly_what_the_console_serves_without_noindex():
     on = caddyfile[caddyfile.index("(search-engines-true) {") :]
     on = on[: on.index("\n}\n")]
     expression = re.search(r"@noindex not expression `(.+)`", on).group(1)
-    files_part, pages_part = expression.split(" || ")
-    files = re.findall(r"'(/[^']*)'", files_part)
+    pages_part, files_part = expression.split(" || ")
     pages = re.findall(r"'(/[^']*)'", pages_part)
+    files = re.findall(r"'(/[^']*)'", files_part)
     assert pages_part.endswith("&& {query} == '')"), "a query, such as the sign-in page's next, keeps noindex"
+    assert files_part.endswith("&& file())"), "a path that names no file falls back to a page, which keeps noindex"
     allowed = [line.strip().removeprefix("Allow: ") for line in on.splitlines() if line.strip().startswith("Allow: ")]
     assert allowed == [f"{p}$" for p in pages] + [f.removesuffix("*") for f in files]
     assert [line.strip() for line in on.splitlines() if line.strip().startswith(("Disallow:", "User-agent:"))] == ["User-agent: *", "Disallow: /"]

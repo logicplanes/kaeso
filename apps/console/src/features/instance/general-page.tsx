@@ -156,10 +156,10 @@ function SearchEngines({ on }: { on: boolean }) {
     >
       <SettingsGroup>
         <SettingsRow
-          title={t("instance.searchEnginesIndex", "Index the sign-in pages")}
+          title={t("instance.searchEnginesIndex", "Index the sign-in page")}
           description={
             on
-              ? t("instance.searchEnginesOn", "Search engines may list the sign-in and sign-up pages.")
+              ? t("instance.searchEnginesOn", "Search engines may list the sign-in page.")
               : t("instance.searchEnginesOff", "Every crawler is asked to keep out of this install.")
           }
           control={<Status tone={on ? "success" : "neutral"}>{on ? t("common.on", "On") : t("common.off", "Off")}</Status>}
