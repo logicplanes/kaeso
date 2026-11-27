@@ -141,4 +141,13 @@ fn declarations_are_named_by_their_tool_and_place_in_it() {
             Some("generateContentRequest.tools[0].functionDeclarations[1]".to_owned()),
         ]
     );
+    let (anthropic, left_out) = sent::<AnthropicMessages>(&count, EgressCtx::new(&count));
+    assert_eq!(
+        left_out,
+        ["generateContentRequest.tools[0].functionDeclarations[1].responseJsonSchema"]
+    );
+    assert!(
+        anthropic["tools"][1].get("responseJsonSchema").is_none(),
+        "{anthropic}"
+    );
 }
