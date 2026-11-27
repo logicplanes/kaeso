@@ -24,7 +24,7 @@ export function keyLogFilter(key: string): Record<string, string> {
   return { key };
 }
 
-/** The project's sources by id, for the logs and analytics that name them; nothing without the right to see them or while not `needed`. */
+/** The project's sources by id, for the logs and analytics that name them; nothing without the right to see them. Not `needed`, it doesn't ask for them, but still names those already loaded. */
 export function useSourceNames(org: string, project: string, needed = true): SourceNames {
   const rights = useProjectRights(org, project);
   const query = useQuery({ ...sourcesQuery(org, project), enabled: needed && !!project && rights.has("sources.view") });
