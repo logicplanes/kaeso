@@ -646,16 +646,20 @@ function Overview({
                     </Filtered>
                   ),
                 }
-              : e.key_id
-                ? {
-                    label: t("logs.column.key", "Key"),
-                    value: (
-                      <Filtered label={t("logs.inspector.onlyKey", "Show only requests with this key")} onFilter={only({ key: e.key_id })}>
-                        <Opens href={targets.key}>{keyName(e.key_id)}</Opens>
-                      </Filtered>
-                    ),
-                  }
-                : { label: t("logs.filter.source", "Source"), value: t("logs.source.playground", "Playground") },
+              : e.source === "observed"
+                ? { label: t("logs.filter.reportedBy", "Reported by"), value: <ReportedBy source={undefined} /> }
+                : e.source === "playground"
+                  ? { label: t("logs.filter.source", "Source"), value: t("logs.source.playground", "Playground") }
+                  : {
+                      label: t("logs.column.key", "Key"),
+                      value: e.key_id ? (
+                        <Filtered label={t("logs.inspector.onlyKey", "Show only requests with this key")} onFilter={only({ key: e.key_id })}>
+                          <Opens href={targets.key}>{keyName(e.key_id)}</Opens>
+                        </Filtered>
+                      ) : (
+                        "—"
+                      ),
+                    },
             { label: t("logs.inspector.clientIp", "Client IP"), value: <Long mono>{e.client_ip}</Long> },
             ...(e.client
               ? [
