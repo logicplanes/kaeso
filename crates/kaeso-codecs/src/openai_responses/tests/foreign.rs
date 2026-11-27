@@ -437,3 +437,106 @@ fn output_limits_below_the_responses_minimum_are_refused_not_raised() {
         OpenAiResponses::check(&Request::Generate(req), &crate::test_support::egress()).is_ok()
     );
 }
+
+#[test]
+fn tools_of_other_formats_without_strict_go_non_strict() {
+    let tool = |origin: Option<DialectId>, strict: Option<bool>| {
+        let mut f = FunctionTool::new(
+            "get_weather",
+            Some(raw(
+                r#"{"type":"object","properties":{"city":{"type":"string"},"days":{"type":"integer"}},"required":["city"]}"#,
+            )),
+        );
+        f.strict = strict;
+        if let Some(origin) = origin {
+            f.extras = Extras::new(Origin::new(origin));
+        }
+        ToolDef::Function(f)
+    };
+    let mut req = GenerateRequest::new("gpt-5.5").with_message(Message::user("Weather?"));
+    req.tools = vec![
+        tool(Some(DialectId::OpenAiChat), None),
+        tool(Some(DialectId::AnthropicMessages), None),
+        tool(Some(DialectId::Gemini), None),
+        tool(Some(DialectId::OpenAiChat), Some(true)),
+        tool(Some(DialectId::OpenAiResponses), None),
+        tool(None, None),
+    ];
+    let req = Request::Generate(req);
+    let mut ctx = EgressCtx::new(&req);
+    let out = OpenAiResponses::encode_request(&req, &mut ctx).unwrap();
+    let body: serde_json::Value = serde_json::from_slice(&out.body).unwrap();
+    let strict: Vec<_> = body["tools"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|t| t.get("strict").cloned())
+        .collect();
+    assert_eq!(
+        strict,
+        [
+            Some(json!(false)),
+            Some(json!(false)),
+            Some(json!(false)),
+            Some(json!(true)),
+            None,
+            None
+        ]
+    );
+}
+
+#[test]
+fn recorded_tools_with_optional_arguments_keep_them_optional() {
+    for (dialect, file, tool, required, optional) in [
+        (
+            DialectId::Gemini,
+            "gemini/requests/tools-parallel.json",
+            "get_weather",
+            &["location"][..],
+            &["unit"][..],
+        ),
+        (
+            DialectId::AnthropicMessages,
+            "anthropic_messages/requests/tools-single.json",
+            "get_weather",
+            &["location"],
+            &["unit"],
+        ),
+        (
+            DialectId::OpenAiChat,
+            "openai_chat/requests/qwen-code-tool-loop.json",
+            "read_file",
+            &["file_path"],
+            &["offset", "limit", "pages"],
+        ),
+    ] {
+        let body = std::fs::read(crate::test_support::fixtures_dir().join(file)).unwrap();
+        let decoded = crate::dispatch::decode_request(
+            dialect,
+            RequestKind::Generate,
+            &body,
+            &HeaderList::new(),
+        )
+        .unwrap();
+        let Request::Generate(mut req) = decoded else {
+            panic!("{file}");
+        };
+        req.model = "gpt-5.5".into();
+        let req = Request::Generate(req);
+        let mut ctx = EgressCtx::new(&req);
+        let out = OpenAiResponses::encode_request(&req, &mut ctx).unwrap();
+        let body: serde_json::Value = serde_json::from_slice(&out.body).unwrap();
+        let sent = body["tools"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|t| t["name"] == tool)
+            .unwrap();
+        assert_eq!(sent["strict"], json!(false), "{file}");
+        assert_eq!(sent["parameters"]["required"], json!(required), "{file}");
+        let properties = sent["parameters"]["properties"].as_object().unwrap();
+        for name in required.iter().chain(optional) {
+            assert!(properties.contains_key(*name), "{file}: {name} in {sent}");
+        }
+    }
+}

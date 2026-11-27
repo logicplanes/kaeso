@@ -268,6 +268,10 @@ Codex 运行子智能体时，智能体之间用 `agent_message` 输入 item 通
 
 若 `encrypted_content` 是密文（一段连续的 base64），只有 OpenAI 能读取，因此在其他地方都是 `Unsupported`，其他类型的部分同样如此。Fixtures：`openai_responses/providers/xai/requests/codex-multi-agent.json`（子智能体的第一次请求）和 `codex-multi-agent-root.json`（根智能体之后的一轮）。
 
+## 严格模式工具
+
+来自 Chat Completions、Anthropic 或 Gemini 的函数工具，除非另有说明，都不是严格模式；而 Responses 会对未设 `strict` 的工具尝试严格模式，使每个参数都变为必填（[function calling](https://developers.openai.com/api/docs/guides/function-calling#strict-mode)）。因此，Responses 编码器把来自其他方言、未设 `strict` 的工具以 `strict: false` 发送，让模型可以省略可选参数。
+
 ## 工具调用参数
 
 在每种格式中，工具调用的参数都是一个 JSON 对象。Chat Completions 和 Responses 以字符串传递参数，因此调用到达时携带的文本可能不是对象。Kaeso 在每条路径上都以相同方式处理这类文本：
