@@ -102,10 +102,10 @@ fn text_tokens(text: &str) -> u64 {
     n.saturating_add(word.div_ceil(4))
 }
 
-// A PDF's pages, by its page objects (`/Type /Page`, not `/Pages`); at least one, so a file
-// that isn't a PDF counts as one page.
+// A PDF's pages: its page objects (`/Type /Page`) or its page tree's `/Count`, whichever is more.
+// Both may sit in compressed object streams; such a file counts a page for every 50 kB.
 fn pdf_pages(data: &[u8]) -> u64 {
-    let mut pages = 0u64;
+    let (mut pages, mut count) = (0u64, 0u64);
     let mut rest = data;
     while let Some(at) = find(rest, b"/Type") {
         let after = rest.get(at.saturating_add(5)..).unwrap_or_default();
@@ -115,7 +115,30 @@ fn pdf_pages(data: &[u8]) -> u64 {
         }
         rest = after;
     }
-    pages.max(1)
+    let mut rest = data;
+    while let Some(at) = find(rest, b"/Count") {
+        let after = rest.get(at.saturating_add(6)..).unwrap_or_default();
+        let digits: Vec<u8> = after
+            .trim_ascii_start()
+            .iter()
+            .copied()
+            .take_while(u8::is_ascii_digit)
+            .collect();
+        if let Some(n) = std::str::from_utf8(&digits)
+            .ok()
+            .and_then(|d| d.parse().ok())
+        {
+            count = count.max(n);
+        }
+        rest = after;
+    }
+    let found = pages.max(count);
+    if found <= 1 && find(data, b"/ObjStm").is_some() {
+        return u64::try_from(data.len().div_ceil(50_000))
+            .unwrap_or(u64::MAX)
+            .max(1);
+    }
+    found.max(1)
 }
 
 fn find(haystack: &[u8], needle: &[u8]) -> Option<usize> {
@@ -748,6 +771,17 @@ mod tests {
             input_tokens(&doc),
             Some(3 * MEDIA_TOKENS + 4),
             "three pages"
+        );
+        assert_eq!(
+            pdf_pages(b"%PDF-1.7 1 0 obj << /Count 12 /Type /Pages /Kids [] >>"),
+            12
+        );
+        let mut packed = b"%PDF-1.7 5 0 obj << /Type /ObjStm /N 40 >>".to_vec();
+        packed.resize(120_000, b'x');
+        assert_eq!(
+            pdf_pages(&packed),
+            3,
+            "a page for every 50 kB of a packed file"
         );
         let plain = user(vec![Block::Document(kaeso_kpp::DocumentBlock::new(
             Source::text("text/plain", "abcdefgh"),

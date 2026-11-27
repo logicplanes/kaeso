@@ -95,7 +95,7 @@ Every chat format reaches every chat model, but providers don't all offer the sa
 - **Token counts.** `/v1/messages/count_tokens`, `/v1/responses/input_tokens` and Gemini's `countTokens` ask the model's provider for the count when its formats include token counts. For other models, Kaeso checks the request as the model would take it and answers with its own estimate, without sending anything:
   - Text counts a token for every four letters or digits of a word, rounded up, and one for each punctuation mark, symbol, line break and character outside ASCII. That is within 0.7 to 1.05 of Claude's own counts for prose, code and Chinese, and above the counts of tokenizers that pack text tighter.
   - Tool definitions and schemas count as their JSON text.
-  - Each image and each PDF page counts 1,600 tokens.
+  - Each image and each PDF page counts 1,600 tokens. A PDF whose pages sit in compressed object streams counts a page for every 50 kB.
   - Each message and each tool adds four tokens. Instructions a provider adds for tools of its own accord aren't known, so a request with tools can count more at the provider.
 
   The answer carries `kaeso-adapted: count_estimated`. Kaeso doesn't read the length of audio or video, so a request that holds either gets 400: "The model `…` cannot count tokens, and Kaeso can't estimate audio or video."

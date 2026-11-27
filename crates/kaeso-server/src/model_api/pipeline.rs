@@ -2471,18 +2471,33 @@ async fn attempt(
         rec.found_limits(&left);
     }
 
-    if entry.is_unavailable()
-        && !state
-            .availability
-            .claim_recheck(credential.key(), entry, state.clock.now())
-            .await
-    {
-        return Err(fail(Stage::Unserved(eff.model_id.clone()))(unserved(&eff)));
-    }
-
     // The model's provider can't count tokens: Kaeso answers with its estimate, named in
-    // `kaeso-adapted`, and sends nothing.
+    // `kaeso-adapted`, and sends nothing, after the checks a request that's sent gets.
     if let Some(tokens) = plan.estimated_count {
+        if entry.is_unavailable() {
+            return Err(fail(Stage::Unserved(eff.model_id.clone()))(unserved(&eff)));
+        }
+        if response_cache::directive(headers).only_if_cached {
+            return Err(fail(Stage::NotCached)(not_cached()));
+        }
+        if let Request::CountTokens(g) = &req {
+            let ectx = egress_ctx(
+                &app_req,
+                &eff.provider,
+                plan.dialect,
+                &eff.model_id,
+                ModelFlags::of(&plan),
+            );
+            // Checked as the generation it counts, which needs an output limit in some formats.
+            let mut generate = g.clone();
+            generate.sampling.max_output_tokens.get_or_insert(1);
+            dispatch::check(plan.dialect, &Request::Generate(generate), &ectx)
+                .map_err(fail(Stage::Capability))?;
+        }
+        tracing::info!(
+            adapted = capability::COUNT_ESTIMATED,
+            "answered a token count with Kaeso's estimate; the provider can't count"
+        );
         let reply = Reply::CountTokens(kaeso_kpp::CountTokensResponse::new(tokens));
         let out = dispatch::encode_response(
             ingress,
@@ -2496,6 +2511,15 @@ async fn attempt(
         return answer_with(state, rec, reply, out, None, &served)
             .await
             .map_err(fail(Stage::Reply));
+    }
+
+    if entry.is_unavailable()
+        && !state
+            .availability
+            .claim_recheck(credential.key(), entry, state.clock.now())
+            .await
+    {
+        return Err(fail(Stage::Unserved(eff.model_id.clone()))(unserved(&eff)));
     }
 
     let carry = caller.key_id.filter(|_| {

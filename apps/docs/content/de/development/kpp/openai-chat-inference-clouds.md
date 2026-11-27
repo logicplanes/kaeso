@@ -387,7 +387,7 @@ Quellen: die Seiten [API usage](https://cloud.tencent.com/document/product/1823/
 | Fehler mit `message_zh`, sechsstelligem `code`, `type`, `source`, `request_id` | `KppError` | Die Art folgt dem Status; `type` unterscheidet sich zwischen Referenz und Live-Antworten, und ein 429 kann `code` als Zahl ohne `type` tragen (`errors/rate-limit-doc`). Der `code` gibt die Art, wo der Status weniger sagt: `400003` (Eingabe über dem Kontext) `ContextTooLong`, `400004` (unbekanntes Modell) `NotFound`, `451001` `ContentFiltered`. |
 | `GET /v1/models` mit `name` und `status` (`online`, `pre-offline`) | `ModelList` | Braucht den Schlüssel (`models/list-doc`); es gibt kein `GET /v1/models/{model}`. |
 
-Die Endpunkte für Responses und Anthropic Messages von TokenHub bedienen nur manche Modelle und werden nicht genutzt: Responses- und Messages-Apps erreichen TokenHub über Chat Completions, und schätzt Token-Zählungen, die TokenHub nicht anbietet, schätzt Kaeso selbst, selbst. Seine Bilder, Videos, Sprache und die multimodalen Embeddings nutzen eigene Formate.
+Die Endpunkte für Responses und Anthropic Messages von TokenHub bedienen nur manche Modelle und werden nicht genutzt: Responses- und Messages-Apps erreichen TokenHub über Chat Completions, und Token-Zählungen, die TokenHub nicht anbietet, schätzt Kaeso selbst. Seine Bilder, Videos, Sprache und die multimodalen Embeddings nutzen eigene Formate.
 
 ## Venice
 
@@ -406,7 +406,7 @@ Quellen: das [OpenAPI document](https://docs.venice.ai/swagger.yaml) von Venice 
 | Fehler `{"error": "<Text>"}` und `{"error", "details", "issues"}` | `KppError` | Die Art folgt dem Status, und der Text ist die Meldung (`errors/recorded-invalid-api-key`, `errors/unknown-model-published`). |
 | `GET /v1/models` | `ModelList` | Listet nur Textmodelle (`models/list-recorded`), daher ist die Liste unvollständig. |
 
-Die Responses API von Venice ist in der Beta und wird nicht genutzt: Responses- und Messages-Apps erreichen Venice über Chat Completions, und schätzt Token-Zählungen, die Venice nicht anbietet, schätzt Kaeso selbst, selbst.
+Die Responses API von Venice ist in der Beta und wird nicht genutzt: Responses- und Messages-Apps erreichen Venice über Chat Completions, und Token-Zählungen, die Venice nicht anbietet, schätzt Kaeso selbst.
 
 ## Baidu Qianfan
 

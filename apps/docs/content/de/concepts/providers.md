@@ -95,7 +95,7 @@ Jedes Chat-Format erreicht jedes Chat-Modell, aber nicht jeder Anbieter bietet d
 - **Token-Zählung.** `/v1/messages/count_tokens`, `/v1/responses/input_tokens` und `countTokens` von Gemini fragen den Anbieter des Modells nach der Anzahl, wenn seine Formate Token-Zählung enthalten. Für andere Modelle prüft Kaeso die Anfrage so, wie das Modell sie nehmen würde, und antwortet mit einer eigenen Schätzung, ohne etwas zu senden:
   - Text zählt ein Token je vier Buchstaben oder Ziffern eines Wortes, aufgerundet, und eines je Satzzeichen, Symbol, Zeilenumbruch und Zeichen außerhalb von ASCII. Das liegt bei 0,7 bis 1,05 der Zählung von Claude für Fließtext, Code und Chinesisch und über der von Tokenizern, die Text dichter packen.
   - Tool-Definitionen und Schemas zählen als ihr JSON-Text.
-  - Jedes Bild und jede PDF-Seite zählt 1.600 Token.
+  - Jedes Bild und jede PDF-Seite zählt 1.600 Token. Ein PDF, dessen Seiten in komprimierten Objekt-Streams liegen, zählt eine Seite je 50 kB.
   - Jede Nachricht und jedes Tool fügt vier Token hinzu. Anweisungen, die ein Anbieter für Tools von sich aus hinzufügt, kennt Kaeso nicht, deshalb kann eine Anfrage mit Tools beim Anbieter mehr zählen.
 
   Die Antwort trägt `kaeso-adapted: count_estimated`. Die Länge von Audio oder Video liest Kaeso nicht, deshalb bekommt eine Anfrage mit einem davon 400: „The model `…` cannot count tokens, and Kaeso can't estimate audio or video.“

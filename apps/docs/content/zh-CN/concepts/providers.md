@@ -95,7 +95,7 @@ flowchart TD
 - **Token 计数。** 当模型所属服务商的格式包含 Token 计数时，`/v1/messages/count_tokens`、`/v1/responses/input_tokens` 和 Gemini 的 `countTokens` 会请服务商计算 Token 数。对于其他模型，Kaeso 按模型接收请求的方式检查请求，然后不发送任何内容，直接以自己的估算作答：
   - 文本中每个单词的字母或数字每 4 个计 1 个 Token（向上取整），每个标点、符号、换行符和 ASCII 以外的字符各计 1 个 Token。对于普通文本、代码和中文，这与 Claude 自己的计数相差在 0.7 到 1.05 倍之间，并高于更紧凑的分词器的计数。
   - 工具定义和 schema 按其 JSON 文本计算。
-  - 每张图片和每个 PDF 页面计 1,600 个 Token。
+  - 每张图片和每个 PDF 页面计 1,600 个 Token。页面位于压缩对象流中的 PDF 每 50 kB 计一页。
   - 每条消息和每个工具另加 4 个 Token。服务商为工具自行添加的指令不在估算之内，因此带工具的请求在服务商处可能计数更多。
 
   响应带有 `kaeso-adapted: count_estimated`。Kaeso 不读取音频或视频的时长，因此含有音频或视频的请求返回 400：“The model `…` cannot count tokens, and Kaeso can't estimate audio or video.”

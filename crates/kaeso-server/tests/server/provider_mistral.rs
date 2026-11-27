@@ -689,6 +689,18 @@ async fn token_counts_for_mistral_models_are_kaesos_estimate_in_the_apps_format(
     .await;
     assert_eq!(r.estimated_count(), 9);
     assert_eq!(r.json()["object"], "response.input_tokens");
+    let r = call(
+        &env,
+        &format!("/v1beta/models/{SMALL}:countTokens"),
+        Some(&env.key),
+        false,
+        Some(
+            json!({ "contents": [{ "role": "user", "parts": [{ "text": "Name one planet." }] }] }),
+        ),
+    )
+    .await;
+    assert_eq!(r.estimated_count(), 9);
+    assert_eq!(r.json()["totalTokens"], 9, "Gemini's own field");
     assert!(env.mock.received().is_empty());
 }
 
