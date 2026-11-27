@@ -120,6 +120,13 @@ pub(crate) fn read<T: DeserializeOwned>(json: &str) -> Result<T, ApiError> {
         match serde_path_to_error::deserialize::<_, T>(&doc) {
             Ok(_) => Probe::Taken,
             Err(again) if at(&again).as_deref() == Some(p.as_str()) => Probe::Refused(again),
+            // serde names a missing field once it has read every field there, this one too.
+            Err(again)
+                if again.inner().to_string().starts_with("missing field `")
+                    && at(&again).is_none_or(|q| p.starts_with(&format!("{q}."))) =>
+            {
+                Probe::Taken
+            }
             Err(_) => Probe::Unknown,
         }
     };
@@ -381,6 +388,11 @@ mod tests {
                 r#"{"name": "a", "max": 5000000000}"#,
                 "`max` is out of range.",
                 Some("max"),
+            ),
+            (
+                r#"{"embeddings": true}"#,
+                "`embeddings` must be one of `openai_embeddings`, `null`.",
+                Some("embeddings"),
             ),
             (
                 r#"{"name": "a", "auth": 5, "embeddings": true}"#,
