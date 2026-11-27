@@ -72,10 +72,9 @@ pub(crate) fn decode_response(body: &[u8], ctx: &EgressCtx) -> Result<Reply, Kpp
             ));
         }
         _ => {
-            return Err(KppError::unsupported_by(
+            return Err(KppError::unsupported(
                 "n",
-                DIALECT,
-                "The provider returned several choices, but Kaeso carries exactly one; do not request `n` > 1.",
+                "The provider returned several choices, but Kaeso carries one; leave `n` out or set it to 1.",
             ));
         }
     };

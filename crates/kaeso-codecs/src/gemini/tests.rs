@@ -1158,6 +1158,10 @@ fn requests_decode_only_with_their_path() {
     )
     .unwrap_err();
     assert_eq!(e.param.as_deref(), Some("generationConfig.candidateCount"));
+    assert_eq!(
+        e.message,
+        "Kaeso returns one candidate per request, so `generationConfig.candidateCount` must be 1; send several requests for more candidates."
+    );
     let e = crate::dispatch::decode_gemini_request(
         "m",
         GeminiAction::GenerateContent,

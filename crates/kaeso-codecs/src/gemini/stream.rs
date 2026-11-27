@@ -262,10 +262,9 @@ impl Decoder {
             && n > 1
         {
             out.push(StreamEvent::Error(
-                KppError::unsupported_by(
+                KppError::unsupported(
                     "more than one candidate",
-                    D,
-                    "Kaeso reads one candidate per reply; leave `candidateCount` out or set it to 1.",
+                    "The provider returned several candidates, but Kaeso reads one; leave `candidateCount` out or set it to 1.",
                 )
                 .with_origin(self.origin.clone()),
             ));

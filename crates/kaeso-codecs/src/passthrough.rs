@@ -707,10 +707,9 @@ impl ChatState {
                 self.release_before_error(out);
                 self.inert = true;
                 step.error = Some(
-                    KppError::unsupported_by(
+                    KppError::unsupported(
                         "n",
-                        DialectId::OpenAiChat,
-                        "The provider streamed several choices, but Kaeso carries exactly one; do not request `n` > 1.",
+                        "The provider streamed several choices, but Kaeso carries one; leave `n` out or set it to 1.",
                     )
                     .with_origin(self.origin.clone()),
                 );
@@ -723,10 +722,9 @@ impl ChatState {
                         self.release_before_error(out);
                         self.inert = true;
                         step.error = Some(
-                            KppError::unsupported_by(
+                            KppError::unsupported(
                                 "n",
-                                DialectId::OpenAiChat,
-                                "The provider streamed a choice other than the first; do not request `n` > 1.",
+                                "The provider streamed a choice other than the first; leave `n` out or set it to 1.",
                             )
                             .with_origin(self.origin.clone()),
                         );

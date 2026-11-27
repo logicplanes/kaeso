@@ -405,10 +405,9 @@ fn decode_generation(
     verbatim_into_form(&mut req.extras, GENERATION_CONFIG, verbatim);
     if let Some(n) = g.candidate_count {
         if n > 1 {
-            return Err(KppError::unsupported_by(
+            return Err(KppError::unsupported(
                 "`generationConfig.candidateCount` above 1",
-                D,
-                "Kaeso returns one candidate per request; send several requests instead.",
+                "Kaeso returns one candidate per request, so `generationConfig.candidateCount` must be 1; send several requests for more candidates.",
             )
             .with_param("generationConfig.candidateCount"));
         }

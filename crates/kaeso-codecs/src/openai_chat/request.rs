@@ -206,10 +206,9 @@ fn decode_generate(
             return Err(KppError::invalid_request("`n` must be at least 1.").with_param("n"));
         }
         Some(_) => {
-            return Err(KppError::unsupported_by(
+            return Err(KppError::unsupported(
                 "n",
-                DIALECT,
-                "Kaeso returns exactly one choice per request; send `n` > 1 as separate requests.",
+                "Kaeso returns one choice per request, so `n` must be 1; send several requests for more choices.",
             )
             .with_param("n"));
         }

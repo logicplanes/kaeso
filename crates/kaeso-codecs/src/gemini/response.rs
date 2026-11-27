@@ -234,10 +234,9 @@ pub(super) fn decode_generate(w: Ext<ResponseW>, origin: &Origin) -> Result<Resp
         }
         Some(candidates) => {
             if candidates.len() > 1 {
-                return Err(KppError::unsupported_by(
+                return Err(KppError::unsupported(
                     "more than one candidate",
-                    D,
-                    "Kaeso reads one candidate per reply; leave `candidateCount` out or set it to 1.",
+                    "The provider returned several candidates, but Kaeso reads one; leave `candidateCount` out or set it to 1.",
                 ));
             }
             if candidates.is_empty() {

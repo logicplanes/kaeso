@@ -1204,6 +1204,33 @@ fn malformed_requests_are_invalid() {
 }
 
 #[test]
+fn n_above_1_is_refused_as_kaesos_limit_not_the_formats() {
+    let err =
+        decode(br#"{"model":"m","messages":[{"role":"user","content":"x"}],"n":2}"#).unwrap_err();
+    assert_eq!(err.unsupported_feature(), Some("n"));
+    assert_eq!(err.param.as_deref(), Some("n"));
+    assert_eq!(
+        err.message,
+        "Kaeso returns one choice per request, so `n` must be 1; send several requests for more choices."
+    );
+    let two = br#"{"id":"c","object":"chat.completion","created":1,"model":"m","choices":[
+        {"index":0,"message":{"role":"assistant","content":"a"},"finish_reason":"stop"},
+        {"index":1,"message":{"role":"assistant","content":"b"},"finish_reason":"stop"}]}"#;
+    let ctx = EgressCtx::for_kind(RequestKind::Generate, kaeso_kpp::StreamMode::Off);
+    let err = OpenAiChat::decode_response(200, &HeaderList::new(), two, &ctx).unwrap_err();
+    assert!(
+        !err.message.contains("OpenAI Chat Completions"),
+        "{}",
+        err.message
+    );
+    assert!(
+        err.message.ends_with("leave `n` out or set it to 1."),
+        "{}",
+        err.message
+    );
+}
+
+#[test]
 fn forwarded_headers_are_kept_and_sent_back() {
     let headers = HeaderList::new()
         .with("OpenAI-Beta", "assistants=v2")
