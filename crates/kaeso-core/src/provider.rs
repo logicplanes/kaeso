@@ -5656,7 +5656,6 @@ mod tests {
                 "providers/mistral/requests/assistant-prefill",
                 "messages[1]",
             ),
-            ("requests/system-name-multiturn", "messages[0].name"),
         ] {
             assert_eq!(
                 sent_with_profile("mistral", request).unwrap_err(),
@@ -5664,6 +5663,15 @@ mod tests {
                 "{request}"
             );
         }
+        let named = sent_with_profile("mistral", "requests/system-name-multiturn").unwrap();
+        assert!(
+            named["messages"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .all(|m| m.get("name").is_none()),
+            "participant names are left out: {named}"
+        );
         let store = sent_with_profile("mistral", "providers/mistral/requests/store-field").unwrap();
         assert!(
             store.get("store").is_none(),
