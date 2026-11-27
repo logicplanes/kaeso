@@ -7,6 +7,7 @@ use kaeso_codecs::cross::reasoning_map;
 use sha2::{Digest, Sha256};
 
 use super::Effective;
+use crate::estimate::OutputCap;
 
 #[derive(Clone, Debug, PartialEq, Eq, thiserror::Error)]
 #[error("{message}")]
@@ -58,6 +59,9 @@ fn app_param(ingress: DialectId, field: &'static str) -> &'static str {
         ("reasoning", R) => "reasoning",
         ("reasoning", G) => "generationConfig.thinkingConfig",
         ("reasoning", _) => "reasoning_effort",
+        ("stop", A) => "stop_sequences",
+        ("stop", G) => "generationConfig.stopSequences",
+        ("seed", G) => "generationConfig.seed",
         (other, _) => other,
     }
 }
@@ -906,10 +910,64 @@ fn fit_output_limit(g: &mut GenerateRequest, ingress: DialectId, eff: &Effective
     }
 }
 
+// The least `max_output_tokens` OpenAI Responses takes, as the codec's check refuses less.
+const RESPONSES_MIN_OUTPUT: u32 = 16;
+
+pub struct ResponsesFit {
+    pub cap: Option<OutputCap>,
+    pub adapted: Vec<String>,
+    pub left_out: Vec<String>,
+}
+
+// OpenAI Responses has no `stop` and no `seed` and refuses an output limit under 16 tokens,
+// while apps in other formats send all three. Kaeso ends the reply itself at the first stop
+// sequence or at the app's limit, as it does for a ChatGPT plan, and leaves out `seed`, which
+// OpenAI only ever honoured on a best-effort basis.
+pub fn fit_responses(
+    g: &mut GenerateRequest,
+    ingress: DialectId,
+    eff: &Effective,
+    cap: Option<OutputCap>,
+) -> ResponsesFit {
+    let mut fit = ResponsesFit {
+        cap,
+        adapted: Vec::new(),
+        left_out: Vec::new(),
+    };
+    if g.sampling.seed.take().is_some() {
+        fit.left_out.push(app_param(ingress, "seed").to_owned());
+    }
+    if ingress != DialectId::OpenAiResponses
+        && let Some(asked) = g
+            .sampling
+            .max_output_tokens
+            .filter(|m| *m < RESPONSES_MIN_OUTPUT)
+    {
+        g.sampling.max_output_tokens = Some(RESPONSES_MIN_OUTPUT);
+        let cap = OutputCap::new(u64::from(asked));
+        fit.cap = Some(if eff.provider.reasoning_beyond_output_limit() {
+            cap.of_visible_output()
+        } else {
+            cap
+        });
+        fit.adapted.push(output_param(g, ingress).to_owned());
+    }
+    if !g.sampling.stop.is_empty() {
+        let stop = std::mem::take(&mut g.sampling.stop);
+        fit.cap = Some(match fit.cap.take() {
+            Some(cap) => cap.with_stop_sequences(stop),
+            None => OutputCap::at_stop_sequences(stop),
+        });
+        fit.adapted.push(app_param(ingress, "stop").to_owned());
+    }
+    fit
+}
+
 pub fn output_param(g: &GenerateRequest, ingress: DialectId) -> &'static str {
     match ingress {
         DialectId::AnthropicMessages => "max_tokens",
         DialectId::OpenAiResponses => "max_output_tokens",
+        DialectId::Gemini => "generationConfig.maxOutputTokens",
         _ if g.extras.form_str(DialectId::OpenAiChat, "max_tokens") == Some("max_tokens") => {
             "max_tokens"
         }

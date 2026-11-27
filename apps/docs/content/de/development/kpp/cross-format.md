@@ -256,7 +256,7 @@ Ein Codex-Thread, der auf einem GPT-Modell begann, enthält Items, die nur OpenA
 | `local_shell_call` | `Block::ToolCall` namens `local_shell`, sein `action`-Objekt als Argumente |
 | `local_shell_call_output` | `Block::ToolResult` für den Aufruf, den seine `id` nennt; Codex sendet stattdessen ein `function_call_output` |
 
-OpenAI bekommt die Items wie gesendet, SpaceX seine `custom_tool_call`- und `custom_tool_call_output`-Items: SpaceX antwortet aus einem solchen Verlauf (`openai_responses/providers/xai/responses/recorded-codex-gpt-history.json`). `local_shell_call` und `local_shell_call_output` bekommt SpaceX wie oben als Tool-Aufrufe und Ergebnisse, weil es stattdessen `shell_call`-Items annimmt. Die Reasoning-Items von GPT fallen für SpaceX weg, weil SpaceX OpenAIs `encrypted_content` nicht entschlüsseln kann und die Anfrage ablehnen würde ([SpaceX](openai-responses.md#spacex)). Ein Item, das nicht die Form oben hat, bleibt ein unbekannter Block und wird wie einer abgelehnt.
+OpenAI bekommt die Items wie gesendet, SpaceX seine `custom_tool_call`- und `custom_tool_call_output`-Items: SpaceX antwortet aus einem solchen Verlauf (`openai_responses/providers/xai/responses/recorded-codex-gpt-history.json`). `local_shell_call` und `local_shell_call_output` bekommt SpaceX wie oben als Tool-Aufrufe und Ergebnisse, weil es stattdessen `shell_call`-Items annimmt. Die Reasoning-Items von GPT fallen für SpaceX weg, weil SpaceX OpenAIs `encrypted_content` nicht entschlüsseln kann und die Anfrage ablehnen würde ([SpaceX](openai-responses-providers.md#spacex)). Ein Item, das nicht die Form oben hat, bleibt ein unbekannter Block und wird wie einer abgelehnt.
 
 ## Agentennachrichten von Codex
 
