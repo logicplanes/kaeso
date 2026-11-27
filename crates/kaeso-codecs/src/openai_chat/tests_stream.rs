@@ -1459,12 +1459,7 @@ fn a_recorded_stream_cut_by_an_error_after_its_usage_keeps_the_newest_counts() {
         .collect();
     let last = finishing.last().unwrap();
     assert_eq!(last["usage"]["total_tokens"], 24, "{last}");
-    assert!(
-        finishing
-            .iter()
-            .all(|c| c["usage"].is_null() || c["usage"]["total_tokens"] == 24),
-        "{}",
-        String::from_utf8_lossy(&out)
-    );
+    let with_usage = finishing.iter().filter(|c| !c["usage"].is_null()).count();
+    assert_eq!(with_usage, 1, "{}", String::from_utf8_lossy(&out));
     assert!(frames(&out).last().unwrap().get("error").is_some());
 }

@@ -2043,12 +2043,8 @@ mod tests {
             .collect();
         let last = finishing.last().unwrap();
         assert_eq!(last["usage"]["total_tokens"], 24, "{last}");
-        assert!(
-            finishing
-                .iter()
-                .all(|c| c["usage"].is_null() || c["usage"]["total_tokens"] == 24),
-            "{finishing:?}"
-        );
+        let with_usage = finishing.iter().filter(|c| !c["usage"].is_null()).count();
+        assert_eq!(with_usage, 1, "{finishing:?}");
     }
 
     #[test]
