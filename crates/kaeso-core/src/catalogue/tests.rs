@@ -1686,7 +1686,11 @@ fn transcription_models_refuse_every_generation_request_before_it_is_sent() {
             .any(|b| matches!(b, kaeso_kpp::Block::Unknown(_))),
         "the result stays an unknown part"
     );
-    assert!(prepare(&mut Request::Generate(g), DialectId::Gemini, &gemini).is_err());
+    let u = prepare(&mut Request::Generate(g), DialectId::Gemini, &gemini).unwrap_err();
+    assert_eq!(
+        u.message,
+        "The model `gemini-3.5-transcribe` only transcribes; send it audio."
+    );
     let mut count = Request::CountTokens(user(vec![Block::audio(kaeso_kpp::Source::bytes(
         "audio/wav",
         b"RIFF".to_vec(),
