@@ -38,7 +38,7 @@ Schlagen Sie hier nach, wie eine Generierungsanfrage die Converse-API von Amazon
 
 Tool-Namen und Aufruf-IDs, die die Muster von Converse ablehnen (Namen `[a-zA-Z0-9_-]`, IDs `[a-zA-Z0-9_.:-]`, höchstens 64 Zeichen), werden beim Senden umgeschrieben und in der Antwort wiederhergestellt.
 
-Mit `Unsupported` abgelehnt: Bilder und Dokumente per Weblink oder Datei-ID, Audio- und Videoblöcke, Dokumentzitate, gehostete Tools, `tool_choice: none`, `parallel_tool_calls: false`, Reasoning-Einstellungen, strukturierte Ausgabe, `seed` und die Penalties, außer einer Penalty von `0`, die weggelassen wird ([neutrale Werte](sampling.md#neutrale-werte)). Reasoning eines anderen Formats wird nicht gesendet.
+Mit `Unsupported` abgelehnt: Bilder und Dokumente per Weblink oder Datei-ID, Audio- und Videoblöcke, Dokumentzitate, gehostete Tools, `tool_choice: none`, `parallel_tool_calls: false`, Reasoning-Einstellungen, ein JSON-Schema als Ausgabeformat, `seed` und die Penalties, außer einer Penalty von `0`, die weggelassen wird ([neutrale Werte](sampling.md#neutrale-werte)). Reasoning eines anderen Formats wird nicht gesendet. Der JSON-Modus geht wie bei Anthropic als Satz am Ende des System-Prompts mit ([strukturierte Ausgabe](cross-format.md#strukturierte-ausgabe)).
 
 ## Antwort
 

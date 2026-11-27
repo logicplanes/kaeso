@@ -38,7 +38,7 @@ order: 9
 
 Converse 的规则不接受的工具名称和调用 ID（名称为 `[a-zA-Z0-9_-]`，ID 为 `[a-zA-Z0-9_.:-]`，最多 64 个字符）会在发送时改写，并在回复中还原。
 
-以 `Unsupported` 拒绝：通过网络链接或文件 ID 提供的图片和文档、音频和视频块、文档引用、托管工具、`tool_choice: none`、`parallel_tool_calls: false`、推理设置、结构化输出、`seed` 和惩罚参数，但值为 `0` 的惩罚参数会被省略（[中性值](sampling.md#中性值)）。其他格式的推理不会发送。
+以 `Unsupported` 拒绝：通过网络链接或文件 ID 提供的图片和文档、音频和视频块、文档引用、托管工具、`tool_choice: none`、`parallel_tool_calls: false`、推理设置、JSON schema 输出格式、`seed` 和惩罚参数，但值为 `0` 的惩罚参数会被省略（[中性值](sampling.md#中性值)）。其他格式的推理不会发送。JSON 模式与 Anthropic 一样，以一句话附加在系统提示词末尾（[结构化输出](cross-format.md#结构化输出)）。
 
 ## 回复
 
