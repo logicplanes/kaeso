@@ -1671,6 +1671,22 @@ fn transcription_models_refuse_every_generation_request_before_it_is_sent() {
         u.message,
         "The model `gemini-3.5-transcribe` only transcribes; send it audio."
     );
+    // A model turn's part Kaeso doesn't know, such as a code execution result, is no audio.
+    let Request::Generate(g) = kaeso_codecs::dispatch::decode_request(
+        DialectId::Gemini,
+        kaeso_kpp::RequestKind::Generate,
+        br#"{"contents":[{"role":"user","parts":[{"text":"Run it."}]},{"role":"model","parts":[{"codeExecutionResult":{"outcome":"OUTCOME_OK","output":"4"}}]},{"role":"user","parts":[{"text":"And now?"}]}]}"#,
+        &kaeso_codecs::HeaderList::new(),
+    )
+    .unwrap() else {
+        panic!()
+    };
+    assert!(
+        g.all_blocks()
+            .any(|b| matches!(b, kaeso_kpp::Block::Unknown(_))),
+        "the result stays an unknown part"
+    );
+    assert!(prepare(&mut Request::Generate(g), DialectId::Gemini, &gemini).is_err());
     let mut count = Request::CountTokens(user(vec![Block::audio(kaeso_kpp::Source::bytes(
         "audio/wav",
         b"RIFF".to_vec(),

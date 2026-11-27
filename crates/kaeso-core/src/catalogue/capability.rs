@@ -535,10 +535,13 @@ fn refuse_transcriber(
         .transcriptions(&eff.model_id)
         .is_some_and(|t| t.dialect == eff.dialect);
     if let Some(g) = generation.filter(|_| at_generation) {
-        // A part the decoder doesn't know, such as QwenCloud's `input_audio` without `format`,
-        // may be audio; the provider judges it.
+        // A user's part the decoder doesn't know, such as QwenCloud's `input_audio` without
+        // `format`, may be audio; the provider judges it.
         let audio = g.required_capabilities().audio_input
-            || g.all_blocks()
+            || g.messages
+                .iter()
+                .filter(|m| m.role == kaeso_kpp::Role::User)
+                .flat_map(|m| &m.blocks)
                 .any(|b| matches!(b, kaeso_kpp::Block::Unknown(_)));
         if audio {
             return Ok(());
