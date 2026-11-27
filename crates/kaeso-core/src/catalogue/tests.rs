@@ -1713,6 +1713,37 @@ fn duties_fill_what_kpp_cannot_know() {
     assert_eq!(info.created_at, Some(1_760_486_400));
     assert_eq!(info.owned_by.as_deref(), Some("anthropic"));
     assert_eq!(info.max_output_tokens, Some(64_000));
+    assert_eq!(info.context_window, Some(200_000));
+    assert_eq!(
+        info.input_modalities.as_deref(),
+        Some(&["text".to_owned(), "image".to_owned(), "pdf".to_owned()][..])
+    );
+    assert_eq!(
+        info.output_modalities.as_deref(),
+        Some(&["text".to_owned()][..])
+    );
+    let features = info.features.unwrap();
+    assert!(
+        features.contains(&kaeso_kpp::ModelFeature::Tools),
+        "{features:?}"
+    );
+    assert!(
+        features.contains(&kaeso_kpp::ModelFeature::Reasoning),
+        "{features:?}"
+    );
+    let prices = info.prices.unwrap();
+    assert_eq!(
+        (prices.input.as_deref(), prices.output.as_deref()),
+        (Some("1"), Some("5"))
+    );
+    assert_eq!(prices.cache_read.as_deref(), Some("0.1"));
+    let mut unknown = haiku.clone();
+    unknown.fields = crate::catalogue::Fields::default();
+    let bare = model_info("m", &unknown);
+    assert_eq!(
+        (bare.features, bare.prices, bare.input_modalities),
+        (None, None, None)
+    );
 }
 
 #[test]

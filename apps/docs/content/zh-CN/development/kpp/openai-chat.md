@@ -295,9 +295,14 @@ OpenAI 不分页，因此网关调用 `ModelList::page` 时不设默认上限，
 | `created`（Unix 秒） | `created_at` | `0` |
 | `owned_by` | `owned_by` | `"kaeso"`：所有者未知（例如由 Anthropic 列出的模型），而模型由 Kaeso 网关提供。 |
 | `shutdown_date`（`YYYY-MM-DD` 或 `null`） | `retires_at`（该日期的 00:00 UTC） | `null` |
+| `name`（仅写出） | `display_name` | 省略 |
+| `context_length`、`top_provider` `{context_length, max_completion_tokens}`（仅写出） | `context_window`、`max_output_tokens` | 省略 |
+| `architecture` `{modality, input_modalities, output_modalities}`（仅写出） | `input_modalities`、`output_modalities`；两者都已知且不为空时，`modality` 将其连接为 `text+image->text` | 省略 |
+| `pricing` `{prompt, completion, input_cache_read, input_cache_write, internal_reasoning}`，每 Token 美元，十进制字符串（仅写出） | `prices` 的 `input`、`output`、`cache_read`、`cache_write`、`reasoning`，每百万 Token 美元，精确除以一百万（`"3.00"` 变为 `"0.000003"`） | 省略 |
+| `supported_parameters`（仅写出） | `features`：`Tools` 对应 `tools` 和 `tool_choice`，`Reasoning` 对应 `reasoning` 和 `reasoning_effort`，`StructuredOutput` 对应 `response_format` 和 `structured_outputs`，`Temperature` 对应 `temperature` | 省略；`features` 为空时为 `[]` |
 | 未知键 | extras 字段 | |
 
-网关从自己的目录列出模型：把 `owned_by` 设为服务商 ID，并在目录中有发布日期时把 `created_at` 设为该日期。
+网关从自己的目录列出模型：把 `owned_by` 设为服务商 ID，并在目录中有发布日期时把 `created_at` 设为该日期。仅写出的字段也由目录填写（[列出模型](../../api/model-api.md#列出模型)）。它们是 OpenRouter 列表的字段（fixture `providers/openrouter/models/list-recorded.json`），读取 OpenAI 格式列表的应用从中获取模型的名称、限制、模态和价格。编解码器不读取它们：发送这些字段的列表（例如 OpenRouter 的）将其保留为 extras，并按原样写回；网关的服务商检测从那里读取 `context_length`。
 
 收到时缺失的字段，或在默认值为具体值的地方收到 `null` 的字段，会记录在形式标记 `none` 中并按同样方式写出；`shutdown_date` 在规范中是可选的。`object` 在规范中是必填的，但 OpenRouter 的模型列表（[`GET /api/v1/models`](https://openrouter.ai/docs/guides/overview/models)）在列表和每个模型中都省略了它，因此按同样方式读取（fixture `providers/openrouter/models/list-recorded.json`）。不是 `full-date` 的 `shutdown_date` 为 `ProviderError`。三个 OpenAI 方言中任一方言的 extras 都会被三个编码器采用。
 
@@ -311,6 +316,6 @@ OpenAI 不分页，因此网关调用 `ModelList::page` 时不设默认上限，
 | 不是对象而是模型的裸数组（Together AI 以此形式发送） | `models`，形式标记 `bare_list` |
 | 以 `models` 代替 `data`，每个模型以 `slug` 标识（`GET /v1/models` 对 ChatGPT 套餐访问令牌的响应，见 [Models and inference](https://developers.openai.com/siwc/token-sharing-open-source/models-and-inference)） | `models`，每个 `slug` 作为 `id`，其他字段作为 extras 字段；形式标记 `plan_list` |
 
-对 OpenAI 应用而言会有信息损失：`display_name`、`lifecycle`、`deprecated_at`、`context_window`、`max_output_tokens`、`has_more` 和其他方言的 extras（Anthropic 的 `capabilities`、`line`）没有对应字段，会被省略（[回复](cross-format.md#回复)）。不在 UTC 午夜的 `retires_at` 会截为其 UTC 日期，9999 年之后的则写为 `shutdown_date: null`。`created` 是整数，按存储的值写出，因此毫秒值仍是毫秒值。
+对 OpenAI 应用而言会有信息损失：`lifecycle`、`deprecated_at`、`has_more` 和其他方言的 extras（Anthropic 的 `capabilities`、`line`）没有对应字段，会被省略（[回复](cross-format.md#回复)）。不在 UTC 午夜的 `retires_at` 会截为其 UTC 日期，9999 年之后的则写为 `shutdown_date: null`。`created` 是整数，按存储的值写出，因此毫秒值仍是毫秒值。
 
 `encode_model_request` 构建不带请求头和请求体的 `GET /v1/models/{model}`（规范中的 `retrieveModel`）；密钥由网关添加。`encode_models_request` 构建 `GET /v1/models`（规范中的 `listModels`，它不接受查询参数，因此带有 `limit`、`after_id`、`before_id`、`lifecycle` 或其他参数的查询为 `Unsupported`）。在 `decode_models` 和 `decode_model` 中，非 2xx 状态码交给 `decode_error` 处理。ID 为 `.` 或 `..` 时结果为 `InvalidRequest`，因为 URL 解析器即使在百分号编码后也会去掉这样的路径段。

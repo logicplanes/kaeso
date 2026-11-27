@@ -201,6 +201,20 @@ Under `/v1beta`, and for Gemini calls under `/v1`, every error is in the Gemini 
 | --- | --- | --- | --- |
 | Paging | None; one answer holds every model | `limit` (1 to 1000, default 20), `after_id` or `before_id` | `pageSize` (default 50), and `pageToken` with the `nextPageToken` of the page before |
 | Deprecated models | Not marked | `lifecycle: "deprecated"`, as KPMR marks them | Not marked |
+| What a model is | `name`, `context_length`, `top_provider.max_completion_tokens`, `architecture`, `supported_parameters` and `pricing`, as OpenRouter's list names them | `display_name`, `max_input_tokens`, `max_tokens` | `displayName`, `inputTokenLimit`, `outputTokenLimit` |
+
+In the OpenAI format, each model describes itself in the fields of [OpenRouter's model list](https://openrouter.ai/docs/api-reference/models/get-models), which chat apps and coding tools read to name models, size their context and tell chat models from image or voice models:
+
+```json
+{"id": "grok-4.7", "object": "model", "created": 1789948800, "owned_by": "xai", "shutdown_date": null,
+ "name": "Grok 4.7", "context_length": 500000,
+ "architecture": {"modality": "text+image+pdf->text", "input_modalities": ["text", "image", "pdf"], "output_modalities": ["text"]},
+ "pricing": {"prompt": "0.000002", "completion": "0.000006", "input_cache_read": "0.0000005"},
+ "top_provider": {"context_length": 500000, "max_completion_tokens": 500000},
+ "supported_parameters": ["tools", "tool_choice", "reasoning", "reasoning_effort", "response_format", "structured_outputs", "temperature"]}
+```
+
+The values come from the project's catalogue, overrides included; an alias shows those of the model it lists. `pricing` holds the base prices Kaeso costs a request at, in USD per token: `prompt`, `completion`, `input_cache_read`, `input_cache_write` and `internal_reasoning`. Prices for long prompts and prices per image, second or character aren't listed. `supported_parameters` names the request fields the catalogue says the model takes: `tools` and `tool_choice`, `reasoning` and `reasoning_effort`, `response_format` and `structured_outputs` (JSON Schema output), and `temperature`. A field the catalogue doesn't know is left out.
 
 `GET /v1/models/{model}` and `GET /v1beta/models/{model}` take any [model name](#model-names). They answer 404 when the model isn't in the catalogue, the key may not use it, or the provider doesn't serve it.
 

@@ -1,6 +1,6 @@
 use kaeso_kpp::{
-    DialectId, GenerateRequest, Modality, ModelInfo, ReasoningEffort, ReasoningMode, Request,
-    ToolChoice,
+    DialectId, GenerateRequest, Modality, ModelFeature, ModelInfo, ModelPrices, ReasoningEffort,
+    ReasoningMode, Request, ToolChoice,
 };
 
 use kaeso_codecs::cross::reasoning_map;
@@ -1126,6 +1126,34 @@ pub fn model_info(id: &str, eff: &Effective) -> ModelInfo {
     info.owned_by = Some(eff.provider.id().to_owned());
     info.context_window = eff.fields.context_limit;
     info.max_output_tokens = eff.fields.output_limit;
+    info.input_modalities
+        .clone_from(&eff.fields.input_modalities);
+    info.output_modalities
+        .clone_from(&eff.fields.output_modalities);
+    let f = &eff.fields;
+    let features: Vec<ModelFeature> = [
+        (f.tool_call, ModelFeature::Tools),
+        (f.reasoning, ModelFeature::Reasoning),
+        (f.structured_output, ModelFeature::StructuredOutput),
+        (f.temperature, ModelFeature::Temperature),
+    ]
+    .into_iter()
+    .filter_map(|(known, feature)| (known == Some(true)).then_some(feature))
+    .collect();
+    let told = [f.tool_call, f.reasoning, f.structured_output, f.temperature]
+        .iter()
+        .any(Option::is_some);
+    info.features = told.then_some(features);
+    // The base prices requests are costed at, in USD; long-prompt tiers and prices per image,
+    // second or character are not listed.
+    let usd = |p: Option<rust_decimal::Decimal>| p.map(|d| d.normalize().to_string());
+    let mut prices = ModelPrices::default();
+    prices.input = usd(f.input_price);
+    prices.output = usd(f.output_price);
+    prices.cache_read = usd(f.cache_read_price);
+    prices.cache_write = usd(f.cache_write_price);
+    prices.reasoning = usd(f.reasoning_price);
+    info.prices = (!prices.is_empty()).then_some(prices);
     info
 }
 

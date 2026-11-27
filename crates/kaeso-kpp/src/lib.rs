@@ -84,7 +84,7 @@ pub use image::{
     GeneratedImage, ImageBackground, ImageDelivery, ImageEvent, ImageFormat, ImageInput,
     ImageOperation, ImageQuality, ImageRequest, ImageResponse, ImageSettings, ImageSize,
 };
-pub use models::{ModelInfo, ModelLifecycle, ModelList, ModelsQuery};
+pub use models::{ModelFeature, ModelInfo, ModelLifecycle, ModelList, ModelPrices, ModelsQuery};
 pub use raw::RawJson;
 pub use request::{
     AudioFormat, AudioOutput, EmbedEncoding, EmbedInput, EmbedRequest, FunctionTool,

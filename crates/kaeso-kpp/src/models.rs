@@ -25,8 +25,60 @@ pub struct ModelInfo {
     pub context_window: Option<u64>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub max_output_tokens: Option<u64>,
+    /// What the model takes: `text`, `image`, `pdf`, `audio`, `video`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub input_modalities: Option<Vec<String>>,
+    /// What the model produces: `text`, `image`, `audio`, `video` or `embedding`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub output_modalities: Option<Vec<String>>,
+    /// The request features the model is known to take; one it is not known to take is left
+    /// out.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub features: Option<Vec<ModelFeature>>,
+    /// What a request costs, in USD per million tokens.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub prices: Option<ModelPrices>,
     #[serde(default, skip_serializing_if = "Extras::is_empty")]
     pub extras: Extras,
+}
+
+/// A request feature a model takes.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[non_exhaustive]
+pub enum ModelFeature {
+    /// Tool definitions and tool calls.
+    Tools,
+    /// Reasoning (thinking) before the answer.
+    Reasoning,
+    /// Output that follows a JSON Schema.
+    StructuredOutput,
+    /// A sampling `temperature`.
+    Temperature,
+}
+
+/// A model's token prices in USD per million tokens, as decimal strings such as `"3"` or
+/// `"0.075"`; a price that isn't known is absent.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[non_exhaustive]
+pub struct ModelPrices {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub input: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub output: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cache_read: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cache_write: Option<String>,
+    /// Reasoning tokens, when they cost other than output tokens.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reasoning: Option<String>,
+}
+
+impl ModelPrices {
+    pub fn is_empty(&self) -> bool {
+        self == &ModelPrices::default()
+    }
 }
 
 impl ModelInfo {
