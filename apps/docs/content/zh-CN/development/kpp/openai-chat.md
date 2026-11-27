@@ -34,8 +34,8 @@ nav: OpenAI Chat
 | `max_tokens`（已弃用） | `sampling.max_output_tokens`（类型化） | 形式标记 `max_tokens: "max_tokens"`。两者都存在且值相同：形式标记 `"both"`。值不同时以 `max_completion_tokens` 为准，`max_tokens` 成为 extra `max_tokens (differs from max_completion_tokens)`，发回时写作 `max_tokens`；当其他方言拒绝它时，这个键名说明了冲突所在。 |
 | `stop` | `sampling.stop`（类型化） | 字符串写法：形式标记 `stop: "string"`；`[]`：形式标记 `"array"`。超过四个序列：`Unsupported`（`stop`）。 |
 | `seed` | `sampling.seed`（类型化） | 服务商的配置如此规定时，以 `random_seed` 发送（[服务商配置](openai-chat-providers.md#服务商配置)）。 |
-| `frequency_penalty`、`presence_penalty` | `sampling.*`（类型化） | 整数写法与 `temperature` 相同（形式标记 `integers`）。 |
-| `n` | 为 `1` 时记为形式标记 `n` | `n > 1`：`Unsupported`（`n`，见[采样参数](cross-format.md#采样参数)）；`0`：`InvalidRequest`。 |
+| `frequency_penalty`、`presence_penalty` | `sampling.*`（类型化） | 整数写法与 `temperature` 相同（形式标记 `integers`）。对没有惩罚参数的目标，`0` 会被省略（[中性值](sampling.md#中性值)）。 |
+| `n` | 为 `1` 时记为形式标记 `n` | `n > 1`：`Unsupported`（`n`，见[采样参数](sampling.md)）；`0`：`InvalidRequest`。 |
 | `reasoning_effort` | `reasoning.effort`（类型化） | 来自其他方言时（[推理强度与预算](reasoning.md#推理强度与预算)）：显式的推理强度保持不变；Anthropic `thinking.disabled` 变为 `none`；预算变为 `low`（低于 4,096）、`medium`（4,096 到 16,383）或 `high`（16,384 及以上）。取值为 `none` 到 `max`；未知值保留为 `ReasoningEffort::Other`，对 Chat 应用原样透传，而对来自其他方言的请求，`check()` 会拒绝规范枚举之外的值（`reasoning.effort`）。 |
 | `reasoning` `{effort, max_tokens, enabled, exclude}`（OpenRouter） | `reasoning`（类型化：`effort`、`budget_tokens`、`mode`、`exclude`） | OpenRouter 的统一推理对象。`max_tokens`（正整数）设置 `mode = Enabled` 和 `budget_tokens`；`enabled: true` 设置 `Adaptive` 而不强制指定强度；`enabled: false` 设置 `Disabled`；`exclude: true` 在回复和流中隐藏推理，同时保留 `reasoning_tokens`。冲突组合（`reasoning_effort` 与 `reasoning.effort` 不同、`effort` 与 `max_tokens` 共存、`enabled: false` 与强度或预算共存、`enabled: true` 与 `effort: "none"` 共存、`max_tokens: 0`）为 `InvalidRequest`。未知键为 extras `reasoning.<key>`，对没有 `with_reasoning_object()` 的服务商和跨方言时都会被拒绝。带 `with_reasoning_object()` 的服务商（OpenRouter、Vercel、Ollama Cloud）收回 `reasoning` 对象；OpenAI 和其他 Chat 服务商改为收到 `reasoning_effort`（或各自的思考开关）。 |
 | `response_format` `{type: text}` | `output = Text`（类型化） | 形式标记 `response_format_text`；未知键为 extras `response_format.<key>`。 |
@@ -54,7 +54,7 @@ nav: OpenAI Chat
 | `modalities` | `output_modalities`（类型化） | `[]`：形式标记 `modalities_empty`。来自其他方言：要求音频时为 `["text", "audio"]`，因为这时 Chat 的文本就是音频的转写稿（`ResponseModalities`），否则为 `["text"]`；图像或其他模态为 `Unsupported`。 |
 | `audio.voice`、`audio.format` | `audio_output.voice`、`.format`（类型化） | 自定义声音对象（`{"id": "voice_…"}`）和其他键：`audio_output` 的 extras。来自其他方言：声音必须属于 `VoiceIdsShared` 和描述中的内置声音（`alloy`、`ash`、`ballad`、`coral`、`echo`、`fable`、`nova`、`onyx`、`sage`、`shimmer`、`verse`、`marin`、`cedar`），音频输出必须带声音；没有格式时 Kaeso 请求 `wav`，流式请求时请求 `pcm16`，回复解码器据此得到媒体类型。 |
 | `stream_options.include_usage` | `StreamMode::On { include_usage }`（类型化） | 没有 `stream_options`：形式标记 `stream_options: "absent"`；没有 `include_usage`：形式标记 `"no_include_usage"`；其他键（`include_obfuscation`）为 extras `stream_options.<key>`；`stream` 关闭时：整个对象记为形式标记 `stream_options_off`。来自其他方言的请求总是要求 `include_usage: true`。网关需要用量，因此会在每个流式请求上设置 `include_usage: true`，并在 `EncodeCtx` 中保留应用自己的请求；随后应用一侧的流编码器会对没有请求用量的应用隐藏用量 chunk。 |
-| `functions` 和 `function_call`（已弃用，顶层）、`logit_bias`、`logprobs`、`metadata`、`moderation`、`prediction`、`prompt_cache_key`、`prompt_cache_options`、`prompt_cache_retention`、`service_tier`、`store`、`top_logprobs`、`verbosity`、`web_search_options` | extras | KPP 中没有对应项；跨方言时被拒绝（[Extras](cross-format.md#extras)、[采样参数](cross-format.md#采样参数)），但 `prompt_cache_key` 在 [Extras 允许列表](cross-format.md#extras)中：OpenAI Responses 会收到它，其他格式会丢弃它；`prompt_cache_options` 和 `prompt_cache_retention` 则用于设置 Anthropic 保留缓存的时长（[缓存提示](cross-format.md#缓存提示)）。`null` 值记为形式标记。例如发往 Anthropic 时，`functions` 以 `` `functions` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format. `` 失败。 |
+| `functions` 和 `function_call`（已弃用，顶层）、`logit_bias`、`logprobs`、`metadata`、`moderation`、`prediction`、`prompt_cache_key`、`prompt_cache_options`、`prompt_cache_retention`、`service_tier`、`store`、`top_logprobs`、`verbosity`、`web_search_options` | extras | KPP 中没有对应项；跨方言时被拒绝（[Extras](cross-format.md#extras)、[采样参数](sampling.md)），但 `prompt_cache_key` 在 [Extras 允许列表](cross-format.md#extras)中：OpenAI Responses 会收到它，其他格式会丢弃它；`prompt_cache_options` 和 `prompt_cache_retention` 则用于设置 Anthropic 保留缓存的时长（[缓存提示](cross-format.md#缓存提示)）；[中性值](sampling.md#中性值) `logprobs: false`、`top_logprobs: 0`、空的 `logit_bias` 或 `metadata`、`store: false`、`service_tier: "auto"` 和 `verbosity: "medium"` 会被省略，并在 `kaeso-left-out` 中列出。`null` 值记为形式标记。例如发往 Anthropic 时，`functions` 以 `` `functions` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format. `` 失败。 |
 | 未知键 | extras | 以 `header:` 开头或包含 `.` 的键会被拒绝（[Kaeso 无法承载的键](#kaeso-无法承载的键)）。 |
 | 请求头 `openai-beta` | extras `header:openai-beta` | 只在请求发往 Chat 时转发；在 [Extras 允许列表](cross-format.md#extras)中，因此其他方言会丢弃它。 |
 
@@ -108,7 +108,7 @@ nav: OpenAI Chat
 - 图像或其他输出模态、没有声音的音频输出、OpenAI 未列出的声音，以及没有音频输出时的音频设置；
 - 助手消息之外的拒绝和引用；
 - 其他方言的引用（通过 `check_foreign`）；
-- `top_k`（[采样参数](cross-format.md#采样参数)）；
+- `top_k`（[采样参数](sampling.md)）；
 - 未知的推理模式，以及规范枚举之外的推理强度。
 
 预算和 `disabled` 会被转换（[推理强度与预算](reasoning.md#推理强度与预算)）。以下提示字段则会被丢弃：

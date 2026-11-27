@@ -18,6 +18,7 @@ pub mod limits;
 mod media;
 mod models;
 pub mod multipart;
+mod neutral;
 mod openai_models;
 pub mod passthrough;
 mod scan;

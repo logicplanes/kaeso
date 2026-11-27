@@ -1,0 +1,18 @@
+{
+  "messages": [
+    {
+      "role": "system",
+      "content": "\nYou are ChatGPT, a large language model trained by OpenAI.\nKnowledge cutoff: 2023-10\nCurrent model: gpt-4o-mini\nCurrent time: 11/27/2026, 9:41:00 AM\nLatex inline: \\(x^2\\) \nLatex block: $$e=mc^2$$\n\n"
+    },
+    {
+      "role": "user",
+      "content": "Say hi"
+    }
+  ],
+  "stream": true,
+  "model": "gpt-4o-mini",
+  "temperature": 0.5,
+  "presence_penalty": 0,
+  "frequency_penalty": 0,
+  "top_p": 1
+}

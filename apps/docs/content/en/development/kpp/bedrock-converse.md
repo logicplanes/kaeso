@@ -38,7 +38,7 @@ Look up how a generation request reaches Amazon Bedrock's Converse API here: whi
 
 Tool names and call ids that Converse's patterns refuse (names `[a-zA-Z0-9_-]`, ids `[a-zA-Z0-9_.:-]`, at most 64 characters) are rewritten on the way out and restored in the reply.
 
-Refused with `Unsupported`: images and documents by web link or file id, audio and video blocks, document citations, hosted tools, `tool_choice: none`, `parallel_tool_calls: false`, reasoning settings, structured output, `top_k`, `seed` and the penalties. Reasoning of another format isn't sent.
+Refused with `Unsupported`: images and documents by web link or file id, audio and video blocks, document citations, hosted tools, `tool_choice: none`, `parallel_tool_calls: false`, reasoning settings, structured output, `top_k`, `seed` and the penalties, except a penalty of `0`, which is left out ([neutral values](sampling.md#neutral-values)). Reasoning of another format isn't sent.
 
 ## Reply
 

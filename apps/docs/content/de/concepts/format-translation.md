@@ -28,7 +28,7 @@ KPP, das Kaeso Provider Protocol, hat einen Codec für jedes API-Format: OpenAI 
 ## Drei Regeln
 
 1. **Gleiches Format, kein Verlust.** Eine Anfrage, die den Anbieter im selben Format erreicht, in dem sie kam, kommt so an, wie sie gesendet wurde. Nur der Modellname wird zur Modell-ID des Anbieters. Ein Stream fordert immer die Nutzung an, doch die App sieht sie nur, wenn sie danach gefragt hat. Es gibt drei Ausnahmen. Bei einem Tool, dessen Schema der Anbieter in keiner Form annimmt, wird eine Union an der Wurzel seiner Parameter zu einem Objekt, das der Header `kaeso-adapted` der Antwort nennt, und eine Wurzel ohne `type` bekommt `type: "object"` ([Tool-Schemas mit Union-Wurzel](../development/kpp/cross-format.md#tool-schemas-mit-union-wurzel)). Eine Aufwandsstufe für ein Modell ohne Aufwandsstufen und adaptives Denken für ein Modell ohne Reasoning werden weggelassen ([Modelle ohne Aufwandsstufen](../development/kpp/reasoning.md#modelle-ohne-aufwandsstufen)). Claude Opus 4.7 und neuer nehmen nur ihr Standard-Sampling an, daher lässt Kaeso `temperature`, `top_p` und `top_k` weg, und ein Denk-Budget wird zu adaptivem Denken.
-2. **Ablehnen, nie weglassen.** Wechselt eine Anfrage das Format, lehnt Kaeso ein Feld, das das Ziel nicht umsetzen kann, mit einem Fehler ab, der es nennt. Weg lässt es nur Hinweise, die nicht ändern, was das Modell schreibt, die wenigen optionalen Tools, die dem Ziel fehlen, und Reasoning-Einstellungen, die das Modell nicht annimmt. Diese nennt der Header `kaeso-left-out` der Antwort ([weggelassene Tools](../development/kpp/cross-format.md#weggelassene-tools)).
+2. **Ablehnen, nie weglassen.** Wechselt eine Anfrage das Format, lehnt Kaeso ein Feld, das das Ziel nicht umsetzen kann, mit einem Fehler ab, der es nennt. Weg lässt es nur Hinweise, die nicht ändern, was das Modell schreibt, die wenigen optionalen Tools, die dem Ziel fehlen, Reasoning-Einstellungen, die das Modell nicht annimmt, und Einstellungen mit dem Wert, den die API ohnehin verwendet. Diese nennt der Header `kaeso-left-out` der Antwort ([weggelassene Tools](../development/kpp/cross-format.md#weggelassene-tools), [neutrale Werte](../development/kpp/sampling.md#neutrale-werte)).
 3. **Signiertes Reasoning geht nur nach Hause.** Verschlüsseltes oder signiertes Reasoning sendet Kaeso nur an das Format und den Anbieter zurück, die es ausgegeben haben.
 
 ## Was erhalten bleibt
@@ -49,7 +49,7 @@ Wechselt eine Anfrage das Format, lehnt Kaeso Folgendes mit einem Fehler ab, der
 
 ### Anfragen an Anthropic
 
-- `seed`, Frequency- und Presence-Penalties und eine Temperatur über 1
+- `seed`, Frequency- und Presence-Penalties außer 0 und eine Temperatur über 1
 - das Ausgabeformat `json_object` und ein JSON-Schema mit einer Beschreibung oder mit `strict: false`
 - Verweigerungen im Verlauf
 - Bilder außer JPEG, PNG, GIF und WebP und Dokumente außer PDF und reinem Text
@@ -67,7 +67,7 @@ Wechselt eine Anfrage das Format, lehnt Kaeso Folgendes mit einem Fehler ab, der
 
 ### Anfragen an OpenAI Responses
 
-- `top_k`, `seed`, Penalties und Stoppsequenzen
+- `top_k`, `seed`, Penalties außer 0 und Stoppsequenzen
 - Textdokumente, Dokumenttitel, Kontext und Zitate
 - Audio und Video sowie Audio- und Bildausgabe
 
@@ -80,7 +80,7 @@ Diese lehnt Kaeso in jedem Format ab, auch wenn das Format gleich bleibt:
 
 ### Anfragen über Formate hinweg
 
-- Felder des App-Formats, für die KPP keinen Platz hat, etwa `logprobs`, `logit_bias` und `service_tier` von Chat Completions
+- Felder des App-Formats, für die KPP keinen Platz hat, etwa `logprobs`, `logit_bias` und `service_tier` von Chat Completions, außer sie haben den Wert, den die API ohne sie verwendet
 - das veraltete Function Calling von Chat Completions: `functions`, `function_call` und `function`-Nachrichten
 - eingebaute Tools eines anderen Formats, etwa die Websuche, und ihre Ergebnisse
 - Zitate und Datei-IDs eines anderen Anbieters
@@ -106,6 +106,7 @@ Hat das Ziel keinen Platz für sie, lässt Kaeso Hinweise weg, die nicht ändern
 - Bilddetail und Dateinamen
 - `thinking.display` von Anthropic und Kontextverwaltung von Anthropic, die nur früheres Denken entfernt
 - das Fehler-Flag eines Tool-Ergebnisses, das OpenAI nicht kennt; der Text des Ergebnisses sagt weiterhin, was fehlschlug
+- Einstellungen mit dem Wert, den die API ohne sie verwendet, etwa `frequency_penalty: 0`, `logprobs: false` oder `store: false`, die Chat-Apps wie NextChat mit jeder Anfrage senden; der Header `kaeso-left-out` der Antwort nennt sie ([neutrale Werte](../development/kpp/sampling.md#neutrale-werte))
 
 Anfragen, die in Responses übersetzt werden, tragen `store: false`, sodass OpenAI nichts speichert.
 
