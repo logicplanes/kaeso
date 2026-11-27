@@ -256,7 +256,7 @@ Anthropic 和 Responses 在块开始时就要给出两者，因此解码器按�
 | 403 | `PermissionDenied` | 403 `request_forbidden` |
 | 404 | `NotFound` | 404 `invalid_request_error` |
 | 413 | `RequestTooLarge` | 413 `invalid_request_error` |
-| 429 | `RateLimited` | 429 `rate_limit_error`，code `rate_limit_exceeded` |
+| 429 | `RateLimited` | 429 `rate_limit_error`，code `rate_limit_exceeded`；带 `retry: after_reset`（在重置前已用尽的配额）时为 429 `insufficient_quota`，code `insufficient_quota` |
 | 503 | `Overloaded` | 503 `service_unavailable_error`，code `server_is_overloaded` |
 | 408、504、`code` `vector_store_timeout` | `Timeout` | 504 `server_error`，code `timeout` |
 | 其他 | `ProviderError` | 其 5xx 状态码（503 除外）或 500，`server_error` |

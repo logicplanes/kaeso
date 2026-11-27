@@ -90,6 +90,7 @@ async fn a_refused_provider_key_is_a_provider_error_in_every_format() {
                     App::Chat | App::Responses => assert_eq!(kind, "server_error", "{what}"),
                 }
                 assert!(r.header("retry-after").is_none(), "{what}");
+                assert_eq!(r.header("x-should-retry"), Some("false"), "{what}");
                 assert!(!r.text().contains("sk-"), "{what}: {}", r.text());
             }
         }
@@ -134,6 +135,12 @@ async fn other_provider_errors_keep_their_meaning_in_every_format() {
             );
             let message = app.message(&r);
             assert!(!message.contains("Ask an organization admin"), "{message}");
+            let retry = r.header("x-should-retry");
+            if status == StatusCode::BAD_REQUEST {
+                assert_eq!(retry, Some("false"), "{fixture} to {}", app.path());
+            } else {
+                assert_eq!(retry, None, "{fixture} to {}", app.path());
+            }
             if same && matches!(app, App::Messages) {
                 let fixture_body: Value = serde_json::from_slice(
                     &std::fs::read(

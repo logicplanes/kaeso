@@ -108,6 +108,9 @@ pub struct Refusal {
     pub status: u16,
     pub message: String,
     pub retry_after: Option<Duration>,
+    /// Whether sending the request again can pass: not before a used-up budget resets, and
+    /// never for a request larger than what a limit lets through.
+    pub retry: Option<kaeso_kpp::Retry>,
     pub param: Option<&'static str>,
     /// The limit that refused the request, with nothing left.
     pub left: Option<Left>,

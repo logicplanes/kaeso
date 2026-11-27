@@ -265,7 +265,7 @@ Schema `ErrorResponse`。解码错误（无论是请求还是服务商的响应�
 - OpenAI 错误结构的响应体 `{"error": {"message", "type"}}`（Vercel AI Gateway 和 Z.ai 在 `/v1/messages` 上发送的就是这种）会保留其消息。若 `error.type` 是 Anthropic 的类型之一或 [Z.ai 的错误码](anthropic-messages-providers.md#zai)之一，类别由它决定，否则由状态码决定；Anthropic 应用收到的是 Anthropic 结构的错误（`fixtures/anthropic_messages/providers/vercel/errors/`）。这样的响应体只有在状态码得出相同类别时才保留其状态码；否则 Anthropic 应用收到该类别的状态码，因此 Z.ai 因余额不足返回的 429 以 402 `billing_error` 送达。
 - 从 Anthropic 解码的错误会以其状态码从 `raw` 重新编码，因此 Anthropic 应用看到的错误不变；其他错误则构建为 `{"type":"error","error":{"type","message"},"request_id":null}`。
 - `request_id` 在 `ErrorResponse` 中是必需字段，值为字符串或 `null`。`encode_error_for_request`（`dispatch::encode_error_for_request`）在其中写入给定的 ID，也写入从 `raw` 重新编码的响应体，替换 Anthropic 的 ID。网关传入它在 `kaeso-request-id` 中发送的 ID，并在请求日志中保留 Anthropic 的 `request-id` 响应头。`encode_error` 在它构建的响应体中写入 `null`。
-- 其他响应头（例如 `anthropic-ratelimit-*` 和 `request-id`）不属于 `KppError`。
+- 其他响应头（例如 `anthropic-ratelimit-*`、`request-id` 和 `x-should-retry`）不属于 `KppError`。`dispatch::encode_error` 为每种方言写出 `x-should-retry`，取自 `KppError.retry`（`helps` 为 `true`，`futile` 和 `after_reset` 为 `false`），或按 `should_retry` 的判断取自错误类型：对再试一次也不会改变结果的类型以及超过 60 秒的 `retry_after` 写 `false`，对速率限制、过载、超时、服务商错误以及以 408 或 409 发送的错误不写。Anthropic 在自己的 401 上发送 `x-should-retry: false`（`errors/authentication-invalid-key.meta.json`）；Kaeso 按自己的规则写出该响应头，不读取 Anthropic 的。Anthropic 的支出上限（带 `error.details.error_code: enforced_spend_limit_reached` 的 429）解码为 `retry: after_reset`（`errors/rate-limit-spend-cap.json`）。
 
 ## 模型
 
