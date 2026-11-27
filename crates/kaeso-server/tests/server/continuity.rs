@@ -386,15 +386,8 @@ async fn a_streamed_responses_turn_keeps_its_reasoning_for_the_next_step() {
         .as_str()
         .unwrap()
         .to_owned();
-    // The reasoning is kept once the stream ends, which an SDK's next step comes after.
-    let mut second = responses(&env, &env.key, responses_second_turn(&reasoning, &call_id)).await;
-    for _ in 0..20 {
-        if second.status == StatusCode::OK {
-            break;
-        }
-        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
-        second = responses(&env, &env.key, responses_second_turn(&reasoning, &call_id)).await;
-    }
+    // The reasoning is kept before the stream ends, which an SDK's next step comes after.
+    let second = responses(&env, &env.key, responses_second_turn(&reasoning, &call_id)).await;
     assert_eq!(second.status, StatusCode::OK, "{}", second.text());
     let turn = sent_assistant_turn(&env);
     assert_eq!(turn["content"][0]["type"], "thinking", "{turn}");
@@ -424,6 +417,48 @@ async fn reasoning_is_kept_when_kaeso_itself_tells_the_provider_not_to_store() {
         .await
         .unwrap();
     assert!(!keys.is_empty(), "the reasoning before the calls is kept");
+
+    // The app's next step points to that reasoning, which OpenAI, told not to store, couldn't
+    // look up: Kaeso resolves the reference itself.
+    let output = r.json()["output"].as_array().unwrap().clone();
+    let reasoning = output.iter().find(|i| i["type"] == "reasoning").unwrap()["id"].clone();
+    let mut input = vec![
+        json!({ "role": "user", "content": "Weather in Paris and Tokyo?" }),
+        json!({ "type": "item_reference", "id": reasoning }),
+    ];
+    let calls: Vec<&Value> = output
+        .iter()
+        .filter(|i| i["type"] == "function_call")
+        .collect();
+    assert_eq!(calls.len(), 2);
+    for c in &calls {
+        input.push(json!({ "type": "function_call", "call_id": c["call_id"], "name": c["name"], "arguments": c["arguments"] }));
+    }
+    for c in &calls {
+        input.push(
+            json!({ "type": "function_call_output", "call_id": c["call_id"], "output": "18 °C" }),
+        );
+    }
+    let second = responses(
+        &env,
+        &env.key,
+        json!({ "model": "gpt-4o", "tools": responses_tools(), "input": input }),
+    )
+    .await;
+    assert_eq!(second.status, StatusCode::OK, "{}", second.text());
+    let sent = env.mock.last().unwrap().json();
+    let types: Vec<&str> = sent["input"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter_map(|i| i["type"].as_str())
+        .collect();
+    assert!(!types.contains(&"item_reference"), "{sent}");
+    assert_eq!(
+        types.iter().filter(|t| **t == "function_call").count(),
+        2,
+        "{sent}"
+    );
 }
 
 #[tokio::test]
