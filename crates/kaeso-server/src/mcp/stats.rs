@@ -438,8 +438,10 @@ pub fn groups(ask: &Ask, data: &Data<'_>) -> Vec<Value> {
                 "value": value,
                 "requests": rows.iter().map(|r| int(r, "requests")).sum::<i64>(),
             });
-            if let Some(id) = key.strip_prefix("source:") {
-                row["source"] = json!(data.source_names.get(id));
+            if let Some(id) = key.strip_prefix("source:")
+                && let Value::Object(fields) = &mut row
+            {
+                fields.insert("source".to_owned(), json!(data.source_names.get(id)));
             }
             (rank(&value), key.clone(), row)
         })
