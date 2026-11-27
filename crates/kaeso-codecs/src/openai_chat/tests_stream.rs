@@ -8,7 +8,7 @@ use serde_json::{Value, json};
 
 use super::OpenAiChat;
 use crate::codec::{Codec, EgressCtx, EncodeCtx};
-use crate::test_support::{assert_sse_eq, fixtures};
+use crate::test_support::{assert_sse_eq, chat_usage_in_its_own_chunk, fixtures};
 use crate::testing::sse_items;
 
 const D: &str = "openai_chat";
@@ -72,9 +72,43 @@ fn frames(bytes: &[u8]) -> Vec<Value> {
 fn every_stream_fixture_round_trips() {
     for (name, bytes) in fixtures(D, "streams", "sse") {
         let events = decode_whole(&bytes);
-        let out = encode(&events, include_usage(&bytes));
-        assert_sse_eq(&name, &bytes, &out);
+        let include_usage = include_usage(&bytes);
+        let out = encode(&events, include_usage);
+        let expected = if include_usage {
+            chat_usage_in_its_own_chunk(&bytes)
+        } else {
+            bytes.clone()
+        };
+        assert_sse_eq(&name, &expected, &out);
     }
+}
+
+#[test]
+fn a_finish_chunk_with_the_usage_is_followed_by_a_usage_chunk_of_its_own() {
+    let moved: Vec<String> = fixtures(D, "streams", "sse")
+        .into_iter()
+        .filter(|(_, bytes)| include_usage(bytes) && chat_usage_in_its_own_chunk(bytes) != *bytes)
+        .map(|(name, _)| name)
+        .collect();
+    for name in [
+        "providers/deepseek/recorded-stream-include-usage",
+        "providers/mistral/recorded-stream-include-usage",
+    ] {
+        assert!(moved.iter().any(|m| m == name), "{name} not in {moved:?}");
+    }
+    let (_, bytes) = fixtures(D, "streams", "sse")
+        .into_iter()
+        .find(|(n, _)| n == "providers/mistral/recorded-stream-include-usage")
+        .unwrap();
+    let out = encode(&decode_whole(&bytes), true);
+    let chunks = frames(&out);
+    let last = &chunks[chunks.len() - 2];
+    assert_eq!(last["choices"], json!([]), "{last}");
+    assert_eq!(last["usage"]["total_tokens"], 35, "{last}");
+    let finish = &chunks[chunks.len() - 3];
+    assert_eq!(finish["choices"][0]["finish_reason"], "stop", "{finish}");
+    assert_eq!(finish["usage"], Value::Null, "{finish}");
+    assert_eq!(chunks[chunks.len() - 1], json!("[DONE]"));
 }
 
 #[test]
@@ -1068,7 +1102,11 @@ fn running_usage_is_reported_once_after_the_last_block_stops() {
         ]
     );
     assert_eq!(usage_deltas(&events), [(Some(StopReason::EndTurn), 3)]);
-    assert_sse_eq("replay", sse.as_bytes(), &encode(&events, true));
+    assert_sse_eq(
+        "replay",
+        &chat_usage_in_its_own_chunk(sse.as_bytes()),
+        &encode(&events, true),
+    );
 }
 
 #[test]
@@ -1343,4 +1381,85 @@ data: [DONE]\n\n";
         "{out}"
     );
     assert_eq!(frames(&out.into_bytes()), frames(split.as_bytes()));
+}
+
+#[test]
+fn a_comment_between_the_finish_and_the_usage_chunk_ends_both_paths_alike() {
+    let stream = concat!(
+        "data: {\"id\":\"c\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"m\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"Hi\"},\"finish_reason\":null}]}\n\n",
+        "data: {\"id\":\"c\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"m\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"stop\"}],\"usage\":{\"prompt_tokens\":5,\"completion_tokens\":2,\"total_tokens\":7}}\n\n",
+        ": keepalive\n\n",
+        "data: {\"id\":\"c\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"m\",\"choices\":[],\"usage\":{\"prompt_tokens\":5,\"completion_tokens\":2,\"total_tokens\":7}}\n\n",
+        "data: [DONE]\n\n",
+    );
+    let out = encode(&decode_whole(stream.as_bytes()), true);
+    let expected = chat_usage_in_its_own_chunk(stream.as_bytes());
+    assert_sse_eq("comment", &expected, &out);
+    let usage: Vec<Value> = frames(&out)
+        .into_iter()
+        .filter(|f| f.get("usage").is_some_and(|u| !u.is_null()))
+        .collect();
+    assert_eq!(usage.len(), 1, "{}", String::from_utf8_lossy(&out));
+    assert_eq!(usage[0]["choices"], json!([]));
+}
+
+#[test]
+fn an_error_after_a_held_finish_chunk_keeps_the_newest_usage_before_it() {
+    let head = "data: {\"id\":\"c\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"m\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"Hi\"},\"finish_reason\":null}]}\n\n";
+    let finish = |total: u64| {
+        format!(
+            "data: {{\"id\":\"c\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"m\",\"choices\":[{{\"index\":0,\"delta\":{{}},\"finish_reason\":\"stop\"}}],\"usage\":{{\"prompt_tokens\":5,\"completion_tokens\":2,\"total_tokens\":{total}}}}}\n\n"
+        )
+    };
+    let failed = |stream: &str| {
+        let mut events = decode_whole(stream.as_bytes());
+        events.retain(|e| !matches!(e, StreamEvent::ResponseStop(_)));
+        events.push(StreamEvent::Error(KppError::provider(
+            "The connection broke.",
+        )));
+        String::from_utf8(encode(&events, true)).unwrap()
+    };
+    let usage_then_error = |out: &str| -> Vec<Value> {
+        frames(out.as_bytes())
+            .into_iter()
+            .filter(|f| f.get("usage").is_some_and(|u| !u.is_null()) || f.get("error").is_some())
+            .collect()
+    };
+
+    let out = failed(&format!("{head}{}: keepalive\n\n", finish(7)));
+    let tail = usage_then_error(&out);
+    assert_eq!(tail.len(), 2, "{out}");
+    assert_eq!(tail[0]["choices"], json!([]), "{out}");
+    assert_eq!(tail[0]["usage"]["total_tokens"], 7, "{out}");
+    assert!(tail[1].get("error").is_some(), "{out}");
+
+    let out = failed(&format!("{head}{}{}", finish(0), finish(7)));
+    let totals: Vec<Value> = usage_then_error(&out)
+        .into_iter()
+        .filter_map(|f| f.get("usage").map(|u| u["total_tokens"].clone()))
+        .collect();
+    assert_eq!(totals, [json!(7)], "{out}");
+}
+
+#[test]
+fn a_recorded_stream_cut_by_an_error_after_its_usage_keeps_the_newest_counts() {
+    let (_, bytes) = fixtures(D, "streams", "sse")
+        .into_iter()
+        .find(|(n, _)| n == "providers/cloudflare-ai-gateway/recorded-stream-include-usage")
+        .unwrap();
+    let mut events = decode_whole(&bytes);
+    events.retain(|e| !matches!(e, StreamEvent::ResponseStop(_)));
+    events.push(StreamEvent::Error(KppError::provider(
+        "The connection broke.",
+    )));
+    let out = encode(&events, true);
+    let finishing: Vec<Value> = frames(&out)
+        .into_iter()
+        .filter(|c| c["choices"][0]["finish_reason"].is_string() || c["choices"] == json!([]))
+        .collect();
+    let last = finishing.last().unwrap();
+    assert_eq!(last["usage"]["total_tokens"], 24, "{last}");
+    let with_usage = finishing.iter().filter(|c| !c["usage"].is_null()).count();
+    assert_eq!(with_usage, 1, "{}", String::from_utf8_lossy(&out));
+    assert!(frames(&out).last().unwrap().get("error").is_some());
 }

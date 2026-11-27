@@ -10,6 +10,8 @@
 | `invalid-request-prefill.meta.json` | HTTP status (and headers) for the body above. | doc: https://platform.claude.com/docs/en/api/errors#prefill-not-supported |
 | `authentication.json` | 401 `authentication_error`. | schema: ErrorResponse, AuthenticationError |
 | `authentication.meta.json` | HTTP status (and headers) for the body above. | schema: ErrorResponse, AuthenticationError |
+| `authentication-invalid-key.json` | 401 `authentication_error` for a key Anthropic doesn't know. | live: `POST /v1/messages` with a made-up `x-api-key` on 2026-11-27 |
+| `authentication-invalid-key.meta.json` | HTTP status and the headers that came with it: `request-id`, and `x-should-retry: false`, which tells the Anthropic SDKs not to retry. | live, as above |
 | `billing.json` | 402 `billing_error`. | schema: ErrorResponse, BillingError |
 | `billing.meta.json` | HTTP status (and headers) for the body above. | schema: ErrorResponse, BillingError |
 | `billing-credit-balance.json` | 400 `invalid_request_error` for an empty credit balance, which Anthropic sends instead of the documented 402 `billing_error`. Kaeso reads it as `Billing` and gives an Anthropic app the body as received; the meta names the kind. | live: `claude-sonnet-5-5` on 2026-11-05 (`req_011CgkB9j4UjbexEPc3Egizh`), status, type and message from Kaeso's request log |

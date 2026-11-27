@@ -94,7 +94,7 @@ Der Fehler nennt das Feld, nie eine Parser-Position, und setzt `param`: `` The r
 
 `check()` lehnt außerdem bei Anfragen aus jedem Dialekt ab:
 
-- `sampling.top_k`, `seed`, `frequency_penalty`, `presence_penalty` und Stoppsequenzen, die es in der Responses-API nicht gibt ([Sampling](sampling.md)); eine Penalty von `0` wird weggelassen ([neutrale Werte](sampling.md#neutrale-werte));
+- `seed`, `frequency_penalty`, `presence_penalty` und Stoppsequenzen, die es in der Responses-API nicht gibt ([Sampling](sampling.md)); eine Penalty von `0` wird weggelassen ([neutrale Werte](sampling.md#neutrale-werte));
 - unbekannte Reasoning-Modi, benannt nach ihrem Wire-Wert;
 - Textdokumente, `title`/`context`/`citations` von Dokumenten und Text-Bildquellen;
 - Audio- und Videoblöcke, weil `InputContent` nur `input_text`, `input_image` und `input_file` kennt (`audio block`, `video block`); OpenRouters `input_audio`- und `input_video`-Teile, die OpenAI nicht hat, bleiben `Block::Unknown`;
@@ -307,7 +307,7 @@ Beim Kodieren werden Body und Status von Fehlern, die aus einem OpenAI-Dialekt (
 | `PermissionDenied` | 403 | `request_forbidden` | `null` |
 | `NotFound` | 404 | `invalid_request_error` | `null` |
 | `RequestTooLarge` | 413 | `invalid_request_error` | `null` |
-| `RateLimited` | 429 | `rate_limit_error` | `rate_limit_exceeded` |
+| `RateLimited` | 429 | `rate_limit_error`; `insufficient_quota` mit `retry: after_reset` | `rate_limit_exceeded`; `insufficient_quota` |
 | `Billing` | 429 | `insufficient_quota` | `insufficient_quota` |
 | `Overloaded` | 503 | `service_unavailable_error` | `server_is_overloaded` |
 | `Timeout` | 504 | `server_error` | `timeout` |

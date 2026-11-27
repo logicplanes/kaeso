@@ -174,16 +174,17 @@ impl UsageFilter {
 pub struct UsageRow {
     #[doc = "The day, the Monday of the week, the first day of the month,\n\
         `provider/model`, provider, key id (`playground` for the requests members\n\
-        made in the console's Playground, without a key), member (`user:<id>` or\n\
+        made in the console's Playground, `source:<id>` for the requests a source\n\
+        reported; neither has a key), member (`user:<id>` or\n\
         `service_account:<id>`), route (`<app format>:<provider format>:<provider>`,\n\
         such as `openai_responses:anthropic_messages:anthropic`; both formats are\n\
         empty for requests made before Kaeso recorded them, and the provider\n\
         format for requests refused before a provider was chosen), or project\n\
         id. The filter of the same name takes it as it is."]
     pub key: String,
-    #[doc = "Model requests of the group, made with a key or from the Playground:\n\
-        every one, the gateway's own refusals (limits, unknown models,\n\
-        capability checks) included."]
+    #[doc = "Model requests of the group, made with a key, from the Playground or\n\
+        reported by a source: every one, the gateway's own refusals (limits,\n\
+        unknown models, capability checks) included."]
     pub requests: u64,
     #[doc = "Of those, the ones answered with a status of 400 or above, the\n\
         gateway's own refusals and streams that failed after their headers\n\

@@ -27,7 +27,7 @@ KPP, the Kaeso Provider Protocol, has a codec for each API format: OpenAI Chat C
 
 ## Three rules
 
-1. **Same format, no loss.** A request that reaches the provider in the format it came in arrives as it was sent. Only the model name becomes the provider's model id. A stream always asks for usage, but the app sees it only if it asked. There are three exceptions. For a tool whose schema the provider takes in no form, a union at the root of its parameters becomes one object, which the reply's `kaeso-adapted` header names, and a root without `type` gets `type: "object"` ([union tool schemas](../development/kpp/cross-format.md#union-tool-schemas)). An effort for a model without effort levels, and adaptive thinking for a model that doesn't reason, are left out ([models without effort levels](../development/kpp/reasoning.md#models-without-effort-levels)). Claude Opus 4.7 and later take only their default sampling, so Kaeso leaves out `temperature`, `top_p` and `top_k`, and a thinking budget becomes adaptive thinking.
+1. **Same format, no loss.** A request that reaches the provider in the format it came in arrives as it was sent. Only the model name becomes the provider's model id. A stream always asks for usage, but the app sees it only if it asked. There are four exceptions. For a tool whose schema the provider takes in no form, a union at the root of its parameters becomes one object, which the reply's `kaeso-adapted` header names, and a root without `type` gets `type: "object"` ([union tool schemas](../development/kpp/cross-format.md#union-tool-schemas)). An effort for a model without effort levels, and adaptive thinking for a model that doesn't reason, are left out ([models without effort levels](../development/kpp/reasoning.md#models-without-effort-levels)). Claude Opus 4.7 and later take only their default sampling, so Kaeso leaves out `temperature`, `top_p` and `top_k`, and a thinking budget becomes adaptive thinking. An Anthropic-format provider that ignores `top_k`, such as DeepSeek or MiniMax, doesn't get it ([top K](../development/kpp/sampling.md#top-k)).
 2. **Refuse, never drop.** When a request crosses formats, Kaeso refuses a field the target can't honor, with an error that names it. It leaves out only hints that don't change what the model writes, the few optional tools the target lacks, reasoning settings the model can't take, and settings sent at the value the API uses anyway, which the reply's `kaeso-left-out` header names ([tools left out](../development/kpp/cross-format.md#tools-left-out), [neutral values](../development/kpp/sampling.md#neutral-values)).
 3. **Signed reasoning goes home only.** Kaeso sends encrypted or signed reasoning back only to the format and provider that issued it.
 
@@ -50,7 +50,7 @@ When a request crosses formats, Kaeso refuses these with an error that names the
 ### Requests to Anthropic
 
 - `seed`, frequency and presence penalties other than 0, and a temperature above 1
-- the `json_object` output format, and a JSON schema with a description or with `strict: false`
+- the `json_object` output format, and a JSON schema that lists no keys
 - refusals in the history
 - images other than JPEG, PNG, GIF and WebP, and documents other than PDF and plain text
 - audio, and video except for MiniMax
@@ -59,7 +59,7 @@ When a request crosses formats, Kaeso refuses these with an error that names the
 
 ### Requests to OpenAI Chat Completions
 
-- `top_k` and more than four stop sequences
+- more than four stop sequences
 - text documents, document URLs, document titles, context and citations
 - image file ids, and images, documents and audio outside user messages
 - audio other than base64 WAV and MP3, and video, except for providers that document more
@@ -67,7 +67,7 @@ When a request crosses formats, Kaeso refuses these with an error that names the
 
 ### Requests to OpenAI Responses
 
-- `top_k` and penalties other than 0
+- penalties other than 0
 - text documents, document titles, context and citations
 - audio and video, and audio and image output
 

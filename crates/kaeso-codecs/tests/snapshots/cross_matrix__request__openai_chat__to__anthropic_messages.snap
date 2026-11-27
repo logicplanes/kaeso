@@ -442,14 +442,116 @@ expression: outcomes
     "unsupported": "json_object output"
   },
   "json-schema": {
-    "message": "`output schema description` is not supported by Anthropic Messages. Anthropic structured outputs take a schema only. Move the description into the prompt or the schema's own `description`.",
-    "param": "response_format",
-    "unsupported": "output schema description"
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Alice and Bob are going to a science fair on 2026-10-16.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-5.4-mini",
+      "output_config": {
+        "effort": "low",
+        "format": {
+          "schema": {
+            "additionalProperties": false,
+            "description": "A calendar event",
+            "properties": {
+              "date": {
+                "description": "ISO 8601 date",
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "participants": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            },
+            "required": [
+              "name",
+              "date",
+              "participants"
+            ],
+            "type": "object"
+          },
+          "type": "json_schema"
+        }
+      },
+      "system": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "text": "Extract the event information.",
+          "type": "text"
+        }
+      ],
+      "thinking": {
+        "type": "adaptive"
+      }
+    },
+    "path": "/v1/messages"
   },
   "legacy-functions": {
     "message": "`functions` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
     "param": null,
     "unsupported": "functions"
+  },
+  "llm-schema": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Tokyo",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "claude-haiku-5-5",
+      "output_config": {
+        "format": {
+          "schema": {
+            "additionalProperties": false,
+            "properties": {
+              "country": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "country"
+            ],
+            "type": "object"
+          },
+          "type": "json_schema"
+        }
+      },
+      "stream": true
+    },
+    "path": "/v1/messages"
   },
   "logit-bias": {
     "message": "`logit_bias` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
@@ -583,6 +685,73 @@ expression: outcomes
       ],
       "temperature": 0.5,
       "top_p": 1.0
+    },
+    "path": "/v1/messages"
+  },
+  "openai-python-parse-constraints": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Describe Tokyo.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "claude-haiku-5-5",
+      "output_config": {
+        "format": {
+          "schema": {
+            "additionalProperties": false,
+            "properties": {
+              "country": {
+                "description": "ISO country name",
+                "title": "Country",
+                "type": "string"
+              },
+              "name": {
+                "title": "Name",
+                "type": "string"
+              },
+              "population": {
+                "description": "{minimum: 0}",
+                "title": "Population",
+                "type": "integer"
+              },
+              "rating": {
+                "description": "{maximum: 5, minimum: 1}",
+                "title": "Rating",
+                "type": "number"
+              },
+              "tags": {
+                "description": "{maxItems: 3}",
+                "items": {
+                  "type": "string"
+                },
+                "title": "Tags",
+                "type": "array"
+              }
+            },
+            "required": [
+              "name",
+              "country",
+              "population",
+              "rating",
+              "tags"
+            ],
+            "title": "City",
+            "type": "object"
+          },
+          "type": "json_schema"
+        }
+      }
     },
     "path": "/v1/messages"
   },
@@ -7439,6 +7608,7 @@ expression: outcomes
       "output_config": {
         "format": {
           "schema": {
+            "additionalProperties": false,
             "properties": {
               "age": {
                 "description": "年龄",

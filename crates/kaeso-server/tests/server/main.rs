@@ -127,6 +127,7 @@ mod request_size;
 mod rerank;
 mod response_cache;
 mod retries;
+mod robots;
 mod roles;
 mod route_access;
 mod route_rights;

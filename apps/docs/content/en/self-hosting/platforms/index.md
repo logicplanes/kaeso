@@ -47,6 +47,7 @@ The managed stacks on AWS and Google Cloud are not one click: you choose a regio
 - **Health checks** use `/healthz` for the process and `/readyz` for PostgreSQL, Valkey and ClickHouse ([health and metrics](../monitoring.md)). The metrics port is never public.
 - **The updater is off.** The platform rolls a new release out and back; a release's migrations only move forward ([upgrades](../upgrades.md)).
 - **One version.** Gateway, console and edge are pinned to the same release; a release updates the templates.
+- **Search engines stay out** until `KAESO_SEARCH_ENGINES` is `true` for the gateway and the console ([search engines](../domains-and-tls.md#search-engines)). Each template sets it in one place: on the gateway, whose value the console takes, on Render and in Railway's infrastructure file; as a variable of the whole app on DigitalOcean; as the stack's variable on Coolify, Dokploy and CapRover; as the `SearchEngines` parameter on AWS and the `search_engines` variable on Google Cloud; and in both `gateway.toml` and `console.toml` on Fly.io.
 
 ## What every path needs
 

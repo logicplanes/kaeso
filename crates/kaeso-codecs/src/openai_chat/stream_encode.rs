@@ -71,8 +71,18 @@ pub(crate) struct ChatStreamEncoder {
     start_usage: Option<Usage>,
     usage: Option<Usage>,
     usage_sent: bool,
+    held: Option<Held>,
+    usage_chunk: Option<Vec<u8>>,
     done: bool,
     pacer: Pacer,
+}
+
+// A provider's finish chunk that carries the usage, written three ways until the next event
+// shows whether the provider's own usage chunk follows.
+struct Held {
+    as_sent: Vec<u8>,
+    without_usage: Vec<u8>,
+    usage_chunk: Vec<u8>,
 }
 
 impl ChatStreamEncoder {
@@ -102,6 +112,8 @@ impl ChatStreamEncoder {
             start_usage: None,
             usage: None,
             usage_sent: false,
+            held: None,
+            usage_chunk: None,
             done: false,
             pacer: Pacer::default(),
         }
@@ -348,6 +360,9 @@ impl ChatStreamEncoder {
                 out.extend(self.close(!no_done)?);
             }
             StreamEvent::Error(err) => {
+                if let Some(chunk) = self.usage_chunk.take() {
+                    out.extend(chunk);
+                }
                 let body = serde_json::to_string(&error_body(err)).map_err(internal)?;
                 write_event(&mut out, None, &body);
                 self.done = true;
@@ -421,6 +436,9 @@ impl ChatStreamEncoder {
         let mut out = Vec::new();
         if self.done {
             return Ok(out);
+        }
+        if let Some(chunk) = self.usage_chunk.take() {
+            out.extend(chunk);
         }
         if self.include_usage && !self.usage_sent {
             let usage = match (self.usage.clone(), self.start_usage.clone()) {
@@ -588,6 +606,16 @@ impl ChatStreamEncoder {
                 obj.insert(Cow::Borrowed("usage"), J::Null);
             }
         }
+        if own && choice_mode == "empty" && chunk.usage.is_some() {
+            self.usage_chunk = None;
+        }
+        // OpenAI sends the usage in a chunk of its own with empty `choices`
+        // (`stream_options.include_usage`); DeepSeek and Mistral put it on the chunk that
+        // finishes, which waits for the next event to see whether the provider's own follows.
+        let hold = own
+            && self.include_usage
+            && chunk.usage.is_some()
+            && !matches!(choice_mode, "absent" | "empty");
         if own {
             if let Some(obf) = form.get("obf") {
                 obj.insert(Cow::Borrowed("obfuscation"), J::Value(obf));
@@ -604,35 +632,47 @@ impl ChatStreamEncoder {
                 }
             }
         }
-        match form.get(FORM_SSE).filter(|_| own) {
-            Some(framing) => {
-                let data = serde_json::to_string(&obj).map_err(internal)?;
-                let mut event = crate::sse::SseEvent::new(None, data);
-                crate::sse::set_framing(&mut event, framing);
-                crate::sse::write_item(&mut out, &crate::sse::SseItem::Event(event));
+        let framing = form.get(FORM_SSE).filter(|_| own);
+        if hold {
+            let mut as_sent = Vec::new();
+            write_chunk(&obj, framing, &mut as_sent)?;
+            obj.insert(Cow::Borrowed("usage"), J::Null);
+            let mut without_usage = Vec::new();
+            write_chunk(&obj, framing, &mut without_usage)?;
+            if let Some(usage) = chunk.usage.as_ref() {
+                obj.insert(Cow::Borrowed("usage"), J::Value(usage));
             }
-            // What `write_item` writes for an event with only data, serialized in place. A raw
-            // value the provider split across `data:` lines keeps its line breaks, and only
-            // `write_item` splits those into lines of their own again.
-            None => {
-                let begin = out.len();
-                out.extend_from_slice(b"data: ");
-                let json = out.len();
-                serde_json::to_writer(&mut out, &obj).map_err(internal)?;
-                if out
-                    .get(json..)
-                    .is_some_and(|written| written.iter().any(|b| matches!(b, b'\n' | b'\r')))
-                {
-                    out.truncate(begin);
-                    let data = serde_json::to_string(&obj).map_err(internal)?;
-                    let event = crate::sse::SseEvent::new(None, data);
-                    crate::sse::write_item(&mut out, &crate::sse::SseItem::Event(event));
-                } else {
-                    out.extend_from_slice(b"\n\n");
-                }
-            }
+            obj.insert(Cow::Borrowed("choices"), J::List(Vec::new()));
+            let mut usage_chunk = Vec::new();
+            write_chunk(&obj, None, &mut usage_chunk)?;
+            self.held = Some(Held {
+                as_sent,
+                without_usage,
+                usage_chunk,
+            });
+            self.usage_sent = false;
+            return Ok(out);
         }
+        write_chunk(&obj, framing, &mut out)?;
         Ok(out)
+    }
+
+    // The held finish chunk as sent when the provider's own usage chunk is next, or else without
+    // its usage, which then goes in a chunk of its own before `[DONE]`.
+    fn release(&mut self, usage_chunk_next: bool, out: &mut Vec<u8>) {
+        let Some(held) = self.held.take() else {
+            return;
+        };
+        if usage_chunk_next {
+            // The chunk goes with its own usage, newer than any an earlier chunk left for the end.
+            out.extend(held.as_sent);
+            self.usage_chunk = None;
+            self.usage_sent = true;
+        } else {
+            out.extend(held.without_usage);
+            self.usage_chunk = Some(held.usage_chunk);
+            self.usage_sent = true;
+        }
     }
 
     fn collect_fields(event: &StreamEvent, chunk: &mut Chunk) {
@@ -655,6 +695,38 @@ impl ChatStreamEncoder {
             }
         }
     }
+}
+
+fn write_chunk(obj: &Tree<'_>, framing: Option<&Value>, out: &mut Vec<u8>) -> Result<(), KppError> {
+    match framing {
+        Some(framing) => {
+            let data = serde_json::to_string(obj).map_err(internal)?;
+            let mut event = crate::sse::SseEvent::new(None, data);
+            crate::sse::set_framing(&mut event, framing);
+            crate::sse::write_item(out, &crate::sse::SseItem::Event(event));
+        }
+        // What `write_item` writes for an event with only data, serialized in place. A raw
+        // value the provider split across `data:` lines keeps its line breaks, and only
+        // `write_item` splits those into lines of their own again.
+        None => {
+            let begin = out.len();
+            out.extend_from_slice(b"data: ");
+            let json = out.len();
+            serde_json::to_writer(&mut *out, obj).map_err(internal)?;
+            if out
+                .get(json..)
+                .is_some_and(|written| written.iter().any(|b| matches!(b, b'\n' | b'\r')))
+            {
+                out.truncate(begin);
+                let data = serde_json::to_string(obj).map_err(internal)?;
+                let event = crate::sse::SseEvent::new(None, data);
+                crate::sse::write_item(out, &crate::sse::SseItem::Event(event));
+            } else {
+                out.extend_from_slice(b"\n\n");
+            }
+        }
+    }
+    Ok(())
 }
 
 fn choice<'a>(chunk: &'a Chunk, role_pending: bool) -> Result<J<'a>, KppError> {
@@ -978,6 +1050,7 @@ impl StreamEncoder for ChatStreamEncoder {
         {
             out.extend(self.write(pending)?);
         }
+        self.release(false, &mut out);
         if self.started && !self.done {
             out.extend(self.close(true)?);
         }
@@ -1014,10 +1087,15 @@ impl ChatStreamEncoder {
         } else {
             None
         };
+        let usage_chunk_next = matches!(event, StreamEvent::Error(_))
+            || marker.is_some_and(|m| m.get("ch").and_then(Value::as_str) == Some("empty"))
+                && matches!(event, StreamEvent::ResponseDelta(d) if d.usage.is_some());
         let mut out = Vec::new();
+        self.release(usage_chunk_next, &mut out);
         if let Some(marker) = marker {
             if let Some(pending) = self.pending.take() {
                 out.extend(self.write(pending)?);
+                self.release(usage_chunk_next, &mut out);
             }
             let n = marker.get("n").and_then(Value::as_u64).unwrap_or(1);
             let mut form = match marker {
@@ -1040,6 +1118,7 @@ impl ChatStreamEncoder {
             && let Some(pending) = self.pending.take()
         {
             out.extend(self.write(pending)?);
+            self.release(usage_chunk_next, &mut out);
         }
         if let Some(mut chunk) = self.pending.take() {
             Self::collect_fields(event, &mut chunk);

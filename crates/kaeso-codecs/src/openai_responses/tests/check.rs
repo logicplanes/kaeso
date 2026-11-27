@@ -34,9 +34,6 @@ fn a_plain_request_passes() {
 #[test]
 fn sampling_parameters_responses_cannot_express_are_refused() {
     let mut r = base();
-    r.sampling.top_k = Some(5);
-    assert_eq!(feature(r), "top_k");
-    let mut r = base();
     r.sampling.seed = Some(1);
     assert_eq!(feature(r), "seed");
     let mut r = base();
@@ -231,9 +228,25 @@ fn media_requests_are_refused_by_name() {
 #[test]
 fn encode_request_runs_check_first() {
     let mut r = base();
-    r.sampling.top_k = Some(3);
+    r.sampling.seed = Some(3);
     let req = Request::Generate(r);
     let mut ctx = EgressCtx::new(&req);
     let err = OpenAiResponses::encode_request(&req, &mut ctx).unwrap_err();
-    assert_eq!(err.unsupported_feature(), Some("top_k"));
+    assert_eq!(err.unsupported_feature(), Some("seed"));
+}
+
+#[test]
+fn top_k_is_left_out_by_the_apps_name_for_it() {
+    let mut r = base();
+    r.extras = Extras::new(Origin::new(DialectId::Gemini));
+    r.sampling.top_k = Some(64);
+    r.sampling.temperature = Some(1.0);
+    let req = Request::Generate(r);
+    OpenAiResponses::check(&req, &EgressCtx::new(&req)).unwrap();
+    let mut ctx = EgressCtx::new(&req);
+    let out = OpenAiResponses::encode_request(&req, &mut ctx).unwrap();
+    let body: serde_json::Value = serde_json::from_slice(&out.body).unwrap();
+    assert!(body.get("top_k").is_none(), "{body}");
+    assert_eq!(body["temperature"], 1.0, "{body}");
+    assert_eq!(ctx.left_out, ["generationConfig.topK"]);
 }

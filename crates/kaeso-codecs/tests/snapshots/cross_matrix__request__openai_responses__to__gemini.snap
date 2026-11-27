@@ -3044,9 +3044,53 @@ expression: outcomes
     "rejected_by_source": "conversation"
   },
   "structured-output-json-schema": {
-    "message": "`output schema description` is not supported by Gemini API. Gemini structured output takes a schema only. Move the description into the prompt or the schema's own `description`.",
-    "param": "text.format",
-    "unsupported": "output schema description"
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Alice and Bob are going to a science fair on Friday."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "responseJsonSchema": {
+          "additionalProperties": false,
+          "description": "A calendar event extracted from text.",
+          "properties": {
+            "date": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "participants": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "name",
+            "date",
+            "participants"
+          ],
+          "type": "object"
+        },
+        "responseMimeType": "application/json"
+      },
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "Extract the event information."
+          }
+        ]
+      }
+    },
+    "path": "/v1beta/models/gpt-5.5:generateContent"
   },
   "text-basic-stream": {
     "body": {

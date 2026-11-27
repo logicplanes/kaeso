@@ -94,7 +94,7 @@ The error names the field, never a parser position, and sets `param`: `` The req
 
 `check()` also refuses, for requests from any dialect:
 
-- `sampling.top_k`, `seed`, `frequency_penalty`, `presence_penalty` and stop sequences, which the Responses API doesn't have ([sampling](sampling.md)); a penalty of `0` is left out ([neutral values](sampling.md#neutral-values));
+- `seed`, `frequency_penalty`, `presence_penalty` and stop sequences, which the Responses API doesn't have ([sampling](sampling.md)); a penalty of `0` is left out ([neutral values](sampling.md#neutral-values));
 - unknown reasoning modes, named by their wire value;
 - text documents, document `title`/`context`/`citations`, and text image sources;
 - audio and video blocks, because `InputContent` has only `input_text`, `input_image` and `input_file` (`audio block`, `video block`); OpenRouter's `input_audio` and `input_video` parts, which OpenAI doesn't have, stay `Block::Unknown`;
@@ -307,7 +307,7 @@ Encoding replays the body and status of errors that came from an OpenAI dialect 
 | `PermissionDenied` | 403 | `request_forbidden` | `null` |
 | `NotFound` | 404 | `invalid_request_error` | `null` |
 | `RequestTooLarge` | 413 | `invalid_request_error` | `null` |
-| `RateLimited` | 429 | `rate_limit_error` | `rate_limit_exceeded` |
+| `RateLimited` | 429 | `rate_limit_error`; `insufficient_quota` with `retry: after_reset` | `rate_limit_exceeded`; `insufficient_quota` |
 | `Billing` | 429 | `insufficient_quota` | `insufficient_quota` |
 | `Overloaded` | 503 | `service_unavailable_error` | `server_is_overloaded` |
 | `Timeout` | 504 | `server_error` | `timeout` |

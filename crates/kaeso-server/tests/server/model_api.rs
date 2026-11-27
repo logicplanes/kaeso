@@ -316,6 +316,7 @@ async fn errors_arrive_in_the_apps_format() {
     assert_eq!(r.status, StatusCode::UNAUTHORIZED);
     assert_eq!(r.json()["type"], "error");
     assert_eq!(r.json()["error"]["type"], "authentication_error");
+    assert_eq!(r.header("x-should-retry"), Some("false"));
     let r = call(
         &env,
         "/v1/chat/completions",
@@ -326,6 +327,7 @@ async fn errors_arrive_in_the_apps_format() {
     .await;
     assert_eq!(r.status, StatusCode::UNAUTHORIZED);
     assert!(r.json()["error"]["message"].as_str().is_some());
+    assert_eq!(r.header("x-should-retry"), Some("false"));
     let r = call(
         &env,
         "/v1/messages",
@@ -397,10 +399,10 @@ async fn errors_arrive_in_the_apps_format() {
     );
     let before = env.mock.received().len();
     let mut body = messages("gpt-4o", "x");
-    body["top_k"] = json!(5);
+    body["container"] = json!("container_011");
     let r = call(&env, "/v1/messages", Some(&env.key), true, Some(body)).await;
     assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
-    assert!(r.text().contains("top_k"));
+    assert!(r.text().contains("container"));
     assert_eq!(env.mock.received().len(), before, "nothing was sent");
     let r = call(
         &env,

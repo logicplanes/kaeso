@@ -527,6 +527,7 @@ pub(crate) enum Setting {
     AudioFormat,
     FrequencyPenalty,
     PresencePenalty,
+    TopK,
 }
 
 pub(crate) fn app_field(r: &GenerateRequest, setting: Setting, target: DialectId) -> &'static str {
@@ -566,6 +567,8 @@ pub(crate) fn app_field(r: &GenerateRequest, setting: Setting, target: DialectId
         (Setting::FrequencyPenalty, _) => "frequency_penalty",
         (Setting::PresencePenalty, G) => "generationConfig.presencePenalty",
         (Setting::PresencePenalty, _) => "presence_penalty",
+        (Setting::TopK, G) => "generationConfig.topK",
+        (Setting::TopK, _) => "top_k",
     }
 }
 

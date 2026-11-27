@@ -20,6 +20,7 @@ mod models;
 pub mod multipart;
 mod neutral;
 mod openai_models;
+mod output_schema;
 pub mod passthrough;
 mod scan;
 pub mod sse;
@@ -76,8 +77,8 @@ mod tests_audio_dialects;
 
 pub use codec::{
     Codec, EVENT_STREAM_MEDIA_TYPE, EgressCtx, EncodeCtx, EncodedError, EncodedRequest,
-    FORWARDED_HEADERS, HeaderList, JSON_MEDIA_TYPE, StreamDecoder, StreamEncoder,
-    is_forwarded_header, parse_retry_after,
+    FORWARDED_HEADERS, HeaderList, JSON_MEDIA_TYPE, SHOULD_RETRY_HEADER, StreamDecoder,
+    StreamEncoder, is_forwarded_header, parse_retry_after, should_retry,
 };
 pub use keepalive::HIDDEN_TEXT_PER_KEEPALIVE;
 pub use passthrough::{PassthroughStep, PassthroughSummary, PassthroughTally, StreamPassthrough};

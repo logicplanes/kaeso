@@ -1,0 +1,56 @@
+{
+  "contents": [
+    {
+      "parts": [
+        {
+          "text": "Weather in Paris for 2 days? Use the tool."
+        }
+      ],
+      "role": "user"
+    }
+  ],
+  "tools": [
+    {
+      "functionDeclarations": [
+        {
+          "description": "Weather for a city",
+          "name": "get_weather",
+          "parameters": {
+            "properties": {
+              "city": {
+                "description": "City",
+                "type": "STRING"
+              },
+              "days": {
+                "maximum": 7.0,
+                "minimum": 1.0,
+                "nullable": true,
+                "type": "INTEGER"
+              },
+              "unit": {
+                "enum": [
+                  "c",
+                  "f"
+                ],
+                "format": "enum",
+                "type": "STRING"
+              }
+            },
+            "property_ordering": [
+              "city",
+              "days",
+              "unit"
+            ],
+            "required": [
+              "city"
+            ],
+            "type": "OBJECT"
+          }
+        }
+      ]
+    }
+  ],
+  "generationConfig": {
+    "maxOutputTokens": 800
+  }
+}

@@ -355,9 +355,9 @@ The OpenAI Chat encoder also sends its role chunk as soon as the response starts
 Structured output going to Anthropic uses Anthropic's native structured outputs, never an emulation through a forced tool.
 
 - The output format `json_object` has no Anthropic equivalent and is `Unsupported`.
-- Anthropic's output format is a schema alone: a schema's `name` is dropped, while a `description` or `strict: false` is `Unsupported`.
+- Anthropic's output format is a schema alone: a schema's `name` is dropped, its `description` leads the schema's own, and `strict: false` is served strictly. A schema from another format is rewritten into the subset Claude takes, as Anthropic's SDKs do ([requests from other dialects](anthropic-messages.md#requests-from-other-dialects)).
 - Schemas going to OpenAI from Anthropic get the name `response`, because OpenAI requires one.
-- Gemini gets a schema as `responseJsonSchema` and `json_object` as `responseMimeType: "application/json"` alone; as for Anthropic, a schema's `name` is dropped, and a `description` or `strict: false` is `Unsupported`.
+- Gemini gets a schema as `responseJsonSchema` and `json_object` as `responseMimeType: "application/json"` alone; as for Anthropic, a schema's `name` is dropped, its `description` leads the schema's own, and `strict: false` is served strictly.
 - Amazon Bedrock Converse gets no output format yet: `json_object` and schemas are `Unsupported`.
 
 ## Stateful Responses features
