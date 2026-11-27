@@ -570,7 +570,11 @@ mod tests {
             delta(0, Delta::ToolArguments("{}".into())),
         ]);
         assert!(cap.reached());
-        assert_eq!(out.len(), 1 + 3 + 3, "a `}}` in arguments doesn't stop them");
+        assert_eq!(
+            out.len(),
+            1 + 3 + 3,
+            "a `}}` in arguments doesn't stop them"
+        );
         assert_eq!(out[out.len() - 3..], ending(StopReason::MaxTokens));
     }
 
