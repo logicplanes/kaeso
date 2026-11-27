@@ -161,3 +161,66 @@ fn recorded_errors_keep_their_kind() {
         assert_json_eq(name, &body, &out.body);
     }
 }
+
+#[test]
+fn an_empty_content_beside_tool_calls_is_no_text_and_comes_back_to_chat_apps() {
+    // DeepSeek answers a tool turn with `content: ""`. That is no message: a Responses app
+    // gets the reasoning and the call, as OpenAI sends them, and no empty message it would
+    // point back to by id. A Chat app gets the empty string back.
+    let body = fixture("responses", "json", "recorded-thinking-tools-auto");
+    let r = reply(&body);
+    assert!(
+        r.blocks.iter().all(|b| !matches!(b, Block::Text(_))),
+        "{:?}",
+        r.blocks
+    );
+    assert!(r.blocks.iter().any(|b| matches!(b, Block::ToolCall(_))));
+    assert_json_eq("tools-auto", &body, &encode_reply(&r));
+    let ctx = EncodeCtx::new(RequestKind::Generate, StreamMode::Off);
+    let out = crate::dispatch::encode_response(
+        kaeso_kpp::DialectId::OpenAiResponses,
+        &Reply::Generate(r),
+        &ctx,
+    )
+    .unwrap();
+    let v: serde_json::Value = serde_json::from_slice(&out).unwrap();
+    let types: Vec<&str> = v["output"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|o| o["type"].as_str().unwrap())
+        .collect();
+    assert!(!types.contains(&"message"), "{v}");
+    assert_eq!(
+        types.iter().filter(|t| **t == "function_call").count(),
+        1,
+        "{v}"
+    );
+
+    let bytes = fixture("streams", "sse", "recorded-thinking-tools-stream");
+    let events = decode_stream(&bytes);
+    assert!(
+        !events.iter().any(|e| matches!(
+            e,
+            StreamEvent::BlockStart(s) if matches!(s.block, kaeso_kpp::BlockHeader::Text)
+        )),
+        "{events:?}"
+    );
+    assert_sse_eq("tools-stream", &bytes, &encode_stream(&events));
+}
+
+#[test]
+fn an_empty_content_without_tool_calls_stays_a_text_block() {
+    let body = fixture("responses", "json", "recorded-thinking-tools-auto");
+    let mut v: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    v["choices"][0]["message"]["tool_calls"] = serde_json::json!([]);
+    v["choices"][0]["finish_reason"] = serde_json::json!("stop");
+    let r = reply(&serde_json::to_vec(&v).unwrap());
+    assert!(
+        r.blocks
+            .iter()
+            .any(|b| matches!(b, Block::Text(t) if t.text.is_empty())),
+        "{:?}",
+        r.blocks
+    );
+}

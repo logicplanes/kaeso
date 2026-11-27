@@ -743,12 +743,17 @@ impl ChatStreamDecoder {
             events.push(StreamEvent::BlockDelta(d));
         }
         // OpenRouter repeats the finish chunk, `content: ""` included, to carry the usage
-        // (`providers/openrouter/streams/recorded-free-stream.sse`); that is no new text block.
+        // (`providers/openrouter/streams/recorded-free-stream.sse`), and DeepSeek ends a tool
+        // turn with `content: ""` (`providers/deepseek/streams/recorded-thinking-tools-stream.sse`);
+        // neither is a new text block, so other formats get no empty message.
         let text = match text {
             Some(t)
                 if t.is_empty()
                     && self.text.is_none()
-                    && (self.reasons_first() || self.finished) =>
+                    && (self.reasons_first()
+                        || self.finished
+                        || !self.tools.is_empty()
+                        || !delta.tool_calls.is_empty()) =>
             {
                 form.insert(FORM_EMPTY_TEXT.to_owned(), Value::Bool(true));
                 None

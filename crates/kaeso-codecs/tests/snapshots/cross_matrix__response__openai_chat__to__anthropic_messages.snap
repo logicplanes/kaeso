@@ -714,10 +714,6 @@ expression: outcomes
   "providers/alibaba/recorded-thinking-tools": {
     "content": [
       {
-        "text": "",
-        "type": "text"
-      },
-      {
         "id": "call_8a161da797f84eed83651e6e",
         "input": {
           "city": "Paris"
@@ -769,10 +765,6 @@ expression: outcomes
   "providers/alibaba/recorded-tools": {
     "content": [
       {
-        "text": "",
-        "type": "text"
-      },
-      {
         "id": "call_0edfa4b3cefa4ba18230660e",
         "input": {
           "city": "Paris"
@@ -807,10 +799,6 @@ expression: outcomes
   "providers/alibaba/recorded-tools-named": {
     "content": [
       {
-        "text": "",
-        "type": "text"
-      },
-      {
         "id": "call_6023bbd3aada4b97bec6d787",
         "input": {
           "city": "Paris"
@@ -836,10 +824,6 @@ expression: outcomes
   },
   "providers/alibaba/recorded-tools-required": {
     "content": [
-      {
-        "text": "",
-        "type": "text"
-      },
       {
         "id": "call_70c7bd135ff24ad5b3ef8e83",
         "input": {
@@ -2154,10 +2138,6 @@ expression: outcomes
   "providers/deepseek/recorded-thinking-tools-auto": {
     "content": [
       {
-        "text": "",
-        "type": "text"
-      },
-      {
         "id": "call_00_XWCK6iIwTQiMlGGS8D6O4965",
         "input": {
           "location": "Paris, France",
@@ -2782,10 +2762,6 @@ expression: outcomes
   "providers/mistral/recorded-system-tool-choice-any": {
     "content": [
       {
-        "text": "",
-        "type": "text"
-      },
-      {
         "id": "yVjSUoKG6",
         "input": {
           "city": "Lisbon"
@@ -3024,10 +3000,6 @@ expression: outcomes
   "providers/moonshotai/recorded-parallel-tool-calls-false": {
     "content": [
       {
-        "text": "",
-        "type": "text"
-      },
-      {
         "id": "get_weather_0_f6e0e747",
         "input": {
           "city": "Paris"
@@ -3183,10 +3155,6 @@ expression: outcomes
   },
   "providers/moonshotai/recorded-reasoning-tools": {
     "content": [
-      {
-        "text": "",
-        "type": "text"
-      },
       {
         "id": "get_weather_0_2fdaa899",
         "input": {
@@ -3412,10 +3380,6 @@ expression: outcomes
   "providers/novita-ai/interleaved-tool-call-doc": {
     "content": [
       {
-        "text": "",
-        "type": "text"
-      },
-      {
         "id": "call_function_9w7wq1j9zmpl_1",
         "input": {
           "location": "ShangHai"
@@ -3640,10 +3604,6 @@ expression: outcomes
   "providers/ollama-cloud/recorded-reasoning-tools": {
     "content": [
       {
-        "text": "",
-        "type": "text"
-      },
-      {
         "id": "call_p4wpxak3",
         "input": {
           "city": "Paris"
@@ -3736,10 +3696,6 @@ expression: outcomes
   "providers/ollama-cloud/recorded-tools-parallel": {
     "content": [
       {
-        "text": "",
-        "type": "text"
-      },
-      {
         "id": "call_dunvhu1f",
         "input": {
           "location": "Paris, France",
@@ -3774,10 +3730,6 @@ expression: outcomes
   },
   "providers/ollama-cloud/recorded-tools-single": {
     "content": [
-      {
-        "text": "",
-        "type": "text"
-      },
       {
         "id": "call_u5a4vdpz",
         "input": {
@@ -3972,10 +3924,6 @@ expression: outcomes
   "providers/ovhcloud/recorded-tools": {
     "content": [
       {
-        "text": "",
-        "type": "text"
-      },
-      {
         "id": "chatcmpl-tool-955a8bc324c15bff",
         "input": {
           "city": "Paris"
@@ -4115,10 +4063,6 @@ expression: outcomes
   "providers/qianfan/reasoning-tool-calls-doc": {
     "content": [
       {
-        "text": "",
-        "type": "text"
-      },
-      {
         "id": "68e892c388e44c83a06867f44ecee6f3",
         "input": {
           "location": "杭州市"
@@ -4155,10 +4099,6 @@ expression: outcomes
   },
   "providers/qianfan/tool-calls-doc": {
     "content": [
-      {
-        "text": "",
-        "type": "text"
-      },
       {
         "id": "04fed17840d34b1e99bf3cd6dc94150d",
         "input": {
@@ -4664,10 +4604,6 @@ expression: outcomes
   },
   "providers/stepfun-ai/tools-doc": {
     "content": [
-      {
-        "text": "",
-        "type": "text"
-      },
       {
         "id": "call_brg23SRcTgmpm_V0jfP-iA",
         "input": {
@@ -5235,10 +5171,6 @@ expression: outcomes
   "providers/venice/tool-call-reasoning-published": {
     "content": [
       {
-        "text": "",
-        "type": "text"
-      },
-      {
         "id": "chatcmpl-tool-b54856bec05e7563",
         "input": {
           "x": 17,
@@ -5471,10 +5403,6 @@ expression: outcomes
   "providers/volcengine/tools-encrypted-content-doc": {
     "content": [
       {
-        "text": "",
-        "type": "text"
-      },
-      {
         "id": "call_wiezxeyae8jzxl3jx8nhfgb5",
         "input": {
           "location": "北京"
@@ -5629,10 +5557,6 @@ expression: outcomes
   "providers/xai/recorded-tools-parallel": {
     "content": [
       {
-        "text": "",
-        "type": "text"
-      },
-      {
         "id": "call-f1673ef5-ebac-43b0-a80a-ebf4abb818ad-0",
         "input": {
           "location": "Paris, France",
@@ -5670,10 +5594,6 @@ expression: outcomes
   },
   "providers/xai/recorded-tools-single": {
     "content": [
-      {
-        "text": "",
-        "type": "text"
-      },
       {
         "id": "call-79d7bafb-a82b-471d-a790-994e159ffa2d-0",
         "input": {
