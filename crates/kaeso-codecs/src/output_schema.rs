@@ -244,6 +244,7 @@ impl Rewrite {
                 .is_none_or(|a| *a == Value::Bool(true))
         };
         let mut merged = Vec::with_capacity(objects.len());
+        let mut hoisted = Vec::new();
         for &i in &objects {
             let Some(Value::Object(b)) = branches.get(i) else {
                 return Err(refused());
@@ -253,6 +254,10 @@ impl Rewrite {
             let inner = place.item("allOf", i);
             self.flatten_all_of(&mut b, &inner)?;
             self.merge_all_of(&mut b, &inner)?;
+            // What the inner join leaves, such as `minProperties`, applies to the same value.
+            if let Some(Value::Array(rest)) = b.remove("allOf") {
+                hoisted.extend(rest);
+            }
             if !(mergeable(&b) && open(&b)) {
                 return Err(refused());
             }
@@ -261,10 +266,13 @@ impl Rewrite {
         let ty = merged
             .iter()
             .fold(types_of(node), |types, b| both(types, types_of(b)));
+        // Without a written type the node stays untyped: `node` types it once its keys are known.
         let ty = match ty {
-            None => Value::from("object"),
-            Some(t) if t == ["object"] => Value::from("object"),
-            Some(t) if t.iter().any(|t| t == "object") => t.into_iter().map(Value::from).collect(),
+            None => None,
+            Some(t) if t == ["object"] => Some(Value::from("object")),
+            Some(t) if t.iter().any(|t| t == "object") => {
+                Some(t.into_iter().map(Value::from).collect())
+            }
             Some(_) => return Err(refused()),
         };
         let combined = changed_by_join(node, &merged)
@@ -282,7 +290,14 @@ impl Rewrite {
         for branch in merged {
             join_object(node, branch);
         }
-        node.insert("type".to_owned(), ty);
+        if let Some(ty) = ty {
+            node.insert("type".to_owned(), ty);
+        }
+        for part in hoisted {
+            if !branches.contains(&part) {
+                branches.push(part);
+            }
+        }
         node.remove("additionalProperties");
         if !branches.is_empty() {
             node.insert("allOf".to_owned(), Value::Array(branches));
@@ -872,6 +887,30 @@ mod tests {
                 "required": ["name", "country", "population"],
                 "additionalProperties": false
             })
+        );
+    }
+
+    #[test]
+    fn a_nested_join_keeps_null_and_lifts_what_isnt_an_object() {
+        let req = with_schema(json!({"name": "x", "schema": {
+            "type": "object", "required": ["maybe"],
+            "properties": {"maybe": {"type": ["object", "null"], "allOf": [
+                {"properties": {"a": {"type": "string"}}, "allOf": [
+                    {"properties": {"c": {"type": "string"}}}, {"minProperties": 1}
+                ]},
+                {"properties": {"b": {"type": "string"}}}
+            ]}}
+        }}));
+        let (schema, _) = claude_schema(&req);
+        let maybe = &schema["properties"]["maybe"];
+        assert_eq!(maybe["type"], json!(["object", "null"]), "{schema}");
+        assert_eq!(
+            maybe["properties"],
+            json!({"a": {"type": "string"}, "c": {"type": "string"}, "b": {"type": "string"}})
+        );
+        assert_eq!(
+            maybe["allOf"],
+            json!([{"description": "{minProperties: 1}"}])
         );
     }
 
