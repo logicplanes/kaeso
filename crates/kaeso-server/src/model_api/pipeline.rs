@@ -1457,6 +1457,17 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
             Stage::ModelAccess(req.model().to_owned()),
         ));
     }
+    // Text a Responses app points to goes back in first, so the guardrails check it as any other.
+    let mut restored_text = 0;
+    if ingress == DialectId::OpenAiResponses
+        && let Request::Generate(g) | Request::CountTokens(g) = &mut req
+        && kaeso_codecs::openai_responses::has_message_reference(g)
+    {
+        restored_text = continuity::resolve_messages(state, caller.key_id, g)
+            .await
+            .map_err(|u| Failure::new(unkept(&u), Stage::Request))?
+            .restored_bytes;
+    }
     let guards = Box::pin(guard_request(
         state,
         rec,
@@ -1480,6 +1491,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         logged,
         timeout,
         guards: guards.as_ref(),
+        restored_text,
     };
     match target {
         Resolved::Model(entry, _) => {
@@ -1635,6 +1647,8 @@ struct Shared<'a> {
     logged: u64,
     timeout: Option<u32>,
     guards: Option<&'a Guards>,
+    // The bytes of text put back for references before the guardrails, which the provider bills.
+    restored_text: usize,
 }
 
 // A project's guardrails and what they are told about the request, for the reply phase.
@@ -2462,7 +2476,7 @@ async fn attempt(
         continuity::restore(state, c.key_id, g).await;
     }
     // Reasoning put back is input the provider bills, so limits see it before admitting.
-    let mut restored_tokens = 0;
+    let mut restored_bytes = sh.restored_text;
     if ingress == DialectId::OpenAiResponses
         && let Request::Generate(g) | Request::CountTokens(g) = &mut req
         && kaeso_codecs::openai_responses::has_kept_reference(g)
@@ -2478,10 +2492,10 @@ async fn attempt(
         if resolved.left_out > 0 {
             plan.left_out.push("item_reference".to_owned());
         }
-        restored_tokens = kaeso_core::estimate::tokens_of_bytes(
-            u64::try_from(resolved.restored_bytes).unwrap_or(u64::MAX),
-        );
+        restored_bytes = restored_bytes.saturating_add(resolved.restored_bytes);
     }
+    let restored_tokens =
+        kaeso_core::estimate::tokens_of_bytes(u64::try_from(restored_bytes).unwrap_or(u64::MAX));
 
     let admission = Admission {
         request_id: rec.outcome().request_id,

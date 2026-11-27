@@ -368,6 +368,39 @@ pub enum Unresolved {
     Conversation(String),
 }
 
+/// Puts the text kept before each turn's tool calls where an OpenAI Responses app's
+/// `item_reference` to a message points to it. It runs before the request's guardrails, which
+/// then check that text as any other. The error names the first message reference Kaeso has
+/// nothing for.
+pub fn resolve_message_references(
+    req: &mut GenerateRequest,
+    kept: &[CarriedReasoning],
+) -> Result<Resolved, Unresolved> {
+    let by_call = by_call(kept);
+    let mut resolved = Resolved::default();
+    for message in &mut req.messages {
+        let Some(first) = message
+            .blocks
+            .iter()
+            .find_map(message_reference_of)
+            .map(str::to_owned)
+        else {
+            continue;
+        };
+        if !message
+            .blocks
+            .iter()
+            .any(|b| matches!(b, Block::ToolCall(_)))
+        {
+            return Err(Unresolved::Conversation(first));
+        }
+        let (put, bytes) = put_text_back(message, &by_call).ok_or(Unresolved::Message(first))?;
+        resolved.messages += put;
+        resolved.restored_bytes = resolved.restored_bytes.saturating_add(bytes);
+    }
+    Ok(resolved)
+}
+
 /// Puts the reasoning and text kept for each turn's tool calls where an OpenAI Responses app's
 /// `item_reference` points to them, in place of the references, and leaves out references to
 /// reasoning in turns without tool calls. The error names the first reference Kaeso has
@@ -511,7 +544,7 @@ fn put_text_back(
     by_call: &HashMap<&str, &CarriedReasoning>,
 ) -> Option<(usize, usize)> {
     let turn = turn_calls(message);
-    let mut kept = message
+    let kept: Vec<&Vec<TextBlock>> = message
         .blocks
         .iter()
         .filter_map(|b| match b {
@@ -520,7 +553,40 @@ fn put_text_back(
                 .filter(|entry| same_turn(entry, &turn)),
             _ => None,
         })
-        .flat_map(|entry| entry.messages.iter());
+        .flat_map(|entry| entry.messages.iter())
+        .collect();
+    // A kept message the app sent itself stands for itself; the references take the others.
+    let mut inline = inline_texts(message);
+    let rest: Vec<&Vec<TextBlock>> = kept
+        .into_iter()
+        .filter(|m| {
+            let text = joined(m);
+            match inline.iter().position(|i| *i == text) {
+                Some(at) => {
+                    inline.remove(at);
+                    false
+                }
+                None => true,
+            }
+        })
+        .collect();
+    let asked = message
+        .blocks
+        .iter()
+        .filter(|b| message_reference_of(b).is_some())
+        .count();
+    // Adjacent message items are kept as one message: one part answers each of their references.
+    let pieces: Vec<Vec<TextBlock>> = if asked == rest.len() {
+        rest.into_iter().cloned().collect()
+    } else if asked == rest.iter().map(|m| m.len()).sum::<usize>() {
+        rest.into_iter()
+            .flatten()
+            .map(|t| vec![t.clone()])
+            .collect()
+    } else {
+        return None;
+    };
+    let mut pieces = pieces.into_iter();
     let (mut put, mut bytes) = (0, 0usize);
     let mut blocks = Vec::with_capacity(message.blocks.len());
     for block in &message.blocks {
@@ -528,15 +594,35 @@ fn put_text_back(
             blocks.push(block.clone());
             continue;
         }
-        let text = kept.next()?;
+        let text = pieces.next()?;
         put += 1;
         for t in text {
             bytes = bytes.saturating_add(t.text.len());
-            blocks.push(Block::Text(t.clone()));
+            blocks.push(Block::Text(t));
         }
     }
     message.blocks = blocks;
     Some((put, bytes))
+}
+
+fn joined(parts: &[TextBlock]) -> String {
+    parts.iter().map(|t| t.text.as_str()).collect()
+}
+
+// The text of each run of the app's own text blocks in a turn, as a message item carries it.
+fn inline_texts(message: &kaeso_kpp::Message) -> Vec<String> {
+    let mut texts = Vec::new();
+    let mut run: Option<String> = None;
+    for block in &message.blocks {
+        match block {
+            Block::Text(t) if message_reference_of(block).is_none() => {
+                run.get_or_insert_with(String::new).push_str(&t.text);
+            }
+            _ => texts.extend(run.take()),
+        }
+    }
+    texts.extend(run);
+    texts
 }
 
 // The kept reasoning of each tool call goes right before that call.
@@ -1252,5 +1338,65 @@ mod tests {
             };
             assert_eq!(req.messages[1].blocks, want);
         }
+    }
+
+    #[test]
+    fn references_take_the_kept_messages_the_app_did_not_send_itself() {
+        let kept = [CarriedReasoning::new("c1", vec![])
+            .with_turn_calls(vec!["c1".into()])
+            .with_messages(vec![texts(&["First."]), texts(&["Second."])])];
+        let mut req = GenerateRequest::new("m");
+        req.messages = vec![
+            Message::user("q"),
+            Message::new(
+                Role::Assistant,
+                vec![
+                    Block::text("First."),
+                    message_reference("msg_2"),
+                    call("c1"),
+                ],
+            ),
+        ];
+        let resolved = resolve_message_references(&mut req, &kept).unwrap();
+        assert_eq!(resolved.messages, 1);
+        assert_eq!(
+            req.messages[1].blocks,
+            [Block::text("First."), Block::text("Second."), call("c1")]
+        );
+    }
+
+    #[test]
+    fn adjacent_message_items_kept_as_one_answer_a_reference_each() {
+        let kept = [CarriedReasoning::new("c1", vec![])
+            .with_turn_calls(vec!["c1".into()])
+            .with_messages(vec![texts(&["One.", "Two."])])];
+        let mut req = GenerateRequest::new("m");
+        req.messages = vec![Message::new(
+            Role::Assistant,
+            vec![
+                message_reference("msg_1"),
+                message_reference("msg_2"),
+                call("c1"),
+            ],
+        )];
+        resolve_message_references(&mut req, &kept).unwrap();
+        assert_eq!(
+            req.messages[0].blocks,
+            [Block::text("One."), Block::text("Two."), call("c1")]
+        );
+        let mut three = GenerateRequest::new("m");
+        three.messages = vec![Message::new(
+            Role::Assistant,
+            vec![
+                message_reference("msg_1"),
+                message_reference("msg_2"),
+                message_reference("msg_3"),
+                call("c1"),
+            ],
+        )];
+        assert_eq!(
+            resolve_message_references(&mut three, &kept),
+            Err(Unresolved::Message("msg_1".into()))
+        );
     }
 }

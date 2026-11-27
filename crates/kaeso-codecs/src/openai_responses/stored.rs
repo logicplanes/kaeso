@@ -116,6 +116,14 @@ pub fn reference(block: &kaeso_kpp::Block) -> Option<&str> {
     }
 }
 
+/// Whether a Responses-format request points to an earlier message with an `item_reference`.
+pub fn has_message_reference(req: &GenerateRequest) -> bool {
+    req.all_blocks().any(|block| match block {
+        kaeso_kpp::Block::Text(t) => message_reference(t).is_some(),
+        _ => false,
+    })
+}
+
 /// Whether a Responses-format request points to earlier reasoning or messages with
 /// `item_reference` items, which the gateway puts back from what it kept for tool loops.
 pub fn has_kept_reference(req: &GenerateRequest) -> bool {
