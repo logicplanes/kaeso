@@ -93,10 +93,10 @@ flowchart TD
 - **格式。** Kaeso 以服务商支持的格式调用它，例如 Anthropic 用 Messages。服务商也支持应用自己的格式时，例如 DeepSeek 和 Moonshot 为 Anthropic 应用提供的 Messages API，请求会以该格式按原样发送。应用的格式与之不同时，如果某个字段无法用服务商的格式表达，Kaeso 会拒绝请求，并在错误中注明该字段，绝不会悄悄丢弃它（[Kaeso 拒绝的内容](format-translation.md#kaeso-拒绝的内容)）。
 - **服务商拒绝的字段。** 使用 Chat Completions 的服务商并非都支持该格式的全部字段，Kaeso 了解每个服务商的差异。只是写法不同的字段，Kaeso 会改名发送，例如把 `seed` 改为 Mistral 的 `random_seed`。服务商不接受的字段，Kaeso 会在发送任何内容之前拒绝。应用会收到以其自身格式返回的 400：“`logit_bias` is not supported by Mistral; remove it from the request.”各服务商的差异见 [Chat Completions 参考](../development/kpp/openai-chat-providers.md#服务商配置)。
 - **Token 计数。** 当模型所属服务商的格式包含 Token 计数时，`/v1/messages/count_tokens`、`/v1/responses/input_tokens` 和 Gemini 的 `countTokens` 会请服务商计算 Token 数。对于其他模型，Kaeso 按模型接收请求的方式检查请求，然后不发送任何内容，直接以自己的估算作答：
-  - 文本每 4 字节 ASCII 计 1 个 Token，其他每个字符计 1 个 Token。
+  - 文本中每个单词的字母或数字每 4 个计 1 个 Token（向上取整），每个标点、符号、换行符和 ASCII 以外的字符各计 1 个 Token。对于普通文本、代码和中文，这与 Claude 自己的计数相差在 0.7 到 1.05 倍之间，并高于更紧凑的分词器的计数。
   - 工具定义和 schema 按其 JSON 文本计算。
   - 每张图片和每个 PDF 页面计 1,600 个 Token。
-  - 每条消息和每个工具另加 4 个 Token。
+  - 每条消息和每个工具另加 4 个 Token。服务商为工具自行添加的指令不在估算之内，因此带工具的请求在服务商处可能计数更多。
 
   响应带有 `kaeso-adapted: count_estimated`。Kaeso 不读取音频或视频的时长，因此含有音频或视频的请求返回 400：“The model `…` cannot count tokens, and Kaeso can't estimate the tokens of audio or video.”
 - **嵌入。** 只有格式中包含 Embeddings 的服务商才提供嵌入模型，由 `/v1/embeddings` 调用。聊天格式不能调用嵌入模型，聊天模型也不生成嵌入。

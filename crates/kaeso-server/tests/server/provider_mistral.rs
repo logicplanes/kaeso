@@ -672,8 +672,12 @@ async fn token_counts_for_mistral_models_are_kaesos_estimate_in_the_apps_format(
         Some(json!({ "model": SMALL, "messages": [{ "role": "user", "content": "Name one planet." }] })),
     )
     .await;
-    assert_eq!(r.estimated_count(), 4 + 4, "16 bytes of text and one message");
-    assert_eq!(r.json(), json!({ "input_tokens": 8 }));
+    assert_eq!(
+        r.estimated_count(),
+        5 + 4,
+        "three words, a full stop and one message"
+    );
+    assert_eq!(r.json(), json!({ "input_tokens": 9 }));
     assert_eq!(r.header("kaeso-provider"), Some("mistral"));
     let r = call(
         &env,
@@ -683,7 +687,7 @@ async fn token_counts_for_mistral_models_are_kaesos_estimate_in_the_apps_format(
         Some(json!({ "model": SMALL, "input": "Name one planet." })),
     )
     .await;
-    assert_eq!(r.estimated_count(), 8);
+    assert_eq!(r.estimated_count(), 9);
     assert_eq!(r.json()["object"], "response.input_tokens");
     assert!(env.mock.received().is_empty());
 }

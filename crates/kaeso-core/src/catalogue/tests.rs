@@ -1731,8 +1731,11 @@ fn a_provider_without_token_counting_gets_kaesos_estimate_of_count_requests() {
     ] {
         let mut count = Request::CountTokens(user(vec![Block::text("Hello, world!")]));
         let plan = prepare(&mut count, ingress, &e).unwrap();
-        assert_eq!(plan.estimated_count, Some(8), "{ingress}");
-        assert!(plan.adapted.iter().any(|a| a == "count_estimated"), "{ingress}");
+        assert_eq!(plan.estimated_count, Some(10), "{ingress}");
+        assert!(
+            plan.adapted.iter().any(|a| a == "count_estimated"),
+            "{ingress}"
+        );
         let mut generate = Request::Generate(user(vec![Block::text("hi")]));
         let plan = prepare(&mut generate, ingress, &e).unwrap();
         assert_eq!(plan.estimated_count, None);
@@ -1741,7 +1744,10 @@ fn a_provider_without_token_counting_gets_kaesos_estimate_of_count_requests() {
             "https://example.com/a.mp3".into(),
         ))]));
         let u = prepare(&mut audio, ingress, &e).unwrap_err();
-        assert_eq!(u.message, "The model `gpt-4o` does not accept audio.", "{ingress}");
+        assert_eq!(
+            u.message, "The model `gpt-4o` does not accept audio.",
+            "{ingress}"
+        );
     }
     // Mistral counts no tokens, and Voxtral listens.
     let speaks = eff(&entry("mistral", "voxtral-small-2507"));
@@ -1756,8 +1762,12 @@ fn a_provider_without_token_counting_gets_kaesos_estimate_of_count_requests() {
         "The model `voxtral-small-2507` cannot count tokens, and Kaeso can't estimate the tokens of audio or video."
     );
     let mut counted = Request::CountTokens(user(vec![Block::text("hi")]));
-    let plan = prepare(&mut counted, DialectId::OpenAiResponses, &eff(&entry("openai", "gpt-4o")))
-        .unwrap();
+    let plan = prepare(
+        &mut counted,
+        DialectId::OpenAiResponses,
+        &eff(&entry("openai", "gpt-4o")),
+    )
+    .unwrap();
     assert_eq!(plan.estimated_count, None, "OpenAI counts itself");
 }
 
