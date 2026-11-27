@@ -194,7 +194,9 @@ pub(crate) fn for_target<'a>(
     }
     tool_roots::for_target(&mut draft, target, ctx)?;
     match target {
-        DialectId::AnthropicMessages => output_schema::for_claude(&mut draft)?,
+        DialectId::AnthropicMessages => {
+            output_schema::for_claude(&mut draft, matches!(req, Request::CountTokens(_)))?;
+        }
         DialectId::Gemini => output_schema::for_gemini(&mut draft)?,
         _ => {}
     }

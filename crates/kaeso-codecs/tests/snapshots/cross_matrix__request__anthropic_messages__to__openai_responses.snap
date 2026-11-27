@@ -628,6 +628,38 @@ expression: outcomes
     "param": "messages[0].blocks[1]",
     "unsupported": "file id"
   },
+  "litellm-custom-tool": {
+    "body": {
+      "input": [
+        {
+          "content": "Weather in Paris?",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 200,
+      "model": "deepseek-flash",
+      "store": false,
+      "tools": [
+        {
+          "description": "Get the weather for a city.",
+          "name": "get_weather",
+          "parameters": {
+            "properties": {
+              "city": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "city"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
   "max-tokens": {
     "message": "`max_tokens 10` is not supported by OpenAI Responses. OpenAI Responses needs an output limit of at least 16 tokens; raise it or route the request to another model.",
     "param": "max_tokens",
@@ -913,38 +945,6 @@ expression: outcomes
       "model": "zai-org/GLM-5.2",
       "store": false,
       "stream": true
-    },
-    "path": "/v1/responses"
-  },
-  "providers/deepseek/litellm-custom-tool": {
-    "body": {
-      "input": [
-        {
-          "content": "Weather in Paris?",
-          "role": "user"
-        }
-      ],
-      "max_output_tokens": 200,
-      "model": "deepseek-flash",
-      "store": false,
-      "tools": [
-        {
-          "description": "Get the weather for a city.",
-          "name": "get_weather",
-          "parameters": {
-            "properties": {
-              "city": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "city"
-            ],
-            "type": "object"
-          },
-          "type": "function"
-        }
-      ]
     },
     "path": "/v1/responses"
   },

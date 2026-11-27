@@ -756,14 +756,22 @@ fn first_of(events: &[StreamEvent]) -> Seen {
     Seen::Nothing
 }
 
+// A reply Kaeso ends itself is billed for what the provider wrote, also past the cut.
+fn count_read(tally: &mut Tally, events: &[StreamEvent]) {
+    for event in events {
+        tally.feed(event);
+    }
+}
+
 pub(super) async fn gather(
     mut chunks: kaeso_upstream::ByteStream,
     mut decoder: Box<dyn StreamDecoder>,
     dialect: DialectId,
     max: usize,
     mut cap: Option<OutputCap>,
-) -> Result<Reply, Gathered> {
+) -> Result<(Reply, Tally), Gathered> {
     let mut asm = Assembler::new(dialect);
+    let mut tally = Tally::new();
     let mut read = 0usize;
     loop {
         let (events, last) = match chunks.next().await {
@@ -777,6 +785,7 @@ pub(super) async fn gather(
             Some(Err(e)) => return Err(Gathered::Transport(e)),
             None => (decoder.finish(), true),
         };
+        count_read(&mut tally, &events);
         let (events, capped) = match cap.as_mut() {
             Some(c) => (c.apply(events), c.reached()),
             None => (events, false),
@@ -794,7 +803,7 @@ pub(super) async fn gather(
         return Err(Gathered::Provider(err));
     }
     match assembled.response {
-        Some(response) if assembled.complete => Ok(Reply::Generate(response)),
+        Some(response) if assembled.complete => Ok((Reply::Generate(response), tally)),
         _ => Err(Gathered::Broken(
             KppError::provider("The provider's stream ended before the reply was complete.")
                 .with_status(502),
@@ -1196,7 +1205,10 @@ impl Pump {
             return false;
         };
         let events = match self.output_cap.as_mut() {
-            Some(c) => c.apply(events),
+            Some(c) => {
+                count_read(&mut self.tally, &events);
+                c.apply(events)
+            }
             None => events,
         };
         let events = match self.restoring.as_mut() {
@@ -1206,7 +1218,9 @@ impl Pump {
         let mut stop = false;
         for event in &events {
             asm.feed(event);
-            self.tally.feed(event);
+            if self.output_cap.is_none() {
+                self.tally.feed(event);
+            }
             streamed.feed(event);
             if let Some(c) = self.carry.as_mut() {
                 c.observe(event);
@@ -1564,13 +1578,18 @@ impl Pump {
                 // the logged reply and the usage estimate still count it.
                 let held = self.processing.time(|| decoder.flush());
                 let held = match self.output_cap.as_mut() {
-                    Some(c) => c.apply(held),
+                    Some(c) => {
+                        count_read(&mut self.tally, &held);
+                        c.apply(held)
+                    }
                     None => held,
                 };
                 self.app.progress.count(&held);
                 for event in &held {
                     asm.feed(event);
-                    self.tally.feed(event);
+                    if self.output_cap.is_none() {
+                        self.tally.feed(event);
+                    }
                     streamed.feed(event);
                 }
                 std::mem::replace(asm, Assembler::without_blocks(self.counter.dialect)).finish()

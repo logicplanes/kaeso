@@ -330,14 +330,13 @@ pub const NEUTRAL_VALUES: &[(DialectId, &str, &str)] = &[
 
 /// Whether `value` of the request field `key` from `origin` is on [`NEUTRAL_VALUES`].
 pub fn is_neutral_value(origin: DialectId, key: &str, value: &RawJson) -> bool {
-    let Ok(sent) = value.to_value() else {
-        return false;
-    };
-    NEUTRAL_VALUES.iter().any(|(d, k, neutral)| {
-        *d == origin
-            && *k == key
-            && serde_json::from_str::<Value>(neutral).is_ok_and(|n| same_value(&n, &sent))
-    })
+    NEUTRAL_VALUES
+        .iter()
+        .filter(|(d, k, _)| *d == origin && *k == key)
+        .any(|(_, _, neutral)| {
+            let neutral = serde_json::from_str::<Value>(neutral);
+            matches!((neutral, value.to_value()), (Ok(n), Ok(sent)) if same_value(&n, &sent))
+        })
 }
 
 // `0` and `0.0` are different `Value`s; an app may write either.
@@ -626,6 +625,10 @@ pub(crate) fn openai_image_detail(extras: &Extras, target: DialectId) -> Option<
     values.contains(&value.as_str()).then(|| detail.clone())
 }
 
+/// Refuses what `target` can't take from a request as it stands. [`crate::dispatch::check`] first
+/// adapts the request to the target, leaving out [`NEUTRAL_VALUES`] and the other data
+/// [cross-format](https://docs.kaeso.app/development/kpp/cross-format) names, so it accepts some
+/// requests this refuses.
 pub fn check_foreign(req: &Request, target: &Origin) -> Result<(), KppError> {
     match req {
         Request::Generate(r) | Request::CountTokens(r) => check_generate(r, target),

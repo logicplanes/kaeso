@@ -1,24 +1,36 @@
 use kaeso_kpp::{
     DialectId, GenerateRequest, ReasoningConfig, ReasoningEffort, ReasoningMode, ToolChoice,
+    ToolDef,
 };
 
 use crate::adapt::Draft;
 use crate::cross::{self, Setting};
 
 fn forces_a_tool(r: &GenerateRequest) -> bool {
-    !r.tools.is_empty()
-        && matches!(
-            r.tool_choice,
-            Some(ToolChoice::Required | ToolChoice::Tool(_))
-        )
+    match r.tool_choice {
+        Some(ToolChoice::Tool(_)) => !r.tools.is_empty(),
+        // With a server tool such as `deepseek_web_search` declared, DeepSeek takes `required` as
+        // `auto` while thinking (https://api-docs.deepseek.com/guides/anthropic_api#tool_choice).
+        Some(ToolChoice::Required) => {
+            !r.tools.is_empty() && r.tools.iter().all(|t| matches!(t, ToolDef::Function(_)))
+        }
+        _ => false,
+    }
 }
 
-fn thinks(r: &GenerateRequest) -> bool {
+fn thinks(r: &GenerateRequest, target: DialectId) -> bool {
     let Some(c) = &r.reasoning else {
         return true;
     };
     match &c.effort {
-        Some(effort) => *effort != ReasoningEffort::None,
+        // The Messages encoder sends another format's effort `none` as no `thinking` at all,
+        // which DeepSeek reads as thinking on.
+        Some(ReasoningEffort::None) => {
+            target == DialectId::AnthropicMessages
+                && !c.extras.is_from(target)
+                && c.mode != Some(ReasoningMode::Disabled)
+        }
+        Some(_) => true,
         None => c.mode != Some(ReasoningMode::Disabled),
     }
 }
@@ -28,7 +40,8 @@ fn thinks(r: &GenerateRequest) -> bool {
 fn deepseek_thinking_from_app(r: &GenerateRequest) -> bool {
     r.extras
         .fields_for(DialectId::OpenAiChat)
-        .is_some_and(|f| f.contains_key("thinking"))
+        .and_then(|f| f.get("thinking"))
+        .is_some_and(|t| t.get().trim() != "null")
 }
 
 // DeepSeek answers a forced tool choice in thinking mode with 400 "Thinking mode does not
@@ -37,11 +50,14 @@ fn deepseek_thinking_from_app(r: &GenerateRequest) -> bool {
 // to, so such a request goes with thinking off, as Anthropic's does with budget thinking.
 pub(crate) fn off_for_forced_tools(d: &mut Draft<'_>, target: DialectId) {
     let r = d.get();
-    if !forces_a_tool(r) || !thinks(r) || deepseek_thinking_from_app(r) {
+    if !forces_a_tool(r) || !thinks(r, target) || deepseek_thinking_from_app(r) {
         return;
     }
     let field = cross::app_field(r, Setting::Reasoning, target);
     let mut off = ReasoningConfig::default();
+    if let Some(c) = &r.reasoning {
+        off.extras = c.extras.clone();
+    }
     match target {
         DialectId::AnthropicMessages => off.mode = Some(ReasoningMode::Disabled),
         _ => off.effort = Some(ReasoningEffort::None),
@@ -158,6 +174,54 @@ mod tests {
             ChatProfile::compatible("Example Cloud"),
         );
         assert!(adapted.is_empty() && body.get("reasoning_effort").is_none());
+    }
+
+    #[test]
+    fn required_with_a_server_tool_keeps_thinking_and_a_named_tool_does_not() {
+        let tools = json!([tool(), {"type": "deepseek_web_search"}]);
+        let (body, adapted) = to_chat(
+            &chat(json!({"tool_choice": "required", "tools": tools})),
+            DEEPSEEK_CHAT,
+        );
+        assert!(adapted.is_empty(), "DeepSeek takes it as auto: {adapted:?}");
+        assert!(body.get("reasoning_effort").is_none(), "{body}");
+        let named = json!({"type": "function", "function": {"name": "f"}});
+        let (body, adapted) = to_chat(
+            &chat(json!({"tool_choice": named, "tools": tools})),
+            DEEPSEEK_CHAT,
+        );
+        assert_eq!(body["reasoning_effort"], "none");
+        assert_eq!(adapted, ["reasoning_effort"]);
+    }
+
+    #[test]
+    fn a_null_thinking_is_no_choice_and_an_effort_of_none_is_sent_as_off() {
+        let (body, adapted) = to_chat(
+            &chat(json!({"tool_choice": "required", "thinking": null})),
+            DEEPSEEK_CHAT,
+        );
+        assert_eq!(body["reasoning_effort"], "none", "{body}");
+        assert_eq!(adapted, ["reasoning_effort"]);
+
+        let none = chat(json!({"tool_choice": "required", "reasoning_effort": "none"}));
+        let (body, adapted) = to_messages(&none, DEEPSEEK_MESSAGES);
+        assert_eq!(body["thinking"], json!({"type": "disabled"}), "{body}");
+        assert_eq!(adapted, ["reasoning_effort"]);
+    }
+
+    #[test]
+    fn reasoning_settings_the_target_refuses_are_still_refused_with_a_forced_tool() {
+        let req = decoded(
+            R,
+            &json!({"model": "deepseek-flash", "input": "hello", "tool_choice": "required",
+                "reasoning": {"context": "all_turns"},
+                "tools": [{"type": "function", "name": "f", "parameters": {"type": "object"}}]}),
+        );
+        let ctx = EgressCtx::new(&req)
+            .with_provider("deepseek")
+            .with_chat_profile(DEEPSEEK_CHAT);
+        let e = dispatch::check(C, &req, &ctx).unwrap_err();
+        assert!(e.message.contains("reasoning.context"), "{}", e.message);
     }
 
     #[test]
