@@ -1,7 +1,5 @@
-//! Gemini's `Schema`, the OpenAPI 3.0 subset of `functionDeclarations[].parameters` and
-//! `generationConfig.responseSchema`, written as the JSON Schema other formats take. The
-//! mapping follows the discovery document's `Schema` (revision `20261125`), OpenAPI 3.0.3 and
-//! google-genai's `Schema.json_schema`.
+// The mapping follows the discovery document's `Schema` (revision 20261125), OpenAPI 3.0.3 and
+// google-genai 3.6.1's `Schema.json_schema`.
 
 use std::borrow::Cow;
 
@@ -17,8 +15,6 @@ const FORM_SCHEMA: &str = "schema";
 const MAX_DEPTH: usize = 128;
 const NULL_BRANCH: &str = r#"{"type":"null"}"#;
 
-/// Writes the Gemini `Schema`s of a request from a Gemini app as JSON Schema, for a request
-/// that goes to another format.
 pub(crate) fn for_foreign(d: &mut Draft<'_>) {
     let r = d.get();
     if !r.extras.is_from(D) {
@@ -56,10 +52,7 @@ pub(crate) fn for_foreign(d: &mut Draft<'_>) {
     }
 }
 
-/// `schema` as JSON Schema: lower-case types, `nullable` as a `null` type, branch or enum
-/// value, `propertyOrdering` as the order of `properties`, `example` as `examples`, int64
-/// counts written as strings as numbers, and google-genai's snake-case keys in camel case.
-/// What isn't a Gemini `Schema` key is kept as written, in its place.
+// Key order is kept: other formats generate properties in the order the schema lists them.
 pub(crate) fn to_json_schema(schema: &RawJson) -> RawJson {
     match node(schema.as_raw(), 0) {
         Cow::Borrowed(_) => schema.clone(),

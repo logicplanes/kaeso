@@ -121,7 +121,7 @@ Schema `Part`. A part carries exactly one of `text`, `inlineData`, `fileData`, `
 
 ### Requests from google-genai
 
-`google-genai` 2.32.0 spells some keys in snake case, and the API takes them because proto JSON accepts every field's original name: `mime_type` and `file_uri` in `inlineData` and `fileData`, `include_thoughts`, `thinking_budget` and `thinking_level` in `thinkingConfig`, and `parameters_json_schema` and `response_json_schema` in `functionDeclarations`. Inside a `Schema` it writes `property_ordering`, `any_of` and the counts in snake case too ([schemas](#schemas)). `gemini::sdk` reads them under their camel-case names and sets the form marker `sdk_names`. A request that goes to Gemini gets them back as the app spelled them.
+`google-genai` 2.32.0 spells some keys in snake case, and the API takes them because proto JSON accepts every field's original name: `mime_type` and `file_uri` in `inlineData` and `fileData`, `include_thoughts`, `thinking_budget` and `thinking_level` in `thinkingConfig`, and `parameters_json_schema` and `response_json_schema` in `functionDeclarations`. `gemini::sdk` reads them under their camel-case names and sets the form marker `sdk_names`. A request that goes to Gemini gets them back as the app spelled them. Inside a `Schema`, google-genai writes `property_ordering`, `any_of` and the counts in snake case too; the decoder keeps them as written, and the [schema translation](#schemas) reads both spellings.
 
 The SDK also sends `topK` as a float, such as `20.0`. KPP reads a whole float as a whole number, with form `top_k_float`, and writes it back as a float for Gemini; a fraction is `InvalidRequest`. The fixture `requests/sdk-tools-snake-case.json` comes from `google-genai` 2.32.0.
 

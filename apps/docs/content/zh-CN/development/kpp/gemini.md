@@ -121,7 +121,7 @@ Schema `Part`。一个 part 恰好带有 `text`、`inlineData`、`fileData`、`f
 
 ### 来自 google-genai 的请求
 
-`google-genai` 2.32.0 会以 snake case 写出部分键，API 也接受它们，因为 proto JSON 接受每个字段的原始名称：`inlineData` 和 `fileData` 中的 `mime_type` 和 `file_uri`，`thinkingConfig` 中的 `include_thoughts`、`thinking_budget` 和 `thinking_level`，以及 `functionDeclarations` 中的 `parameters_json_schema` 和 `response_json_schema`。在 `Schema` 内部，它同样以 snake case 写出 `property_ordering`、`any_of` 和各项数量（[schema](#schema)）。`gemini::sdk` 以 camel case 名称读取它们，并设置形式标记 `sdk_names`。发往 Gemini 的请求会按应用的写法把它们写回。
+`google-genai` 2.32.0 会以 snake case 写出部分键，API 也接受它们，因为 proto JSON 接受每个字段的原始名称：`inlineData` 和 `fileData` 中的 `mime_type` 和 `file_uri`，`thinkingConfig` 中的 `include_thoughts`、`thinking_budget` 和 `thinking_level`，以及 `functionDeclarations` 中的 `parameters_json_schema` 和 `response_json_schema`。`gemini::sdk` 以 camel case 名称读取它们，并设置形式标记 `sdk_names`。发往 Gemini 的请求会按应用的写法把它们写回。在 `Schema` 内部，google-genai 同样以 snake case 写出 `property_ordering`、`any_of` 和各项数量；解码器按原样保留它们，[schema 转换](#schema)会读取两种写法。
 
 该 SDK 还会以浮点数发送 `topK`，例如 `20.0`。KPP 把整数值的浮点数读作整数，带形式标记 `top_k_float`，发往 Gemini 时再写回浮点数；带小数部分的值为 `InvalidRequest`。fixture `requests/sdk-tools-snake-case.json` 来自 `google-genai` 2.32.0。
 
