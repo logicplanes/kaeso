@@ -21,8 +21,7 @@ use crate::wire::{Ext, StringOr, to_body};
 pub(crate) const FORM_OBJECT: &str = "object";
 pub(crate) const FORM_CONTENT_PARTS: &str = "content_parts";
 
-// `content: ""` beside tool calls, as DeepSeek answers a tool turn: no text block, so other
-// formats get no empty message, and Chat apps get the empty string back.
+// `content: ""` beside tool calls, as DeepSeek answers a tool turn, is no text block.
 pub(crate) const FORM_EMPTY_CONTENT: &str = "empty_content";
 pub(crate) const FORM_THINKING: &str = "thinking";
 pub(crate) const FORM_REASONING_FIELD: &str = "reasoning_field";

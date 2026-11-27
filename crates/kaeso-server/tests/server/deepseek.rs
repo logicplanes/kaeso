@@ -96,9 +96,8 @@ async fn an_openai_chat_app_gets_deepseeks_tool_call_and_reasoning_content() {
 
 #[tokio::test]
 async fn a_responses_app_gets_deepseeks_tool_turn_without_an_empty_message() {
-    // DeepSeek answers a tool turn with `content: ""`. A Responses app with `store` on would
-    // point back to an empty message item by id on its next step, so it gets none, as OpenAI
-    // sends none before a call.
+    // A Responses app with `store` on would point back to an empty message by id on its next
+    // step, so it gets none, as OpenAI sends none before a call.
     let (env, _deepseek) = env_with_deepseek().await;
     let r = call(
         &env,

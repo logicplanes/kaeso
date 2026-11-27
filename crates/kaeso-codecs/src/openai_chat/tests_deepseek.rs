@@ -164,9 +164,8 @@ fn recorded_errors_keep_their_kind() {
 
 #[test]
 fn an_empty_content_beside_tool_calls_is_no_text_and_comes_back_to_chat_apps() {
-    // DeepSeek answers a tool turn with `content: ""`. That is no message: a Responses app
-    // gets the reasoning and the call, as OpenAI sends them, and no empty message it would
-    // point back to by id. A Chat app gets the empty string back.
+    // No empty message for other formats, as OpenAI sends none before a call; Chat apps get
+    // the empty string back.
     let body = fixture("responses", "json", "recorded-thinking-tools-auto");
     let r = reply(&body);
     assert!(
