@@ -484,3 +484,53 @@ fn tools_of_other_formats_without_strict_go_non_strict() {
         ]
     );
 }
+
+#[test]
+fn recorded_tools_with_optional_arguments_keep_them_optional() {
+    for (dialect, file, tool) in [
+        (
+            DialectId::Gemini,
+            "gemini/requests/tools-parallel.json",
+            "get_weather",
+        ),
+        (
+            DialectId::AnthropicMessages,
+            "anthropic_messages/requests/tools-single.json",
+            "get_weather",
+        ),
+        (
+            DialectId::OpenAiChat,
+            "openai_chat/requests/qwen-code-tool-loop.json",
+            "read_file",
+        ),
+    ] {
+        let body = std::fs::read(crate::test_support::fixtures_dir().join(file)).unwrap();
+        let decoded = crate::dispatch::decode_request(
+            dialect,
+            RequestKind::Generate,
+            &body,
+            &HeaderList::new(),
+        )
+        .unwrap();
+        let Request::Generate(mut req) = decoded else {
+            panic!("{file}");
+        };
+        req.model = "gpt-5.5".into();
+        let req = Request::Generate(req);
+        let mut ctx = EgressCtx::new(&req);
+        let out = OpenAiResponses::encode_request(&req, &mut ctx).unwrap();
+        let body: serde_json::Value = serde_json::from_slice(&out.body).unwrap();
+        let sent = body["tools"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|t| t["name"] == tool)
+            .unwrap();
+        assert_eq!(sent["strict"], json!(false), "{file}");
+        let properties = sent["parameters"]["properties"].as_object().unwrap().len();
+        let required = sent["parameters"]["required"]
+            .as_array()
+            .map_or(0, Vec::len);
+        assert!(required < properties, "{file}: {sent}");
+    }
+}
