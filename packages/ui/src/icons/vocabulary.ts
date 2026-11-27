@@ -177,6 +177,7 @@ export const icons = {
   more: Ellipsis,
   menu: Menu,
   sort: ArrowDownUp,
+  switcher: ChevronsUpDown,
   unfold: ChevronsUpDown,
   expand: Maximize2,
   collapse: Minimize2,
