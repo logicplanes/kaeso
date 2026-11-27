@@ -1,5 +1,7 @@
 import base64
+from typing import Optional
 
+import pydantic
 import pytest
 from google import genai
 from google.genai import errors, types
@@ -118,6 +120,37 @@ def test_a_tool_loop_on_claude_keeps_claudes_thinking(gg: genai.Client, mock):
     assert turn["content"][0]["type"] == "thinking"
     assert turn["content"][0]["signature"].startswith("EqEvMLy0")
     assert turn["content"][-1]["id"] == call.id
+
+
+class City(pydantic.BaseModel):
+    name: str
+    population: Optional[int] = None
+
+
+def test_geminis_own_schemas_reach_other_formats_as_json_schema(gg: genai.Client, mock):
+    config = types.GenerateContentConfig(
+        response_mime_type="application/json",
+        response_schema=City,
+        max_output_tokens=200,
+    )
+    gg.models.generate_content(model="claude-haiku-4-5", contents="Tokyo [mock:fixture=structured-output-json-schema]", config=config)
+    schema = mock.last()["body"]["output_config"]["format"]["schema"]
+    assert schema["type"] == "object"
+    assert list(schema["properties"]) == ["name", "population"]
+    assert schema["properties"]["population"]["type"] == ["integer", "null"]
+    assert "property_ordering" not in schema and "propertyOrdering" not in schema
+    weather = types.FunctionDeclaration(
+        name="get_weather",
+        description="Weather for a place",
+        parameters=types.Schema(type="OBJECT", properties={"location": types.Schema(type="STRING")}, required=["location"]),
+    )
+    config = types.GenerateContentConfig(tools=[types.Tool(function_declarations=[weather])])
+    gg.models.generate_content(model="gpt-4o", contents="Weather? [mock:fixture=tools-function]", config=config)
+    assert mock.last()["body"]["tools"][0]["parameters"] == {
+        "properties": {"location": {"type": "string"}},
+        "required": ["location"],
+        "type": "object",
+    }
 
 
 def test_tools_reach_other_formats(gg: genai.Client, mock):

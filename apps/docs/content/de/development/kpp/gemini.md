@@ -50,7 +50,7 @@ Schema `GenerateContentRequest`.
 | `tools[]` mit einem anderen Schlüssel (`googleSearch`, `urlContext`, `codeExecution`, `googleMaps`, `fileSearch`, `computerUse`, `mcpServers`, `googleSearchRetrieval`) oder mit leeren `functionDeclarations` | `ToolDef::Unknown` (roh) | Über Dialekte hinweg abgelehnt. |
 | `functionDeclarations[].name`, `.description` | `name`, `description` | |
 | `functionDeclarations[].parametersJsonSchema` | `parameters` | Volles JSON Schema. Fremde Tools bekommen immer `parametersJsonSchema`, sodass nichts an die OpenAPI-Teilmenge verloren geht. |
-| `functionDeclarations[].parameters` (OpenAPI-`Schema`) | `parameters` | Form `schema: "parameters"`, sodass Gemini es in `parameters` zurückbekommt. Andere Dialekte bekommen es wie geschrieben als JSON Schema; ein Anbieter, der übliche Typnamen verlangt, lehnt großgeschriebene wie `OBJECT` ab. Mit `parametersJsonSchema` daneben → Feld `parameters`. |
+| `functionDeclarations[].parameters` (OpenAPI-`Schema`) | `parameters` | Form `schema: "parameters"`, sodass Gemini es in `parameters` zurückbekommt. Andere Dialekte bekommen es als JSON Schema ([Schemas](#schemas)). Mit `parametersJsonSchema` daneben → Feld `parameters`. |
 | `functionDeclarations[].response`, `.responseJsonSchema`, `.behavior` | Felder des Tools | |
 | `toolConfig.functionCallingConfig` `mode: AUTO` / `NONE` / `ANY` | `tool_choice` `Auto` / `None` / `Required` | |
 | `mode: ANY` mit einem Eintrag in `allowedFunctionNames` | `ToolChoice::Tool(name)` | |
@@ -59,7 +59,7 @@ Schema `GenerateContentRequest`.
 | `generationConfig.temperature`, `.topP`, `.topK`, `.maxOutputTokens`, `.stopSequences`, `.seed`, `.presencePenalty`, `.frequencyPenalty` | `sampling.*` | Zahlen behalten ihre Schreibweise im Dialekt (Form `integers`). |
 | `generationConfig.candidateCount` | Form `candidate_count` | Über 1 → `Unsupported` beim Dekodieren, wie `n` bei Chat ([Sampling](sampling.md)). |
 | `responseMimeType: application/json` mit `responseJsonSchema` | `output = JsonSchema` | |
-| `responseMimeType: application/json` mit `responseSchema` | `output = JsonSchema` | Form `schema: "responseSchema"`; andere Dialekte bekommen das OpenAPI-Schema wie geschrieben. |
+| `responseMimeType: application/json` mit `responseSchema` | `output = JsonSchema` | Form `schema: "responseSchema"`; andere Dialekte bekommen es als JSON Schema ([Schemas](#schemas)). |
 | `responseMimeType: application/json` allein | `output = JsonObject` | |
 | Jeder andere `responseMimeType` und ein Schema ohne `application/json` | Felder `generationConfig.*` | |
 | `generationConfig.thinkingConfig` | `reasoning` | Siehe [Thinking](#thinking). |
@@ -121,9 +121,26 @@ Schema `Part`. Ein Part trägt genau eines von `text`, `inlineData`, `fileData`,
 
 ### Anfragen von google-genai
 
-`google-genai` 2.32.0 schreibt einige Schlüssel in Snake Case, und die API nimmt sie an, weil Proto-JSON den ursprünglichen Namen jedes Felds akzeptiert: `mime_type` und `file_uri` in `inlineData` und `fileData`, `include_thoughts`, `thinking_budget` und `thinking_level` in `thinkingConfig` sowie `parameters_json_schema` und `response_json_schema` in `functionDeclarations`. `gemini::sdk` liest sie unter ihren Namen in Camel Case und setzt die Form `sdk_names`. Eine Anfrage, die an Gemini geht, bekommt sie so zurück, wie die App sie geschrieben hat.
+`google-genai` 2.32.0 schreibt einige Schlüssel in Snake Case, und die API nimmt sie an, weil Proto-JSON den ursprünglichen Namen jedes Felds akzeptiert: `mime_type` und `file_uri` in `inlineData` und `fileData`, `include_thoughts`, `thinking_budget` und `thinking_level` in `thinkingConfig` sowie `parameters_json_schema` und `response_json_schema` in `functionDeclarations`. In einem `Schema` schreibt es auch `property_ordering`, `any_of` und die Anzahlen in Snake Case ([Schemas](#schemas)). `gemini::sdk` liest sie unter ihren Namen in Camel Case und setzt die Form `sdk_names`. Eine Anfrage, die an Gemini geht, bekommt sie so zurück, wie die App sie geschrieben hat.
 
 Das SDK sendet `topK` außerdem als Gleitkommazahl, etwa `20.0`. KPP liest eine ganzzahlige Gleitkommazahl als ganze Zahl, mit Form `top_k_float`, und schreibt sie für Gemini wieder als Gleitkommazahl; ein Bruch ist `InvalidRequest`. Die Fixture `requests/sdk-tools-snake-case.json` stammt von `google-genai` 2.32.0.
+
+### Schemas
+
+Geminis `Schema` in `functionDeclarations[].parameters` und `generationConfig.responseSchema` ist eine Teilmenge von OpenAPI 3.0. Anfragen an andere Dialekte bekommen es als JSON Schema, nach dem `Schema` des Discovery-Dokuments (Revision `20261125`) und `Schema.json_schema` von google-genai 3.6.1. Gemini bekommt es so, wie die App es geschrieben hat.
+
+| `Schema` | JSON Schema |
+|---|---|
+| `type` `STRING`, `NUMBER`, `INTEGER`, `BOOLEAN`, `ARRAY`, `OBJECT`, `NULL`, in beliebiger Schreibweise | Der Name in Kleinbuchstaben; `TYPE_UNSPECIFIED` wird ausgelassen. |
+| `nullable: true` | `null` kommt zum Typ (`["integer", "null"]`), zu den Werten eines Enums oder als Zweig zu einem `anyOf` ohne Typ. Ein Enum hat dann keinen `type`: Anthropic lehnt ein Enum ab, dessen Werte nicht zu jedem Typ einer Liste passen. `nullable: false` wird ausgelassen. |
+| `propertyOrdering` | Die Reihenfolge von `properties`; danach ausgelassen. |
+| `format: enum` | Ausgelassen: `enum` allein begrenzt den Wert. |
+| `enum` eines `INTEGER` oder `NUMBER` | Seine Werte als Zahlen; Gemini schreibt sie als Strings, etwa `["101", "201"]`. |
+| `minItems`, `maxItems`, `minLength`, `maxLength`, `minProperties`, `maxProperties` | Zahlen; das Discovery-Dokument typisiert sie als int64, das Proto-JSON als String schreibt. |
+| `example` | `examples: [<example>]` |
+| Schlüssel von google-genai in Snake Case, etwa `property_ordering`, `any_of` und `max_items` | Camel Case. |
+| `properties`, `items`, `anyOf` | Jedes Schema darin, auf dieselbe Weise übersetzt. |
+| Jeder andere Schlüssel, etwa `description`, `title`, `default`, `pattern`, `minimum` oder ein anderes `format` | Wie geschrieben, an seiner Stelle. |
 
 ### Thinking
 

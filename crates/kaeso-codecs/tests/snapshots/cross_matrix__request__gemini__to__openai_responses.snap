@@ -100,13 +100,13 @@ expression: outcomes
           "parameters": {
             "properties": {
               "location": {
-                "type": "STRING"
+                "type": "string"
               }
             },
             "required": [
               "location"
             ],
-            "type": "OBJECT"
+            "type": "object"
           },
           "type": "function"
         }
@@ -171,6 +171,84 @@ expression: outcomes
     },
     "path": "/v1/responses"
   },
+  "node-parameters-type-object": {
+    "body": {
+      "input": [
+        {
+          "content": "Weather in Paris for 2 days? Use the tool.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 800,
+      "model": "gemini-3.5-flash",
+      "store": false,
+      "tools": [
+        {
+          "description": "Weather for a city",
+          "name": "get_weather",
+          "parameters": {
+            "properties": {
+              "city": {
+                "description": "City",
+                "type": "string"
+              },
+              "days": {
+                "maximum": 7,
+                "minimum": 1,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "city"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
+  "node-response-schema-nullable": {
+    "body": {
+      "input": [
+        {
+          "content": "Two primary colors.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 800,
+      "model": "gemini-3.5-flash",
+      "store": false,
+      "text": {
+        "format": {
+          "name": "response",
+          "schema": {
+            "items": {
+              "properties": {
+                "color": {
+                  "type": "string"
+                },
+                "hex": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "color"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "type": "json_schema"
+        }
+      }
+    },
+    "path": "/v1/responses"
+  },
   "role-assistant": {
     "message": "`assistant` message comes from a Gemini API request and has no equivalent in OpenAI Responses. Remove the message, or send the request to a model served through its original format.",
     "param": "messages[0].blocks[0]",
@@ -180,6 +258,116 @@ expression: outcomes
     "message": "`safetySettings` comes from a Gemini API request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
     "param": null,
     "unsupported": "safetySettings"
+  },
+  "sdk-parameters-schema": {
+    "body": {
+      "input": [
+        {
+          "content": "Weather in Paris for 2 days? Use the tool.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 800,
+      "model": "gemini-3.5-flash",
+      "store": false,
+      "tools": [
+        {
+          "description": "Weather for a city",
+          "name": "get_weather",
+          "parameters": {
+            "properties": {
+              "city": {
+                "description": "City",
+                "type": "string"
+              },
+              "days": {
+                "maximum": 7.0,
+                "minimum": 1.0,
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "unit": {
+                "enum": [
+                  "c",
+                  "f"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "city"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
+  "sdk-response-schema-pydantic": {
+    "body": {
+      "input": [
+        {
+          "content": "Facts about Tokyo.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 1500,
+      "model": "gemini-3.5-flash",
+      "store": false,
+      "text": {
+        "format": {
+          "name": "response",
+          "schema": {
+            "properties": {
+              "color": {
+                "enum": [
+                  "red",
+                  "green"
+                ],
+                "title": "Color",
+                "type": "string"
+              },
+              "country": {
+                "title": "Country",
+                "type": "string"
+              },
+              "landmarks": {
+                "items": {
+                  "type": "string"
+                },
+                "title": "Landmarks",
+                "type": "array"
+              },
+              "name": {
+                "title": "Name",
+                "type": "string"
+              },
+              "population": {
+                "title": "Population",
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "name",
+              "country",
+              "landmarks",
+              "color"
+            ],
+            "title": "City",
+            "type": "object"
+          },
+          "type": "json_schema"
+        }
+      }
+    },
+    "path": "/v1/responses"
   },
   "sdk-tools-snake-case": {
     "body": {
@@ -397,18 +585,15 @@ expression: outcomes
             "items": {
               "properties": {
                 "color": {
-                  "type": "STRING"
+                  "type": "string"
                 }
               },
-              "propertyOrdering": [
-                "color"
-              ],
               "required": [
                 "color"
               ],
-              "type": "OBJECT"
+              "type": "object"
             },
-            "type": "ARRAY"
+            "type": "array"
           },
           "type": "json_schema"
         }

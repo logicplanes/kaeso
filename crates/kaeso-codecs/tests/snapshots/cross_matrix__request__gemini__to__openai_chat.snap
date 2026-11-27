@@ -114,13 +114,13 @@ expression: outcomes
             "parameters": {
               "properties": {
                 "location": {
-                  "type": "STRING"
+                  "type": "string"
                 }
               },
               "required": [
                 "location"
               ],
-              "type": "OBJECT"
+              "type": "object"
             }
           },
           "type": "function"
@@ -174,6 +174,84 @@ expression: outcomes
     },
     "path": "/v1/chat/completions"
   },
+  "node-parameters-type-object": {
+    "body": {
+      "max_completion_tokens": 800,
+      "messages": [
+        {
+          "content": "Weather in Paris for 2 days? Use the tool.",
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "tools": [
+        {
+          "function": {
+            "description": "Weather for a city",
+            "name": "get_weather",
+            "parameters": {
+              "properties": {
+                "city": {
+                  "description": "City",
+                  "type": "string"
+                },
+                "days": {
+                  "maximum": 7,
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "city"
+              ],
+              "type": "object"
+            }
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/chat/completions"
+  },
+  "node-response-schema-nullable": {
+    "body": {
+      "max_completion_tokens": 800,
+      "messages": [
+        {
+          "content": "Two primary colors.",
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "response_format": {
+        "json_schema": {
+          "name": "response",
+          "schema": {
+            "items": {
+              "properties": {
+                "color": {
+                  "type": "string"
+                },
+                "hex": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "color"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "type": "json_schema"
+      }
+    },
+    "path": "/v1/chat/completions"
+  },
   "role-assistant": {
     "message": "`assistant` message comes from a Gemini API request and has no equivalent in OpenAI Chat Completions. Remove the message, or send the request to a model served through its original format.",
     "param": "messages[0].blocks[0]",
@@ -183,6 +261,116 @@ expression: outcomes
     "message": "`safetySettings` comes from a Gemini API request and has no equivalent in OpenAI Chat Completions. Remove it, or send the request to a model served through its original format.",
     "param": null,
     "unsupported": "safetySettings"
+  },
+  "sdk-parameters-schema": {
+    "body": {
+      "max_completion_tokens": 800,
+      "messages": [
+        {
+          "content": "Weather in Paris for 2 days? Use the tool.",
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "tools": [
+        {
+          "function": {
+            "description": "Weather for a city",
+            "name": "get_weather",
+            "parameters": {
+              "properties": {
+                "city": {
+                  "description": "City",
+                  "type": "string"
+                },
+                "days": {
+                  "maximum": 7.0,
+                  "minimum": 1.0,
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "unit": {
+                  "enum": [
+                    "c",
+                    "f"
+                  ],
+                  "type": "string"
+                }
+              },
+              "required": [
+                "city"
+              ],
+              "type": "object"
+            }
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/chat/completions"
+  },
+  "sdk-response-schema-pydantic": {
+    "body": {
+      "max_completion_tokens": 1500,
+      "messages": [
+        {
+          "content": "Facts about Tokyo.",
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "response_format": {
+        "json_schema": {
+          "name": "response",
+          "schema": {
+            "properties": {
+              "color": {
+                "enum": [
+                  "red",
+                  "green"
+                ],
+                "title": "Color",
+                "type": "string"
+              },
+              "country": {
+                "title": "Country",
+                "type": "string"
+              },
+              "landmarks": {
+                "items": {
+                  "type": "string"
+                },
+                "title": "Landmarks",
+                "type": "array"
+              },
+              "name": {
+                "title": "Name",
+                "type": "string"
+              },
+              "population": {
+                "title": "Population",
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "name",
+              "country",
+              "landmarks",
+              "color"
+            ],
+            "title": "City",
+            "type": "object"
+          }
+        },
+        "type": "json_schema"
+      }
+    },
+    "path": "/v1/chat/completions"
   },
   "sdk-tools-snake-case": {
     "body": {
@@ -377,18 +565,15 @@ expression: outcomes
             "items": {
               "properties": {
                 "color": {
-                  "type": "STRING"
+                  "type": "string"
                 }
               },
-              "propertyOrdering": [
-                "color"
-              ],
               "required": [
                 "color"
               ],
-              "type": "OBJECT"
+              "type": "object"
             },
-            "type": "ARRAY"
+            "type": "array"
           }
         },
         "type": "json_schema"

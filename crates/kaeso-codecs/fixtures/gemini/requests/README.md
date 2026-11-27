@@ -20,6 +20,10 @@ A `<name>.meta.json` names the model or the method of a request when the round-t
 | `history-without-ids.json` | function calls and responses without ids, matched by name; a response that is a JSON object | schema: FunctionCall, FunctionResponse (discovery v1beta revision 20261106) |
 | `structured-json-schema.json` | `responseMimeType: application/json` with `responseJsonSchema` | doc: structured output |
 | `structured-response-schema.json` | `responseSchema` (OpenAPI subset) with `propertyOrdering` | doc: structured output |
+| `sdk-response-schema-pydantic.json` | `responseSchema` of a Pydantic model as google-genai 3.6.1 writes it: upper-case types, `title`s, `nullable` for an `Optional` field, an enum, and `property_ordering` in snake case | sdk: google-genai 3.6.1, `models.generate_content` with `response_schema=City` (a Pydantic model) |
+| `sdk-parameters-schema.json` | a function declaration whose `parameters` is a `types.Schema`: keys in alphabetical order, `nullable`, `format: enum`, float bounds and `property_ordering` | sdk: google-genai 3.6.1, `types.FunctionDeclaration(parameters=types.Schema(type="OBJECT", …))` |
+| `node-parameters-type-object.json` | `parameters` with `Type.OBJECT` and `Type.STRING`, `propertyOrdering` | sdk: @google/genai 3.6.1, `generateContent` with a function declaration written with `Type` |
+| `node-response-schema-nullable.json` | `responseSchema` of `Type.ARRAY` with a `nullable` property and `propertyOrdering` | sdk: @google/genai 3.6.1, `generateContent` with `responseSchema` written with `Type` |
 | `image-input.json` | an 8×8 PNG as `inlineData`, `mediaResolution` | doc: image understanding |
 | `audio-input.json` | a 1-second spoken clip ("Hello Kaeso", made with macOS `say` and encoded with ffmpeg) as MP3 `inlineData` with `audio/mpeg`, for `gemini-3.5-flash-lite` | doc: audio understanding, inline audio; recorded |
 | `video-input.json` | a 1-second 32×32 red MP4 (ffmpeg) as `inlineData` with `videoMetadata.fps`, `mediaResolution: MEDIA_RESOLUTION_LOW`, for `gemini-3.5-flash-lite` | doc: video understanding, inline video and custom frame rate; recorded |

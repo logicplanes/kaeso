@@ -146,13 +146,13 @@ expression: outcomes
           "input_schema": {
             "properties": {
               "location": {
-                "type": "STRING"
+                "type": "string"
               }
             },
             "required": [
               "location"
             ],
-            "type": "OBJECT"
+            "type": "object"
           },
           "name": "get_weather"
         }
@@ -180,6 +180,99 @@ expression: outcomes
     "param": "generationConfig.thinkingConfig.thinkingLevel",
     "unsupported": "reasoning effort `minimal`"
   },
+  "node-parameters-type-object": {
+    "body": {
+      "max_tokens": 800,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Weather in Paris for 2 days? Use the tool.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "tools": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "description": "Weather for a city",
+          "input_schema": {
+            "properties": {
+              "city": {
+                "description": "City",
+                "type": "string"
+              },
+              "days": {
+                "maximum": 7,
+                "minimum": 1,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "city"
+            ],
+            "type": "object"
+          },
+          "name": "get_weather"
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
+  "node-response-schema-nullable": {
+    "body": {
+      "max_tokens": 800,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Two primary colors.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "output_config": {
+        "format": {
+          "schema": {
+            "items": {
+              "properties": {
+                "color": {
+                  "type": "string"
+                },
+                "hex": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "color"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "type": "json_schema"
+        }
+      }
+    },
+    "path": "/v1/messages"
+  },
   "role-assistant": {
     "message": "`assistant` message comes from a Gemini API request and has no equivalent in Anthropic Messages. Remove the message, or send the request to a model served through its original format.",
     "param": "messages[0].blocks[0]",
@@ -189,6 +282,131 @@ expression: outcomes
     "message": "`safetySettings` comes from a Gemini API request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
     "param": null,
     "unsupported": "safetySettings"
+  },
+  "sdk-parameters-schema": {
+    "body": {
+      "max_tokens": 800,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Weather in Paris for 2 days? Use the tool.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "tools": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "description": "Weather for a city",
+          "input_schema": {
+            "properties": {
+              "city": {
+                "description": "City",
+                "type": "string"
+              },
+              "days": {
+                "maximum": 7.0,
+                "minimum": 1.0,
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "unit": {
+                "enum": [
+                  "c",
+                  "f"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "city"
+            ],
+            "type": "object"
+          },
+          "name": "get_weather"
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
+  "sdk-response-schema-pydantic": {
+    "body": {
+      "max_tokens": 1500,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Facts about Tokyo.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "output_config": {
+        "format": {
+          "schema": {
+            "properties": {
+              "color": {
+                "enum": [
+                  "red",
+                  "green"
+                ],
+                "title": "Color",
+                "type": "string"
+              },
+              "country": {
+                "title": "Country",
+                "type": "string"
+              },
+              "landmarks": {
+                "items": {
+                  "type": "string"
+                },
+                "title": "Landmarks",
+                "type": "array"
+              },
+              "name": {
+                "title": "Name",
+                "type": "string"
+              },
+              "population": {
+                "title": "Population",
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "name",
+              "country",
+              "landmarks",
+              "color"
+            ],
+            "title": "City",
+            "type": "object"
+          },
+          "type": "json_schema"
+        }
+      }
+    },
+    "path": "/v1/messages"
   },
   "sdk-tools-snake-case": {
     "body": {
