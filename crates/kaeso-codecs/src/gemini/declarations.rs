@@ -13,7 +13,7 @@ pub(crate) fn wire_paths(r: &GenerateRequest) -> Vec<Option<String>> {
     if !r.extras.is_from(D) {
         return Vec::new();
     }
-    let wrapper = if r.extras.form_str(D, super::request::FORM_COUNT) == Some("wrapped") {
+    let wrapper = if super::request::wrapped_count(r) {
         "generateContentRequest."
     } else {
         ""
