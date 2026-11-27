@@ -63,17 +63,55 @@ enum Unfit {
 
 struct Rewrite {
     changed: bool,
+    refs: Vec<String>,
+}
+
+// Where a schema sits: as the error names it (`properties.totals`) and as a `$ref` points to it.
+struct Place {
+    at: String,
+    ptr: String,
+}
+
+impl Place {
+    fn root() -> Place {
+        Place {
+            at: String::new(),
+            ptr: String::new(),
+        }
+    }
+
+    fn field(&self, key: &str) -> Place {
+        Place {
+            at: within(&self.at, key),
+            ptr: format!("{}/{key}", self.ptr),
+        }
+    }
+
+    fn member(&self, key: &str, name: &str) -> Place {
+        let escaped = name.replace('~', "~0").replace('/', "~1");
+        Place {
+            at: within(&self.at, &format!("{key}.{name}")),
+            ptr: format!("{}/{key}/{escaped}", self.ptr),
+        }
+    }
+
+    fn item(&self, key: &str, i: usize) -> Place {
+        Place {
+            at: within(&self.at, &format!("{key}[{i}]")),
+            ptr: format!("{}/{key}/{i}", self.ptr),
+        }
+    }
 }
 
 impl Rewrite {
-    fn node(&mut self, node: &mut Map<String, Value>, at: &str) -> Result<(), Unfit> {
-        self.merge_all_of(node, at)?;
+    fn node(&mut self, node: &mut Map<String, Value>, place: &Place) -> Result<(), Unfit> {
+        self.merge_all_of(node, place)?;
         // Claude closes every object, so one that lists no keys could only ever be `{}`.
-        if !at.is_empty()
+        if !place.at.is_empty()
             && !lists_keys(node)
             && node.get("additionalProperties") != Some(&Value::Bool(false))
         {
-            return Err(Unfit::OpenObject(at.to_owned()));
+            return Err(Unfit::OpenObject(place.at.clone()));
         }
         let mut moved = Map::new();
         for key in REFUSED {
@@ -124,35 +162,43 @@ impl Rewrite {
         for key in SCHEMA_MAPS {
             if let Some(Value::Object(schemas)) = node.get_mut(key) {
                 for (name, schema) in schemas.iter_mut() {
-                    self.value(schema, &within(at, &format!("{key}.{name}")))?;
+                    self.value(schema, &place.member(key, name))?;
                 }
             }
         }
         for key in SCHEMA_LISTS {
             if let Some(Value::Array(schemas)) = node.get_mut(key) {
                 for (i, schema) in schemas.iter_mut().enumerate() {
-                    self.value(schema, &within(at, &format!("{key}[{i}]")))?;
+                    self.value(schema, &place.item(key, i))?;
                 }
             }
         }
         for key in SCHEMAS {
             if let Some(schema) = node.get_mut(key) {
-                self.value(schema, &within(at, key))?;
+                self.value(schema, &place.field(key))?;
             }
         }
         Ok(())
     }
 
-    fn value(&mut self, value: &mut Value, at: &str) -> Result<(), Unfit> {
+    fn value(&mut self, value: &mut Value, place: &Place) -> Result<(), Unfit> {
         match value {
-            Value::Object(node) => self.node(node, at),
+            Value::Object(node) => self.node(node, place),
             _ => Ok(()),
         }
     }
 
+    fn points_into(&self, ptr: &str) -> bool {
+        let target = format!("#{ptr}");
+        self.refs.iter().any(|r| {
+            r.strip_prefix(&target)
+                .is_some_and(|rest| rest.is_empty() || rest.starts_with('/'))
+        })
+    }
+
     // `allOf` applies every branch to one value, so closing each object branch on its own would
     // forbid the keys the others require; their keys join the node's own instead.
-    fn merge_all_of(&mut self, node: &mut Map<String, Value>, at: &str) -> Result<(), Unfit> {
+    fn merge_all_of(&mut self, node: &mut Map<String, Value>, place: &Place) -> Result<(), Unfit> {
         let Some(Value::Array(branches)) = node.get("allOf") else {
             return Ok(());
         };
@@ -166,28 +212,43 @@ impl Rewrite {
         if objects.len() + usize::from(own) < 2 {
             return Ok(());
         }
-        let refused = || Unfit::ObjectBranches(within(at, "allOf"));
+        let refused = || Unfit::ObjectBranches(within(&place.at, "allOf"));
         let open = |n: &Map<String, Value>| {
             n.get("additionalProperties")
                 .is_none_or(|a| *a == Value::Bool(true))
         };
-        if !open(node) || node.contains_key("type") && !is_object(node) {
+        let mut merged = Vec::with_capacity(objects.len());
+        for &i in &objects {
+            match branches.get(i) {
+                Some(Value::Object(b)) if mergeable(b) && open(b) => merged.push(b.clone()),
+                _ => return Err(refused()),
+            }
+        }
+        let ty = merged
+            .iter()
+            .fold(types_of(node), |types, b| both(types, types_of(b)));
+        let ty = match ty {
+            None => Value::from("object"),
+            Some(t) if t == ["object"] => Value::from("object"),
+            Some(t) if t.iter().any(|t| t == "object") => t.into_iter().map(Value::from).collect(),
+            Some(_) => return Err(refused()),
+        };
+        let combined = named_twice(node, &merged)
+            .iter()
+            .any(|name| self.points_into(&place.member("properties", name).ptr));
+        if !open(node) || self.points_into(&place.field("allOf").ptr) || combined {
             return Err(refused());
         }
         let Some(Value::Array(mut branches)) = node.remove("allOf") else {
             return Ok(());
         };
-        let mut merged = Vec::with_capacity(objects.len());
         for &i in objects.iter().rev() {
-            match branches.remove(i) {
-                Value::Object(b) if mergeable(&b) && open(&b) => merged.push(b),
-                _ => return Err(refused()),
-            }
+            branches.remove(i);
         }
-        for branch in merged.into_iter().rev() {
+        for branch in merged {
             join_object(node, branch);
         }
-        node.insert("type".to_owned(), Value::from("object"));
+        node.insert("type".to_owned(), ty);
         node.remove("additionalProperties");
         if !branches.is_empty() {
             node.insert("allOf".to_owned(), Value::Array(branches));
@@ -195,6 +256,43 @@ impl Rewrite {
         self.changed = true;
         Ok(())
     }
+}
+
+fn types_of(node: &Map<String, Value>) -> Option<Vec<String>> {
+    match node.get("type")? {
+        Value::String(t) => Some(vec![t.clone()]),
+        Value::Array(types) => Some(
+            types
+                .iter()
+                .filter_map(|t| t.as_str().map(str::to_owned))
+                .collect(),
+        ),
+        _ => None,
+    }
+}
+
+fn both(a: Option<Vec<String>>, b: Option<Vec<String>>) -> Option<Vec<String>> {
+    match (a, b) {
+        (Some(a), Some(b)) => Some(a.into_iter().filter(|t| b.contains(t)).collect()),
+        (a, b) => a.or(b),
+    }
+}
+
+fn named_twice(node: &Map<String, Value>, branches: &[Map<String, Value>]) -> Vec<String> {
+    let mut seen: Vec<&String> = Vec::new();
+    let mut twice = Vec::new();
+    let names = std::iter::once(node)
+        .chain(branches)
+        .filter_map(|n| n.get("properties").and_then(Value::as_object))
+        .flat_map(|p| p.keys());
+    for name in names {
+        if seen.contains(&name) {
+            twice.push(name.clone());
+        } else {
+            seen.push(name);
+        }
+    }
+    twice
 }
 
 fn within(at: &str, key: &str) -> String {
@@ -231,11 +329,10 @@ fn join_object(node: &mut Map<String, Value>, branch: Map<String, Value>) {
                     continue;
                 };
                 for (name, schema) in added {
-                    match properties.remove(&name) {
-                        Some(own) if own != schema => {
-                            properties.insert(name, serde_json::json!({ "allOf": [own, schema] }));
-                        }
-                        _ => {
+                    match properties.get_mut(&name) {
+                        Some(own) if *own != schema => combine(own, schema),
+                        Some(_) => {}
+                        None => {
                             properties.insert(name, schema);
                         }
                     }
@@ -266,6 +363,21 @@ fn join_object(node: &mut Map<String, Value>, branch: Map<String, Value>) {
             _ => {}
         }
     }
+}
+
+// A property several branches define takes all of their schemas in one flat `allOf`.
+fn combine(own: &mut Value, schema: Value) {
+    if let Value::Object(o) = own
+        && o.len() == 1
+        && let Some(Value::Array(all)) = o.get_mut("allOf")
+    {
+        if !all.contains(&schema) {
+            all.push(schema);
+        }
+        return;
+    }
+    let first = std::mem::take(own);
+    *own = serde_json::json!({ "allOf": [first, schema] });
 }
 
 fn is_object(node: &Map<String, Value>) -> bool {
@@ -304,12 +416,32 @@ fn rewritten(raw: &RawJson, output: bool) -> Result<Option<RawJson>, Unfit> {
     if output && !lists_keys(&root) {
         return Err(Unfit::NoKeys);
     }
-    let mut rewrite = Rewrite { changed: false };
-    rewrite.node(&mut root, "")?;
+    let mut refs = Vec::new();
+    refs_in(&Value::Object(root.clone()), &mut refs);
+    let mut rewrite = Rewrite {
+        changed: false,
+        refs,
+    };
+    rewrite.node(&mut root, &Place::root())?;
     if !rewrite.changed {
         return Ok(None);
     }
     Ok(RawJson::from_serialize(&root).ok())
+}
+
+fn refs_in(value: &Value, refs: &mut Vec<String>) {
+    match value {
+        Value::Object(map) => {
+            for (key, v) in map {
+                match (key.as_str(), v) {
+                    ("$ref", Value::String(r)) => refs.push(r.clone()),
+                    _ => refs_in(v, refs),
+                }
+            }
+        }
+        Value::Array(items) => items.iter().for_each(|v| refs_in(v, refs)),
+        _ => {}
+    }
 }
 
 fn refusal(unfit: Unfit, param: &str) -> KppError {
@@ -323,8 +455,8 @@ fn refusal(unfit: Unfit, param: &str) -> KppError {
             "Claude returns only the keys a schema lists; list them in `properties`, or send key and value pairs as a list of objects.",
         ),
         Unfit::ObjectBranches(at) => (
-            format!("`{at}` with a reference, a union or a closed object"),
-            "Claude closes every object, so Kaeso joins only plain ones; list all of their keys in one object.",
+            format!("`{at}`, which Kaeso can't join into one object,"),
+            "Claude closes every object, so list all of their keys in one object.",
         ),
     };
     KppError::unsupported_by(feature, D, hint).with_param(param)
@@ -334,14 +466,18 @@ fn refusal(unfit: Unfit, param: &str) -> KppError {
 // do: objects are closed, `oneOf` becomes `anyOf`, and constraints Claude can't enforce move
 // into descriptions. Claude then enforces a little more than the app asked, which never gives
 // it output it can't use. An Anthropic app's own schema goes as it wrote it. Claude always
-// enforces the schema, so OpenAI's `strict: false` is served strictly. A token count keeps
-// what can't be rewritten as written, as the Messages encoder leaves out an output it can't take.
+// enforces the schema, so OpenAI's `strict: false` is served strictly. A token count leaves out
+// an output schema it can't rewrite, as it does other output settings generation would refuse.
 pub(crate) fn for_claude(d: &mut Draft<'_>, count: bool) -> Result<(), KppError> {
     if d.get().extras.is_from(D) {
         return Ok(());
     }
     match output(d, D, true) {
-        Err(_) if count => {}
+        Err(_) if count => {
+            let param = cross::app_field(d.get(), Setting::OutputFormat, D);
+            d.edit().output = OutputSpec::Text;
+            d.leave_out(param.to_owned());
+        }
         other => other?,
     }
     strict_tools(d, count)
@@ -657,6 +793,33 @@ mod tests {
     }
 
     #[test]
+    fn typeboxs_intersection_reaches_claude_as_one_closed_object() {
+        let (schema, adapted) = claude_schema(&fixture("typebox-intersect"));
+        assert_eq!(
+            schema,
+            json!({
+                "type": "object",
+                "properties": {"name": {"type": "string"}, "country": {"type": "string"}},
+                "required": ["name", "country"],
+                "additionalProperties": false
+            })
+        );
+        assert_eq!(adapted, ["response_format"]);
+    }
+
+    #[test]
+    fn a_pydantic_dictionary_is_refused_for_claude_with_its_path() {
+        let e = sent(A, &fixture("openai-python-parse-dict")).unwrap_err();
+        assert_eq!(e.param.as_deref(), Some("response_format"));
+        assert!(
+            e.message
+                .starts_with("`properties.totals`, an object without keys,"),
+            "{}",
+            e.message
+        );
+    }
+
+    #[test]
     fn all_of_branches_join_into_one_closed_object() {
         let req = with_schema(json!({"name": "x", "schema": {
             "type": "object", "description": "A city.",
@@ -690,7 +853,65 @@ mod tests {
         let e = sent(A, &referenced).unwrap_err();
         assert_eq!(e.param.as_deref(), Some("response_format"));
         assert!(
-            e.message.starts_with("`allOf` with a reference"),
+            e.message.starts_with("`allOf`, which Kaeso can't join"),
+            "{}",
+            e.message
+        );
+    }
+
+    #[test]
+    fn a_property_several_branches_define_takes_all_their_schemas_in_one_list() {
+        let address = |n: u32| {
+            json!({"properties": {"address": {"type": "object", "required": ["zip"],
+                "properties": {"zip": {"type": "string", "maxLength": n}}}}})
+        };
+        let req = with_schema(json!({"name": "x", "schema": {
+            "type": "object", "required": ["address"],
+            "allOf": [address(8), address(9), address(10)]
+        }}));
+        let (schema, _) = claude_schema(&req);
+        let a = &schema["properties"]["address"];
+        assert_eq!(a["type"], "object", "{schema}");
+        assert_eq!(a["additionalProperties"], false);
+        assert_eq!(a["required"], json!(["zip"]));
+        assert_eq!(
+            a["properties"]["zip"]["allOf"],
+            json!([
+                {"type": "string", "maxLength": 8},
+                {"type": "string", "maxLength": 9},
+                {"type": "string", "maxLength": 10}
+            ])
+        );
+    }
+
+    #[test]
+    fn a_join_keeps_null_where_every_part_allows_it_and_keeps_references_whole() {
+        let req = with_schema(json!({"name": "x", "schema": {
+            "type": "object", "required": ["maybe"],
+            "properties": {"maybe": {
+                "type": ["object", "null"], "properties": {"a": {"type": "string"}},
+                "allOf": [{"type": ["object", "null"], "properties": {"b": {"type": "string"}}}]
+            }}
+        }}));
+        let (schema, _) = claude_schema(&req);
+        assert_eq!(
+            schema["properties"]["maybe"]["type"],
+            json!(["object", "null"])
+        );
+
+        let pointing = with_schema(json!({"name": "x", "schema": {
+            "type": "object",
+            "properties": {
+                "source": {"allOf": [
+                    {"properties": {"id": {"type": "string"}}},
+                    {"properties": {"n": {"type": "integer"}}}
+                ]},
+                "copy": {"$ref": "#/properties/source/allOf/0/properties/id"}
+            }
+        }}));
+        let e = sent(A, &pointing).unwrap_err();
+        assert!(
+            e.message.starts_with("`properties.source.allOf`, which"),
             "{}",
             e.message
         );
@@ -735,7 +956,7 @@ mod tests {
     }
 
     #[test]
-    fn a_token_count_keeps_a_schema_claude_couldnt_take() {
+    fn a_token_count_leaves_out_a_schema_claude_couldnt_take() {
         let req = dispatch::decode_request(
             R,
             RequestKind::CountTokens,
@@ -750,7 +971,8 @@ mod tests {
         dispatch::check(A, &req, &ctx).unwrap();
         let out = dispatch::encode_request(A, &req, &mut ctx).unwrap();
         let body: Value = serde_json::from_slice(&out.body).unwrap();
-        assert!(body["messages"].is_array(), "the prompt is counted: {body}");
+        assert!(body.get("output_config").is_none(), "{body}");
+        assert_eq!(ctx.left_out, ["text.format"]);
     }
 
     #[test]

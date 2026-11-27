@@ -129,6 +129,29 @@ enum Output {
     Cut,
 }
 
+// The provider's usage can come in the same chunk as the cut; the reply keeps it, not the
+// provider's stop reason.
+fn keep_usage(
+    out: &mut [StreamEvent],
+    usage: Option<Usage>,
+    rest: impl Iterator<Item = StreamEvent>,
+) {
+    let usage = usage.or_else(|| {
+        rest.filter_map(|e| match e {
+            StreamEvent::ResponseDelta(d) => d.usage,
+            _ => None,
+        })
+        .last()
+    });
+    let ending = out.iter_mut().rev().find_map(|e| match e {
+        StreamEvent::ResponseDelta(d) => Some(d),
+        _ => None,
+    });
+    if let (Some(usage), Some(ending)) = (usage, ending) {
+        ending.usage = Some(usage);
+    }
+}
+
 fn counted_text(delta: &mut Delta, visible_only: bool) -> Option<&mut String> {
     match delta {
         Delta::Text(s) | Delta::ToolArguments(s) | Delta::Refusal(s) => Some(s),
@@ -188,7 +211,12 @@ impl OutputCap {
             return Vec::new();
         }
         let mut out = Vec::with_capacity(events.len());
-        for event in events {
+        let mut events = events.into_iter();
+        while let Some(event) = events.next() {
+            let usage = match &event {
+                StreamEvent::ResponseDelta(d) => d.usage.clone(),
+                _ => None,
+            };
             let full = match &event {
                 StreamEvent::BlockStart(s) => {
                     self.open.push(s.index);
@@ -203,6 +231,7 @@ impl OutputCap {
             };
             if full {
                 self.end(StopReason::MaxTokens, &mut out);
+                keep_usage(&mut out, usage, events);
                 break;
             }
             match &event {
@@ -232,12 +261,14 @@ impl OutputCap {
                             Output::Fits | Output::Full => StopReason::StopSequence(sequence),
                         };
                         self.end(reason, &mut out);
+                        keep_usage(&mut out, usage, events);
                         break;
                     }
                 }
             }
             if self.output(d, &mut out) != Output::Fits {
                 self.end(StopReason::MaxTokens, &mut out);
+                keep_usage(&mut out, usage, events);
                 break;
             }
         }
@@ -692,6 +723,45 @@ mod tests {
         assert_eq!(
             out[out.len() - 3..],
             ending(StopReason::StopSequence("END".into()))
+        );
+    }
+
+    #[test]
+    fn usage_in_the_chunk_of_the_cut_stays_with_the_reply() {
+        let usage = Usage::new(40, 7);
+        let mut events = texts(&["Hello END more"]);
+        events.push(StreamEvent::BlockStop(BlockStop::new(0)));
+        events.push(StreamEvent::ResponseDelta(ResponseDelta::new(
+            Some(StopReason::EndTurn),
+            Some(usage.clone()),
+        )));
+        events.push(StreamEvent::ResponseStop(ResponseStop::new()));
+        let mut cap = OutputCap::at_stop_sequences(vec!["END".into()]);
+        let out = cap.apply(events.clone());
+        assert_eq!(text_of(&out), "Hello ");
+        assert_eq!(
+            out[out.len() - 2],
+            StreamEvent::ResponseDelta(ResponseDelta::new(
+                Some(StopReason::StopSequence("END".into())),
+                Some(usage.clone())
+            )),
+            "the provider's usage, not its stop reason"
+        );
+
+        let mut cap = OutputCap::new(3).with_stop_sequences(vec!["ENDOFTEXT".into()]);
+        let mut held = texts(&["abcdefgENDOFTEX"]);
+        held.push(StreamEvent::ResponseDelta(ResponseDelta::new(
+            Some(StopReason::EndTurn),
+            Some(usage.clone()),
+        )));
+        let out = cap.apply(held);
+        assert_eq!(
+            out[out.len() - 2],
+            StreamEvent::ResponseDelta(ResponseDelta::new(
+                Some(StopReason::MaxTokens),
+                Some(usage)
+            )),
+            "also when releasing held text at the provider's end uses up the limit"
         );
     }
 

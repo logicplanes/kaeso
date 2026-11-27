@@ -729,6 +729,46 @@ expression: outcomes
     },
     "path": "/v1beta/models/claude-haiku-5-5:generateContent"
   },
+  "openai-python-parse-dict": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Count the visitors by country for Tokyo."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "responseJsonSchema": {
+          "additionalProperties": false,
+          "properties": {
+            "city": {
+              "title": "City",
+              "type": "string"
+            },
+            "totals": {
+              "additionalProperties": {
+                "type": "integer"
+              },
+              "title": "Totals",
+              "type": "object"
+            }
+          },
+          "required": [
+            "city",
+            "totals"
+          ],
+          "title": "Report",
+          "type": "object"
+        },
+        "responseMimeType": "application/json"
+      }
+    },
+    "path": "/v1beta/models/claude-haiku-5-5:generateContent"
+  },
   "openrouter-reasoning": {
     "body": {
       "contents": [
@@ -8285,6 +8325,51 @@ expression: outcomes
     "message": "`parallel_tool_calls: false` is not supported by Gemini API. Gemini can't be told to call one function at a time; remove `parallel_tool_calls`.",
     "param": "parallel_tool_calls",
     "unsupported": "`parallel_tool_calls: false`"
+  },
+  "typebox-intersect": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Tokyo"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "responseJsonSchema": {
+          "allOf": [
+            {
+              "properties": {
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name"
+              ],
+              "type": "object"
+            },
+            {
+              "properties": {
+                "country": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "country"
+              ],
+              "type": "object"
+            }
+          ],
+          "type": "object"
+        },
+        "responseMimeType": "application/json"
+      }
+    },
+    "path": "/v1beta/models/claude-haiku-5-5:generateContent"
   },
   "unknown-choice-and-schema": {
     "message": "tool_choice `x_future_choice` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Use `auto`, `none`, `required` or a single named tool instead.",

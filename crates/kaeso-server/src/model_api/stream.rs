@@ -756,11 +756,16 @@ fn first_of(events: &[StreamEvent]) -> Seen {
     Seen::Nothing
 }
 
-// A reply Kaeso ends itself is billed for what the provider wrote, also past the cut.
+// A reply Kaeso ends itself is billed for the output the provider wrote, also past the cut;
+// whether the provider's usage came is read from the reply, which `OutputCap` keeps it on.
 fn count_read(tally: &mut Tally, events: &[StreamEvent]) {
-    for event in events {
+    for event in events.iter().filter(|e| is_output(e)) {
         tally.feed(event);
     }
+}
+
+fn is_output(event: &StreamEvent) -> bool {
+    matches!(event, StreamEvent::BlockDelta(_))
 }
 
 pub(super) async fn gather(
@@ -792,6 +797,9 @@ pub(super) async fn gather(
         };
         for event in &events {
             asm.feed(event);
+            if !is_output(event) {
+                tally.feed(event);
+            }
         }
         if last || capped {
             break;
@@ -1218,7 +1226,7 @@ impl Pump {
         let mut stop = false;
         for event in &events {
             asm.feed(event);
-            if self.output_cap.is_none() {
+            if self.output_cap.is_none() || !is_output(event) {
                 self.tally.feed(event);
             }
             streamed.feed(event);
@@ -1587,7 +1595,7 @@ impl Pump {
                 self.app.progress.count(&held);
                 for event in &held {
                     asm.feed(event);
-                    if self.output_cap.is_none() {
+                    if self.output_cap.is_none() || !is_output(event) {
                         self.tally.feed(event);
                     }
                     streamed.feed(event);

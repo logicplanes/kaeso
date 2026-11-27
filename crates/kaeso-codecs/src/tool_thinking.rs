@@ -185,6 +185,18 @@ mod tests {
         );
         assert!(adapted.is_empty(), "DeepSeek takes it as auto: {adapted:?}");
         assert!(body.get("reasoning_effort").is_none(), "{body}");
+        let responses = decoded(
+            R,
+            &json!({"model": "deepseek-flash", "input": "hello", "tool_choice": "required",
+                "tools": [{"type": "function", "name": "f", "parameters": {"type": "object"}},
+                    {"type": "web_search"}]}),
+        );
+        let (body, adapted) = to_chat(&responses, DEEPSEEK_CHAT);
+        assert_eq!(
+            body["reasoning_effort"], "none",
+            "Chat leaves the search out, so DeepSeek gets only the function: {body}"
+        );
+        assert_eq!(adapted, ["reasoning"]);
         let named = json!({"type": "function", "function": {"name": "f"}});
         let (body, adapted) = to_chat(
             &chat(json!({"tool_choice": named, "tools": tools})),
