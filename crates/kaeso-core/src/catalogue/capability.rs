@@ -904,7 +904,8 @@ fn schema_by_instruction(
     }
     let schema = kaeso_codecs::cross::output_json_schema(g)?;
     // JSON mode answers with an object, so only a schema whose root is one can be followed.
-    if !object_root(&schema.to_value().ok()?) {
+    let root = schema.to_value().ok()?;
+    if !is_object_schema(&root, &root, 0) {
         return None;
     }
     let purpose = spec
@@ -922,10 +923,29 @@ fn schema_by_instruction(
     Some(field.to_owned())
 }
 
-fn object_root(schema: &serde_json::Value) -> bool {
+// A local `$ref` and every branch of an `anyOf` or `oneOf` count by what they describe.
+fn is_object_schema(schema: &serde_json::Value, root: &serde_json::Value, depth: u8) -> bool {
+    use serde_json::Value;
+    if depth > 32 {
+        return false;
+    }
+    if let Some(target) = schema.get("$ref").and_then(Value::as_str) {
+        return target
+            .strip_prefix('#')
+            .and_then(|pointer| root.pointer(pointer))
+            .is_some_and(|s| is_object_schema(s, root, depth + 1));
+    }
+    for key in ["anyOf", "oneOf"] {
+        if let Some(Value::Array(branches)) = schema.get(key) {
+            return !branches.is_empty()
+                && branches
+                    .iter()
+                    .all(|b| is_object_schema(b, root, depth + 1));
+        }
+    }
     match schema.get("type") {
-        Some(serde_json::Value::String(t)) => t == "object",
-        Some(serde_json::Value::Array(types)) => types.iter().any(|t| t == "object"),
+        Some(Value::String(t)) => t == "object",
+        Some(Value::Array(types)) => types.iter().any(|t| t == "object"),
         None => schema.get("properties").is_some(),
         Some(_) => false,
     }

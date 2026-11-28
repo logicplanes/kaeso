@@ -384,3 +384,38 @@ async fn a_json_schema_reaches_deepseek_as_json_mode_with_the_schema_in_the_syst
     assert_eq!(sent["response_format"], json!({"type": "json_object"}));
     assert_eq!(sent["messages"][0]["content"], instructed);
 }
+
+#[tokio::test]
+async fn google_genais_pydantic_response_schema_reaches_deepseek_as_json_schema_in_json_mode() {
+    let (env, deepseek) = env_with_deepseek().await;
+    let fixture = concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../kaeso-codecs/fixtures/gemini/requests/sdk-response-schema-pydantic.json"
+    );
+    let mut body: Value = serde_json::from_str(&std::fs::read_to_string(fixture).unwrap()).unwrap();
+    body["contents"][0]["parts"][0]["text"] =
+        json!("Facts about Tokyo. [mock:fixture=providers/deepseek/recorded-json-object-system]");
+    let r = call(
+        &env,
+        &format!("/v1beta/models/{FLASH}:generateContent"),
+        Some(&env.key),
+        false,
+        Some(body),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(
+        r.header("kaeso-adapted"),
+        Some("generationConfig.responseSchema")
+    );
+    let sent = deepseek.last().unwrap().json();
+    assert_eq!(sent["response_format"], json!({"type": "json_object"}));
+    let system = sent["messages"][0]["content"].as_str().unwrap();
+    let (_, schema) = system.split_once("nothing else: ").unwrap();
+    let schema: Value = serde_json::from_str(schema).unwrap();
+    assert_eq!(schema["type"], "object", "{schema}");
+    assert_eq!(
+        schema["properties"]["population"]["type"],
+        json!(["integer", "null"])
+    );
+}

@@ -925,6 +925,33 @@ fn a_gemini_schema_reaches_json_mode_as_json_schema_and_only_with_an_object_root
         "JSON mode answers with an object"
     );
     assert_eq!(err.param, Some("generationConfig.responseJsonSchema"));
+
+    let pet = serde_json::json!({"type": "object", "properties": {"name": {"type": "string"}}});
+    for (schema, takes) in [
+        (
+            serde_json::json!({"$ref": "#/definitions/Pet", "definitions": {"Pet": pet}}),
+            true,
+        ),
+        (
+            serde_json::json!({"anyOf": [pet, {"$ref": "#/$defs/B"}], "$defs": {"B": pet}}),
+            true,
+        ),
+        (
+            serde_json::json!({"anyOf": [pet, {"type": "string"}]}),
+            false,
+        ),
+        (serde_json::json!({"$ref": "#/$defs/Missing"}), false),
+    ] {
+        let mut req = gemini(serde_json::json!({
+            "responseMimeType": "application/json",
+            "responseJsonSchema": schema
+        }));
+        assert_eq!(
+            prepare(&mut req, DialectId::Gemini, &deepseek).is_ok(),
+            takes,
+            "{schema}"
+        );
+    }
 }
 
 #[test]

@@ -27,7 +27,7 @@ KPP（Kaeso Provider Protocol）为每种 API 格式都提供一个编解码器�
 
 ## 三条规则
 
-1. **格式相同，没有损失。** 以原格式到达服务商的请求与发送时完全一致。只有模型名称会改为服务商的模型 ID。流始终会请求用量，但只有应用自己请求时才会看到。例外有五个。对于服务商在任何形式下都不接受其 schema 的工具，其参数根部的联合会变为一个对象，回复的 `kaeso-adapted` 响应头会注明它；没有 `type` 的根部会加上 `type: "object"`（[联合类型的工具 schema](../development/kpp/cross-format.md#联合类型的工具-schema)）。发给没有推理强度等级的模型的推理强度，以及发给不支持推理的模型的自适应思考会被省略（[没有推理强度等级的模型](../development/kpp/reasoning.md#没有推理强度等级的模型)）。Claude Opus 4.7 及更新的模型只接受默认采样设置，因此 Kaeso 会省略 `temperature`、`top_p` 和 `top_k`，思考预算则会变为自适应思考。忽略 `top_k` 的 Anthropic 格式服务商（例如 DeepSeek 或 MiniMax）不会收到它（[top K](../development/kpp/sampling.md#top-k)）。发给不支持结构化输出的模型的 JSON schema 会以其服务商的 JSON 模式加上系统提示词中的 schema 发送（[结构化输出](../development/kpp/cross-format.md#结构化输出)）。
+1. **格式相同，没有损失。** 以原格式到达服务商的请求与发送时完全一致。只有模型名称会改为服务商的模型 ID。流始终会请求用量，但只有应用自己请求时才会看到。例外有五个。对于服务商在任何形式下都不接受其 schema 的工具，其参数根部的联合会变为一个对象，回复的 `kaeso-adapted` 响应头会注明它；没有 `type` 的根部会加上 `type: "object"`（[联合类型的工具 schema](../development/kpp/cross-format.md#联合类型的工具-schema)）。发给没有推理强度等级的模型的推理强度，以及发给不支持推理的模型的自适应思考会被省略（[没有推理强度等级的模型](../development/kpp/reasoning.md#没有推理强度等级的模型)）。Claude Opus 4.7 及更新的模型只接受默认采样设置，因此 Kaeso 会省略 `temperature`、`top_p` 和 `top_k`，思考预算则会变为自适应思考。忽略 `top_k` 的 Anthropic 格式服务商（例如 DeepSeek 或 MiniMax）不会收到它（[top K](../development/kpp/sampling.md#top-k)）。根为对象的 JSON schema，如果发给不支持结构化输出、且其服务商在该格式中有 JSON 模式的模型，会以 JSON 模式加上系统提示词中的 schema 发送（[结构化输出](../development/kpp/cross-format.md#结构化输出)）。
 2. **拒绝，而不丢弃。** 请求跨格式转换时，如果目标格式无法支持某个字段，Kaeso 会拒绝请求，并在错误中注明该字段。只有不改变模型输出内容的提示信息、目标缺少的少数可选工具、模型无法接受的推理设置，以及取值本就是 API 所用值的设置会被省略；回复的 `kaeso-left-out` 响应头会注明这些内容（[省略的工具](../development/kpp/cross-format.md#省略的工具)、[中性值](../development/kpp/sampling.md#中性值)）。
 3. **签名的推理只回到原处。** Kaeso 只会把加密或签名的推理内容发回签发它的格式和服务商。
 
@@ -36,7 +36,7 @@ KPP（Kaeso Provider Protocol）为每种 API 格式都提供一个编解码器�
 - **对话。** 系统指令、用户和助手轮次、文本、图像和文档，以及目标接受时的音频和视频（[音频和视频](../development/kpp/cross-format.md#音频和视频)）。Anthropic 对话中间的系统消息到达 OpenAI 时，会成为一条位置靠后的系统消息；OpenAI 对话中间的系统消息到达 Anthropic 时，会成为下一个用户轮次的文本。
 - **工具。** 函数工具、工具选择、并行工具调用、工具调用和工具结果。工具返回的图像和文件会出现在结果之后的用户消息中到达 Chat Completions 模型，因为它的工具消息只包含文本（[工具结果中的媒体](../development/kpp/cross-format.md#工具结果中的媒体)）。
 - **工具名称和调用 ID。** 目标不接受某个名称或 ID 时，Kaeso 会以固定方式改写它，并在回复中映射回原值。其他字符变为 `_`，名称被截短以符合长度要求，并附加原值的哈希。OpenAI 接受最多 64 个由字母、数字、`_` 和 `-` 组成的字符，Anthropic 最多 128 个。
-- **结构化输出。** JSON schema，以及 JSON 模式：没有 JSON 模式的模型（例如 Claude）会在系统提示词中收到一句话。不支持结构化输出的模型（例如 DeepSeek 的模型）会以其服务商的 JSON 模式加上系统提示词中的 schema 收到 schema：回复是 JSON，但 schema 只是通过指令要求，而非强制（[结构化输出](../development/kpp/cross-format.md#结构化输出)）。
+- **结构化输出。** JSON schema，以及 JSON 模式：没有 JSON 模式的模型（例如 Claude）会在系统提示词中收到一句话。不支持结构化输出的模型（例如 DeepSeek 的模型）在其服务商有 JSON 模式时，会以该 JSON 模式加上系统提示词中的 schema 收到 schema：回复是 JSON，但 schema 只是通过指令要求，而非强制（[结构化输出](../development/kpp/cross-format.md#结构化输出)）。
 - **采样。** 温度、Top P、最大 Token 数和停止序列，前提是目标支持。值的含义不变，但会按目标的写法写出，因此 `1` 可能以 `1.0` 到达。对于通过 OpenAI Responses 提供的模型（例如 Grok），Kaeso 会在停止序列处或低于 16 个 Token 的上限处自行结束回复（[网关中的 OpenAI Responses](../development/kpp/sampling.md#网关中的-openai-responses)）。
 - **最终用户的 ID。** Anthropic 的 `metadata.user_id` 和 OpenAI 的 `safety_identifier`。OpenAI 最多接受 128 个字符，并要求发送用户 ID 的哈希，因此更长的 Anthropic ID（例如 Claude Code 的 ID）会以 SHA-256 哈希发送给 OpenAI，回复的 `kaeso-adapted` 响应头会注明这一点。
 - **推理。** 推理强度和思考预算会相互转换（[推理](#推理)）。
