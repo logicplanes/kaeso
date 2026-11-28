@@ -804,6 +804,8 @@
   "errors.noRerankAtProvider": "Kaeso 不调用 {provider} 的重排序模型，因此 `{name}` 无法对文档重排序。",
   "errors.rerankDocumentText": "Cohere 的重排序 API 只接受文本形式的文档；请从 `{param}` 中删除 `{field}`。",
   "errors.model.rerankOnly": "模型 `{model}` 是重排序模型；请将其发送到 `/v1/rerank`。",
+  "errors.model.transcriptionOnly": "模型 `{model}` 是转写模型；请将其发送到 `/v1/audio/transcriptions`。",
+  "errors.model.transcriptionNeedsAudio": "模型 `{model}` 只做转写；请向它发送音频。",
   "errors.model.generationNoRerank": "模型 `{model}` 是生成模型，无法对文档重排序。",
   "errors.model.embeddingsNoRerank": "模型 `{model}` 是嵌入模型，无法对文档重排序。",
   "errors.modelApi.timeoutHeader": "请求头 `kaeso-timeout` 必须是 1 到 3600 之间的整数秒。",

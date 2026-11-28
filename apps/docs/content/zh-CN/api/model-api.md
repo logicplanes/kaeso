@@ -187,7 +187,7 @@ console.log(response.text);
 
 与 Google 一样，Kaeso 也在 `/v1` 下提供 Gemini 的路径：`google-genai` 3 及以后的版本默认调用 `/v1`，更早的版本调用 `/v1beta`。`POST /v1/models/{model}:{method}` 始终是 Gemini。请求带有 Gemini 的密钥（`x-goog-api-key` 或 `?key=`）且没有 `Authorization` 请求头时，`GET /v1/models`、`GET /v1/models/{model}` 和 `POST /v1/decisions` 采用 Gemini 格式回答。在 Gemini 路径中，`{model}` 可以是任何[模型名称](#模型名称)，例如 `claude-haiku-4-5`。
 
-`/v1/embeddings`、`:embedContent` 和 `:batchEmbedContents` 只服务嵌入模型，这类模型只有部分[服务商](../concepts/provider-apis.md)提供；嵌入模型也不服务其他端点。混用两者的请求，Kaeso 返回 400。同样，`/v1/decisions`、`/v1/systemone` 和 `/v1beta/decisions` 只服务决策模型，纯决策模型也不服务任何其他端点（[决策 API](decisions.md)）。`/v1/rerank` 只服务重排序模型，重排序模型也不服务任何其他端点（[重排序 API](rerank.md)）。
+`/v1/embeddings`、`:embedContent` 和 `:batchEmbedContents` 只服务嵌入模型，这类模型只有部分[服务商](../concepts/provider-apis.md)提供；嵌入模型也不服务其他端点。混用两者的请求，Kaeso 返回 400。同样，`/v1/decisions`、`/v1/systemone` 和 `/v1beta/decisions` 只服务决策模型，纯决策模型也不服务任何其他端点（[决策 API](decisions.md)）。`/v1/rerank` 只服务重排序模型，重排序模型也不服务任何其他端点（[重排序 API](rerank.md)）。转写模型只服务转写端点：`/v1/audio/transcriptions`、`/v1/audio/translations`，以及 ElevenLabs 的 `/v1/speech-to-text` 及其实时 WebSocket `/v1/speech-to-text/realtime`。当应用和 Kaeso 都使用 Chat Completions 或 Gemini 时，带音频的请求也能到达其中一些模型，限制见[音频 API](audio.md#转写和翻译)。
 
 `/v1` 下的其他路径返回 404，已知路径使用了错误的方法则返回 405。请求带有 `anthropic-version` 请求头时，这两种错误采用 Anthropic 格式；带有 `xi-api-key` 请求头时采用 ElevenLabs 的格式；带有 Gemini 的密钥时采用 Gemini 格式；否则采用 OpenAI 格式。
 

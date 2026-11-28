@@ -442,6 +442,8 @@
   "errors.model.notDecisionModel": "The model `{model}` is a generation model; it can't answer decision questions.",
   "errors.model.questionType": "The model `{model}` does not answer {type} questions.",
   "errors.model.rerankOnly": "The model `{model}` is a rerank model; send it to `/v1/rerank`.",
+  "errors.model.transcriptionNeedsAudio": "The model `{model}` only transcribes; send it audio.",
+  "errors.model.transcriptionOnly": "The model `{model}` is a transcription model; send it to `/v1/audio/transcriptions`.",
   "errors.modelApi.accountNoApiAccess": "The {product} plan of this project's {provider} key has no API access. Ask an organization admin to add an API key under Providers.",
   "errors.modelApi.accountNoDecisions": "A {product} account can't make decisions. Use an API key for {provider} in this project instead.",
   "errors.modelApi.accountNoEmbeddings": "A {product} account can't create embeddings. Use an API key for {provider} in this project instead.",
