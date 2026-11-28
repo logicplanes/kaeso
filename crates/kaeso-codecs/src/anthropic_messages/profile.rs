@@ -267,9 +267,8 @@ fn custom_type(extras: &kaeso_kpp::Extras) -> bool {
     )
 }
 
-// DeepSeek's Anthropic endpoint reads a tool's `type` as a server tool's and answers
-// `custom` with a 422 (https://api-docs.deepseek.com/guides/anthropic_api#tools). The
-// decoder keeps an app's `type: "custom"` as form, so leaving it out drops nothing.
+// DeepSeek answers a client tool's `type: "custom"` with a 422 (https://api-docs.deepseek.com/
+// guides/anthropic_api#tools); the decoder keeps it as form, so leaving it out drops nothing.
 fn without_custom_tool_type(d: &mut Draft<'_>) {
     let typed = |t: &ToolDef| matches!(t, ToolDef::Function(f) if custom_type(&f.extras));
     if !d.get().tools.iter().any(typed) {
@@ -280,7 +279,7 @@ fn without_custom_tool_type(d: &mut Draft<'_>) {
             continue;
         };
         if let Some(Value::Object(kept)) = f.extras.form.get_mut(VERBATIM_FORM_KEY) {
-            kept.retain(|key, _| key != TYPE);
+            kept.retain(|key, value| key != TYPE || value.as_str() != Some("custom"));
             if kept.is_empty() {
                 f.extras.form.shift_remove(VERBATIM_FORM_KEY);
             }

@@ -1,0 +1,39 @@
+{
+  "model": "claude-haiku-5-5",
+  "stream": false,
+  "messages": [
+    {
+      "role": "user",
+      "content": "Count the visitors by country for Tokyo."
+    }
+  ],
+  "response_format": {
+    "type": "json_schema",
+    "json_schema": {
+      "schema": {
+        "properties": {
+          "city": {
+            "title": "City",
+            "type": "string"
+          },
+          "totals": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Totals",
+            "type": "object"
+          }
+        },
+        "required": [
+          "city",
+          "totals"
+        ],
+        "title": "Report",
+        "type": "object",
+        "additionalProperties": false
+      },
+      "name": "Report",
+      "strict": true
+    }
+  }
+}

@@ -1160,10 +1160,8 @@ pub const PROVIDERS: &[Provider] = &[
         videos: &[],
         decisions: &[],
         dialects: &[DialectId::OpenAiChat, DialectId::AnthropicMessages],
-        // The Anthropic-compatible Messages API at `/anthropic/v1/messages`, every model, either auth
-        // header; it ignores `top_k`, `container` and `mcp_servers`, which are refused, and
-        // answers `type: "custom"` on a client tool with 422
-        // (https://api-docs.deepseek.com/guides/anthropic_api, read 2026-11-27).
+        // Ignores `top_k`, `container` and `mcp_servers`, so they are refused, and answers a client
+        // tool's `type: "custom"` with 422 (https://api-docs.deepseek.com/guides/anthropic_api).
         native: &[NativeDialect::of(DialectId::AnthropicMessages).at("/anthropic/v1")],
         refused_key_messages: &[],
         context_window_messages: &[],

@@ -959,6 +959,11 @@ expression: outcomes
     },
     "path": "/v1/messages"
   },
+  "openai-python-parse-dict": {
+    "message": "`properties.totals`, an object without keys, is not supported by Anthropic Messages. Claude returns only the keys a schema lists; list them in `properties`, or send key and value pairs as a list of objects.",
+    "param": "response_format",
+    "unsupported": "`properties.totals`, an object without keys,"
+  },
   "openrouter-reasoning": {
     "body": {
       "max_tokens": 4096,
@@ -10253,6 +10258,94 @@ expression: outcomes
           "strict": true
         }
       ]
+    },
+    "path": "/v1/messages"
+  },
+  "typebox-intersect": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Tokyo",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "claude-haiku-5-5",
+      "output_config": {
+        "format": {
+          "schema": {
+            "additionalProperties": false,
+            "properties": {
+              "country": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "country"
+            ],
+            "type": "object"
+          },
+          "type": "json_schema"
+        }
+      }
+    },
+    "path": "/v1/messages"
+  },
+  "typebox-intersect-nested": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Tokyo",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "claude-haiku-5-5",
+      "output_config": {
+        "format": {
+          "schema": {
+            "additionalProperties": false,
+            "properties": {
+              "country": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "population": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "name",
+              "country",
+              "population"
+            ],
+            "type": "object"
+          },
+          "type": "json_schema"
+        }
+      }
     },
     "path": "/v1/messages"
   },

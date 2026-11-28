@@ -210,6 +210,7 @@ pub struct Request<'a> {
     pub entry: Uuid,
     pub model: &'a str,
     pub encoded: &'a EncodedRequest,
+    pub cut: Option<&'a str>,
 }
 
 pub fn cacheable(kind: RequestKind, stream: bool) -> bool {
@@ -255,7 +256,7 @@ pub fn slot(state: &AppState, active: Active, r: &Request<'_>) -> Slot {
         .collect::<Vec<_>>()
         .join("\n");
     let generation = active.generation.to_be_bytes();
-    let tag = state.response_cache.mac.tag(&[
+    let mut parts: Vec<&[u8]> = vec![
         r.org.as_bytes(),
         r.project.as_bytes(),
         &generation,
@@ -268,7 +269,11 @@ pub fn slot(state: &AppState, active: Active, r: &Request<'_>) -> Slot {
         r.encoded.path.as_bytes(),
         headers.as_bytes(),
         &r.encoded.body,
-    ]);
+    ];
+    if let Some(cut) = r.cut {
+        parts.push(cut.as_bytes());
+    }
+    let tag = state.response_cache.mac.tag(&parts);
     Slot {
         key: format!(
             "{}{}:{}",
