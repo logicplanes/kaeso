@@ -245,8 +245,6 @@ impl Answer {
     pub fn header(&self, name: &str) -> Option<&str> {
         self.headers.get(name).and_then(|v| v.to_str().ok())
     }
-    /// The count of an answer Kaeso estimated because the model's provider can't count tokens,
-    /// from the format's field, after checking that `kaeso-adapted` says so.
     pub fn estimated_count(&self) -> u64 {
         assert_eq!(self.status, StatusCode::OK, "{}", self.text());
         assert!(

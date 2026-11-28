@@ -9,24 +9,16 @@ pub fn tokens_of_bytes(bytes: u64) -> u64 {
     bytes.div_ceil(BYTES_PER_TOKEN)
 }
 
-/// What an image, and each page of a document, counts in [`input_tokens`]: about what Claude
-/// counts for an image of 1.15 megapixels, which is more than other providers count for most
-/// images (https://platform.claude.com/docs/en/build-with-claude/vision#calculate-image-costs).
+// About what Claude counts for an image of 1.15 megapixels, more than other providers count for
+// most: https://platform.claude.com/docs/en/build-with-claude/vision#calculate-image-costs
 pub const MEDIA_TOKENS: u64 = 1_600;
 
 // The tokens a tokenizer writes around each message and each tool: its role, separators and
 // the tool's framing.
 const FRAMING_TOKENS: u64 = 4;
 
-/// Kaeso's estimate of a request's input tokens, for a model whose provider can't count them.
-/// Text counts a token for every four letters or digits of a word, rounded up, and one for each
-/// punctuation mark, symbol, line break and character outside ASCII: within 0.7 to 1.05 of
-/// Claude's own counts for English and German prose, Chinese, code and JSON, and above the
-/// counts of tokenizers that pack text tighter. Tool definitions, tool calls and schemas count
-/// as their JSON text. Each image and
-/// each page of a PDF counts [`MEDIA_TOKENS`], as does a document Kaeso can't read the pages of.
-/// Each message and each tool adds a few tokens of framing. `None` when the request holds audio
-/// or video, whose length Kaeso doesn't read.
+// A token per four letters of a word and one per mark, line break or non-ASCII character came to
+// 0.7 to 1.05 of Claude's own counts for prose, Chinese, code and JSON; 4 bytes a token, 0.52 to 0.75.
 pub fn input_tokens(g: &GenerateRequest) -> Option<u64> {
     let mut n = blocks_tokens(&g.system)?;
     for m in &g.messages {
@@ -50,8 +42,6 @@ pub fn input_tokens(g: &GenerateRequest) -> Option<u64> {
     Some(n)
 }
 
-/// Whether [`input_tokens`] estimates the request: it holds no audio or video, nor a part of a
-/// kind it doesn't know. It reads no media, so it costs nothing beside the count.
 pub fn estimable(g: &GenerateRequest) -> bool {
     g.system
         .iter()
@@ -126,13 +116,11 @@ fn text_tokens(text: &str) -> u64 {
     n.saturating_add(word.div_ceil(4))
 }
 
-// A PDF's pages: its page tree's `/Count`, a reader's own answer, or its page objects
-// (`/Type /Page`) where no tree count is visible, as in packed or broken files. Page objects alone
-// overcount a file saved incrementally, which keeps every revision of a page. Only a `/Type /Pages`
-// dictionary's `/Count` counts pages; an outline's counts bookmarks.
+// Page objects, each once whatever revisions incremental saves left of it, or the page tree's
+// `/Count`, whichever is more: object streams may hide either. An outline's `/Count` is bookmarks.
 fn pdf_pages(data: &[u8]) -> u64 {
     let (pages, tree) = page_counts(data);
-    let found = if tree > 0 { tree } else { pages };
+    let found = pages.max(tree);
     if found <= 1 && find(data, b"/ObjStm").is_some() {
         return u64::try_from(data.len().div_ceil(50_000))
             .unwrap_or(u64::MAX)
@@ -146,6 +134,10 @@ fn pdf_pages(data: &[u8]) -> u64 {
 // of them can mislead it.
 fn page_counts(data: &[u8]) -> (u64, u64) {
     const DEPTH: usize = 64;
+    // Bounds the memory a crafted file can take; real files have far fewer pages.
+    const DISTINCT: usize = 65_536;
+    let mut seen: std::collections::HashSet<(u64, u64)> = std::collections::HashSet::new();
+    let mut object: Option<(u64, u64)> = None;
     #[derive(Default)]
     struct Dict {
         pages: bool,
@@ -192,7 +184,14 @@ fn page_counts(data: &[u8]) -> (u64, u64) {
                     .get(5..)
                     .is_some_and(|n| n.first().is_some_and(u8::is_ascii_alphanumeric))
             {
-                pages = pages.saturating_add(1);
+                let another = match object {
+                    Some(id) if seen.contains(&id) => false,
+                    Some(id) if seen.len() < DISTINCT => seen.insert(id),
+                    _ => true,
+                };
+                if another {
+                    pages = pages.saturating_add(1);
+                }
             }
             i = i.saturating_add(5);
         } else if let Some(after) = rest.strip_prefix(b"/Count") {
@@ -212,11 +211,46 @@ fn page_counts(data: &[u8]) -> (u64, u64) {
                 d.count = Some(n);
             }
             i = i.saturating_add(6);
+        } else if rest.starts_with(b"endobj") {
+            object = None;
+            i = i.saturating_add(6);
+        } else if rest.starts_with(b"obj")
+            && rest
+                .get(3)
+                .is_none_or(|c| c.is_ascii_whitespace() || b"<[/(%".contains(c))
+        {
+            object = object_id(data, i);
+            i = i.saturating_add(3);
         } else {
             i = i.saturating_add(1);
         }
     }
     (pages, best)
+}
+
+// The object number and generation of an `N G obj` header whose `obj` starts at `at`.
+fn object_id(data: &[u8], at: usize) -> Option<(u64, u64)> {
+    let gap = |d: &[u8]| -> Option<usize> {
+        let kept = d.trim_ascii_end().len();
+        (kept < d.len()).then_some(kept)
+    };
+    let before = data.get(..at)?;
+    let (rest, generation) = number_at_end(before.get(..gap(before)?)?)?;
+    let (rest, number) = number_at_end(rest.get(..gap(rest)?)?)?;
+    rest.last()
+        .is_none_or(|c| !c.is_ascii_alphanumeric())
+        .then_some((number, generation))
+}
+
+fn number_at_end(data: &[u8]) -> Option<(&[u8], u64)> {
+    let digits = data
+        .iter()
+        .rev()
+        .take(20)
+        .take_while(|c| c.is_ascii_digit())
+        .count();
+    let (rest, number) = data.split_at(data.len().checked_sub(digits)?);
+    Some((rest, std::str::from_utf8(number).ok()?.parse().ok()?))
 }
 
 // The length of a literal string `(…)`, a hex string `<…>` or a comment `%…` at the start of
@@ -963,6 +997,19 @@ mod tests {
             1,
             "a comment or stream that spells page trees or pages counts nothing"
         );
+        assert_eq!(
+            pdf_pages(
+                b"%PDF-1.7\n9 0 obj << /Type /ObjStm /N 2 /Length 0 >> stream\nendstream endobj \
+                  4 0 obj << /Type /Pages /Kids [5 0 R] /Count 1 /Parent 1 0 R >> endobj \
+                  5 0 obj << /Type /Page /Parent 4 0 R >> endobj 6 0 obj << /Type /Page >> endobj \
+                  7 0 obj<</Type/Page>>endobj"
+            ),
+            3,
+            "a visible branch of a page tree whose root is packed counts no fewer than its pages"
+        );
+        assert_eq!(object_id(b"12 0 obj", 5), Some((12, 0)));
+        assert_eq!(object_id(b"x12 0 obj", 6), None, "a number stands alone");
+        assert_eq!(object_id(b"0 obj", 2), None, "a header has two numbers");
         assert_eq!(
             pdf_pages(
                 b"%PDF-1.7\n1 0 obj << /Type /Pages /Kids [2 0 R 3 0 R] /Count 2 >> \

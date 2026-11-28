@@ -94,8 +94,6 @@ fn forced_choice(choice: Option<&ToolChoice>, ingress: DialectId) -> Option<&'st
     }
 }
 
-/// What `kaeso-adapted` names for a count Kaeso estimated because the model's provider can't
-/// count.
 pub const COUNT_ESTIMATED: &str = "count_estimated";
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -106,13 +104,9 @@ pub struct Plan {
     pub reasoning: Option<bool>,
     pub left_out: Vec<String>,
     pub adapted: Vec<String>,
-    /// The model's provider can't count this request's tokens: the gateway answers with Kaeso's
-    /// estimate ([`crate::estimate::input_tokens`]) and sends nothing.
     pub estimates_count: bool,
 }
 
-/// The refusal of a token count for a model whose provider can't count, when the request holds
-/// what Kaeso doesn't estimate.
 pub fn cannot_estimate(eff: &Effective) -> Unsupported {
     refuse(
         "token counting",
