@@ -50,3 +50,5 @@ Anthropics Websuche-Tool geht den umgekehrten Weg: `web_search_20250305`, das `W
 - **SpaceX** ignoriert `max_tool_calls` und verwirft `blocked_domains` ohne Fehler, daher bekommt es eigene Namen. Sein `max_turns` begrenzt die Runden von Tool-Aufrufen, und eine Runde kann mehr als einmal suchen. Seine übrigen Grenzen gelten auch: höchstens fünf Domains in einer Liste.
 - **Die Suche erzwingen.** Ein `tool_choice`, das `web_search` erzwingt, ist `Unsupported`; mit `auto` und `any` entscheidet das Modell.
 - **Chat Completions** hat keine gehostete Suche, daher wird das Tool dort weggelassen.
+
+Wie Suchen eine App in Antworten und Streams erreichen und was mit Suchen geschieht, die eine App zurückschickt, steht unter [weggelassene Tools](cross-format.md#weggelassene-tools).

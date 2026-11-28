@@ -50,3 +50,5 @@ Anthropic's web search tool goes the other way: `web_search_20250305`, which Cla
 - **SpaceX** ignores `max_tool_calls` and drops `blocked_domains` without an error, so it gets its own names. Its `max_turns` limits rounds of tool calls, and one round may search more than once. Its other limits apply too: at most five domains in a list.
 - **Forcing the search.** A `tool_choice` that forces `web_search` is `Unsupported`; `auto` and `any` let the model decide.
 - **Chat Completions** has no hosted search, so the tool is left out there.
+
+How searches reach an app in replies and streams, and what happens to searches an app sends back, is under [tools left out](cross-format.md#tools-left-out).

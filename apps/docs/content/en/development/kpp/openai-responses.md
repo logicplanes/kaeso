@@ -166,7 +166,7 @@ A reply from another dialect is written as a complete `Response` object:
 - Stop reasons without an equivalent (`StopSequence`, `Refusal`, `PauseTurn`, `Other`) are reported as `completed`. This loses information: an Anthropic `pause_turn` asks the app to continue, and a Responses app can't tell. Message items are `incomplete` when the response is.
 - Reasoning of another dialect becomes a reasoning item with the id `rs_kaeso_…` ([reasoning blobs](reasoning.md#reasoning-blobs)). Its reasoning text is one `summary_text`, followed by its summaries, and `encrypted_content` is a reasoning blob of the original block. The blob is sent whether or not the app asked for it in `include`. Kaeso stores nothing, and the SDK agent loops send output items back as received.
 - Reply data this dialect can't show is left out ([replies](cross-format.md#replies)): foreign `Unknown` blocks, foreign citations and extras, images, documents and tool results.
-- Anthropic web searches become `web_search_call` items ([hosted web search](hosted-web-search.md)), and calls of flattened namespace tools get their `namespace` back ([tool namespaces](cross-format.md#tool-namespaces)).
+- Anthropic web searches become `web_search_call` items ([search replies](cross-format.md#tools-left-out)), and calls of flattened namespace tools get their `namespace` back ([tool namespaces](cross-format.md#tool-namespaces)).
 - Message, function call and web search items get the ids `msg_kaeso_…`, `fc_kaeso_…` and `ws_kaeso_…`. Requests recognise these Kaeso-invented ids and never send them to a provider.
 
 ## Input token count: `TokenCountsResource`

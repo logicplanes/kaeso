@@ -166,7 +166,7 @@ order: 7
 - 没有对应项的停止原因（`StopSequence`、`Refusal`、`PauseTurn`、`Other`）报告为 `completed`。这会丢失信息：Anthropic 的 `pause_turn` 要求应用继续，而 Responses 应用无从得知。回复为 `incomplete` 时，消息 item 也是 `incomplete`。
 - 其他方言的推理变为一个 ID 为 `rs_kaeso_…` 的推理 item（参见[推理数据块](reasoning.md#推理数据块)）。其推理文本作为一个 `summary_text`，后接其摘要，`encrypted_content` 则是原始块的推理数据块。无论应用是否在 `include` 中请求，推理数据块都会发送。Kaeso 不存储任何内容，而各 SDK 的 agent 循环会把输出 item 原样发回。
 - 本方言无法呈现的回复数据会被省略（参见[回复](cross-format.md#回复)）：外来的 `Unknown` 块、外来的引用和 extras、图像、文档和工具结果。
-- Anthropic 的网页搜索变为 `web_search_call` 项（参见[托管网页搜索](hosted-web-search.md)），对展开后的命名空间工具的调用会恢复其 `namespace`（参见[工具命名空间](cross-format.md#工具命名空间)）。
+- Anthropic 的网页搜索变为 `web_search_call` 项（参见[搜索的回复](cross-format.md#省略的工具)），对展开后的命名空间工具的调用会恢复其 `namespace`（参见[工具命名空间](cross-format.md#工具命名空间)）。
 - 消息 item、函数调用 item 和网页搜索 item 的 ID 为 `msg_kaeso_…`、`fc_kaeso_…` 和 `ws_kaeso_…`。请求解码时会识别这些由 Kaeso 生成的 ID，绝不会把它们发给服务商。
 
 ## 输入 Token 计数：`TokenCountsResource`

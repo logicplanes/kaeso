@@ -50,3 +50,5 @@ Anthropic 的网页搜索工具走相反的方向：Claude Code 的 `WebSearch` 
 - **SpaceX** 会忽略 `max_tool_calls`，并且会不报错地丢弃 `blocked_domains`，因此它收到自己的字段名。它的 `max_turns` 限制的是工具调用的轮数，一轮可能搜索不止一次。它的其他限制同样适用：每个列表最多五个域名。
 - **强制搜索。** 强制使用 `web_search` 的 `tool_choice` 为 `Unsupported`；`auto` 和 `any` 让模型自行决定。
 - **Chat Completions** 没有托管搜索，因此该工具在那里会被省略。
+
+搜索如何在回复和流中到达应用，以及应用发回的搜索会怎样处理，见[省略的工具](cross-format.md#省略的工具)。
