@@ -434,6 +434,31 @@ expression: outcomes
     },
     "path": "/v1beta/models/gpt-audio-mini:generateContent"
   },
+  "instructor-json-mode": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Tokyo"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "responseMimeType": "application/json"
+      },
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "\n            As a genius expert, your task is to understand the content and provide\n            the parsed objects in json that match the following json_schema:\n\n\n            {\n  \"properties\": {\n    \"name\": {\n      \"title\": \"Name\",\n      \"type\": \"string\"\n    },\n    \"country\": {\n      \"title\": \"Country\",\n      \"type\": \"string\"\n    }\n  },\n  \"required\": [\n    \"name\",\n    \"country\"\n  ],\n  \"title\": \"City\",\n  \"type\": \"object\"\n}\n\n            Make sure to return an instance of the JSON, not the schema itself\n"
+          }
+        ]
+      }
+    },
+    "path": "/v1beta/models/claude-haiku-5-5:generateContent"
+  },
   "json-object": {
     "body": {
       "contents": [

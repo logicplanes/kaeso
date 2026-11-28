@@ -1,4 +1,4 @@
-use kaeso_kpp::{DialectId, KppError, OutputSpec, RawJson, ToolDef};
+use kaeso_kpp::{Block, DialectId, KppError, OutputSpec, RawJson, ToolDef};
 use serde_json::{Map, Value};
 
 use crate::adapt::Draft;
@@ -560,6 +560,23 @@ pub(crate) fn for_claude(d: &mut Draft<'_>, count: bool) -> Result<(), KppError>
         other => other?,
     }
     strict_tools(d, count)
+}
+
+// Anthropic Messages and Bedrock Converse have no JSON mode, Claude's structured outputs can't
+// express an open object (every object needs `additionalProperties: false`), and Claude 5 models
+// refuse an assistant prefill, so the system prompt asks for the object instead.
+const JSON_MODE: &str =
+    "Answer with one JSON object and nothing else: no code fence, no text before or after it.";
+
+pub(crate) fn json_mode_by_instruction(d: &mut Draft<'_>, target: DialectId) {
+    if !matches!(d.get().output, OutputSpec::JsonObject) {
+        return;
+    }
+    let param = cross::app_field(d.get(), Setting::OutputFormat, target);
+    let r = d.edit();
+    r.output = OutputSpec::Text;
+    r.system.push(Block::text(JSON_MODE));
+    d.adapt(param.to_owned());
 }
 
 // Gemini always enforces a `responseJsonSchema` too, and takes every keyword OpenAI's does.
@@ -1209,6 +1226,86 @@ mod tests {
         let (schema, adapted) = claude_schema(&req);
         assert_eq!(schema["properties"]["n"]["minimum"], 1);
         assert!(schema.get("additionalProperties").is_none());
+        assert!(adapted.is_empty());
+    }
+
+    fn system_texts(body: &Value) -> Vec<String> {
+        body["system"]
+            .as_array()
+            .map(|blocks| {
+                blocks
+                    .iter()
+                    .filter_map(|b| b["text"].as_str().map(str::to_owned))
+                    .collect()
+            })
+            .unwrap_or_default()
+    }
+
+    #[test]
+    fn json_mode_reaches_claude_and_bedrock_as_an_instruction_after_the_apps_own() {
+        let req = fixture("instructor-json-mode");
+        for target in [A, DialectId::BedrockConverse] {
+            let (body, adapted) = sent(target, &req).unwrap_or_else(|e| panic!("{target}: {e}"));
+            assert_eq!(adapted, ["response_format"], "{target}");
+            let system = system_texts(&body);
+            assert_eq!(system.len(), 2, "{target}: {body}");
+            assert!(
+                system[0].contains("json_schema"),
+                "the app's prompt first: {body}"
+            );
+            assert_eq!(system[1], super::JSON_MODE, "{target}");
+            assert!(body.get("output_config").is_none(), "{body}");
+        }
+        let (body, _) = sent(A, &fixture("json-object")).unwrap();
+        assert_eq!(
+            system_texts(&body).last().map(String::as_str),
+            Some(super::JSON_MODE)
+        );
+    }
+
+    #[test]
+    fn json_mode_is_named_by_each_apps_field_and_counted_with_its_instruction() {
+        let responses = decoded(
+            R,
+            &json!({"model": "m", "input": "Tokyo", "max_output_tokens": 100,
+                "text": {"format": {"type": "json_object"}}}),
+        );
+        assert_eq!(sent(A, &responses).unwrap().1, ["text.format"]);
+        let gemini = decoded(
+            G,
+            &json!({"contents": [{"role": "user", "parts": [{"text": "Tokyo"}]}],
+                "generationConfig": {"maxOutputTokens": 100, "responseMimeType": "application/json"}}),
+        );
+        assert_eq!(
+            sent(A, &gemini).unwrap().1,
+            ["generationConfig.responseMimeType"]
+        );
+        let Request::Generate(g) = fixture("json-object") else {
+            panic!("a generation request");
+        };
+        let count = Request::CountTokens(g);
+        let (body, _) = sent(A, &count).unwrap();
+        assert_eq!(
+            system_texts(&body).last().map(String::as_str),
+            Some(super::JSON_MODE),
+            "a count holds the instruction the generation sends"
+        );
+    }
+
+    #[test]
+    fn formats_with_json_mode_get_it_natively() {
+        let req = fixture("instructor-json-mode");
+        let (body, adapted) = sent(C, &req).unwrap();
+        assert_eq!(body["response_format"], json!({"type": "json_object"}));
+        assert!(adapted.is_empty());
+        let (body, adapted) = sent(R, &req).unwrap();
+        assert_eq!(body["text"]["format"], json!({"type": "json_object"}));
+        assert!(adapted.is_empty());
+        let (body, adapted) = sent(G, &req).unwrap();
+        assert_eq!(
+            body["generationConfig"]["responseMimeType"],
+            "application/json"
+        );
         assert!(adapted.is_empty());
     }
 }

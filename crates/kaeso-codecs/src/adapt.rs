@@ -196,8 +196,10 @@ pub(crate) fn for_target<'a>(
     tool_roots::for_target(&mut draft, target, ctx)?;
     match target {
         DialectId::AnthropicMessages => {
+            output_schema::json_mode_by_instruction(&mut draft, target);
             output_schema::for_claude(&mut draft, matches!(req, Request::CountTokens(_)))?;
         }
+        DialectId::BedrockConverse => output_schema::json_mode_by_instruction(&mut draft, target),
         DialectId::Gemini => output_schema::for_gemini(&mut draft)?,
         _ => {}
     }
