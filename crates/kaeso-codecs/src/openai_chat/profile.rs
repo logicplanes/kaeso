@@ -25,6 +25,9 @@ pub struct RequestProfile {
     pub end_user_field: EndUserField,
     pub assistant_prefill: bool,
     pub verbosity: bool,
+    /// Whether the provider takes `top_k`, which OpenAI's Chat Completions doesn't have: an
+    /// Anthropic or Gemini app's top-k sampling is sent as `top_k`, and left out otherwise.
+    pub top_k: bool,
     pub cache_key: bool,
     pub message_bookkeeping: bool,
     pub greedy_top_p: bool,
@@ -69,6 +72,10 @@ pub struct RequestProfile {
     /// Whether a model of the provider can't think while a tool is forced, as DeepSeek's
     /// models can't; Kaeso then sends such a request with thinking off.
     pub forced_tool_without_thinking: bool,
+    /// Whether the provider has a JSON mode, `response_format: {"type": "json_object"}`, for
+    /// models without structured output, as DeepSeek has; the gateway then serves a JSON schema
+    /// for such a model as JSON mode plus the schema in the system prompt.
+    pub json_mode: bool,
     /// Keys the encoder writes into a provider's own option objects when the request doesn't
     /// set them, such as Venice's `venice_parameters.include_venice_system_prompt: false`.
     pub option_defaults: &'static [OptionDefault],
@@ -143,6 +150,7 @@ impl RequestProfile {
         end_user_field: EndUserField::SafetyIdentifier,
         assistant_prefill: true,
         verbosity: true,
+        top_k: false,
         cache_key: true,
         message_bookkeeping: false,
         greedy_top_p: false,
@@ -165,6 +173,7 @@ impl RequestProfile {
         stream_options: true,
         separate_reasoning: false,
         forced_tool_without_thinking: false,
+        json_mode: false,
         option_defaults: &[],
     };
 }
@@ -204,6 +213,13 @@ impl ChatProfile {
     #[must_use]
     pub const fn with_verbosity(mut self) -> Self {
         self.request.verbosity = true;
+        self
+    }
+
+    /// The provider takes `top_k` on Chat Completions ([`RequestProfile::top_k`]).
+    #[must_use]
+    pub const fn with_top_k(mut self) -> Self {
+        self.request.top_k = true;
         self
     }
 
@@ -407,6 +423,14 @@ impl ChatProfile {
     #[must_use]
     pub const fn forced_tool_without_thinking(mut self) -> Self {
         self.request.forced_tool_without_thinking = true;
+        self
+    }
+
+    /// The provider has a JSON mode for models without structured output
+    /// ([`RequestProfile::json_mode`]).
+    #[must_use]
+    pub const fn json_mode(mut self) -> Self {
+        self.request.json_mode = true;
         self
     }
 

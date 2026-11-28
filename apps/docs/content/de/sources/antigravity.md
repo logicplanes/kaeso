@@ -60,7 +60,9 @@ Das Skript lässt Ihren letzten Prompt und den Text jedes Schritts heraus. Um si
 
 ## Was Kaeso liest
 
-Jeder Schritt `PLANNER_RESPONSE` des Transkripts wird eine Anfrage mit Modell, Eingabe-, gecachten und Ausgabe-Tokens und Zeitpunkt. Antigravity benennt seine Modelle mit der Effort-Stufe am Ende, etwa `gemini-3.8-flash-low`. Kennen der Katalog oder KPMR das Modell ohne sie, protokolliert und bepreist Kaeso die Anfrage als dieses Modell, behält die Stufe als Reasoning-Aufwand und ermittelt den Anbieter aus dem Modell, sodass jede Stufe als ein Modell erscheint. Ein Modell, das nur Antigravity kennt, etwa `gemini-4-neon-high`, behält seinen ganzen Namen und hat keine Kosten, zählt aber trotzdem seine Tokens. Das Transkript von Antigravity enthält keine Zeiten, deshalb haben seine Anfragen keine Dauer und bleiben aus Latenzwerten heraus.
+Jeder Schritt `PLANNER_RESPONSE` des Transkripts wird eine Anfrage mit Modell, Eingabe-, gecachten und Ausgabe-Tokens und Zeitpunkt. Antigravity beendet den Namen eines Modells mit seiner Einstellung: einer Effort-Stufe wie in `gemini-3.8-flash-low` oder `thinking` wie in `claude-opus-4-6-thinking`. Kennen der Katalog oder KPMR das Modell mit dieser Einstellung, protokolliert und bepreist Kaeso die Anfrage als dieses Modell, behält die Stufe als Reasoning-Aufwand und ermittelt den Anbieter aus dem Modell ([Tokens und Kosten](../concepts/sources.md#tokens-und-kosten)). So erscheint jede Stufe als ein Modell und Claude als Modell von Anthropic. Ein Modell, das keiner von beiden kennt, behält seinen ganzen Namen und hat keine Kosten, zählt aber trotzdem seine Tokens.
+
+Das Transkript von Antigravity enthält keine Zeiten, deshalb haben seine Anfragen keine Dauer und bleiben aus Latenzwerten heraus.
 
 Ein Aufruf eines MCP-Tools wird ein Tool-Aufruf, mit Server und Tool und ob der Schritt, der ihn ausgeführt hat, erfolgreich war. Ein Skript, das Sie kopiert haben, bevor Kaeso Tool-Aufrufe las, sendet keine; kopieren Sie es erneut aus der Detailansicht der Quelle.
 

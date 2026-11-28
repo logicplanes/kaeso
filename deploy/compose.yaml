@@ -101,6 +101,7 @@ services:
       KAESO_SMTP_FROM: ${KAESO_SMTP_FROM:-Kaeso <kaeso@${KAESO_DOMAIN}>}
       KAESO_UPDATER_TOKEN: ${KAESO_UPDATER_TOKEN:-}
       KAESO_TRUSTED_PROXIES: ${KAESO_TRUSTED_PROXIES:-127.0.0.0/8,::1/128,${EDGE_SUBNET:-172.30.83.0/24}}
+      KAESO_SEARCH_ENGINES: ${KAESO_SEARCH_ENGINES:-false}
       KAESO_LOG_FORMAT: json
     secrets: [master_keys]
     networks: [edge, data, updates]
@@ -123,6 +124,8 @@ services:
     mem_limit: ${CONSOLE_MEMORY:-256m}
     pids_limit: ${CONSOLE_PIDS:-128}
     logging: *logging
+    environment:
+      KAESO_SEARCH_ENGINES: ${KAESO_SEARCH_ENGINES:-false}
     networks: [edge]
 
   updater-init:
@@ -239,7 +242,7 @@ services:
       retries: 30
 
   clickhouse:
-    image: clickhouse/clickhouse-server:26.3.62.3-alpine@sha256:1d45e52080e6ed136a6377863046a0e53d69fb0418d799f12e23184ed6460c55
+    image: clickhouse/clickhouse-server:26.3.67.30-alpine@sha256:44ed7f257af9a8f8ecc5bac3f0c95205e96da1361f2f6406597edf43d05d2c83
     restart: unless-stopped
     security_opt: [no-new-privileges:true]
     cap_drop: [ALL]
@@ -266,7 +269,7 @@ services:
       retries: 30
 
   valkey:
-    image: valkey/valkey:9.1.3-alpine@sha256:bf09d58e96d6b4524a15396b65b242bbe18beebbcc15a04d8ee75ddac62fae0b
+    image: valkey/valkey:9.2.0-alpine@sha256:c8e2d17498838af5d91e12eb7c11220b3434a7b7131a333e3af52ad5e0b80882
     restart: unless-stopped
     # The image's own valkey user, so the entrypoint never needs root to walk /data,
     # whose appendonlydir it can't enter without capabilities on an existing install.
@@ -351,6 +354,7 @@ configs:
       	route {
       		handle /kaeso-maintenance.json {
       			header Cache-Control "no-store"
+      			header X-Robots-Tag "noindex, nofollow"
       			header Content-Type "application/json"
       			root * /srv/maintenance
       			rewrite * /active
@@ -384,6 +388,7 @@ configs:
       			Strict-Transport-Security "max-age=31536000"
       			Retry-After "30"
       			Cache-Control "no-store"
+      			X-Robots-Tag "noindex, nofollow"
       			-Server
       		}
       		vars message "Kaeso can't be reached right now; try again in a minute."
@@ -448,7 +453,7 @@ configs:
       <head>
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1">
-      <meta name="robots" content="noindex">
+      <meta name="robots" content="noindex, nofollow">
       <meta name="color-scheme" content="light dark">
       <title>Kaeso will be back in a moment</title>
       <style>

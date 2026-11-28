@@ -55,7 +55,6 @@ fn request(extra: Value) -> Value {
 #[test]
 fn ignored_fields_are_refused_with_the_field_the_app_wrote() {
     for (extra, param) in [
-        (json!({ "top_k": 5 }), "top_k"),
         (json!({ "stop_sequences": ["END"] }), "stop_sequences"),
         (json!({ "container": "container_011" }), "container"),
         (
@@ -78,6 +77,24 @@ fn ignored_fields_are_refused_with_the_field_the_app_wrote() {
     });
     let (param, _) = sent_with(DialectId::OpenAiChat, chat, IGNORING).unwrap_err();
     assert_eq!(param, "stop");
+}
+
+#[test]
+fn top_k_a_provider_ignores_is_left_out_by_the_apps_name_for_it() {
+    let (body, left_out) = sent(request(json!({ "top_k": 5 }))).unwrap();
+    assert!(body.get("top_k").is_none(), "{body}");
+    assert_eq!(left_out, ["top_k"]);
+    let gemini_cli = json!({
+        "contents": [{ "role": "user", "parts": [{ "text": "Hi" }] }],
+        "generationConfig": { "temperature": 1, "topP": 0.95, "topK": 64, "maxOutputTokens": 64 }
+    });
+    let (body, left_out) = sent_with(DialectId::Gemini, gemini_cli, IGNORING).unwrap();
+    assert!(body.get("top_k").is_none(), "{body}");
+    assert_eq!(
+        (body["temperature"].clone(), body["top_p"].clone()),
+        (json!(1.0), json!(0.95))
+    );
+    assert_eq!(left_out, ["generationConfig.topK"]);
 }
 
 #[test]
@@ -163,6 +180,7 @@ fn a_provider_without_the_custom_tool_type_gets_an_apps_tools_without_it() {
     let tools = json!({ "tools": [
         { "type": "custom", "name": "get_weather", "input_schema": { "type": "object" } },
         { "name": "plain", "input_schema": { "type": "object" } },
+        { "type": null, "name": "typed_null", "input_schema": { "type": "object" } },
         { "type": "web_search_20250305", "name": "web_search", "max_uses": 1 }
     ]});
     let untyped = MessagesProfile::compatible("Example Cloud").without_custom_tool_type();
@@ -172,9 +190,10 @@ fn a_provider_without_the_custom_tool_type_gets_an_apps_tools_without_it() {
         json!([
             { "name": "get_weather", "input_schema": { "type": "object" } },
             { "name": "plain", "input_schema": { "type": "object" } },
+            { "type": null, "name": "typed_null", "input_schema": { "type": "object" } },
             { "type": "web_search_20250305", "name": "web_search", "max_uses": 1 }
         ]),
-        "a server tool keeps its type"
+        "only `custom` goes; a server tool and a `null` keep their type"
     );
     assert!(left_out.is_empty(), "the type is form: {left_out:?}");
     let (body, _) = sent_with(A, request(tools), MessagesProfile::ANTHROPIC).unwrap();
@@ -182,4 +201,32 @@ fn a_provider_without_the_custom_tool_type_gets_an_apps_tools_without_it() {
         body["tools"][0]["type"], "custom",
         "Anthropic gets it as sent"
     );
+}
+
+#[test]
+fn a_null_thread_reaches_no_provider() {
+    let req = crate::dispatch::decode_request(
+        A,
+        RequestKind::Generate,
+        &std::fs::read(
+            crate::test_support::fixtures_dir()
+                .join("anthropic_messages/requests/thread-null.json"),
+        )
+        .unwrap(),
+        &HeaderList::new(),
+    )
+    .unwrap();
+    for (provider, profile) in [
+        ("anthropic", MessagesProfile::ANTHROPIC),
+        ("my-proxy", MessagesProfile::ANTHROPIC),
+        ("deepseek", MessagesProfile::compatible("DeepSeek")),
+    ] {
+        let mut ctx = EgressCtx::new(&req)
+            .with_provider(provider)
+            .with_messages_profile(profile);
+        let out = AnthropicMessages::encode_request(&req, &mut ctx).unwrap();
+        let body: Value = serde_json::from_slice(&out.body).unwrap();
+        assert!(body.get("thread").is_none(), "{provider}: {body}");
+        assert_eq!(ctx.left_out, ["thread"], "{provider}");
+    }
 }

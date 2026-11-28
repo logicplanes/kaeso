@@ -21,8 +21,7 @@ export const examples = [
     id: "sizes",
     title: "Sizes",
     fn: "Sizes",
-    description:
-      "14 and 16px in controls and toasts, 20px in xl buttons, 24px for a region, 32px for a page. The stroke is 1.5px at every size, like an icon's at 24px.",
+    description: "14 and 16px in controls and toasts, 20px in xl buttons, 24px for a region, 32px for a page. The stroke is 1.5px at every size.",
   },
   {
     id: "delayed",

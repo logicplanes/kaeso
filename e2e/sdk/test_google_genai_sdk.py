@@ -1,5 +1,7 @@
 import base64
+from typing import Optional
 
+import pydantic
 import pytest
 from google import genai
 from google.genai import errors, types
@@ -120,6 +122,57 @@ def test_a_tool_loop_on_claude_keeps_claudes_thinking(gg: genai.Client, mock):
     assert turn["content"][-1]["id"] == call.id
 
 
+class City(pydantic.BaseModel):
+    name: str
+    population: Optional[int] = None
+
+
+def test_geminis_own_schemas_reach_other_formats_as_json_schema(gg: genai.Client, mock):
+    config = types.GenerateContentConfig(
+        response_mime_type="application/json",
+        response_schema=City,
+        max_output_tokens=200,
+    )
+    gg.models.generate_content(model="claude-haiku-4-5", contents="Tokyo [mock:fixture=structured-output-json-schema]", config=config)
+    schema = mock.last()["body"]["output_config"]["format"]["schema"]
+    assert schema["type"] == "object"
+    assert list(schema["properties"]) == ["name", "population"]
+    assert schema["properties"]["population"]["type"] == ["integer", "null"]
+    assert "property_ordering" not in schema and "propertyOrdering" not in schema
+    weather = types.FunctionDeclaration(
+        name="get_weather",
+        description="Weather for a place",
+        parameters=types.Schema(type="OBJECT", properties={"location": types.Schema(type="STRING")}, required=["location"]),
+    )
+    config = types.GenerateContentConfig(tools=[types.Tool(function_declarations=[weather])])
+    gg.models.generate_content(model="gpt-4o", contents="Weather? [mock:fixture=tools-function]", config=config)
+    assert mock.last()["body"]["tools"][0]["parameters"] == {
+        "properties": {"location": {"type": "string"}},
+        "required": ["location"],
+        "type": "object",
+    }
+
+
+def get_weather(location: str, unit: str = "celsius") -> str:
+    """Weather for a place."""
+    return f"Sunny, 21 degrees {unit}"
+
+
+def test_automatic_function_calling_works_on_other_formats(gg: genai.Client, mock):
+    config = types.GenerateContentConfig(
+        tools=[get_weather], automatic_function_calling=types.AutomaticFunctionCallingConfig(maximum_remote_calls=2)
+    )
+    r = gg.models.generate_content(model="claude-haiku-4-5", contents="Weather? [mock:fixture=tools-single]", config=config)
+    first, second = mock.received()[-2:]
+    assert first["body"]["tools"][0]["input_schema"]["properties"]["location"] == {"type": "string"}
+    assert "response_json_schema" not in first["body"]["tools"][0]
+    result = second["body"]["messages"][-1]["content"][0]
+    assert result["type"] == "tool_result" and result["tool_use_id"] == "toolu_01VLLqZ1bfs3WXvVeYqZPtE7"
+    assert "Sunny, 21 degrees fahrenheit" in str(result["content"])
+    assert r.sdk_http_response.headers["kaeso-left-out"] == "tools[0].functionDeclarations[0].response_json_schema"
+    assert len(r.automatic_function_calling_history) == 3
+
+
 def test_tools_reach_other_formats(gg: genai.Client, mock):
     config = types.GenerateContentConfig(tools=[WEATHER])
     r = gg.models.generate_content(model="gpt-4o", contents="Weather? [mock:fixture=tools-function]", config=config)
@@ -127,6 +180,17 @@ def test_tools_reach_other_formats(gg: genai.Client, mock):
     assert mock.last()["body"]["tools"][0]["type"] == "function"
     r = gg.models.generate_content(model="claude-haiku-4-5", contents="Weather? [mock:fixture=tools-single]", config=config)
     assert r.function_calls and r.candidates[0].finish_reason == types.FinishReason.STOP
+
+
+def test_top_k_is_left_out_for_a_model_without_it(gg: genai.Client, mock):
+    config = types.GenerateContentConfig(temperature=1, top_p=0.95, top_k=64)
+    r = gg.models.generate_content(model="gpt-4o", contents="Hello", config=config)
+    assert r.text
+    assert r.sdk_http_response.headers["kaeso-left-out"] == "generationConfig.topK"
+    sent = mock.last()["body"]
+    assert "top_k" not in sent and sent["top_p"] == 0.95
+    gg.models.generate_content(model="gemini-3.5-flash", contents="Hello [mock:fixture=recorded-text-simple]", config=config)
+    assert mock.last()["body"]["generationConfig"]["topK"] == 64
 
 
 @pytest.mark.parametrize(("model", "path"), [("claude-haiku-4-5", "/v1/messages/count_tokens"), ("gemini-3.5-flash", "/v1beta/models/gemini-3.5-flash:countTokens")])

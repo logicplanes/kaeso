@@ -140,6 +140,28 @@ describe("the usage view", () => {
     expect(screen.getByText("2 Anfragen")).toBeVisible();
   });
 
+  it("names the sources that reported requests in a breakdown by key, in the host's language", async () => {
+    const byKey = stats({
+      group_by: "key",
+      groups: [
+        { key: "source:src_1", label: "Claude Code (source)", source: "Claude Code", value: 9, requests: 9 },
+        { key: "source:src_2", label: "A source", source: null, value: 2, requests: 2 },
+        { key: "key_1", label: "ci-runner", value: 1, requests: 1 },
+      ],
+    });
+    const { bridge } = await host({}, () => ok(byKey));
+    await act(async () => {
+      await bridge.sendToolInput({ arguments: { group_by: "key" } });
+      await bridge.sendToolResult(ok(byKey));
+    });
+    expect(await screen.findByText("Claude Code (source)")).toBeVisible();
+    expect(screen.getByText("A source")).toBeVisible();
+    expect(screen.getByText("ci-runner")).toBeVisible();
+    act(() => bridge.setHostContext({ locale: "de-DE" }));
+    expect(await screen.findByText("Claude Code (Quelle)")).toBeVisible();
+    expect(screen.getByText("Eine Quelle")).toBeVisible();
+  });
+
   it("writes every value from Kaeso as text, never as markup", async () => {
     const { bridge } = await host();
     const label = '<img src=x onerror="window.hacked=1">';

@@ -18,6 +18,31 @@ expression: outcomes
     "param": "modalities",
     "unsupported": "audio output"
   },
+  "autogen-user-name": {
+    "body": {
+      "input": [
+        {
+          "content": "What's the weather in Paris?",
+          "role": "user"
+        },
+        {
+          "arguments": "{\"city\": \"Paris\"}",
+          "call_id": "call_1",
+          "name": "weather",
+          "type": "function_call"
+        },
+        {
+          "call_id": "call_1",
+          "output": "Sunny in Paris",
+          "type": "function_call_output"
+        }
+      ],
+      "instructions": "You are a helpful AI assistant. Solve tasks using your tools. Reply with TERMINATE when the task has been completed.",
+      "model": "claude-haiku-5-5",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
   "content-array-all-roles": {
     "body": {
       "input": [
@@ -71,6 +96,52 @@ expression: outcomes
       ],
       "model": "gpt-5.5",
       "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "crewai-tool-name": {
+    "body": {
+      "input": [
+        {
+          "content": "\nCurrent Task: What's the weather in Paris?\n\nThis is the expected criteria for your final answer: One sentence.\nyou MUST return the actual complete content as the final answer, not a summary.",
+          "role": "user"
+        },
+        {
+          "arguments": "{\"city\": \"Paris\"}",
+          "call_id": "call_1",
+          "name": "get_weather",
+          "type": "function_call"
+        },
+        {
+          "call_id": "call_1",
+          "output": "Sunny in Paris",
+          "type": "function_call_output"
+        }
+      ],
+      "instructions": "You are Weather reporter. You report weather.\nYour personal goal is: Report the weather",
+      "model": "claude-haiku-5-5",
+      "store": false,
+      "tool_choice": "auto",
+      "tools": [
+        {
+          "description": "Get the weather for a city.",
+          "name": "get_weather",
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "city": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "city"
+            ],
+            "type": "object"
+          },
+          "strict": true,
+          "type": "function"
+        }
+      ]
     },
     "path": "/v1/responses"
   },
@@ -166,6 +237,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -238,6 +310,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -301,6 +374,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -378,6 +452,25 @@ expression: outcomes
     "param": "messages[0].blocks[0]",
     "unsupported": "audio block"
   },
+  "instructor-json-mode": {
+    "body": {
+      "input": [
+        {
+          "content": "Tokyo",
+          "role": "user"
+        }
+      ],
+      "instructions": "\n            As a genius expert, your task is to understand the content and provide\n            the parsed objects in json that match the following json_schema:\n\n\n            {\n  \"properties\": {\n    \"name\": {\n      \"title\": \"Name\",\n      \"type\": \"string\"\n    },\n    \"country\": {\n      \"title\": \"Country\",\n      \"type\": \"string\"\n    }\n  },\n  \"required\": [\n    \"name\",\n    \"country\"\n  ],\n  \"title\": \"City\",\n  \"type\": \"object\"\n}\n\n            Make sure to return an instance of the JSON, not the schema itself\n",
+      "model": "claude-haiku-5-5",
+      "store": false,
+      "text": {
+        "format": {
+          "type": "json_object"
+        }
+      }
+    },
+    "path": "/v1/responses"
+  },
   "json-object": {
     "body": {
       "input": [
@@ -453,6 +546,41 @@ expression: outcomes
     "message": "`functions` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
     "param": null,
     "unsupported": "functions"
+  },
+  "llm-schema": {
+    "body": {
+      "input": [
+        {
+          "content": "Tokyo",
+          "role": "user"
+        }
+      ],
+      "model": "claude-haiku-5-5",
+      "store": false,
+      "stream": true,
+      "text": {
+        "format": {
+          "name": "output",
+          "schema": {
+            "properties": {
+              "country": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "country"
+            ],
+            "type": "object"
+          },
+          "type": "json_schema"
+        }
+      }
+    },
+    "path": "/v1/responses"
   },
   "logit-bias": {
     "message": "`logit_bias` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
@@ -534,6 +662,110 @@ expression: outcomes
     },
     "path": "/v1/responses"
   },
+  "openai-python-parse-constraints": {
+    "body": {
+      "input": [
+        {
+          "content": "Describe Tokyo.",
+          "role": "user"
+        }
+      ],
+      "model": "claude-haiku-5-5",
+      "store": false,
+      "text": {
+        "format": {
+          "name": "City",
+          "schema": {
+            "additionalProperties": false,
+            "properties": {
+              "country": {
+                "description": "ISO country name",
+                "title": "Country",
+                "type": "string"
+              },
+              "name": {
+                "title": "Name",
+                "type": "string"
+              },
+              "population": {
+                "minimum": 0,
+                "title": "Population",
+                "type": "integer"
+              },
+              "rating": {
+                "maximum": 5,
+                "minimum": 1,
+                "title": "Rating",
+                "type": "number"
+              },
+              "tags": {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 3,
+                "title": "Tags",
+                "type": "array"
+              }
+            },
+            "required": [
+              "name",
+              "country",
+              "population",
+              "rating",
+              "tags"
+            ],
+            "title": "City",
+            "type": "object"
+          },
+          "strict": true,
+          "type": "json_schema"
+        }
+      }
+    },
+    "path": "/v1/responses"
+  },
+  "openai-python-parse-dict": {
+    "body": {
+      "input": [
+        {
+          "content": "Count the visitors by country for Tokyo.",
+          "role": "user"
+        }
+      ],
+      "model": "claude-haiku-5-5",
+      "store": false,
+      "text": {
+        "format": {
+          "name": "Report",
+          "schema": {
+            "additionalProperties": false,
+            "properties": {
+              "city": {
+                "title": "City",
+                "type": "string"
+              },
+              "totals": {
+                "additionalProperties": {
+                  "type": "integer"
+                },
+                "title": "Totals",
+                "type": "object"
+              }
+            },
+            "required": [
+              "city",
+              "totals"
+            ],
+            "title": "Report",
+            "type": "object"
+          },
+          "strict": true,
+          "type": "json_schema"
+        }
+      }
+    },
+    "path": "/v1/responses"
+  },
   "openrouter-reasoning": {
     "body": {
       "include": [
@@ -569,6 +801,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -1557,6 +1790,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -1717,6 +1951,7 @@ expression: outcomes
         {
           "description": "Get the current time.",
           "name": "get_time",
+          "strict": false,
           "type": "function"
         }
       ]
@@ -1764,6 +1999,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -1816,6 +2052,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -2147,6 +2384,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -2372,6 +2610,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -2405,6 +2644,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -2438,6 +2678,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -2471,6 +2712,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -2601,6 +2843,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -2770,6 +3013,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -2824,6 +3068,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -3315,6 +3560,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -3370,6 +3616,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -3382,9 +3629,54 @@ expression: outcomes
     "unsupported": "tool_choice `any`"
   },
   "providers/mistral/tool-result-named": {
-    "message": "`messages[2].blocks[0].name` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
-    "param": "messages[2].blocks[0]",
-    "unsupported": "messages[2].blocks[0].name"
+    "body": {
+      "input": [
+        {
+          "content": "What is the weather in Lisbon right now?",
+          "role": "user"
+        },
+        {
+          "content": "",
+          "role": "assistant"
+        },
+        {
+          "arguments": "{\"city\": \"Lisbon\"}",
+          "call_id": "D681PevKs",
+          "name": "get_weather",
+          "type": "function_call"
+        },
+        {
+          "call_id": "D681PevKs",
+          "output": "{\"temperature_c\": 21, \"sky\": \"clear\"}",
+          "type": "function_call_output"
+        }
+      ],
+      "instructions": "You are a concise travel assistant.",
+      "max_output_tokens": 100,
+      "model": "mistral-small-latest",
+      "store": false,
+      "tools": [
+        {
+          "description": "Current weather for a city.",
+          "name": "get_weather",
+          "parameters": {
+            "properties": {
+              "city": {
+                "description": "City name, such as Lisbon",
+                "type": "string"
+              }
+            },
+            "required": [
+              "city"
+            ],
+            "type": "object"
+          },
+          "strict": false,
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
   },
   "providers/mistral/user-field": {
     "message": "`max_tokens 10` is not supported by OpenAI Responses. OpenAI Responses needs an output limit of at least 16 tokens; raise it or route the request to another model.",
@@ -3553,6 +3845,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -3586,6 +3879,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -3639,6 +3933,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -3686,6 +3981,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -3789,6 +4085,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -4055,6 +4352,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -4094,6 +4392,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -4141,6 +4440,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -4276,6 +4576,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -4488,6 +4789,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -4526,6 +4828,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -4561,9 +4864,65 @@ expression: outcomes
     "unsupported": "search_mode"
   },
   "providers/qianfan/after-tool-results-doc": {
-    "message": "`messages[2].blocks[0].name` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
-    "param": "messages[2].blocks[0]",
-    "unsupported": "messages[2].blocks[0].name"
+    "body": {
+      "input": [
+        {
+          "content": "查一下上海和北京2025-8-21的天气",
+          "role": "user"
+        },
+        {
+          "content": "",
+          "role": "assistant"
+        },
+        {
+          "arguments": "{\"location\": \"上海市\", \"time\": \"2025-08-21\"}",
+          "call_id": "04fed17840d34b1e99bf3cd6dc94150d",
+          "name": "get_current_weather",
+          "type": "function_call"
+        },
+        {
+          "arguments": "{\"location\": \"北京市\", \"time\": \"2025-08-21\"}",
+          "call_id": "a37ee51b99a64723bcb7f2f4d8081770",
+          "name": "get_current_weather",
+          "type": "function_call"
+        },
+        {
+          "call_id": "04fed17840d34b1e99bf3cd6dc94150d",
+          "output": "{\"temperature\": \"25\", \"unit\": \"摄氏度\", \"description\": \"上海\"}",
+          "type": "function_call_output"
+        },
+        {
+          "call_id": "a37ee51b99a64723bcb7f2f4d8081770",
+          "output": "{\"temperature\": \"20\", \"unit\": \"摄氏度\", \"description\": \"北京\"}",
+          "type": "function_call_output"
+        }
+      ],
+      "model": "deepseek-v3.1-250821",
+      "store": false,
+      "tool_choice": "auto",
+      "tools": [
+        {
+          "description": "天气查询工具",
+          "name": "get_current_weather",
+          "parameters": {
+            "properties": {
+              "location": {
+                "description": "地理位置，精确到区县级别",
+                "type": "string"
+              },
+              "time": {
+                "description": "时间，格式为YYYY-MM-DD",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "strict": false,
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
   },
   "providers/qianfan/greeting-doc": {
     "body": {
@@ -4607,6 +4966,7 @@ expression: outcomes
             },
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -4793,6 +5153,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -5019,6 +5380,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -5063,6 +5425,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -5226,6 +5589,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -5278,6 +5642,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -5407,6 +5772,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -5569,6 +5935,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -5613,6 +5980,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         },
         {
@@ -5630,6 +5998,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -5826,6 +6195,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -5870,6 +6240,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -6148,6 +6519,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         },
         {
@@ -6174,6 +6546,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -6288,9 +6661,31 @@ expression: outcomes
     "path": "/v1/responses"
   },
   "system-name-multiturn": {
-    "message": "`system[0].message.name` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
-    "param": "system[0]",
-    "unsupported": "system[0].message.name"
+    "body": {
+      "input": [
+        {
+          "content": "How long should I boil an egg for a runny yolk?",
+          "role": "user"
+        },
+        {
+          "content": "About 6 minutes from boiling water, then cool it in cold water for a minute.",
+          "role": "assistant"
+        },
+        {
+          "content": "And for a hard-boiled one?",
+          "role": "user"
+        }
+      ],
+      "instructions": "You are a friendly cooking assistant. Answer in two sentences or fewer.",
+      "model": "gpt-5.5",
+      "reasoning": {
+        "effort": "none"
+      },
+      "store": false,
+      "temperature": 0.7,
+      "top_p": 0.9
+    },
+    "path": "/v1/responses"
   },
   "tool-choice-allowed-tools": {
     "message": "tool_choice `allowed_tools` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Use `auto`, `none`, `required` or a single named tool instead.",
@@ -6631,6 +7026,113 @@ expression: outcomes
           "type": "function"
         }
       ]
+    },
+    "path": "/v1/responses"
+  },
+  "typebox-intersect": {
+    "body": {
+      "input": [
+        {
+          "content": "Tokyo",
+          "role": "user"
+        }
+      ],
+      "model": "claude-haiku-5-5",
+      "store": false,
+      "text": {
+        "format": {
+          "name": "city",
+          "schema": {
+            "allOf": [
+              {
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "name"
+                ],
+                "type": "object"
+              },
+              {
+                "properties": {
+                  "country": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "country"
+                ],
+                "type": "object"
+              }
+            ],
+            "type": "object"
+          },
+          "type": "json_schema"
+        }
+      }
+    },
+    "path": "/v1/responses"
+  },
+  "typebox-intersect-nested": {
+    "body": {
+      "input": [
+        {
+          "content": "Tokyo",
+          "role": "user"
+        }
+      ],
+      "model": "claude-haiku-5-5",
+      "store": false,
+      "text": {
+        "format": {
+          "name": "city",
+          "schema": {
+            "allOf": [
+              {
+                "allOf": [
+                  {
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "name"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "properties": {
+                      "country": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "country"
+                    ],
+                    "type": "object"
+                  }
+                ],
+                "type": "object"
+              },
+              {
+                "properties": {
+                  "population": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "population"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "type": "json_schema"
+        }
+      }
     },
     "path": "/v1/responses"
   },

@@ -96,13 +96,14 @@ fn text_only(d: &mut Draft<'_>, ctx: &EgressCtx) {
             .refused_fields
             .contains(&MODALITIES)
     {
+        let name = cross::app_field(r, Setting::Modalities, DialectId::OpenAiChat);
         d.edit().output_modalities.clear();
-        d.leave_out(MODALITIES.to_owned());
+        d.leave_out(name.to_owned());
     }
 }
 
-// A field sent as `null` is form: other formats never see it, and a Chat provider that refuses
-// the field doesn't get it either.
+// A field sent as `null` or `[]` is form: other formats never see it, and a Chat provider that
+// refuses the field doesn't get it either.
 fn refused_nulls(d: &mut Draft<'_>, ctx: &EgressCtx) {
     let refused = ctx.chat_profile.request.refused_fields;
     let r = d.get();
@@ -232,6 +233,20 @@ mod tests {
         );
         let (_, left_out) = sent(A, &req).unwrap();
         assert_eq!(left_out, ["generationConfig.presencePenalty"]);
+
+        let mut text_only = decoded(
+            G,
+            json!({
+                "contents": [{"role": "user", "parts": [{"text": "Hi"}]}],
+                "generationConfig": {"maxOutputTokens": 100, "responseModalities": ["TEXT"]}
+            }),
+        );
+        if let Request::Generate(g) = &mut text_only {
+            g.model = "m".into();
+        }
+        let (body, left_out) = to_chat_provider(&text_only, &["modalities"]);
+        assert_eq!(left_out, ["generationConfig.responseModalities"]);
+        assert!(body.get("modalities").is_none(), "{body}");
     }
 
     #[test]
@@ -267,6 +282,22 @@ mod tests {
         let (body, left_out) = sent(C, &req).unwrap();
         assert!(left_out.is_empty(), "{left_out:?}");
         assert_eq!(body["service_tier"], "auto", "OpenAI gets them as written");
+    }
+
+    #[test]
+    fn an_anthropic_apps_null_thread_crosses_to_every_format() {
+        let req = decoded(
+            A,
+            json!({
+                "model": "m", "max_tokens": 100, "thread": null,
+                "messages": [{"role": "user", "content": "Hi"}]
+            }),
+        );
+        for target in [C, R, G, B, A] {
+            let (body, left_out) = sent(target, &req).unwrap_or_else(|e| panic!("{target}: {e}"));
+            assert_eq!(left_out, ["thread"], "{target}");
+            assert!(body.get("thread").is_none(), "{target}: {body}");
+        }
     }
 
     #[test]
@@ -358,6 +389,16 @@ mod tests {
         );
         let (body, _) = to_chat_provider(&chat(json!({"store": null})), &["store"]);
         assert!(body.get("store").is_none(), "{body}");
+    }
+
+    #[test]
+    fn a_refused_field_sent_as_an_empty_list_is_not_sent() {
+        let req = chat(json!({"tools": []}));
+        let (body, left_out) = to_chat_provider(&req, &["tools"]);
+        assert!(left_out.is_empty(), "an empty list is form: {left_out:?}");
+        assert!(body.get("tools").is_none(), "{body}");
+        let (body, _) = to_chat_provider(&req, &["store"]);
+        assert_eq!(body["tools"], json!([]), "a provider that takes it gets it");
     }
 
     #[test]

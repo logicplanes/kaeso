@@ -33,7 +33,11 @@ const PROFILE_ONLY_REQUESTS: &[&str] = &[
     "providers/vercel/reasoning-stream",
 ];
 
-const REJECTED_RESPONSES: &[(&str, &str)] = &[("n-2", "n")];
+// Replies Kaeso can't carry: the request was refused if it asked for them, so they are the provider's error.
+const PROVIDER_ERROR_RESPONSES: &[(&str, &str)] = &[(
+    "n-2",
+    "The provider returned several choices for one request; Kaeso carries one.",
+)];
 
 const FOREIGN_ERROR_BODIES: &[(&str, ErrorKind)] = &[
     (
@@ -362,7 +366,7 @@ fn rejected_request_fixtures_name_the_feature() {
 #[test]
 fn every_response_fixture_round_trips() {
     for (name, body) in fixtures(D, "responses", "json") {
-        if REJECTED_RESPONSES.iter().any(|(n, _)| *n == name) {
+        if PROVIDER_ERROR_RESPONSES.iter().any(|(n, _)| *n == name) {
             continue;
         }
         let ctx = EgressCtx::for_kind(RequestKind::Generate, StreamMode::Off);
@@ -378,15 +382,18 @@ fn every_response_fixture_round_trips() {
 }
 
 #[test]
-fn rejected_response_fixtures_name_the_feature() {
-    for (name, feature) in REJECTED_RESPONSES {
+fn replies_kaeso_cannot_carry_are_provider_errors() {
+    for (name, message) in PROVIDER_ERROR_RESPONSES {
         let (_, body) = fixtures(D, "responses", "json")
             .into_iter()
             .find(|(n, _)| n == name)
             .unwrap();
         let ctx = EgressCtx::for_kind(RequestKind::Generate, StreamMode::Off);
         let err = OpenAiChat::decode_response(200, &HeaderList::new(), &body, &ctx).unwrap_err();
-        assert_eq!(err.unsupported_feature(), Some(*feature), "{name}");
+        assert_eq!(err.kind, ErrorKind::ProviderError, "{name}: {err:?}");
+        assert_eq!(err.message, *message, "{name}");
+        assert_eq!(err.status, Some(502), "{name}");
+        assert_eq!(err.retry, Some(kaeso_kpp::Retry::Futile), "{name}");
     }
 }
 
@@ -1201,6 +1208,36 @@ fn malformed_requests_are_invalid() {
     let err = OpenAiChat::decode_request(RequestKind::CountTokens, b"{}", &HeaderList::new())
         .unwrap_err();
     assert!(err.unsupported_feature().is_some());
+}
+
+#[test]
+fn n_above_1_is_refused_as_kaesos_limit_not_the_formats() {
+    let (_, body) = fixtures(D, "requests", "json")
+        .into_iter()
+        .find(|(n, _)| n == "n-2")
+        .unwrap();
+    let err = decode(&body).unwrap_err();
+    assert_eq!(err.unsupported_feature(), Some("n"));
+    assert_eq!(err.param.as_deref(), Some("n"));
+    assert_eq!(
+        err.message,
+        "Kaeso returns one choice per request, so `n` must be 1 or left out; send several requests for more choices."
+    );
+    let two = br#"{"id":"c","object":"chat.completion","created":1,"model":"m","choices":[
+        {"index":0,"message":{"role":"assistant","content":"a"},"finish_reason":"stop"},
+        {"index":1,"message":{"role":"assistant","content":"b"},"finish_reason":"stop"}]}"#;
+    let ctx = EgressCtx::for_kind(RequestKind::Generate, kaeso_kpp::StreamMode::Off);
+    let err = OpenAiChat::decode_response(200, &HeaderList::new(), two, &ctx).unwrap_err();
+    assert!(
+        !err.message.contains("OpenAI Chat Completions"),
+        "{}",
+        err.message
+    );
+    assert_eq!(err.kind, ErrorKind::ProviderError);
+    assert_eq!(
+        err.message,
+        "The provider returned several choices for one request; Kaeso carries one."
+    );
 }
 
 #[test]

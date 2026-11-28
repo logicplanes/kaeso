@@ -1,6 +1,6 @@
 use kaeso_kpp::{
-    DialectId, GenerateRequest, Modality, ModelInfo, ReasoningEffort, ReasoningMode, Request,
-    ToolChoice,
+    Block, DialectId, GenerateRequest, Modality, ModelFeature, ModelInfo, ModelPrices, OutputSpec,
+    ReasoningEffort, ReasoningMode, Request, ToolChoice,
 };
 
 use kaeso_codecs::cross::reasoning_map;
@@ -47,6 +47,7 @@ fn app_param(ingress: DialectId, field: &'static str) -> &'static str {
         ("effort", _) => "reasoning_effort",
         ("format", A) => "output_config.format",
         ("format", R) => "text.format",
+        ("format", G) => "generationConfig.responseJsonSchema",
         ("format", _) => "response_format",
         ("messages", R) => "input",
         ("messages", G) => "contents",
@@ -94,6 +95,8 @@ fn forced_choice(choice: Option<&ToolChoice>, ingress: DialectId) -> Option<&'st
     }
 }
 
+pub const COUNT_ESTIMATED: &str = "count_estimated";
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Plan {
     pub dialect: DialectId,
@@ -102,6 +105,18 @@ pub struct Plan {
     pub reasoning: Option<bool>,
     pub left_out: Vec<String>,
     pub adapted: Vec<String>,
+    pub estimates_count: bool,
+}
+
+pub fn cannot_estimate(eff: &Effective) -> Unsupported {
+    refuse(
+        "token counting",
+        Some("model"),
+        format!(
+            "The model `{}` cannot count tokens, and Kaeso can't estimate audio or video.",
+            eff.model_id
+        ),
+    )
 }
 
 pub fn prepare(
@@ -152,6 +167,7 @@ pub fn prepare(
                 reasoning: None,
                 left_out: Vec::new(),
                 adapted: Vec::new(),
+                estimates_count: false,
             })
         }
         Request::Generate(g) => {
@@ -164,6 +180,7 @@ pub fn prepare(
             adapted.extend(lowest_effort_for_off(g, ingress, eff));
             adapted.extend(fit_end_user(g, ingress, eff));
             adapted.extend(fit_output_limit(g, ingress, eff));
+            adapted.extend(schema_by_instruction(g, ingress, eff));
             check_generation(g, ingress, eff)?;
             let dialect = eff.dialect;
             if dialect == DialectId::AnthropicMessages && g.sampling.max_output_tokens.is_none() {
@@ -179,17 +196,13 @@ pub fn prepare(
                 reasoning: eff.fields.reasoning,
                 left_out,
                 adapted,
+                estimates_count: false,
             })
         }
         Request::CountTokens(g) => {
             refuse_decision_only(eff)?;
-            let Some(dialect) = eff.provider.count_tokens_for(eff.dialect) else {
-                return Err(refuse(
-                    "token counting",
-                    Some("model"),
-                    format!("The model `{name}` cannot count tokens."),
-                ));
-            };
+            refuse_transcriber(eff, None)?;
+            let counts = eff.provider.count_tokens_for(eff.dialect);
             let mut adapted = adaptive_to_budget(g, ingress, eff);
             adapted.extend(budget_to_adaptive(g, ingress, eff));
             let left_out = leave_out_reasoning(g, ingress, eff);
@@ -197,13 +210,21 @@ pub fn prepare(
             adapted.extend(lowest_effort_for_off(g, ingress, eff));
             adapted.extend(fit_end_user(g, ingress, eff));
             check_generation(g, ingress, eff)?;
+            let estimates_count = counts.is_none();
+            if estimates_count {
+                if !crate::estimate::estimable(g) {
+                    return Err(cannot_estimate(eff));
+                }
+                adapted.push(COUNT_ESTIMATED.to_owned());
+            }
             Ok(Plan {
-                dialect,
+                dialect: counts.unwrap_or(eff.dialect),
                 adaptive_thinking,
                 thinking_binding,
                 reasoning: eff.fields.reasoning,
                 left_out,
                 adapted,
+                estimates_count,
             })
         }
         Request::Image(r) => {
@@ -252,6 +273,7 @@ pub fn prepare(
                 reasoning: None,
                 left_out: Vec::new(),
                 adapted: Vec::new(),
+                estimates_count: false,
             })
         }
         Request::Speech(r) => {
@@ -520,6 +542,44 @@ fn refuse_decision_only(eff: &Effective) -> Result<(), Unsupported> {
     ))
 }
 
+// Providers answer a generation for a transcription model with a 404, apart from those serving one
+// in a format that carries audio: Gemini at `generateContent`, QwenCloud and Mistral at chat.
+fn refuse_transcriber(
+    eff: &Effective,
+    generation: Option<&GenerateRequest>,
+) -> Result<(), Unsupported> {
+    if !eff.transcribes_only {
+        return Ok(());
+    }
+    let hears = matches!(eff.dialect, DialectId::OpenAiChat | DialectId::Gemini);
+    if hears && generation.is_some_and(may_hold_audio) {
+        return Ok(());
+    }
+    let name = eff.model_id.as_str();
+    let message = match (eff.provider.transcriptions(name), generation) {
+        (Some(t), Some(_)) if hears && t.dialect == eff.dialect => {
+            format!("The model `{name}` only transcribes; send it audio.")
+        }
+        (None, Some(_)) => format!("The model `{name}` only transcribes; send it audio."),
+        (Some(_), _) => format!(
+            "The model `{name}` is a transcription model; send it to `/v1/audio/transcriptions`."
+        ),
+        (None, None) => format!("The model `{name}` cannot count tokens."),
+    };
+    Err(refuse("generation", Some("model"), message))
+}
+
+// A user's part the decoder doesn't know, such as QwenCloud's `input_audio` without `format`, may
+// be audio; the provider judges it.
+fn may_hold_audio(g: &GenerateRequest) -> bool {
+    g.required_capabilities().audio_input
+        || g.messages
+            .iter()
+            .filter(|m| m.role == kaeso_kpp::Role::User)
+            .flat_map(|m| &m.blocks)
+            .any(|b| matches!(b, kaeso_kpp::Block::Unknown(_)))
+}
+
 fn refuse_reranker(eff: &Effective) -> Result<(), Unsupported> {
     if !eff.is_rerank() {
         return Ok(());
@@ -549,6 +609,7 @@ fn media_plan(dialect: DialectId) -> Plan {
         reasoning: None,
         left_out: Vec::new(),
         adapted: Vec::new(),
+        estimates_count: false,
     }
 }
 
@@ -883,6 +944,82 @@ pub struct ResponsesFit {
 // while apps in other formats send all three. Kaeso ends the reply itself at the first stop
 // sequence or at the app's limit, as it does for a ChatGPT plan, and leaves out `seed`, which
 // OpenAI only ever honoured on a best-effort basis.
+// A model without structured output can't enforce a schema, but where its provider has a JSON
+// mode (DeepSeek's: https://api-docs.deepseek.com/guides/json_mode) the reply is at least one
+// JSON object, and the schema is followed as instructed. No reply is checked against it.
+fn schema_by_instruction(
+    g: &mut GenerateRequest,
+    ingress: DialectId,
+    eff: &Effective,
+) -> Option<String> {
+    let OutputSpec::JsonSchema(spec) = &g.output else {
+        return None;
+    };
+    if eff.fields.structured_output == Some(true)
+        || eff.dialect != DialectId::OpenAiChat
+        || !eff.provider.chat().request.json_mode
+    {
+        return None;
+    }
+    let schema = kaeso_codecs::cross::output_json_schema(g)?;
+    // JSON mode answers with an object, so only a schema whose root is one can be followed.
+    let root = schema.to_value().ok()?;
+    let mut left = OBJECT_CHECK_NODES;
+    if !is_object_schema(&root, &root, &mut left) {
+        return None;
+    }
+    let purpose = spec
+        .description
+        .as_deref()
+        .map(|d| format!(" It is for: {d}"))
+        .unwrap_or_default();
+    let sentence = format!(
+        "Answer with one JSON object that matches this JSON schema, and nothing else: {}{purpose}",
+        schema.get()
+    );
+    let field = format_field(g, ingress);
+    g.output = OutputSpec::JsonObject;
+    g.system.push(Block::text(sentence));
+    Some(field.to_owned())
+}
+
+// A local `$ref` and every branch of an `anyOf` or `oneOf` count by what they describe. Shared
+// definitions could make the walk exponential, so it stops, refusing, after a fixed number of nodes.
+const OBJECT_CHECK_NODES: u16 = 256;
+
+fn is_object_schema(schema: &serde_json::Value, root: &serde_json::Value, left: &mut u16) -> bool {
+    use serde_json::Value;
+    let Some(rest) = left.checked_sub(1) else {
+        return false;
+    };
+    *left = rest;
+    if let Some(target) = schema.get("$ref").and_then(Value::as_str) {
+        return target
+            .strip_prefix('#')
+            .and_then(|pointer| root.pointer(pointer))
+            .is_some_and(|s| is_object_schema(s, root, left));
+    }
+    for key in ["anyOf", "oneOf"] {
+        if let Some(Value::Array(branches)) = schema.get(key) {
+            return !branches.is_empty()
+                && branches.iter().all(|b| is_object_schema(b, root, left));
+        }
+    }
+    match schema.get("type") {
+        Some(Value::String(t)) => t == "object",
+        Some(Value::Array(types)) => types.iter().any(|t| t == "object"),
+        None => schema.get("properties").is_some(),
+        Some(_) => false,
+    }
+}
+
+fn format_field(g: &GenerateRequest, ingress: DialectId) -> &'static str {
+    match g.extras.form_str(DialectId::Gemini, "schema") {
+        Some("responseSchema") if ingress == DialectId::Gemini => "generationConfig.responseSchema",
+        _ => app_param(ingress, "format"),
+    }
+}
+
 pub fn fit_responses(
     g: &mut GenerateRequest,
     ingress: DialectId,
@@ -942,6 +1079,7 @@ fn check_generation(
 ) -> Result<(), Unsupported> {
     let name = eff.model_id.as_str();
     refuse_reranker(eff)?;
+    refuse_transcriber(eff, Some(g))?;
     if eff.is_embeddings() {
         return Err(refuse(
             "generation",
@@ -1032,7 +1170,7 @@ fn check_generation(
     if caps.json_schema && eff.fields.structured_output != Some(true) {
         return Err(refuse(
             "structured output",
-            Some(app_param(ingress, "format")),
+            Some(format_field(g, ingress)),
             format!("The model `{name}` does not support structured output (a JSON schema)."),
         ));
     }
@@ -1184,6 +1322,52 @@ pub fn model_info(id: &str, eff: &Effective) -> ModelInfo {
     info.owned_by = Some(eff.provider.id().to_owned());
     info.context_window = eff.fields.context_limit;
     info.max_output_tokens = eff.fields.output_limit;
+    info.input_modalities
+        .clone_from(&eff.fields.input_modalities);
+    // A model that makes no content says what it makes instead, in OpenRouter's words, as its
+    // list with `?output_modalities=all` writes them.
+    let makes = if eff.is_embeddings() {
+        Some("embeddings")
+    } else if eff.is_rerank() {
+        Some("rerank")
+    } else if eff.decides_only() {
+        Some("decisions")
+    } else {
+        None
+    };
+    info.output_modalities = match makes {
+        Some(m) => Some(vec![m.to_owned()]),
+        None => eff.fields.output_modalities.clone(),
+    };
+    let f = &eff.fields;
+    let efforts = !effort_levels(eff, DialectId::OpenAiChat).is_empty();
+    let features: Vec<ModelFeature> = [
+        (f.tool_call, ModelFeature::Tools),
+        (f.reasoning, ModelFeature::Reasoning),
+        (
+            f.reasoning.filter(|_| efforts),
+            ModelFeature::ReasoningEffort,
+        ),
+        (f.structured_output, ModelFeature::StructuredOutput),
+        (f.temperature, ModelFeature::Temperature),
+    ]
+    .into_iter()
+    .filter_map(|(known, feature)| (known == Some(true)).then_some(feature))
+    .collect();
+    let told = [f.tool_call, f.reasoning, f.structured_output, f.temperature]
+        .iter()
+        .any(Option::is_some);
+    info.features = told.then_some(features);
+    // The base prices requests are costed at, in USD; long-prompt tiers and prices per image,
+    // second or character are not listed.
+    let usd = |p: Option<rust_decimal::Decimal>| p.map(|d| d.normalize().to_string());
+    let mut prices = ModelPrices::default();
+    prices.input = usd(f.input_price);
+    prices.output = usd(f.output_price);
+    prices.cache_read = usd(f.cache_read_price);
+    prices.cache_write = usd(f.cache_write_price);
+    prices.reasoning = usd(f.reasoning_price);
+    info.prices = (!prices.is_empty()).then_some(prices);
     info
 }
 

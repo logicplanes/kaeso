@@ -3,14 +3,14 @@ import { StateSection } from "~/lib/states";
 
 export const meta = {
   title: "Icon",
-  description: "Lucide, in currentColor. One icon per Kaeso concept.",
+  description: "Octicons, in currentColor. One icon per Kaeso concept.",
   group: "Components",
   entry: "icon",
   import: "Icon, icons",
   a11y: ["Icons are decorative by default (aria-hidden). Pass label when the icon alone carries meaning."],
 };
 export const examples = [
-  { id: "sizes", title: "Sizes", fn: "Sizes", description: "14 (1.75 stroke), 16, 18, 20, 24." },
+  { id: "sizes", title: "Sizes", fn: "Sizes", description: "14, 16, 18, 20, 24." },
   { id: "vocabulary", title: "Vocabulary", fn: "Vocabulary" },
 ];
 export function Sizes() {

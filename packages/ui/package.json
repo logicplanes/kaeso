@@ -52,6 +52,10 @@
       "types": "./dist/types/i18n/index.d.ts",
       "import": "./dist/i18n.js"
     },
+    "./octicons": {
+      "types": "./dist/types/icons/octicons.d.ts",
+      "import": "./dist/octicons.js"
+    },
     "./ai/component-registry.json": "./ai/component-registry.json",
     "./charts/*": {
       "types": "./dist/types/components/charts/*.d.ts",
@@ -85,7 +89,6 @@
     "test": "vitest run --coverage"
   },
   "peerDependencies": {
-    "lucide": "^1.70.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
@@ -125,7 +128,6 @@
     "@vitest/coverage-v8": "5.1.0",
     "axe-core": "4.14.0",
     "happy-dom": "21.0.4",
-    "lucide": "1.70.0",
     "oxlint": "1.93.0",
     "react": "19.3.1",
     "react-docgen-typescript": "2.4.0",

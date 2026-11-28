@@ -823,8 +823,8 @@ async fn partner_models_go_to_the_openai_compatible_endpoint_and_count_no_tokens
         Some(json!({ "model": LLAMA, "messages": [{ "role": "user", "content": "Hi" }] })),
     )
     .await;
-    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
-    assert_eq!(model_calls(&env).len(), calls, "refused before sending");
+    assert!(r.estimated_count() > 0);
+    assert_eq!(model_calls(&env).len(), calls, "estimated without sending");
 }
 
 #[tokio::test]

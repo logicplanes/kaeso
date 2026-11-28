@@ -102,22 +102,27 @@ fn own_mid_conversation_system_messages_are_sent_unchanged() {
 }
 
 #[test]
-fn check_refuses_json_mode_and_unexpressible_schemas() {
+fn check_takes_json_mode_and_every_schema_form() {
     let mut r = chat_request();
     r.output = OutputSpec::JsonObject;
-    assert_eq!(feature(r.clone()), "json_object output");
-    let mut spec = JsonSchemaSpec::new(raw("{}"));
-    spec.description = Some("d".into());
-    r.output = OutputSpec::JsonSchema(spec.clone());
-    assert_eq!(feature(r.clone()), "output schema description");
-    spec.description = None;
-    spec.strict = Some(false);
-    r.output = OutputSpec::JsonSchema(spec.clone());
-    assert_eq!(feature(r.clone()), "non-strict output schema");
-    spec.strict = Some(true);
-    spec.name = Some("dropped".into());
-    r.output = OutputSpec::JsonSchema(spec);
-    AnthropicMessages::check(&Request::Generate(r), &crate::test_support::egress()).unwrap();
+    AnthropicMessages::check(
+        &Request::Generate(r.clone()),
+        &crate::test_support::egress(),
+    )
+    .unwrap();
+    let schema = r#"{"type":"object","properties":{"a":{"type":"string"}}}"#;
+    for (description, strict) in [(Some("d"), None), (None, Some(false)), (None, Some(true))] {
+        let mut spec = JsonSchemaSpec::new(raw(schema));
+        spec.description = description.map(str::to_owned);
+        spec.strict = strict;
+        spec.name = Some("dropped".into());
+        r.output = OutputSpec::JsonSchema(spec);
+        AnthropicMessages::check(
+            &Request::Generate(r.clone()),
+            &crate::test_support::egress(),
+        )
+        .unwrap();
+    }
 }
 
 #[test]

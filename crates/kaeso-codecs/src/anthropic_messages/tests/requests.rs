@@ -1,5 +1,8 @@
 use super::*;
 
+// Declared here rather than read from the encoder, so a fixture can't lose a field unnoticed.
+const LEFT_OUT: &[(&str, &[&str])] = &[("thread-null", &["thread"])];
+
 fn round_trip_requests(folder: &str, kind: RequestKind, path: &str) -> usize {
     let mut n = 0;
     for (name, body) in fixtures(DIALECT, folder, "json") {
@@ -11,7 +14,17 @@ fn round_trip_requests(folder: &str, kind: RequestKind, path: &str) -> usize {
             .with_messages_profile(crate::test_support::messages_profile_for(&name));
         let enc = AnthropicMessages::encode_request(&req, &mut ctx)
             .unwrap_or_else(|e| panic!("{name}: encode failed: {e}"));
-        assert_json_eq(&name, &body, &enc.body);
+        let left_out = LEFT_OUT
+            .iter()
+            .find(|(fixture, _)| *fixture == name)
+            .map_or(&[][..], |(_, fields)| *fields);
+        assert_eq!(ctx.left_out, left_out, "{name}");
+        let mut want: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        for field in left_out {
+            want.as_object_mut().unwrap().remove(*field);
+        }
+        let want = serde_json::to_vec(&want).unwrap();
+        assert_json_eq(&name, &want, &enc.body);
         assert_eq!(enc.path, path, "{name}");
         assert_eq!(enc.method, "POST");
         assert_eq!(
@@ -27,7 +40,9 @@ fn round_trip_requests(folder: &str, kind: RequestKind, path: &str) -> usize {
             "{name}"
         );
         let again = AnthropicMessages::decode_request(kind, &enc.body, &headers).unwrap();
-        assert_eq!(again, req, "{name}");
+        if ctx.left_out.is_empty() {
+            assert_eq!(again, req, "{name}");
+        }
         n += 1;
     }
     n
@@ -357,7 +372,9 @@ fn a_foreign_request_encodes_from_typed_fields() {
     r.tools.push(ToolDef::Function(f));
     r.tool_choice = Some(ToolChoice::Tool("get.weather".into()));
     r.parallel_tool_calls = Some(false);
-    let mut schema = JsonSchemaSpec::new(raw(r#"{"type":"object"}"#));
+    let mut schema = JsonSchemaSpec::new(raw(
+        r#"{"type":"object","properties":{"a":{"type":"string"}}}"#,
+    ));
     schema.name = Some("answer".into());
     schema.strict = Some(true);
     r.output = OutputSpec::JsonSchema(schema);
@@ -377,7 +394,7 @@ fn a_foreign_request_encodes_from_typed_fields() {
             "stop_sequences": ["\n\n"],
             "stream": true,
             "metadata": {"user_id": "user-42"},
-            "output_config": {"effort": "high", "format": {"type": "json_schema", "schema": {"type": "object"}}},
+            "output_config": {"effort": "high", "format": {"type": "json_schema", "schema": {"type": "object", "properties": {"a": {"type": "string"}}, "additionalProperties": false}}},
             "thinking": {"type": "adaptive"},
             "tool_choice": {"type": "tool", "name": name, "disable_parallel_tool_use": true},
             "tools": [{"name": name, "description": "Weather", "input_schema": {"type": "object", "properties": {}},

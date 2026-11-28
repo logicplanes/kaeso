@@ -1,0 +1,71 @@
+{
+  "contents": [
+    {
+      "role": "user",
+      "parts": [
+        {
+          "text": "What's the weather where I am?"
+        }
+      ]
+    }
+  ],
+  "tools": [
+    {
+      "functionDeclarations": [
+        {
+          "name": "get_time",
+          "description": "Returns the current time.",
+          "parametersJsonSchema": {
+            "type": "object",
+            "properties": {}
+          }
+        }
+      ]
+    },
+    {
+      "functionDeclarations": [
+        {
+          "name": "get_location",
+          "description": "Returns the user's city.",
+          "parametersJsonSchema": {
+            "type": "object",
+            "properties": {}
+          }
+        },
+        {
+          "name": "get_weather",
+          "description": "Returns the weather for a city or a postal code.",
+          "parametersJsonSchema": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "city": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "city"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "zip": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "zip"
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "generationConfig": {
+    "maxOutputTokens": 256
+  }
+}

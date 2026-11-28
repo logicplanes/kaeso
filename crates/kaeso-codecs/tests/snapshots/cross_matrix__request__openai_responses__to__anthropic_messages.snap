@@ -1930,14 +1930,40 @@ expression: outcomes
     "path": "/v1/messages"
   },
   "item-reference-breakpoint": {
-    "message": "`item_reference content block` comes from an OpenAI Responses request and has no equivalent in Anthropic Messages. Remove the block, or send the request to a model served through its original format.",
+    "message": "`item_reference` `msg_0d71a3c94be2f058006acb8b02c1d4819b6e2f0a93c5d7e41b` comes from an OpenAI Responses request and has no equivalent in Anthropic Messages. Send the message itself in `input`, as SDKs do with `store: false`.",
     "param": "messages[0].blocks[0]",
-    "unsupported": "item_reference content block"
+    "unsupported": "`item_reference` `msg_0d71a3c94be2f058006acb8b02c1d4819b6e2f0a93c5d7e41b`"
   },
   "json-object-mode": {
-    "message": "`json_object output` is not supported by Anthropic Messages. Anthropic has no JSON mode without a schema. Send a JSON schema (structured outputs) instead.",
-    "param": "text.format",
-    "unsupported": "json_object output"
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Return a JSON object with the keys city and country for the Eiffel Tower.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-4.1",
+      "system": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "text": "Answer with one JSON object and nothing else: no code fence, no text before or after it.",
+          "type": "text"
+        }
+      ],
+      "temperature": 0.0
+    },
+    "path": "/v1/messages"
   },
   "logprobs-no-obfuscation-stream": {
     "message": "`top_logprobs` comes from an OpenAI Responses request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
@@ -3432,9 +3458,63 @@ expression: outcomes
     "rejected_by_source": "conversation"
   },
   "structured-output-json-schema": {
-    "message": "`output schema description` is not supported by Anthropic Messages. Anthropic structured outputs take a schema only. Move the description into the prompt or the schema's own `description`.",
-    "param": "text.format",
-    "unsupported": "output schema description"
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Alice and Bob are going to a science fair on Friday.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-5.5",
+      "output_config": {
+        "format": {
+          "schema": {
+            "additionalProperties": false,
+            "description": "A calendar event extracted from text.",
+            "properties": {
+              "date": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "participants": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            },
+            "required": [
+              "name",
+              "date",
+              "participants"
+            ],
+            "type": "object"
+          },
+          "type": "json_schema"
+        }
+      },
+      "system": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "text": "Extract the event information.",
+          "type": "text"
+        }
+      ]
+    },
+    "path": "/v1/messages"
   },
   "text-basic-stream": {
     "body": {
@@ -3867,6 +3947,16 @@ expression: outcomes
     "message": "`x_future_field` comes from an OpenAI Responses request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
     "param": null,
     "unsupported": "x_future_field"
+  },
+  "vercel-ai-sdk-message-reference": {
+    "message": "`item_reference` `msg_kaeso_00000000000000000000000000000001_0` comes from an OpenAI Responses request and has no equivalent in Anthropic Messages. Send the message itself in `input`, as SDKs do with `store: false`.",
+    "param": "messages[1].blocks[0]",
+    "unsupported": "`item_reference` `msg_kaeso_00000000000000000000000000000001_0`"
+  },
+  "vercel-ai-sdk-reasoning-reference": {
+    "message": "`item_reference` `rs_kaeso_00000000000000000000000000000001_0` comes from an OpenAI Responses request and has no equivalent in Anthropic Messages. Send the reasoning item itself in `input`, as SDKs do with `store: false`.",
+    "param": "messages[1].blocks[0]",
+    "unsupported": "`item_reference` `rs_kaeso_00000000000000000000000000000001_0`"
   },
   "web-search": {
     "message": "`include` comes from an OpenAI Responses request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",

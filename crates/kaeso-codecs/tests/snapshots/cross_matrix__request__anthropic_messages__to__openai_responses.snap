@@ -106,6 +106,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         },
         {
@@ -131,6 +132,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         },
         {
@@ -159,6 +161,7 @@ expression: outcomes
             },
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         },
         {
@@ -177,6 +180,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -245,6 +249,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -309,6 +314,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         },
         {
@@ -334,6 +340,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -432,6 +439,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         },
         {
@@ -457,6 +465,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         },
         {
@@ -488,6 +497,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -628,6 +638,39 @@ expression: outcomes
     "param": "messages[0].blocks[1]",
     "unsupported": "file id"
   },
+  "litellm-custom-tool": {
+    "body": {
+      "input": [
+        {
+          "content": "Weather in Paris?",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 200,
+      "model": "deepseek-flash",
+      "store": false,
+      "tools": [
+        {
+          "description": "Get the weather for a city.",
+          "name": "get_weather",
+          "parameters": {
+            "properties": {
+              "city": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "city"
+            ],
+            "type": "object"
+          },
+          "strict": false,
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
   "max-tokens": {
     "message": "`max_tokens 10` is not supported by OpenAI Responses. OpenAI Responses needs an output limit of at least 16 tokens; raise it or route the request to another model.",
     "param": "max_tokens",
@@ -672,6 +715,7 @@ expression: outcomes
             "properties": {},
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -913,38 +957,6 @@ expression: outcomes
       "model": "zai-org/GLM-5.2",
       "store": false,
       "stream": true
-    },
-    "path": "/v1/responses"
-  },
-  "providers/deepseek/litellm-custom-tool": {
-    "body": {
-      "input": [
-        {
-          "content": "Weather in Paris?",
-          "role": "user"
-        }
-      ],
-      "max_output_tokens": 200,
-      "model": "deepseek-flash",
-      "store": false,
-      "tools": [
-        {
-          "description": "Get the weather for a city.",
-          "name": "get_weather",
-          "parameters": {
-            "properties": {
-              "city": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "city"
-            ],
-            "type": "object"
-          },
-          "type": "function"
-        }
-      ]
     },
     "path": "/v1/responses"
   },
@@ -1210,6 +1222,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -1271,6 +1284,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -1333,6 +1347,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -1490,6 +1505,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -1606,6 +1622,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -1655,9 +1672,9 @@ expression: outcomes
     "path": "/v1/responses"
   },
   "sampling-stop-sequences": {
-    "message": "`top_k` is not supported by OpenAI Responses. OpenAI models do not support top-k sampling. Remove `top_k` or route the request to an Anthropic model.",
-    "param": "top_k",
-    "unsupported": "top_k"
+    "message": "`stop sequences` is not supported by OpenAI Responses. The Responses API has no `stop` parameter. Remove the stop sequences or use the Chat Completions format.",
+    "param": "stop_sequences",
+    "unsupported": "stop sequences"
   },
   "sampling-top-p": {
     "body": {
@@ -1780,6 +1797,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -1895,6 +1913,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         },
         {
@@ -1912,6 +1931,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -2029,6 +2049,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         },
         {
@@ -2046,6 +2067,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -2094,6 +2116,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -2153,9 +2176,24 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
+    },
+    "path": "/v1/responses"
+  },
+  "thread-null": {
+    "body": {
+      "input": [
+        {
+          "content": "What is the capital of France?",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 256,
+      "model": "claude-sonnet-4-6",
+      "store": false
     },
     "path": "/v1/responses"
   },
@@ -2196,6 +2234,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         },
         {
@@ -2213,6 +2252,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -2256,6 +2296,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -2298,6 +2339,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -2344,6 +2386,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         },
         {
@@ -2361,6 +2404,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -2463,6 +2507,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         },
         {
@@ -2480,6 +2525,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -2526,6 +2572,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         },
         {
@@ -2543,6 +2590,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]
@@ -2585,6 +2633,7 @@ expression: outcomes
             ],
             "type": "object"
           },
+          "strict": false,
           "type": "function"
         }
       ]

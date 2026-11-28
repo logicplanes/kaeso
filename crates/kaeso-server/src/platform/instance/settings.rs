@@ -69,6 +69,9 @@ pub struct SettingsView {
     pub timezone: String,
     #[doc = "Sign-in methods (read-only)."]
     pub sign_in: SignInMethods,
+    #[doc = "Whether search engines may index the console's sign-in page\n\
+        (`search_engines`, read-only); off, the install asks every crawler to keep out."]
+    pub search_engines: bool,
     #[doc = "The org whose single sign-on may administer the instance\n\
         (`PUT instance/settings/admin-sso`); `null`: none, so every instance\n\
         admin signs in with a password or a sign-in link for it."]
@@ -163,6 +166,7 @@ fn view(
             password: c.auth.password,
             magic_link: c.auth.magic_link,
         },
+        search_engines: c.search_engines,
         mail: MailSettings {
             transport: match c.mail.transport {
                 MailTransport::Smtp => "smtp",

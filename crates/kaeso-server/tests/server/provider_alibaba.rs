@@ -399,7 +399,7 @@ async fn model_studio_errors_reach_each_app_in_its_own_format() {
 }
 
 #[tokio::test]
-async fn token_counts_for_alibaba_models_are_refused_before_anything_is_sent() {
+async fn token_counts_for_alibaba_models_are_estimated_before_anything_is_sent() {
     let env = env().await;
     let r = call(
         &env,
@@ -412,13 +412,7 @@ async fn token_counts_for_alibaba_models_are_refused_before_anything_is_sent() {
         })),
     )
     .await;
-    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
-    let body = r.json();
-    assert_eq!(body["type"], "error");
-    assert_eq!(
-        body["error"]["message"],
-        format!("The model `{FLASH}` cannot count tokens.")
-    );
+    assert!(r.estimated_count() > 0);
     assert!(env.mock.received().is_empty());
 }
 

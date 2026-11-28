@@ -729,6 +729,18 @@ async fn rejections_are_json_errors_that_name_the_parameter() {
             message: "The body is not valid JSON.",
         },
         Rejection {
+            req: post(
+                format!("/orgs/{org}/projects"),
+                c,
+                "application/json",
+                r#"{"name": 5}"#,
+            ),
+            status: invalid,
+            kind: "invalid_request",
+            param: Some("name"),
+            message: "`name` must be a string.",
+        },
+        Rejection {
             req: Request::builder()
                 .uri(format!("/platform/v1/orgs/{org}/projects"))
                 .header(header::AUTHORIZATION, "Basic b3duZXI6c2VjcmV0")

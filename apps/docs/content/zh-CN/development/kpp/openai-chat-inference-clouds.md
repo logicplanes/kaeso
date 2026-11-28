@@ -21,7 +21,7 @@ nav: 推理云
 | 带 `x-amzn-ErrorType` 的 `{"Message": …}` | `KppError` | bedrock-runtime 回复其自有操作时使用的格式；消息从 `Message` 读取，类型按状态码（`errors/recorded-native-invalid-api-key`）。 |
 | `GET /openai/v1/models` | — | 不提供（404 `UnknownOperationException`），因此模型检查无法确定，也不发送任何请求。 |
 
-目录未注明格式的模型，Bedrock 只通过其自有 API InvokeModel 和 Converse 提供，KPP 不读取它们的 AWS 事件流，因此这类模型会在发送前被拒绝。Bedrock 的 Responses 路径不被使用：Responses 应用通过 Chat Completions 访问它。Token 计数会被拒绝：bedrock-runtime 只在 `/model/{modelId}/count-tokens` 以自有格式计数。
+目录未注明格式的模型，Bedrock 只通过其自有 API InvokeModel 和 Converse 提供，KPP 不读取它们的 AWS 事件流，因此这类模型会在发送前被拒绝。Bedrock 的 Responses 路径不被使用：Responses 应用通过 Chat Completions 访问它。Kaeso 自行估算 Token 计数：bedrock-runtime 只在 `/model/{modelId}/count-tokens` 以自有格式计数。
 
 ## Baseten
 
@@ -79,7 +79,7 @@ Cerebras 没有 Responses、Messages、embeddings 或 token 计数端点（都�
 | `{"statusCode": 401, "message": …}` | `KppError` | Azure 对其不接受的 Entra ID 令牌的回复（`errors/recorded-entra-token`）；对于用 Entra ID 登录的密钥，这是一个被拒绝的密钥，消息会注明服务主体需要的角色。 |
 | `GET /openai/v1/models` | `ModelList` | 资源可以部署的模型，而不是它的部署，因此模型检查只显示密钥及其端点是否可用（`ModelListing::Catalogue`）。 |
 
-v1 API 以 OpenAI 的请求体提供 Responses，回复中另有 `content_filters`，保留在 extras 中；模型的**发送格式**为 Responses 时，Kaeso 以 Responses 发送它（`fixtures/openai_responses/providers/azure/`）。Claude 部署只响应 `{endpoint}/anthropic` 下的 Anthropic Messages API，图像、语音合成、转写和视频在 v1 API 中仅为预览版，因此 Kaeso 都不调用。Token 计数会被拒绝。
+v1 API 以 OpenAI 的请求体提供 Responses，回复中另有 `content_filters`，保留在 extras 中；模型的**发送格式**为 Responses 时，Kaeso 以 Responses 发送它（`fixtures/openai_responses/providers/azure/`）。Claude 部署只响应 `{endpoint}/anthropic` 下的 Anthropic Messages API，图像、语音合成、转写和视频在 v1 API 中仅为预览版，因此 Kaeso 都不调用。Kaeso 自行估算 Token 计数。
 
 ## DeepInfra
 
@@ -98,7 +98,7 @@ v1 API 以 OpenAI 的请求体提供 Responses，回复中另有 `content_filter
 | 缺少 `inference` 权限范围的密钥收到的 403 `{"detail": {"error": …}}` | `KppError` | `PermissionDenied`，带 DeepInfra 的消息（`errors/missing-scope-doc`）。 |
 | 带 `root`、`parent` 和 DeepInfra `metadata` 的 `GET /v1/models` | `ModelList` | 无需密钥即可返回（`models/list-recorded`），因此模型检查无法发现错误的密钥。没有 `GET /v1/models/{model}`。 |
 
-DeepInfra 的 Responses API 不存储任何内容，不被使用：Responses 应用通过 Chat Completions 访问 DeepInfra。它的 Anthropic 兼容端点和 Token 计数位于 `/anthropic/v1` 下，在其他格式的 `/v1` 之外，因此 Kaeso 拒绝 Token 计数。在 KPMR 收录这些模型及其价格之前，它以 OpenAI 格式提供的图像、语音合成、转写和视频不被使用。
+DeepInfra 的 Responses API 不存储任何内容，不被使用：Responses 应用通过 Chat Completions 访问 DeepInfra。它的 Anthropic 兼容端点和 Token 计数位于 `/anthropic/v1` 下，在其他格式的 `/v1` 之外，因此 Kaeso 自行估算 Token 计数。在 KPMR 收录这些模型及其价格之前，它以 OpenAI 格式提供的图像、语音合成、转写和视频不被使用。
 
 ## Fireworks AI
 
@@ -150,7 +150,7 @@ Fireworks 没有记录图像、语音、转录、视频或Token 计数端点，�
 | `{"error": "<message>"}` 形式的错误 | `KppError` | 类别由状态码决定：401 表示密钥被拒绝（`errors/recorded-invalid-api-key`）。 |
 | 带有 `architecture` 以及包含状态、上下文长度、价格和速度的 `providers` 数组的 `GET /v1/models` | `ModelList` | 无需密钥即可返回（`models/list-recorded`），因此模型检查无法发现错误的密钥。 |
 
-路由器的 OpenAI 兼容 API 只用于聊天：`/v1/embeddings`、`/v1/images/generations` 和 `/v1/audio/*` 返回 404。它的 Responses API 不被使用，因为它对被拒绝的令牌返回 200 和 `status: "failed"`。它的 Messages 端点也不被使用：它对被拒绝的令牌返回 `api_error`，应用会将其视为服务商失败，而不是密钥被拒绝。`/v1/messages/count_tokens` 不检查令牌就返回结果，且没有文档，因此 Kaeso 拒绝 Token 计数。
+路由器的 OpenAI 兼容 API 只用于聊天：`/v1/embeddings`、`/v1/images/generations` 和 `/v1/audio/*` 返回 404。它的 Responses API 不被使用，因为它对被拒绝的令牌返回 200 和 `status: "failed"`。它的 Messages 端点也不被使用：它对被拒绝的令牌返回 `api_error`，应用会将其视为服务商失败，而不是密钥被拒绝。`/v1/messages/count_tokens` 不检查令牌就返回结果，且没有文档，因此 Kaeso 自行估算 Token 计数。
 
 ## IONOS AI Model Hub
 
@@ -204,7 +204,7 @@ Nebius 不提供图像、音频、Messages 或Token 计数：它的 OpenAPI 文�
 | `{"code", "reason", "message", "metadata"}` 形式的错误 | `KppError` | 类型取决于状态码：401 `FAILED_TO_AUTH`，403 `INVALID_API_KEY` 或 `NOT_ENOUGH_BALANCE`，404 `MODEL_NOT_FOUND`，429，503（`errors/`）。 |
 | 带以 1/10,000 美元计的价格、`pricing`、`features` 和 `endpoints` 的 `GET /v1/models` | `ModelList` | 无需密钥即可返回，且只列出聊天模型（`models/list-recorded`）；`GET /v1/models/{model}` 对嵌入模型也会返回（`models/retrieve-embedding-recorded`），因此模型检查能找到模型，但无法发现错误的密钥（`ModelListing::Partial`）。 |
 
-Novita AI 的 Anthropic 兼容端点位于 `/anthropic` 下，在其 OpenAI 基础 URL 之外，`/v1/responses` 也没有文档，因此 Kaeso 只调用 Chat Completions 并拒绝 Token 计数。它的 `/v1/completions`、`/v1/rerank`、批处理 API、OpenAI Images API 中的图像模型，以及它自己的语音、转写和视频任务 API 不被使用。
+Novita AI 的 Anthropic 兼容端点位于 `/anthropic` 下，在其 OpenAI 基础 URL 之外，`/v1/responses` 也没有文档，因此 Kaeso 只调用 Chat Completions 并自行估算 Token 计数。它的 `/v1/completions`、`/v1/rerank`、批处理 API、OpenAI Images API 中的图像模型，以及它自己的语音、转写和视频任务 API 不被使用。
 
 ## NVIDIA
 
@@ -362,13 +362,13 @@ API 不在 `/v1` 下的服务商在 `Provider::api_root` 中指定其 API 根路
 | `video_url` 部分 | `Block::Video` | `with_video_url()`。 |
 | `user`、`safety_identifier`、Responses 应用的 `prompt_cache_key` | 省略 | 参考没有终端用户或缓存键字段，StepFun 会自行缓存提示（`without_end_user()`、`without_cache_key()`）。 |
 | `stream_options` | 省略 | 每个块都会主动带上累计用量（`without_stream_options()`、`streams/text-doc`）。 |
-| `presence_penalty`、`seed`、`logprobs`、`logit_bias`、`parallel_tool_calls`、`prompt_cache_key`、`store` 以及参考中没有的其他字段，消息中的 `name` | 拒绝 | 文档没有说明 StepFun 会拒绝还是丢弃未声明的字段，因此配置会在发送前拒绝它们；`parallel_tool_calls: true` 只是允许并行调用，会被省略，`store: false` 这样的[中性值](sampling.md#中性值)也一样。StepFun 指南中发送的 `tool_choice` 会照常发送。 |
+| `presence_penalty`、`seed`、`logprobs`、`logit_bias`、`parallel_tool_calls`、`prompt_cache_key`、`store` 以及参考中没有的其他字段 | 拒绝 | 文档没有说明 StepFun 会拒绝还是丢弃未声明的字段，因此配置会在发送前拒绝它们；`parallel_tool_calls: true` 只是允许并行调用，会被省略，`store: false` 这样的[中性值](sampling.md#中性值)和消息中的 `name`（[参与者名称](openai-chat.md#参与者名称)）也一样。StepFun 指南中发送的 `tool_choice` 会照常发送。 |
 | 最后一个块之前的 `finish_reason: ""` 和 `role: ""` | 无 | 与其他服务商一样，按没有值读取。 |
 | 带 `finish_reason: "stop"` 的工具调用 | `StopReason::EndTurn` | 文档中的两个工具调用回复都这样结束（`responses/tools-doc`）。Chat 映射把 `stop` 读作一轮结束，因此 Anthropic 应用会收到带 `stop_reason: "end_turn"` 的 `tool_use` 块。 |
 | 没有 `code` 的 `{"error": {"message", "type"}}` 错误 | `KppError` | 错误类型取决于状态码，StepFun 的标识位于 `type`。中国服务的 429 `project_credit_limit_exceeded` 和 `member_project_credit_limit_exceeded` 属于计费拒绝，而不是速率限制。 |
 | `GET /v1/models` | `ModelList` | 需要密钥，并同时列出对话模型和语音模型（`models/list-doc`），因此模型检查能发现错误的密钥。 |
 
-StepFun 的 Anthropic Messages 端点、Responses API 和 Token 计数（`/v1/token/count`）不被使用：所有应用都通过 Chat Completions 访问 StepFun，Kaeso 拒绝 Token 计数。`input_audio` 接受不带 `format` 的 data URL，用于 KPMR 未收录的 StepFun 音频对话模型；它的语音合成、转写和实时 API 也不被使用。
+StepFun 的 Anthropic Messages 端点、Responses API 和 Token 计数（`/v1/token/count`）不被使用：所有应用都通过 Chat Completions 访问 StepFun，Kaeso 自行估算 Token 计数。`input_audio` 接受不带 `format` 的 data URL，用于 KPMR 未收录的 StepFun 音频对话模型；它的语音合成、转写和实时 API 也不被使用。
 
 ## Tencent TokenHub
 
@@ -387,7 +387,7 @@ StepFun 的 Anthropic Messages 端点、Responses API 和 Token 计数（`/v1/to
 | 带 `message_zh`、六位数 `code`、`type`、`source`、`request_id` 的错误 | `KppError` | 类别由状态码决定；`type` 在参考和实时回复之间不一致，429 的 `code` 可能是数字且没有 `type`（`errors/rate-limit-doc`）。状态码说明不足时由 `code` 决定类别：`400003`（输入超出上下文）为 `ContextTooLong`，`400004`（模型不存在）为 `NotFound`，`451001` 为 `ContentFiltered`。 |
 | 带 `name` 和 `status`（`online`、`pre-offline`）的 `GET /v1/models` | `ModelList` | 需要密钥（`models/list-doc`）；没有 `GET /v1/models/{model}`。 |
 
-TokenHub 的 Responses 和 Anthropic Messages 端点只支持部分模型，不被使用：Responses 和 Messages 应用通过 Chat Completions 访问 TokenHub，Kaeso 拒绝 Token 计数，因为 TokenHub 不提供。它的图像、视频、语音和多模态嵌入使用它自己的格式。
+TokenHub 的 Responses 和 Anthropic Messages 端点只支持部分模型，不被使用：Responses 和 Messages 应用通过 Chat Completions 访问 TokenHub，Kaeso 自行估算 Token 计数，因为 TokenHub 不提供。它的图像、视频、语音和多模态嵌入使用它自己的格式。
 
 ## Venice
 
@@ -406,7 +406,7 @@ TokenHub 的 Responses 和 Anthropic Messages 端点只支持部分模型，不�
 | 错误 `{"error": "<文本>"}` 和 `{"error", "details", "issues"}` | `KppError` | 类型取决于状态码，文本即消息（`errors/recorded-invalid-api-key`、`errors/unknown-model-published`）。 |
 | `GET /v1/models` | `ModelList` | 只列出文本模型（`models/list-recorded`），因此列表不完整。 |
 
-Venice 的 Responses API 处于测试阶段，未被使用：Responses 和 Messages 应用通过 Chat Completions 访问 Venice，Kaeso 拒绝 Token 计数，因为 Venice 不提供。
+Venice 的 Responses API 处于测试阶段，未被使用：Responses 和 Messages 应用通过 Chat Completions 访问 Venice，Kaeso 自行估算 Token 计数，因为 Venice 不提供。
 
 ## Baidu Qianfan
 

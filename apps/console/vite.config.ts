@@ -55,10 +55,22 @@ function themeInit(): Plugin {
   };
 }
 
+// The console's Caddy writes every page's robots meta tag from the page's X-Robots-Tag header, which
+// KAESO_SEARCH_ENGINES decides (deploy/console/Caddyfile); the comments hide the template where nothing fills it in.
+const ROBOTS_META = '<!--{{with .RespHeader.Get "X-Robots-Tag"}}--><meta name="robots" content="{{html .}}" /><!--{{end}}-->';
+
+function robotsMeta(): Plugin {
+  return {
+    name: "kaeso-robots-meta",
+    apply: "build",
+    transformIndexHtml: { order: "post", handler: (html) => html.replace("</head>", `${ROBOTS_META}</head>`) },
+  };
+}
+
 // A shared link's page names its preview image in Open Graph tags, so chats and posts show it. The console's
 // Caddy fills in the address from the request when it serves share.html (deploy/console/Caddyfile).
 const SHARE_META =
-  '<meta name="robots" content="noindex, nofollow" /><meta property="og:type" content="website" /><meta property="og:site_name" content="Kaeso" />' +
+  '<meta property="og:type" content="website" /><meta property="og:site_name" content="Kaeso" />' +
   '<meta property="og:title" content="Usage shared from Kaeso" /><meta name="twitter:card" content="summary_large_image" />' +
   '{{$proto := .Req.Header.Get "X-Forwarded-Proto"}}{{if not $proto}}{{$proto = "https"}}{{end}}' +
   '{{$image := printf "%s://%s/platform/v1/share/%s/image.png" $proto .Req.Host (placeholder "http.regexp.share.1")}}' +
@@ -139,8 +151,8 @@ function uiEntryImports(): Plugin {
     enforce: "pre",
     async buildStart() {
       const { icons } = (await import(pathToFileURL(`${uiDist}/components/icon.js`).href)) as { icons: Record<string, unknown> };
-      const lucide = (await import("lucide")) as Record<string, unknown>;
-      const byIcon = new Map(Object.entries(lucide).map(([name, icon]) => [icon, name]));
+      const octicons = (await import(pathToFileURL(`${uiDist}/octicons.js`).href)) as Record<string, unknown>;
+      const byIcon = new Map(Object.entries(octicons).map(([name, icon]) => [icon, name]));
       iconExports.clear();
       for (const [meaning, icon] of Object.entries(icons)) {
         const name = byIcon.get(icon);
@@ -175,7 +187,7 @@ function uiEntryImports(): Plugin {
           const from = entries.get(name) ?? "@logicplanes/kaeso-ui";
           groups.set(from, [...(groups.get(from) ?? []), raw]);
         }
-        const iconImport = icons.size ? `import { ${[...icons].map((i) => `${i} as __icon_${i}`).join(", ")} } from "lucide";` : "";
+        const iconImport = icons.size ? `import { ${[...icons].map((i) => `${i} as __icon_${i}`).join(", ")} } from "@logicplanes/kaeso-ui/octicons";` : "";
         icons.clear();
         return [...[...groups].map(([from, names]) => `import { ${names.join(", ")} } from "${from}";`), iconImport].filter(Boolean).join("\n");
       });
@@ -228,6 +240,7 @@ export default defineConfig({
     routePreloads(),
     themeInit(),
     fontPreload(),
+    robotsMeta(),
     sharePreview(),
     tanstackRouter({
       target: "react",

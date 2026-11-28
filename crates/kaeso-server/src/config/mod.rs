@@ -58,6 +58,7 @@ pub struct Config {
     pub auth: AuthConfig,
     #[serde(default)]
     pub legal: LegalConfig,
+    pub search_engines: bool,
     pub key_failures: KeyFailuresConfig,
     pub kpmr: KpmrConfig,
     pub exchange_rates: ExchangeRatesConfig,

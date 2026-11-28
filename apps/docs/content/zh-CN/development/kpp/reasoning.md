@@ -142,7 +142,9 @@ Gemini 应用收不到推理数据块：`google-genai` SDK 把 `thoughtSignature
 Chat Completions 没有推理字段，KPP 也不会凭空创造一个。回复中省略推理，由网关保存它，并以推理之后的工具调用作为键。工具调用 ID 是唯一的，由服务商签发，每个 Chat 客户端都会将其发回，因此可以在不改变应用格式的情况下作为推理的键。对于模型使用另一种格式的 Gemini 应用，网关也这样做（`kaeso_server::services::continuity::applies`），因为 Gemini 的思考 part 无法承载[推理数据块](#推理数据块)。
 
 1. 回复之后，`continuity::reasoning_for_tool_calls`（完整回复）或 `continuity::ReasoningCollector`（流）为每个前面有可回放推理的工具调用返回一个 `CarriedReasoning`：Anthropic 的签名思考或 `redacted_thinking`、OpenAI 的加密推理，或 Gemini 的思考签名。最后一个工具调用之后的推理不会保存。
-2. 网关把这些条目存入 Valkey，用主密钥加密，只有发出该请求的 API 密钥才能读取，保存时长为 `KAESO_CONTINUITY_REASONING_TTL`（默认一小时）。
+2. 网关把这些条目存入 Valkey，保存时长为 `KAESO_CONTINUITY_REASONING_TTL`（默认一小时），并用主密钥加密。它只把这些条目返还给使用发出该请求的 API 密钥的请求。
 3. 在应用的下一个请求中，解码之后、`check` 和编码之前，`continuity::tool_calls_missing_reasoning` 列出需要查找的工具调用 ID，`continuity::restore_reasoning` 把找到的内容放回助手轮次：轮次中第一个工具调用的推理放在轮次开头，后续调用的推理紧跟在前一个调用之后。推理只会恢复到与其来源回复的工具调用完全相同的应用轮次中（`CarriedReasoning::turn_calls`），因为 Anthropic 把思考绑定到产生它的轮次；把两个回复合并为一个轮次的应用不会得到这些推理。已经含有推理的轮次保持不变。
 
 编码器只把恢复的块回放给它们自己的服务商。对于 Anthropic，回放这些块的请求会让 Anthropic 丢弃对话已改变的块，而不是拒绝请求（[Anthropic Messages](anthropic-messages.md)）。
+
+未发送 `store: false` 的 Responses 应用可以用 `item_reference` 指向某个回复的推理和消息，而不是把它们发回。对于这类应用，网关会保留工具调用之前的每个推理块（`continuity::items_for_tool_calls`、`ReasoningCollector::every`），即其回复以推理 item 形式携带的那些块，无论是否签名，因为例如 DeepSeek 需要取回其普通推理。它还会以纯文本形式保留每次调用之前紧接着的文本，每个消息 item 一个片段列表（`CarriedReasoning::messages`），前提是项目允许在服务商处存储回复（`Carry::text`）；最后一次调用之后的文本不保留。Responses 解码器把指向推理 item 的 `item_reference` 读作 `Block::Reasoning`，把指向消息的读作空的 `Block::Text`，由它们代表所指内容（`openai_responses::reference`）。网关会先放回文本（`continuity::resolve_message_references`），早于请求的防护规则，防护规则会像检查其他文本一样检查它。每次调用之前的引用取该调用之前紧接着保留的文本。`continuity::resolve_kept_references` 把该轮次工具调用所保留的推理放在每次调用之前，并把每条保留的消息按顺序放在其引用所在的位置。它会省略没有工具调用的轮次中指向推理的引用，并给出第一个无内容可放回的引用（`continuity::Unresolved`），网关会拒绝该请求：未保留的推理或文本，或工具轮次之外的消息。不保留该请求任何内容的 Responses 服务商只能按 ID 查找推理，因此既没有文本也没有加密内容的已保留推理在那里会满足其引用，但不会被发送。

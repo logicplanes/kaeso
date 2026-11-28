@@ -1,0 +1,56 @@
+{
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are Weather reporter. You report weather.\nYour personal goal is: Report the weather"
+    },
+    {
+      "role": "user",
+      "content": "\nCurrent Task: What's the weather in Paris?\n\nThis is the expected criteria for your final answer: One sentence.\nyou MUST return the actual complete content as the final answer, not a summary."
+    },
+    {
+      "role": "assistant",
+      "content": null,
+      "tool_calls": [
+        {
+          "id": "call_1",
+          "type": "function",
+          "function": {
+            "name": "get_weather",
+            "arguments": "{\"city\": \"Paris\"}"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "call_1",
+      "name": "get_weather",
+      "content": "Sunny in Paris"
+    }
+  ],
+  "model": "claude-haiku-5-5",
+  "tool_choice": "auto",
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_weather",
+        "description": "Get the weather for a city.",
+        "strict": true,
+        "parameters": {
+          "properties": {
+            "city": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "city"
+          ],
+          "type": "object",
+          "additionalProperties": false
+        }
+      }
+    }
+  ]
+}

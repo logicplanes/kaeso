@@ -413,7 +413,7 @@ async fn cohere_errors_reach_each_app_in_its_own_format() {
 }
 
 #[tokio::test]
-async fn token_counts_for_cohere_models_are_refused_before_anything_is_sent() {
+async fn token_counts_for_cohere_models_are_estimated_before_anything_is_sent() {
     let env = env().await;
     env.mock.clear();
     let r = call(
@@ -427,13 +427,7 @@ async fn token_counts_for_cohere_models_are_refused_before_anything_is_sent() {
         })),
     )
     .await;
-    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
-    let body = r.json();
-    assert_eq!(body["error"]["type"], "invalid_request_error");
-    assert_eq!(
-        body["error"]["message"],
-        format!("The model `{COMMAND}` cannot count tokens.")
-    );
+    assert!(r.estimated_count() > 0);
     let r = call(
         &env,
         "/v1/responses/input_tokens",
@@ -442,7 +436,7 @@ async fn token_counts_for_cohere_models_are_refused_before_anything_is_sent() {
         Some(json!({ "model": COMMAND, "input": "Hello" })),
     )
     .await;
-    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert!(r.estimated_count() > 0);
     assert!(env.mock.received().is_empty());
 }
 

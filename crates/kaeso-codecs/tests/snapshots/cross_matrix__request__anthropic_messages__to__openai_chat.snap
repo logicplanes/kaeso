@@ -645,6 +645,39 @@ expression: outcomes
     "param": "messages[0].blocks[1]",
     "unsupported": "file id"
   },
+  "litellm-custom-tool": {
+    "body": {
+      "max_completion_tokens": 200,
+      "messages": [
+        {
+          "content": "Weather in Paris?",
+          "role": "user"
+        }
+      ],
+      "model": "deepseek-flash",
+      "tools": [
+        {
+          "function": {
+            "description": "Get the weather for a city.",
+            "name": "get_weather",
+            "parameters": {
+              "properties": {
+                "city": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "city"
+              ],
+              "type": "object"
+            }
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/chat/completions"
+  },
   "max-tokens": {
     "body": {
       "max_completion_tokens": 10,
@@ -929,39 +962,6 @@ expression: outcomes
       "stream_options": {
         "include_usage": true
       }
-    },
-    "path": "/v1/chat/completions"
-  },
-  "providers/deepseek/litellm-custom-tool": {
-    "body": {
-      "max_completion_tokens": 200,
-      "messages": [
-        {
-          "content": "Weather in Paris?",
-          "role": "user"
-        }
-      ],
-      "model": "deepseek-flash",
-      "tools": [
-        {
-          "function": {
-            "description": "Get the weather for a city.",
-            "name": "get_weather",
-            "parameters": {
-              "properties": {
-                "city": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "city"
-              ],
-              "type": "object"
-            }
-          },
-          "type": "function"
-        }
-      ]
     },
     "path": "/v1/chat/completions"
   },
@@ -1668,9 +1668,22 @@ expression: outcomes
     "path": "/v1/chat/completions"
   },
   "sampling-stop-sequences": {
-    "message": "`top_k` is not supported by OpenAI Chat Completions. Remove `top_k`, or route the request to an Anthropic model.",
-    "param": "top_k",
-    "unsupported": "top_k"
+    "body": {
+      "max_completion_tokens": 1024,
+      "messages": [
+        {
+          "content": "Count from one to five in words, then write END.",
+          "role": "user"
+        }
+      ],
+      "model": "claude-sonnet-4-6",
+      "stop": [
+        "END",
+        "STOP"
+      ],
+      "temperature": 0.2
+    },
+    "path": "/v1/chat/completions"
   },
   "sampling-top-p": {
     "body": {
@@ -2168,6 +2181,19 @@ expression: outcomes
           "type": "function"
         }
       ]
+    },
+    "path": "/v1/chat/completions"
+  },
+  "thread-null": {
+    "body": {
+      "max_completion_tokens": 256,
+      "messages": [
+        {
+          "content": "What is the capital of France?",
+          "role": "user"
+        }
+      ],
+      "model": "claude-sonnet-4-6"
     },
     "path": "/v1/chat/completions"
   },

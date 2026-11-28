@@ -1,6 +1,6 @@
 use kaeso_kpp::{
-    Block, Extras, GenerateRequest, KppError, Origin, OutputSpec, ReasoningEffort, ReasoningMode,
-    Request, Source, ToolDef,
+    Block, Extras, GenerateRequest, KppError, Origin, ReasoningEffort, ReasoningMode, Request,
+    Source, ToolDef,
 };
 
 use super::common::{D, is_data_url, parse_base64_data_url, request_kind_name};
@@ -35,7 +35,6 @@ pub(crate) fn check(
     }
     if generate {
         crate::cross::check_text_only(r, D, "Anthropic Messages replies")?;
-        check_output(r)?;
         check_sampling(r)?;
         check_reasoning(r)?;
     }
@@ -69,33 +68,6 @@ pub(crate) fn check(
         }
     }
     Ok(())
-}
-
-pub(crate) fn check_output(r: &GenerateRequest) -> Result<(), KppError> {
-    let param = app_field(r, Setting::OutputFormat, D);
-    match &r.output {
-        OutputSpec::JsonObject => Err(KppError::unsupported_by(
-            "json_object output",
-            D,
-            "Anthropic has no JSON mode without a schema. Send a JSON schema (structured outputs) instead.",
-        )
-        .with_param(param)),
-        OutputSpec::JsonSchema(spec) if spec.description.is_some() => Err(KppError::unsupported_by(
-            "output schema description",
-            D,
-            "Anthropic structured outputs take a schema only. Move the description into the prompt or the schema's own `description`.",
-        )
-        .with_param(param)),
-        OutputSpec::JsonSchema(spec) if spec.strict == Some(false) => {
-            Err(KppError::unsupported_by(
-                "non-strict output schema",
-                D,
-                "Anthropic always enforces the output schema. Set `strict: true` or remove it.",
-            )
-            .with_param(param))
-        }
-        _ => Ok(()),
-    }
 }
 
 fn check_sampling(r: &GenerateRequest) -> Result<(), KppError> {

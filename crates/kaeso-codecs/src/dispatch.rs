@@ -308,17 +308,25 @@ pub fn stream_encoder(
     dispatch!(dialect, stream_encoder(ctx))
 }
 
+/// An error in the app's format, with `x-should-retry` where a client should not retry it
+/// ([`should_retry`](crate::should_retry)).
 pub fn encode_error(dialect: DialectId, err: &KppError) -> EncodedError {
-    dispatch!(dialect, encode_error(err)).unwrap_or_else(|_| no_codec_error(err))
+    let mut encoded = dispatch!(dialect, encode_error(err)).unwrap_or_else(|_| no_codec_error(err));
+    crate::codec::push_should_retry(&mut encoded, err);
+    encoded
 }
 
+/// [`encode_error`] for a reply that carries the request's id in its body where the format has
+/// a field for it.
 pub fn encode_error_for_request(
     dialect: DialectId,
     err: &KppError,
     request_id: &str,
 ) -> EncodedError {
-    dispatch!(dialect, encode_error_for_request(err, request_id))
-        .unwrap_or_else(|_| no_codec_error(err))
+    let mut encoded = dispatch!(dialect, encode_error_for_request(err, request_id))
+        .unwrap_or_else(|_| no_codec_error(err));
+    crate::codec::push_should_retry(&mut encoded, err);
+    encoded
 }
 
 fn no_codec_error(err: &KppError) -> EncodedError {

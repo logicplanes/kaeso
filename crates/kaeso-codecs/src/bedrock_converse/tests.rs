@@ -207,7 +207,10 @@ fn what_converse_cant_carry_is_refused_before_sending() {
         (with("seed", json!(1)), "seed"),
         (with("presence_penalty", json!(0.5)), "presence_penalty"),
         (
-            with("response_format", json!({"type": "json_object"})),
+            with(
+                "response_format",
+                json!({"type": "json_schema", "json_schema": {"name": "x", "schema": {"type": "object"}}}),
+            ),
             "structured output",
         ),
         (
@@ -257,19 +260,33 @@ fn what_converse_cant_carry_is_refused_before_sending() {
             "{feature}: {e:?}"
         );
     }
-    let e = AnthropicMessages::decode_request(
+    let e = refused(&with("seed", json!(1)));
+    assert_eq!(
+        e.message,
+        "`seed` is not supported by Amazon Bedrock Converse. Converse takes `maxTokens`, `temperature`, `topP` and stop sequences only; remove `seed`."
+    );
+}
+
+#[test]
+fn top_k_is_left_out_by_the_apps_name_for_it() {
+    let req = AnthropicMessages::decode_request(
         RequestKind::Generate,
-        json!({"model": "m", "max_tokens": 5, "top_k": 3, "messages": [{"role": "user", "content": "Hi"}]})
+        json!({"model": "m", "max_tokens": 5, "top_k": 3, "temperature": 0.5, "messages": [{"role": "user", "content": "Hi"}]})
             .to_string()
             .as_bytes(),
         &HeaderList::new(),
     )
-    .map(|r| refused(&r))
     .unwrap();
+    let mut c = ctx(false);
+    BedrockConverse::check(&req, &c).unwrap();
+    let e = BedrockConverse::encode_request(&req, &mut c).unwrap();
+    let body: Value = serde_json::from_slice(&e.body).unwrap();
     assert_eq!(
-        e.message,
-        "`top_k` is not supported by Amazon Bedrock Converse. Converse takes `maxTokens`, `temperature`, `topP` and stop sequences only; remove `top_k`."
+        body["inferenceConfig"],
+        json!({"maxTokens": 5, "temperature": 0.5})
     );
+    assert!(body.get("additionalModelRequestFields").is_none(), "{body}");
+    assert_eq!(c.left_out, ["top_k"]);
 }
 
 #[test]

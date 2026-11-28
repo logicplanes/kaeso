@@ -186,7 +186,11 @@ export function draftProblem(d: FieldDraft, custom: boolean): string | null {
     if (!d.input_price) return t("models.problem.decisionPrice", "A custom decision model needs its input price.");
   } else if (custom) {
     if (!d.input_modalities.length || !d.output_modalities.length) return t("models.problem.modalities", "A custom model needs its inputs and outputs.");
-    if (!d.context_limit || !d.output_limit) return t("models.problem.limits", "A custom model needs its context and output limits.");
+    const embeds = d.egress_dialect === "openai_embeddings" || d.egress_dialect === "gemini_embeddings";
+    if (d.output_modalities.includes("embedding") && d.egress_dialect && !embeds)
+      return t("models.problem.embeddingsFormat", "An embeddings model needs an embeddings format, such as OpenAI Embeddings.");
+    if (embeds && !d.context_limit) return t("models.problem.contextLimit", "A custom embeddings model needs its context limit.");
+    if (!embeds && (!d.context_limit || !d.output_limit)) return t("models.problem.limits", "A custom model needs its context and output limits.");
     if (!d.input_price || !d.output_price) return t("models.problem.prices", "A custom model needs its input and output prices.");
     if (!d.egress_dialect) return t("models.problem.format", "A custom model needs the format Kaeso sends it.");
   }

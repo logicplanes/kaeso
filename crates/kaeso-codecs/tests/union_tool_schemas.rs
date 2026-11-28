@@ -1104,3 +1104,16 @@ fn deepseek_gets_a_union_of_objects_with_an_object_type_at_its_root() {
         Some("union at the root of a tool schema")
     );
 }
+
+#[test]
+fn a_gemini_declaration_with_a_union_root_is_named_where_the_app_wrote_it() {
+    let req = dispatch::decode_gemini_request(
+        "gemini-3.5-flash",
+        kaeso_codecs::gemini::GeminiAction::GenerateContent,
+        &fixture(DialectId::Gemini, "requests/tools-union-root.json"),
+        &HeaderList::new(),
+    )
+    .unwrap();
+    let (_, adapted) = sent(A, &req, anthropic(&req));
+    assert_eq!(adapted, ["tools[1].functionDeclarations[1]"]);
+}

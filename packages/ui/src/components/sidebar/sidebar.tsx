@@ -321,7 +321,7 @@ const Brand = forwardRef<HTMLDivElement, SidebarBrandProps>(function SidebarBran
   const { rail } = useSidebar();
   if (lead) {
     return (
-      <Header ref={ref} className={cn(rail ? "justify-center" : "gap-8 px-12", className)}>
+      <Header ref={ref} className={cn(rail ? "justify-center" : "gap-2 pr-8 pl-12", className)}>
         <span className={cn("flex min-w-0", !rail && "flex-1")}>{lead}</span>
         {children && <span className="flex shrink-0 items-center">{children}</span>}
       </Header>
@@ -502,7 +502,7 @@ const Switcher = forwardRef<HTMLButtonElement, SidebarSwitcherProps>(function Si
             {...(named ? { "aria-describedby": purpose.id } : { "aria-label": hint })}
             {...(force ? { "data-force": force } : {})}
             className={cn(
-              "group/sw flex h-36 w-full min-w-0 cursor-pointer items-center gap-8 rounded-sidebar px-16 text-left text-body font-medium text-fg transition-control hover:bg-fill-1 active:bg-fill-2 open:bg-fill-2 focus-ring-inset coarse:h-44",
+              "group/sw flex h-36 w-full min-w-0 cursor-pointer items-center gap-8 rounded-sidebar pr-8 pl-16 text-left text-body font-medium text-fg transition-control hover:bg-fill-1 active:bg-fill-2 open:bg-fill-2 focus-ring-inset coarse:h-44",
               rail && "justify-center px-0",
               className,
             )}
@@ -525,7 +525,6 @@ const Switcher = forwardRef<HTMLButtonElement, SidebarSwitcherProps>(function Si
             {rail && named && <span className="sr-only">{label}</span>}
             {rail && hasCaption && <span className="sr-only">{caption}</span>}
             {!rail && trailing}
-            {!rail && <Icon icon={icons.switcher} size="sm" className="text-fg-tertiary transition-control group-hover/sw:text-fg-secondary" />}
           </button>
         }
       >
@@ -570,7 +569,6 @@ const Place = forwardRef<HTMLElement, SidebarPlaceProps>(function SidebarPlace(
     <>
       <span className="flex size-18 shrink-0 items-center justify-center">{avatar}</span>
       {rail ? <span className="sr-only">{label}</span> : <PlaceName label={label} />}
-      {!rail && children && <Icon icon={icons.switcher} size="sm" className="text-fg-tertiary transition-control group-hover/place:text-fg-secondary" />}
     </>
   );
   const common = { className: classes, ...(force ? { "data-force": force } : {}) };
@@ -853,6 +851,43 @@ const Loading = forwardRef<HTMLDivElement, { rows?: number | undefined }>(functi
 });
 Loading.displayName = "Sidebar.Loading";
 
+export type SidebarActionProps = {
+  /** The action's icon; it stands alone, so the label names it. */
+  icon: IconData;
+  /** The action's name, read by screen readers and shown in its tooltip. */
+  label: string;
+  /** The keys that do the same, shown in the tooltip. */
+  shortcut?: string[] | undefined;
+  onClick?: (() => void) | undefined;
+  className?: string | undefined;
+};
+
+const Action = forwardRef<HTMLButtonElement, SidebarActionProps>(function SidebarAction({ icon, label, shortcut, onClick, className }, ref) {
+  const { rail } = useSidebar();
+  const sheet = useContext(SidebarSheetContext);
+  const activate = () => {
+    onClick?.();
+    if (sheet && !sheet.peek) sheet.close();
+  };
+  return (
+    <Tooltip content={label} {...(shortcut ? { shortcut } : {})} {...(rail ? { side: "right" as const } : {})}>
+      <button
+        ref={ref}
+        type="button"
+        aria-label={label}
+        onClick={activate}
+        className={cn(
+          "relative inline-flex size-32 shrink-0 cursor-pointer items-center justify-center rounded-sidebar text-fg-secondary transition-control tap-target hover:bg-fill-1 hover:text-fg active:bg-fill-2 focus-ring",
+          className,
+        )}
+      >
+        <Icon icon={icon} size="sm" />
+      </button>
+    </Tooltip>
+  );
+});
+Action.displayName = "Sidebar.Action";
+
 const CollapseToggle = forwardRef<HTMLButtonElement, { className?: string | undefined }>(function SidebarCollapseToggle({ className }, ref) {
   const { collapsed, setCollapsed, shortcut } = useSidebar();
   const sheet = useContext(SidebarSheetContext);
@@ -925,6 +960,7 @@ export const Sidebar = Object.assign(Root, {
   Group,
   Item,
   BackLink,
+  Action,
   Loading,
   RailToggle,
   CollapseToggle,

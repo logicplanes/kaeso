@@ -13,7 +13,10 @@ pub fn router(state: AppState) -> Router {
         origins: state.config.cors.origins.clone(),
         headers: state.config.cors.headers.clone(),
     };
-    let router = Router::new().merge(health::router()).merge(platform);
+    let router = Router::new()
+        .merge(health::router())
+        .merge(http::robots::router())
+        .merge(platform);
     // A read-only demo has no keys anyone could use, and agents could change it through MCP.
     let router = if state.config.auth.demo_user().is_some() {
         router
@@ -39,11 +42,13 @@ pub fn router(state: AppState) -> Router {
         ))
         .with_state(state)
         .layer(middleware::from_fn(http::request_id::middleware));
-    if cors.origins.is_empty() {
-        return router;
-    }
-    router.layer(middleware::from_fn_with_state(
-        Arc::new(cors),
-        http::cors::middleware,
-    ))
+    let router = if cors.origins.is_empty() {
+        router
+    } else {
+        router.layer(middleware::from_fn_with_state(
+            Arc::new(cors),
+            http::cors::middleware,
+        ))
+    };
+    router.layer(middleware::from_fn(http::robots::middleware))
 }

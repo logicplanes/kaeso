@@ -31,7 +31,6 @@
     "@logicplanes/kaeso-tokens": "workspace:*",
     "@logicplanes/kaeso-ui": "workspace:*",
     "@tanstack/react-router": "1.170.46",
-    "lucide": "1.70.0",
     "react": "19.3.1",
     "react-dom": "19.3.1"
   },
