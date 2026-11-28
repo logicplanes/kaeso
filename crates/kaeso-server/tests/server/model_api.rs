@@ -300,6 +300,46 @@ async fn token_counting_embeddings_and_listings() {
     assert_eq!(r.json()["owned_by"], "openai");
     let r = call(&env, "/v1/models/gpt-5", Some(&env.key), false, None).await;
     assert_eq!(r.status, StatusCode::NOT_FOUND);
+
+    // OpenAI apps get each model described in OpenRouter's fields, from the catalogue.
+    let r = call(
+        &env,
+        "/v1/models/claude-haiku-4-5",
+        Some(&env.key),
+        false,
+        None,
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let m = r.json();
+    assert_eq!(m["name"], "Claude Haiku 4.5 (latest)");
+    assert_eq!(m["context_length"], 200_000);
+    assert_eq!(
+        m["top_provider"],
+        json!({"context_length": 200_000, "max_completion_tokens": 64_000})
+    );
+    assert_eq!(
+        m["architecture"],
+        json!({"modality": "text+image+pdf->text", "input_modalities": ["text", "image", "pdf"],
+               "output_modalities": ["text"]})
+    );
+    assert_eq!(
+        (&m["pricing"]["prompt"], &m["pricing"]["completion"]),
+        (&json!("0.000001"), &json!("0.000005"))
+    );
+    let params = m["supported_parameters"].as_array().unwrap();
+    for p in ["tools", "reasoning", "structured_outputs", "temperature"] {
+        assert!(params.contains(&json!(p)), "{p}: {params:?}");
+    }
+    let r = call(&env, "/v1/models", Some(&env.key), false, None).await;
+    let listed = r.json()["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|e| e["id"] == "claude-haiku-4-5")
+        .cloned()
+        .unwrap();
+    assert_eq!(listed, m, "the list and the model say the same");
 }
 
 #[tokio::test]
@@ -1442,4 +1482,39 @@ async fn message_threads_are_refused_as_anthropic_refuses_one_it_cannot_serve() 
     assert_eq!(r.status, StatusCode::OK, "{}", r.text());
     assert_eq!(r.header("kaeso-left-out"), Some("thread"));
     assert!(env.mock.last().unwrap().json().get("thread").is_none());
+}
+
+#[tokio::test]
+async fn instructors_json_mode_reaches_claude_as_a_sentence_in_the_system_prompt() {
+    let env = env().await;
+    let mut body: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../kaeso-codecs/fixtures/openai_chat/requests/instructor-json-mode.json"
+    ))
+    .unwrap();
+    body["model"] = json!("claude-haiku-4-5");
+    body["max_tokens"] = json!(200);
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(body),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.header("kaeso-adapted"), Some("response_format"));
+    let sent = env.mock.last().unwrap().json();
+    assert!(sent.get("output_config").is_none(), "{sent}");
+    let system: Vec<&str> = sent["system"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter_map(|b| b["text"].as_str())
+        .collect();
+    assert_eq!(system.len(), 2, "{sent}");
+    assert!(system[0].contains("json_schema"), "{sent}");
+    assert!(
+        system[1].starts_with("Answer with one JSON object"),
+        "{sent}"
+    );
 }

@@ -102,10 +102,14 @@ fn own_mid_conversation_system_messages_are_sent_unchanged() {
 }
 
 #[test]
-fn check_refuses_json_mode_and_takes_every_schema_form() {
+fn check_takes_json_mode_and_every_schema_form() {
     let mut r = chat_request();
     r.output = OutputSpec::JsonObject;
-    assert_eq!(feature(r.clone()), "json_object output");
+    AnthropicMessages::check(
+        &Request::Generate(r.clone()),
+        &crate::test_support::egress(),
+    )
+    .unwrap();
     let schema = r#"{"type":"object","properties":{"a":{"type":"string"}}}"#;
     for (description, strict) in [(Some("d"), None), (None, Some(false)), (None, Some(true))] {
         let mut spec = JsonSchemaSpec::new(raw(schema));
