@@ -21,7 +21,7 @@ Quellen: die Anleitungen von AWS zu [Endpunkten](https://docs.aws.amazon.com/bed
 | `{"Message": …}` mit `x-amzn-ErrorType` | `KppError` | Die Form, mit der bedrock-runtime seine eigenen Operationen beantwortet; die Meldung wird aus `Message` gelesen, die Art aus dem Status (`errors/recorded-native-invalid-api-key`). |
 | `GET /openai/v1/models` | — | Nicht angeboten (404 `UnknownOperationException`), daher ist eine Modellprüfung unklar und sendet nichts. |
 
-Ein Modell, für das der Katalog kein Format nennt, bedient Bedrock nur über seine eigenen APIs InvokeModel und Converse, deren AWS-Event-Streams KPP nicht liest; es wird vor dem Senden abgelehnt. Bedrocks Responses-Pfad wird nicht genutzt: Responses-Apps erreichen Bedrock über Chat Completions. Token-Zählungen werden abgelehnt: bedrock-runtime zählt sie nur im eigenen Format, unter `/model/{modelId}/count-tokens`.
+Ein Modell, für das der Katalog kein Format nennt, bedient Bedrock nur über seine eigenen APIs InvokeModel und Converse, deren AWS-Event-Streams KPP nicht liest; es wird vor dem Senden abgelehnt. Bedrocks Responses-Pfad wird nicht genutzt: Responses-Apps erreichen Bedrock über Chat Completions. Token-Zählungen schätzt Kaeso selbst: bedrock-runtime zählt sie nur im eigenen Format, unter `/model/{modelId}/count-tokens`.
 
 ## Baseten
 
@@ -79,7 +79,7 @@ Quellen: Azures v1-OpenAPI-Dokument (`azure-v1-v1-generated.json` in [azure-rest
 | `{"statusCode": 401, "message": …}` | `KppError` | Azures Antwort auf ein Entra-ID-Token, das es nicht annimmt (`errors/recorded-entra-token`); bei einem Schlüssel, der sich mit Entra ID anmeldet, ein abgelehnter Schlüssel, der die Rolle nennt, die der Service Principal braucht. |
 | `GET /openai/v1/models` | `ModelList` | Die Modelle, die eine Ressource bereitstellen kann, nicht ihre Deployments; eine Modellprüfung zeigt daher nur, ob der Schlüssel und sein Endpunkt funktionieren (`ModelListing::Catalogue`). |
 
-Die v1-API bietet Responses mit OpenAIs Anfragekörper an, dazu `content_filters` in Antworten, die in den Extras bleiben; Kaeso sendet ein Modell als Responses, wenn sein Wert **Sendet als** das sagt (`fixtures/openai_responses/providers/azure/`). Claude-Deployments beantworten nur Anthropics Messages API unter `{endpoint}/anthropic`, und Bilder, Sprache, Transkriptionen und Videos gibt es in der v1-API nur in der Vorschau, daher ruft Kaeso keines davon auf. Token-Zählungen werden abgelehnt.
+Die v1-API bietet Responses mit OpenAIs Anfragekörper an, dazu `content_filters` in Antworten, die in den Extras bleiben; Kaeso sendet ein Modell als Responses, wenn sein Wert **Sendet als** das sagt (`fixtures/openai_responses/providers/azure/`). Claude-Deployments beantworten nur Anthropics Messages API unter `{endpoint}/anthropic`, und Bilder, Sprache, Transkriptionen und Videos gibt es in der v1-API nur in der Vorschau, daher ruft Kaeso keines davon auf. Token-Zählungen schätzt Kaeso selbst.
 
 ## DeepInfra
 
@@ -98,7 +98,7 @@ Quellen: das [OpenAPI document](https://api.deepinfra.com/openapi.json) von Deep
 | ein 403 `{"detail": {"error": …}}` für einen Schlüssel ohne den Scope `inference` | `KppError` | `PermissionDenied`, mit der Meldung von DeepInfra (`errors/missing-scope-doc`). |
 | `GET /v1/models` mit `root`, `parent` und DeepInfras `metadata` | `ModelList` | Ohne Schlüssel beantwortet (`models/list-recorded`), daher kann eine Modellprüfung einen falschen Schlüssel nicht erkennen. Es gibt kein `GET /v1/models/{model}`. |
 
-Die Responses API von DeepInfra speichert nichts und wird nicht genutzt: Responses-Apps erreichen DeepInfra über Chat Completions. Sein Anthropic-kompatibler Endpunkt und die Token-Zählung liegen unter `/anthropic/v1`, außerhalb des `/v1` der anderen Formate, daher lehnt Kaeso Token-Zählungen ab. Seine Bilder, Sprache, Transkriptionen und Videos in OpenAIs Formaten werden nicht genutzt, bis KPMR die Modelle mit ihren Preisen listet.
+Die Responses API von DeepInfra speichert nichts und wird nicht genutzt: Responses-Apps erreichen DeepInfra über Chat Completions. Sein Anthropic-kompatibler Endpunkt und die Token-Zählung liegen unter `/anthropic/v1`, außerhalb des `/v1` der anderen Formate, daher schätzt Kaeso Token-Zählungen selbst. Seine Bilder, Sprache, Transkriptionen und Videos in OpenAIs Formaten werden nicht genutzt, bis KPMR die Modelle mit ihren Preisen listet.
 
 ## Fireworks AI
 
@@ -150,7 +150,7 @@ Quellen: die Übersicht [Inference Providers](https://huggingface.co/docs/infere
 | Fehler als `{"error": "<message>"}` | `KppError` | Die Art folgt dem Status: 401 ist ein abgelehnter Schlüssel (`errors/recorded-invalid-api-key`). |
 | `GET /v1/models` mit `architecture` und einem Array `providers` mit Status, Kontextlänge, Preisen und Geschwindigkeit | `ModelList` | Ohne Schlüssel beantwortet (`models/list-recorded`), daher kann eine Modellprüfung einen falschen Schlüssel nicht erkennen. |
 
-Die OpenAI-kompatible API des Routers ist nur für Chat: `/v1/embeddings`, `/v1/images/generations` und `/v1/audio/*` antworten mit 404. Seine Responses API wird nicht genutzt, da sie ein abgelehntes Token mit 200 und `status: "failed"` beantwortet. Auch sein Messages-Endpunkt wird nicht genutzt: Er beantwortet ein abgelehntes Token mit `api_error`, das Apps als fehlgeschlagenen Anbieter statt als abgelehnten Schlüssel erreichen würde. `/v1/messages/count_tokens` antwortet, ohne das Token zu prüfen, und ist nicht dokumentiert, daher lehnt Kaeso Token-Zählungen ab.
+Die OpenAI-kompatible API des Routers ist nur für Chat: `/v1/embeddings`, `/v1/images/generations` und `/v1/audio/*` antworten mit 404. Seine Responses API wird nicht genutzt, da sie ein abgelehntes Token mit 200 und `status: "failed"` beantwortet. Auch sein Messages-Endpunkt wird nicht genutzt: Er beantwortet ein abgelehntes Token mit `api_error`, das Apps als fehlgeschlagenen Anbieter statt als abgelehnten Schlüssel erreichen würde. `/v1/messages/count_tokens` antwortet, ohne das Token zu prüfen, und ist nicht dokumentiert, daher schätzt Kaeso Token-Zählungen selbst.
 
 ## IONOS AI Model Hub
 
@@ -204,7 +204,7 @@ Quellen: die Referenzen von Novita AI zu [Chat Completion](https://docs.novita.a
 | Fehler als `{"code", "reason", "message", "metadata"}` | `KppError` | Die Art folgt dem Status: 401 `FAILED_TO_AUTH`, 403 `INVALID_API_KEY` oder `NOT_ENOUGH_BALANCE`, 404 `MODEL_NOT_FOUND`, 429, 503 (`errors/`). |
 | `GET /v1/models` mit Preisen in 1/10.000 USD, `pricing`, `features` und `endpoints` | `ModelList` | Ohne Schlüssel beantwortet und nur mit Chat-Modellen (`models/list-recorded`); `GET /v1/models/{model}` antwortet auch für Embedding-Modelle (`models/retrieve-embedding-recorded`), daher findet eine Modellprüfung ein Modell, aber keinen falschen Schlüssel (`ModelListing::Partial`). |
 
-Der Anthropic-kompatible Endpunkt von Novita AI liegt unter `/anthropic`, außerhalb seiner OpenAI-Basis-URL, und `/v1/responses` ist nicht dokumentiert, daher ruft Kaeso nur Chat Completions auf und lehnt Token-Zählungen ab. `/v1/completions`, `/v1/rerank`, die Batch-API, sein Bildmodell in OpenAIs Images API und seine eigenen Task-APIs für Sprache, Transkription und Video werden nicht genutzt.
+Der Anthropic-kompatible Endpunkt von Novita AI liegt unter `/anthropic`, außerhalb seiner OpenAI-Basis-URL, und `/v1/responses` ist nicht dokumentiert, daher ruft Kaeso nur Chat Completions auf und schätzt Token-Zählungen selbst. `/v1/completions`, `/v1/rerank`, die Batch-API, sein Bildmodell in OpenAIs Images API und seine eigenen Task-APIs für Sprache, Transkription und Video werden nicht genutzt.
 
 ## NVIDIA
 
@@ -368,7 +368,7 @@ Quellen: die [Chat-Completions-Referenz](https://platform.stepfun.ai/docs/en/api
 | Fehler als `{"error": {"message", "type"}}` ohne `code` | `KppError` | Die Art folgt dem Status, und die Kennung von StepFun steht in `type`. Die 429 `project_credit_limit_exceeded` und `member_project_credit_limit_exceeded` des Dienstes in China sind Abrechnungsfehler, keine Ratenlimits. |
 | `GET /v1/models` | `ModelList` | Braucht einen Schlüssel und listet Chat- und Sprachmodelle gemeinsam (`models/list-doc`), daher erkennt eine Modellprüfung einen falschen Schlüssel. |
 
-Der Anthropic-Messages-Endpunkt von StepFun, seine Responses API und seine Token-Zählung (`/v1/token/count`) werden nicht genutzt: Jede App erreicht StepFun über Chat Completions, und Kaeso lehnt Token-Zählungen ab. `input_audio` nimmt eine Data-URL ohne `format` an, für die Audio-Chat-Modelle von StepFun, die KPMR nicht listet; seine APIs für Sprache, Transkription und Echtzeit werden ebenfalls nicht genutzt.
+Der Anthropic-Messages-Endpunkt von StepFun, seine Responses API und seine Token-Zählung (`/v1/token/count`) werden nicht genutzt: Jede App erreicht StepFun über Chat Completions, und Kaeso schätzt Token-Zählungen selbst. `input_audio` nimmt eine Data-URL ohne `format` an, für die Audio-Chat-Modelle von StepFun, die KPMR nicht listet; seine APIs für Sprache, Transkription und Echtzeit werden ebenfalls nicht genutzt.
 
 ## Tencent TokenHub
 
@@ -387,7 +387,7 @@ Quellen: die Seiten [API usage](https://cloud.tencent.com/document/product/1823/
 | Fehler mit `message_zh`, sechsstelligem `code`, `type`, `source`, `request_id` | `KppError` | Die Art folgt dem Status; `type` unterscheidet sich zwischen Referenz und Live-Antworten, und ein 429 kann `code` als Zahl ohne `type` tragen (`errors/rate-limit-doc`). Der `code` gibt die Art, wo der Status weniger sagt: `400003` (Eingabe über dem Kontext) `ContextTooLong`, `400004` (unbekanntes Modell) `NotFound`, `451001` `ContentFiltered`. |
 | `GET /v1/models` mit `name` und `status` (`online`, `pre-offline`) | `ModelList` | Braucht den Schlüssel (`models/list-doc`); es gibt kein `GET /v1/models/{model}`. |
 
-Die Endpunkte für Responses und Anthropic Messages von TokenHub bedienen nur manche Modelle und werden nicht genutzt: Responses- und Messages-Apps erreichen TokenHub über Chat Completions, und Kaeso lehnt Token-Zählungen ab, die TokenHub nicht anbietet. Seine Bilder, Videos, Sprache und die multimodalen Embeddings nutzen eigene Formate.
+Die Endpunkte für Responses und Anthropic Messages von TokenHub bedienen nur manche Modelle und werden nicht genutzt: Responses- und Messages-Apps erreichen TokenHub über Chat Completions, und Token-Zählungen, die TokenHub nicht anbietet, schätzt Kaeso selbst. Seine Bilder, Videos, Sprache und die multimodalen Embeddings nutzen eigene Formate.
 
 ## Venice
 
@@ -406,7 +406,7 @@ Quellen: das [OpenAPI document](https://docs.venice.ai/swagger.yaml) von Venice 
 | Fehler `{"error": "<Text>"}` und `{"error", "details", "issues"}` | `KppError` | Die Art folgt dem Status, und der Text ist die Meldung (`errors/recorded-invalid-api-key`, `errors/unknown-model-published`). |
 | `GET /v1/models` | `ModelList` | Listet nur Textmodelle (`models/list-recorded`), daher ist die Liste unvollständig. |
 
-Die Responses API von Venice ist in der Beta und wird nicht genutzt: Responses- und Messages-Apps erreichen Venice über Chat Completions, und Kaeso lehnt Token-Zählungen ab, die Venice nicht anbietet.
+Die Responses API von Venice ist in der Beta und wird nicht genutzt: Responses- und Messages-Apps erreichen Venice über Chat Completions, und Token-Zählungen, die Venice nicht anbietet, schätzt Kaeso selbst.
 
 ## Baidu Qianfan
 

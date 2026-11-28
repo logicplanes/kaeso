@@ -47,7 +47,7 @@ Kaeso wählt das Format, das es erkennt. Wenn Sie es ändern, wählen Sie das Fo
 | Ein Server oder Proxy mit Anthropics `POST /v1/messages` | Anthropic Messages |
 
 - **Liefert auch Embeddings:** an, wenn der Server `POST /v1/embeddings` im Format von OpenAI beantwortet. Seine Embedding-Modelle bedienen dann `/v1/embeddings`.
-- **Zählt Tokens:** Nur Responses und Messages haben einen Endpunkt für Token-Zählungen, `/v1/responses/input_tokens` und `/v1/messages/count_tokens`. Lassen Sie es nur an, wenn Ihr Server ihn beantwortet. Sonst beantwortet Kaeso Zählanfragen für seine Modelle mit 400: „The model `…` cannot count tokens.“
+- **Zählt Tokens:** Nur Responses und Messages haben einen Endpunkt für Token-Zählungen, `/v1/responses/input_tokens` und `/v1/messages/count_tokens`. Lassen Sie es nur an, wenn Ihr Server ihn beantwortet. Sonst beantwortet Kaeso Zählanfragen für seine Modelle mit einer eigenen Schätzung ([Token-Zählung](../concepts/providers.md)).
 
 Bei **Anderer Server oder Proxy** spricht Kaeso das reine Format. Es weiß, wie jeder eingebaute Anbieter von seinem Format abweicht, etwa welche Felder Mistral ablehnt, aber das kann es von Ihrem Server nicht wissen. Ein Feld, das Ihr Server nicht annimmt, kommt als Fehler Ihres Servers zurück. Bei Software, die Kaeso kennt, passt es Anfragen an wie bei einem eingebauten Anbieter ([Server-Software](#server-software)). Ein Feld, das das Format nicht tragen kann, lehnt Kaeso ab wie bei jedem Anbieter ([was Kaeso ablehnt](../concepts/format-translation.md#was-kaeso-ablehnt)).
 

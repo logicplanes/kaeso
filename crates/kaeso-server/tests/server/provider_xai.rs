@@ -315,7 +315,7 @@ async fn a_wrong_xai_key_is_reported_as_a_refused_key() {
 }
 
 #[tokio::test]
-async fn token_counts_for_xai_models_are_refused_in_each_apps_format() {
+async fn token_counts_for_xai_models_are_estimated_in_each_apps_format() {
     let env = env().await;
     env.mock.clear();
     let r = call(
@@ -329,14 +329,7 @@ async fn token_counts_for_xai_models_are_refused_in_each_apps_format() {
         })),
     )
     .await;
-    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
-    let body = r.json();
-    assert_eq!(body["type"], "error");
-    assert_eq!(body["error"]["type"], "invalid_request_error");
-    assert_eq!(
-        body["error"]["message"],
-        "The model `grok-4.3` cannot count tokens."
-    );
+    assert!(r.estimated_count() > 0);
 
     let r = call(
         &env,
@@ -346,12 +339,27 @@ async fn token_counts_for_xai_models_are_refused_in_each_apps_format() {
         Some(json!({ "model": "grok-4.3", "input": "Hello" })),
     )
     .await;
-    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
-    let error = &r.json()["error"];
-    assert_eq!(error["type"], "invalid_request_error");
+    assert!(r.estimated_count() > 0);
+
+    // Stop sequences and a limit under 16 tokens, which Kaeso fits to OpenAI Responses when
+    // it generates, are fine in a count too.
+    let r = call(
+        &env,
+        "/v1beta/models/grok-4.3:countTokens",
+        Some(&env.key),
+        false,
+        Some(json!({ "generateContentRequest": {
+            "model": "models/grok-4.3",
+            "contents": [{ "role": "user", "parts": [{ "text": "Hello" }] }],
+            "generationConfig": { "stopSequences": ["END"], "maxOutputTokens": 5, "seed": 7 },
+        } })),
+    )
+    .await;
+    assert!(r.estimated_count() > 0);
     assert_eq!(
-        error["message"],
-        "The model `grok-4.3` cannot count tokens."
+        r.header("kaeso-left-out"),
+        Some("generationConfig.seed"),
+        "as a generation would"
     );
     assert!(env.mock.received().is_empty());
 }
@@ -564,5 +572,92 @@ async fn a_cached_reply_keeps_to_the_stop_sequence_of_its_own_request() {
             "Hello! How can I help you",
             "Hello! How can I"
         ]
+    );
+}
+
+#[allow(clippy::unwrap_used)]
+async fn count_with(env: &Env, body: Value, cache_control: Option<&str>) -> common::v1::Answer {
+    use http_body_util::BodyExt;
+    use tower::ServiceExt;
+    let mut req = axum::http::Request::builder()
+        .uri("/v1/messages/count_tokens")
+        .method("POST")
+        .header("x-api-key", env.key.as_str())
+        .header("anthropic-version", "2023-06-01")
+        .header("content-type", "application/json");
+    if let Some(c) = cache_control {
+        req = req.header("cache-control", c);
+    }
+    let req = req
+        .body(axum::body::Body::from(serde_json::to_vec(&body).unwrap()))
+        .unwrap();
+    let resp = env.app.router.clone().oneshot(req).await.unwrap();
+    let (status, headers) = (resp.status(), resp.headers().clone());
+    let body = resp
+        .into_body()
+        .collect()
+        .await
+        .unwrap()
+        .to_bytes()
+        .to_vec();
+    env.app.state.in_flight.settled().await;
+    common::v1::Answer {
+        status,
+        headers,
+        body,
+    }
+}
+
+#[tokio::test]
+async fn an_estimated_count_gets_the_checks_a_sent_request_gets() {
+    let env = env().await;
+    env.mock.clear();
+    let hello =
+        json!({ "model": "grok-4.3", "messages": [{ "role": "user", "content": "Hello" }] });
+
+    let r = count_with(&env, hello.clone(), Some("only-if-cached")).await;
+    assert_eq!(r.status, StatusCode::GATEWAY_TIMEOUT, "{}", r.text());
+    assert_eq!(
+        r.json()["error"]["message"],
+        "No cached reply answers this request, and `only-if-cached` keeps it from the provider."
+    );
+
+    let notes = json!({
+        "model": "grok-4.3",
+        "messages": [{ "role": "user", "content": [
+            { "type": "document", "source": { "type": "text", "media_type": "text/plain", "data": "Notes" } },
+            { "type": "text", "text": "Summarise." },
+        ] }],
+    });
+    let r = count_with(&env, notes, None).await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert!(
+        r.json()["error"]["message"]
+            .as_str()
+            .unwrap()
+            .contains("text document"),
+        "{}",
+        r.text()
+    );
+
+    sqlx::query("UPDATE catalogue_models SET availability = 'unavailable', availability_checked_at = $1 WHERE model_id = 'grok-4.3'")
+        .bind(env.app.state.clock.now())
+        .execute(&env.app.state.pg)
+        .await
+        .unwrap();
+    kaeso_server::services::catalogue::forget(&env.app.state, common::uuid(env.project.as_str()))
+        .await;
+    env.app
+        .clock
+        .advance(kaeso_server::services::availability::RECHECK_EVERY);
+    let r = count_with(&env, hello, None).await;
+    assert_eq!(r.status, StatusCode::NOT_FOUND, "{}", r.text());
+    assert_eq!(
+        r.json()["error"]["message"],
+        "SpaceX does not serve `grok-4.3` to this project's key; check the key's access."
+    );
+    assert!(
+        env.mock.received().is_empty(),
+        "an estimate asks the provider nothing, not even to recheck the model"
     );
 }

@@ -94,6 +94,8 @@ fn forced_choice(choice: Option<&ToolChoice>, ingress: DialectId) -> Option<&'st
     }
 }
 
+pub const COUNT_ESTIMATED: &str = "count_estimated";
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Plan {
     pub dialect: DialectId,
@@ -102,6 +104,18 @@ pub struct Plan {
     pub reasoning: Option<bool>,
     pub left_out: Vec<String>,
     pub adapted: Vec<String>,
+    pub estimates_count: bool,
+}
+
+pub fn cannot_estimate(eff: &Effective) -> Unsupported {
+    refuse(
+        "token counting",
+        Some("model"),
+        format!(
+            "The model `{}` cannot count tokens, and Kaeso can't estimate audio or video.",
+            eff.model_id
+        ),
+    )
 }
 
 pub fn prepare(
@@ -152,6 +166,7 @@ pub fn prepare(
                 reasoning: None,
                 left_out: Vec::new(),
                 adapted: Vec::new(),
+                estimates_count: false,
             })
         }
         Request::Generate(g) => {
@@ -179,18 +194,13 @@ pub fn prepare(
                 reasoning: eff.fields.reasoning,
                 left_out,
                 adapted,
+                estimates_count: false,
             })
         }
         Request::CountTokens(g) => {
             refuse_decision_only(eff)?;
             refuse_transcriber(eff, None)?;
-            let Some(dialect) = eff.provider.count_tokens_for(eff.dialect) else {
-                return Err(refuse(
-                    "token counting",
-                    Some("model"),
-                    format!("The model `{name}` cannot count tokens."),
-                ));
-            };
+            let counts = eff.provider.count_tokens_for(eff.dialect);
             let mut adapted = adaptive_to_budget(g, ingress, eff);
             adapted.extend(budget_to_adaptive(g, ingress, eff));
             let left_out = leave_out_reasoning(g, ingress, eff);
@@ -198,13 +208,21 @@ pub fn prepare(
             adapted.extend(lowest_effort_for_off(g, ingress, eff));
             adapted.extend(fit_end_user(g, ingress, eff));
             check_generation(g, ingress, eff)?;
+            let estimates_count = counts.is_none();
+            if estimates_count {
+                if !crate::estimate::estimable(g) {
+                    return Err(cannot_estimate(eff));
+                }
+                adapted.push(COUNT_ESTIMATED.to_owned());
+            }
             Ok(Plan {
-                dialect,
+                dialect: counts.unwrap_or(eff.dialect),
                 adaptive_thinking,
                 thinking_binding,
                 reasoning: eff.fields.reasoning,
                 left_out,
                 adapted,
+                estimates_count,
             })
         }
         Request::Image(r) => {
@@ -253,6 +271,7 @@ pub fn prepare(
                 reasoning: None,
                 left_out: Vec::new(),
                 adapted: Vec::new(),
+                estimates_count: false,
             })
         }
         Request::Speech(r) => {
@@ -588,6 +607,7 @@ fn media_plan(dialect: DialectId) -> Plan {
         reasoning: None,
         left_out: Vec::new(),
         adapted: Vec::new(),
+        estimates_count: false,
     }
 }
 

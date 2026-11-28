@@ -222,4 +222,4 @@ Cohere 自身 Chat API 的字段（`documents`、`citation_options`、`connector
 | 带 `param: ""` 的 401 `invalid_api_key` | `KppError` | 密钥被拒绝；缺少密钥时返回相同的正文（`errors/recorded-invalid-api-key`）。 |
 | `GET /v1/models` | `ModelList` | 需要密钥且不在参考中，因此列表不完整；没有 `GET /v1/models/{model}`（404 `text/plain`）。 |
 
-Upstage 还提供无状态的 Responses API 和 Anthropic Messages 端点，Kaeso 不使用它们：Responses 和 Anthropic 应用通过 Chat Completions 访问 Upstage。它没有 Token 计数，因此 Kaeso 拒绝 Token 计数。它的嵌入使用 OpenAI 的形式（[OpenAI Embeddings](openai-embeddings.md#upstage)）；它的文档解析和 OCR API 不是 OpenAI 格式。
+Upstage 还提供无状态的 Responses API 和 Anthropic Messages 端点，Kaeso 不使用它们：Responses 和 Anthropic 应用通过 Chat Completions 访问 Upstage。它没有 Token 计数，因此 Kaeso 自行估算 Token 计数。它的嵌入使用 OpenAI 的形式（[OpenAI Embeddings](openai-embeddings.md#upstage)）；它的文档解析和 OCR API 不是 OpenAI 格式。

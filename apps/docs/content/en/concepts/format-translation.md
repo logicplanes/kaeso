@@ -87,7 +87,7 @@ Kaeso refuses these in every format, even when the format stays the same:
 
 ### Token counts
 
-`/v1/messages/count_tokens`, `/v1/responses/input_tokens` and Gemini's `:countTokens` ask the model's provider for the count. When the provider has no endpoint for counting tokens, Kaeso refuses the request with 400 and a message that says the model can't count tokens. Kaeso doesn't estimate the count, because an estimate never matches the provider's own.
+`/v1/messages/count_tokens`, `/v1/responses/input_tokens` and Gemini's `:countTokens` ask the model's provider for the count. When the provider has no endpoint for counting tokens, Kaeso checks the request as the model would take it and answers with its own estimate in the app's format, without sending anything. The answer carries `kaeso-adapted: count_estimated`, since an estimate never matches the provider's own count exactly. How the estimate counts text, tools, images and documents is under [token counts](providers.md). Audio and video, whose length Kaeso doesn't read, can't be estimated: such a request gets 400.
 
 ## Prompt caching
 

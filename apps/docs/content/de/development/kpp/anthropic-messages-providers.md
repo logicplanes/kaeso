@@ -63,7 +63,7 @@ Quellen: die [Messages-Anleitung](https://docs.aws.amazon.com/bedrock/latest/use
 |---|---|---|
 | Messages unter `/anthropic/v1/messages` auf `bedrock-runtime.{region}.amazonaws.com` | `EgressCtx::api_root` | `/anthropic/v1` tritt an die Stelle von `/v1`; der Schlüssel geht als `x-api-key`, `model` bleibt im Body, und `anthropic-version` ist `2023-06-01`, wie AWS' `curl`-Beispiel sie sendet. |
 | ein abgelehnter Schlüssel als 403 `permission_error` | `KppError` | `PermissionDenied` aus dem Typ; das Gateway liest Bedrocks Meldungen zu einem fehlerhaften, einem unsignierten und einem unbekannten Schlüssel als abgelehnten Schlüssel (`errors/recorded-*-key*`). |
-| `POST /v1/messages/count_tokens` | — | bedrock-runtime zählt Tokens nur unter `/model/{modelId}/count-tokens` im eigenen Format, und die Zählung in Anthropics Form gibt es nur auf bedrock-mantle ([Token zählen](https://docs.aws.amazon.com/bedrock/latest/userguide/count-tokens.html)); daher lehnt Kaeso Token-Zählungen ab. |
+| `POST /v1/messages/count_tokens` | — | bedrock-runtime zählt Tokens nur unter `/model/{modelId}/count-tokens` im eigenen Format, und die Zählung in Anthropics Form gibt es nur auf bedrock-mantle ([Token zählen](https://docs.aws.amazon.com/bedrock/latest/userguide/count-tokens.html)); daher schätzt Kaeso Token-Zählungen selbst. |
 | Streams | Anthropics SSE | AWS beschreibt den Stream dieses Pfads nicht weiter, als dass Anthropics SDK damit funktioniert. |
 
 ## Vercel
@@ -75,7 +75,7 @@ Quellen: Vercels Seiten zur [Anthropic Messages API](https://vercel.com/docs/ai-
 | `provider_metadata` in der Antwort | Extras | Anthropic-Apps erhalten es unverändert zurück. |
 | `thinking`-Blöcke ohne `signature` | `Block::Reasoning` | Anthropic-Apps erhalten sie so, wie Vercel sie gesendet hat. |
 | Fehler in OpenAIs Hülle | `KppError` | Siehe [Fehler](anthropic-messages.md#fehler). |
-| `POST /v1/messages/count_tokens` | — | Vercel zählt nur für Claude-Modelle genau und schätzt den Rest, daher lehnt Kaeso Token-Zählungen für jedes Vercel-Modell ab. |
+| `POST /v1/messages/count_tokens` | — | Vercel zählt nur für Claude-Modelle genau und schätzt den Rest, daher schätzt Kaeso Token-Zählungen für jedes Vercel-Modell selbst. |
 
 ## Z.ai
 
@@ -85,7 +85,7 @@ Quellen: Z.ais Seiten zu den [Fehlercodes](https://docs.z.ai/api-reference/api-c
 |---|---|---|
 | Z.ais numerischer Code als `error.type`, in OpenAIs Hülle (`errors/recorded-invalid-api-key`) | Art des `KppError` | Z.ai beantwortet manche Codes mit einem Status, der in Anthropics Tabelle etwas anderes bedeutet, etwa 429 für ein leeres Guthaben. Der Code gewinnt: `1113`, `1309` und `1314` → `Billing`; `1211` → `NotFound`; `1220`, `1311` und `1315` → `PermissionDenied`; `1261` → `ContextTooLong`; `1301` → `ContentFiltered`; `1305` → `Overloaded`; `1000`, `1001`, `1003` und `1005` → `Authentication`. Andere Codes folgen dem Status. |
 | `{"code", "msg", "success": false}`, auch mit HTTP 200 (`errors/list-invalid-api-key`) | `KppError` | Z.ais Plattform-Hülle, die einen Pfad, den Z.ai nicht bedient, darunter `GET /v1/models`, beantwortet, bevor der Schlüssel geprüft wird. `decode_models` und `decode_model` lesen sie unabhängig vom Status als Fehler, sodass eine Modellprüfung mit einem falschen Schlüssel den abgelehnten Schlüssel meldet. |
-| `POST /v1/messages/count_tokens` | — | Nicht dokumentiert; Kaeso lehnt Token-Zählungen für Z.ai-Modelle ab, bevor etwas gesendet wird. |
+| `POST /v1/messages/count_tokens` | — | Nicht dokumentiert; Kaeso schätzt Token-Zählungen für Z.ai-Modelle selbst, ohne etwas zu senden. |
 ## MiniMax
 
 Quellen: MiniMax' Seite zur [Anthropic-API-Kompatibilität](https://platform.minimax.io/docs/api-reference/text-anthropic-api) und sein [OpenAPI-Dokument](https://platform.minimax.io/docs/api-reference/text/api/openapi-chat-anthropic.json), gelesen am 2026-11-08, die Beispiele aus diesem Dokument in `fixtures/anthropic_messages/providers/minimax/` und ein live mit einem erfundenen Schlüssel aufgezeichneter Fehler. Messages ist MiniMax' `generation`-Dialekt, unter `https://api.minimax.io/anthropic`, für `MiniMax-M3` und `MiniMax-M3.1-Flash`.
@@ -97,7 +97,7 @@ Quellen: MiniMax' Seite zur [Anthropic-API-Kompatibilität](https://platform.min
 | `service_tier` in `message_start` | Extras | `streams/image-url-stream`. |
 | `video`-Inhaltsblöcke (Anfrage), base64 oder URL, auch `mm_file://` | `Block::Video` | MiniMax' eigener Block (`requests/video-url`); nur MiniMax' Profil sendet ihn, Anthropic lehnt ihn ab, und Gemini bekommt ihn als `inlineData` oder `fileData`-URL. |
 | `thinking.type` `adaptive` und `output_config.effort` (Anfrage) | `reasoning` | MiniMax dokumentiert nur `adaptive` und `disabled`; `MiniMax-M3.1-Flash` lehnt `disabled` mit 400 ab, das die App erreicht. |
-| `POST /v1/messages/count_tokens` | — | MiniMax' dokumentierte Antwort legt die Zahlen unter `usage` statt auf die oberste Ebene, daher lehnt Kaeso Token-Zählungen für MiniMax-Modelle ab, bevor etwas gesendet wird. |
+| `POST /v1/messages/count_tokens` | — | MiniMax' dokumentierte Antwort legt die Zahlen unter `usage` statt auf die oberste Ebene, daher schätzt Kaeso Token-Zählungen für MiniMax-Modelle selbst, ohne etwas zu senden. |
 | `GET /v1/models`, `GET /v1/models/{model_id}` | `ModelList`, `ModelInfo` | Anthropics Form (`models/list-documented`, `models/retrieve-documented`); ein falscher Schlüssel erhält 401, daher erkennt **Verfügbarkeit prüfen** ihn. |
 | Fehler | `KppError` | Anthropics Form mit einer eigenen `request_id` von MiniMax (`errors/recorded-invalid-api-key`). |
 
@@ -111,7 +111,7 @@ Quellen: Fireworks' Referenz [Create a Message](https://docs.fireworks.ai/api-re
 | `message_start` mit Usage null, die Zahlen im einen `message_delta` | `Usage` | Wie die Kompatibilitätsseite beschreibt; `cache_creation_input_tokens` ist immer 0. |
 | `document`-Blöcke, `image`-Blöcke mit einer Datei-Quelle, Server-Tools, ein erzwungenes `tool_choice` oder ein Prefill bei aktivem Thinking | gesendet | Fireworks antwortet mit 400, das die App erreicht. |
 | Fehler in Anthropics Hülle mit einer `request_id` (`errors/recorded-invalid-api-key`) | `KppError` | Ein unbekanntes Modell oder ein unbekannter Pfad erhält stattdessen Fireworks' eigenen Body `{"error": {"code": …}}`, der wie OpenAIs gelesen wird. |
-| `POST /v1/messages/count_tokens` | — | Fireworks antwortet mit 404, daher lehnt Kaeso Token-Zählungen ab, bevor etwas gesendet wird. |
+| `POST /v1/messages/count_tokens` | — | Fireworks antwortet mit 404, daher schätzt Kaeso Token-Zählungen selbst, ohne etwas zu senden. |
 
 ## SambaNova
 

@@ -712,11 +712,7 @@ async fn a_request_reaches_a_custom_provider_in_each_generation_format_and_for_e
     assert_eq!(r.status, StatusCode::OK, "{}", r.text());
     assert_eq!(env.mock.last().unwrap().path, "/v1/messages/count_tokens");
     let r = call(&env, "/v1/messages/count_tokens", Some(&env.key), true, Some(json!({ "model": "lab-chat/house-model", "messages": [{ "role": "user", "content": "hi" }] }))).await;
-    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
-    assert_eq!(
-        error_message(&r),
-        "The model `house-model` cannot count tokens."
-    );
+    assert!(r.estimated_count() > 0);
 
     let outcomes = env.outcomes().await;
     let logged: Vec<&str> = outcomes

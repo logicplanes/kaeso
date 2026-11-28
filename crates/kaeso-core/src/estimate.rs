@@ -1,12 +1,318 @@
 use kaeso_kpp::{
-    Block, BlockDelta, BlockStop, Delta, ResponseDelta, ResponseStop, StopReason, StreamEvent,
-    Usage,
+    Block, BlockDelta, BlockStop, Delta, GenerateRequest, OutputSpec, ResponseDelta, ResponseStop,
+    Source, StopReason, StreamEvent, ToolDef, Usage,
 };
 
 pub const BYTES_PER_TOKEN: u64 = 4;
 
 pub fn tokens_of_bytes(bytes: u64) -> u64 {
     bytes.div_ceil(BYTES_PER_TOKEN)
+}
+
+// About what Claude counts for an image of 1.15 megapixels, more than other providers count for
+// most: https://platform.claude.com/docs/en/build-with-claude/vision#calculate-image-costs
+pub const MEDIA_TOKENS: u64 = 1_600;
+
+// The tokens a tokenizer writes around each message and each tool: its role, separators and
+// the tool's framing.
+const FRAMING_TOKENS: u64 = 4;
+
+// A token per four letters of a word and one per mark, line break or non-ASCII character came to
+// 0.7 to 1.05 of Claude's own counts for prose, Chinese, code and JSON; 4 bytes a token, 0.52 to 0.75.
+pub fn input_tokens(g: &GenerateRequest) -> Option<u64> {
+    let mut n = blocks_tokens(&g.system)?;
+    for m in &g.messages {
+        n = n
+            .saturating_add(FRAMING_TOKENS)
+            .saturating_add(blocks_tokens(&m.blocks)?);
+    }
+    for tool in &g.tools {
+        let t = match tool {
+            ToolDef::Function(f) => text_tokens(&f.name)
+                .saturating_add(f.description.as_deref().map_or(0, text_tokens))
+                .saturating_add(f.parameters.as_ref().map_or(0, |p| text_tokens(p.get()))),
+            ToolDef::Unknown(raw) => text_tokens(raw.raw.get()),
+            _ => 0,
+        };
+        n = n.saturating_add(FRAMING_TOKENS).saturating_add(t);
+    }
+    if let OutputSpec::JsonSchema(spec) = &g.output {
+        n = n.saturating_add(text_tokens(spec.schema.get()));
+    }
+    Some(n)
+}
+
+pub fn estimable(g: &GenerateRequest) -> bool {
+    g.system
+        .iter()
+        .chain(g.messages.iter().flat_map(|m| &m.blocks))
+        .all(countable)
+}
+
+fn countable(block: &Block) -> bool {
+    match block {
+        Block::Text(_)
+        | Block::Refusal(_)
+        | Block::Image(_)
+        | Block::Document(_)
+        | Block::ToolCall(_)
+        | Block::Reasoning(_)
+        | Block::Unknown(_)
+        | Block::Json(_) => true,
+        Block::ToolResult(r) => r.content.iter().all(countable),
+        _ => false,
+    }
+}
+
+fn blocks_tokens(blocks: &[Block]) -> Option<u64> {
+    blocks
+        .iter()
+        .try_fold(0u64, |n, b| Some(n.saturating_add(block_tokens(b)?)))
+}
+
+fn block_tokens(block: &Block) -> Option<u64> {
+    Some(match block {
+        Block::Text(t) => text_tokens(&t.text),
+        Block::Refusal(r) => text_tokens(&r.text),
+        Block::Image(_) => MEDIA_TOKENS,
+        Block::Document(d) => {
+            let title = d.title.as_deref().map_or(0, text_tokens);
+            title.saturating_add(match &d.source {
+                Source::Text(t) => text_tokens(&t.data),
+                Source::Base64(b) if b.media_type.starts_with("text/") => {
+                    text_tokens(&String::from_utf8_lossy(&b.data))
+                }
+                Source::Base64(b) => pdf_pages(&b.data).saturating_mul(MEDIA_TOKENS),
+                _ => MEDIA_TOKENS,
+            })
+        }
+        Block::ToolCall(c) => text_tokens(&c.name).saturating_add(text_tokens(c.arguments.get())),
+        Block::ToolResult(r) => blocks_tokens(&r.content)?,
+        Block::Reasoning(r) => r
+            .summary
+            .iter()
+            .chain(&r.text)
+            .fold(0u64, |n, s| n.saturating_add(text_tokens(s))),
+        Block::Unknown(raw) => text_tokens(raw.raw.get()),
+        Block::Json(j) => text_tokens(j.data.get()),
+        Block::Audio(_) | Block::Video(_) => return None,
+        _ => return None,
+    })
+}
+
+fn text_tokens(text: &str) -> u64 {
+    let (mut n, mut word) = (0u64, 0u64);
+    for c in text.chars() {
+        if c.is_ascii_alphanumeric() {
+            word = word.saturating_add(1);
+            continue;
+        }
+        n = n.saturating_add(word.div_ceil(4));
+        word = 0;
+        if c == '\n' || !c.is_whitespace() {
+            n = n.saturating_add(1);
+        }
+    }
+    n.saturating_add(word.div_ceil(4))
+}
+
+// Page objects, each once whatever revisions incremental saves left of it, or the page tree's
+// `/Count`, whichever is more: object streams may hide either. An outline's `/Count` is bookmarks.
+fn pdf_pages(data: &[u8]) -> u64 {
+    let (pages, tree) = page_counts(data);
+    let found = pages.max(tree);
+    if found <= 1 && find(data, b"/ObjStm").is_some() {
+        return u64::try_from(data.len().div_ceil(50_000))
+            .unwrap_or(u64::MAX)
+            .max(1);
+    }
+    found.max(1)
+}
+
+// The page objects (`/Type /Page`) and the largest `/Count` of a `/Type /Pages` dictionary, in
+// one pass that follows dictionary nesting and skips strings, comments and stream data, so none
+// of them can mislead it.
+fn page_counts(data: &[u8]) -> (u64, u64) {
+    const DEPTH: usize = 64;
+    // Bounds the memory a crafted file can take; real files have far fewer pages.
+    const DISTINCT: usize = 65_536;
+    let mut seen: std::collections::HashSet<(u64, u64)> = std::collections::HashSet::new();
+    let mut object: Option<(u64, u64)> = None;
+    #[derive(Default)]
+    struct Dict {
+        pages: bool,
+        count: Option<u64>,
+    }
+    let mut open: Vec<Dict> = Vec::new();
+    let (mut depth, mut best, mut pages, mut i) = (0usize, 0u64, 0u64, 0usize);
+    while let Some(rest) = data.get(i..).filter(|r| !r.is_empty()) {
+        if let Some(end) = skipped(rest) {
+            i = i.saturating_add(end);
+        } else if rest.starts_with(b"<<") {
+            depth = depth.saturating_add(1);
+            if depth <= DEPTH {
+                open.push(Dict::default());
+            }
+            i = i.saturating_add(2);
+        } else if rest.starts_with(b">>") {
+            if depth > 0
+                && depth <= DEPTH
+                && let Some(d) = open.pop()
+                && d.pages
+            {
+                best = best.max(d.count.unwrap_or(0));
+            }
+            depth = depth.saturating_sub(1);
+            let after = i.saturating_add(2);
+            i = match stream_after(data, after) {
+                Some(at) => data
+                    .get(at..)
+                    .and_then(|r| find(r, b"endstream"))
+                    .map_or(data.len(), |end| at.saturating_add(end).saturating_add(9)),
+                None => after,
+            };
+        } else if let Some(after) = rest.strip_prefix(b"/Type") {
+            let name = after.trim_ascii_start();
+            if name.starts_with(b"/Pages") {
+                if depth <= DEPTH
+                    && let Some(d) = open.last_mut()
+                {
+                    d.pages = true;
+                }
+            } else if name.starts_with(b"/Page")
+                && !name
+                    .get(5..)
+                    .is_some_and(|n| n.first().is_some_and(u8::is_ascii_alphanumeric))
+            {
+                let another = match object {
+                    Some(id) if seen.contains(&id) => false,
+                    Some(id) if seen.len() < DISTINCT => seen.insert(id),
+                    _ => true,
+                };
+                if another {
+                    pages = pages.saturating_add(1);
+                }
+            }
+            i = i.saturating_add(5);
+        } else if let Some(after) = rest.strip_prefix(b"/Count") {
+            let digits: Vec<u8> = after
+                .trim_ascii_start()
+                .iter()
+                .copied()
+                .take_while(u8::is_ascii_digit)
+                .take(19)
+                .collect();
+            if let Some(n) = std::str::from_utf8(&digits)
+                .ok()
+                .and_then(|d| d.parse().ok())
+                && depth <= DEPTH
+                && let Some(d) = open.last_mut()
+            {
+                d.count = Some(n);
+            }
+            i = i.saturating_add(6);
+        } else if rest.starts_with(b"endobj") {
+            object = None;
+            i = i.saturating_add(6);
+        } else if rest.starts_with(b"obj")
+            && rest
+                .get(3)
+                .is_none_or(|c| c.is_ascii_whitespace() || b"<[/(%".contains(c))
+        {
+            object = object_id(data, i);
+            i = i.saturating_add(3);
+        } else {
+            i = i.saturating_add(1);
+        }
+    }
+    (pages, best)
+}
+
+// The object number and generation of an `N G obj` header whose `obj` starts at `at`.
+fn object_id(data: &[u8], at: usize) -> Option<(u64, u64)> {
+    let gap = |d: &[u8]| -> Option<usize> {
+        let kept = d.trim_ascii_end().len();
+        (kept < d.len()).then_some(kept)
+    };
+    let before = data.get(..at)?;
+    let (rest, generation) = number_at_end(before.get(..gap(before)?)?)?;
+    let (rest, number) = number_at_end(rest.get(..gap(rest)?)?)?;
+    rest.last()
+        .is_none_or(|c| !c.is_ascii_alphanumeric())
+        .then_some((number, generation))
+}
+
+fn number_at_end(data: &[u8]) -> Option<(&[u8], u64)> {
+    let digits = data
+        .iter()
+        .rev()
+        .take(20)
+        .take_while(|c| c.is_ascii_digit())
+        .count();
+    let (rest, number) = data.split_at(data.len().checked_sub(digits)?);
+    Some((rest, std::str::from_utf8(number).ok()?.parse().ok()?))
+}
+
+// The length of a literal string `(…)`, a hex string `<…>` or a comment `%…` at the start of
+// `rest`; a string's `)` or `>`, or a comment's line end, may be missing at the end of the data.
+fn skipped(rest: &[u8]) -> Option<usize> {
+    match rest.first()? {
+        b'(' => {
+            let (mut depth, mut escaped) = (0usize, false);
+            for (k, c) in rest.iter().enumerate() {
+                match c {
+                    _ if escaped => escaped = false,
+                    b'\\' => escaped = true,
+                    b'(' => depth = depth.saturating_add(1),
+                    b')' => {
+                        depth = depth.saturating_sub(1);
+                        if depth == 0 {
+                            return Some(k.saturating_add(1));
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            Some(rest.len())
+        }
+        b'<' if rest.get(1) != Some(&b'<') => Some(
+            rest.iter()
+                .position(|c| *c == b'>')
+                .map_or(rest.len(), |k| k.saturating_add(1)),
+        ),
+        b'%' => Some(
+            rest.iter()
+                .position(|c| *c == b'\n' || *c == b'\r')
+                .unwrap_or(rest.len()),
+        ),
+        _ => None,
+    }
+}
+
+// Where a stream's `stream` keyword starts, when one follows a dictionary's `>>`, past the
+// whitespace and comments PDF allows between them, looking at most 1 KiB ahead.
+fn stream_after(data: &[u8], from: usize) -> Option<usize> {
+    let window = data.get(from..from.saturating_add(1024).min(data.len()))?;
+    let mut j = 0usize;
+    while let Some(c) = window.get(j) {
+        match c {
+            c if c.is_ascii_whitespace() => j = j.saturating_add(1),
+            b'%' => {
+                let line = window
+                    .get(j..)?
+                    .iter()
+                    .position(|c| *c == b'\n' || *c == b'\r')?;
+                j = j.saturating_add(line);
+            }
+            _ => break,
+        }
+    }
+    let at = from.saturating_add(j);
+    data.get(at..)?.starts_with(b"stream").then_some(at)
+}
+
+fn find(haystack: &[u8], needle: &[u8]) -> Option<usize> {
+    haystack.windows(needle.len()).position(|w| w == needle)
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -797,5 +1103,169 @@ mod tests {
         assert_eq!(text_of(&out), "これで");
         assert_eq!(begun("これで終", "終わり"), "終".len());
         assert_eq!(begun("abc", "終わり"), 0);
+    }
+
+    fn user(blocks: Vec<Block>) -> kaeso_kpp::GenerateRequest {
+        kaeso_kpp::GenerateRequest::new("m")
+            .with_message(kaeso_kpp::Message::new(kaeso_kpp::Role::User, blocks))
+    }
+
+    #[test]
+    fn a_request_is_estimated_from_its_text_media_and_tools() {
+        let text = user(vec![Block::text("Hello, world!")]);
+        assert_eq!(
+            input_tokens(&text),
+            Some(6 + 4),
+            "two words, two marks and a message"
+        );
+        let chinese = user(vec![Block::text("你好，世界")]);
+        assert_eq!(input_tokens(&chinese), Some(5 + 4), "a token per character");
+
+        let mut tools = user(vec![Block::text("Hi")]);
+        let mut f = kaeso_kpp::FunctionTool::new(
+            "get_weather",
+            Some(kaeso_kpp::RawJson::from_string(r#"{"type":"object"}"#.to_owned()).unwrap()),
+        );
+        f.description = Some("Weather".into());
+        tools.tools.push(ToolDef::Function(f));
+        // "Hi" 1 + message 4, then the tool: name 4 (get, _, weather) + description 2 + schema 10
+        // + framing 4.
+        assert_eq!(input_tokens(&tools), Some(5 + 20));
+
+        let image = user(vec![Block::image(Source::Url(
+            "https://example.com/a.png".into(),
+        ))]);
+        assert_eq!(input_tokens(&image), Some(MEDIA_TOKENS + 4));
+        let pdf = b"%PDF-1.7\n1 0 obj << /Type /Pages /Kids [2 0 R 3 0 R 4 0 R] >> \
+            2 0 obj << /Type /Page >> 3 0 obj <</Type/Page>> 4 0 obj << /Type  /Page /Parent 1 0 R >>";
+        let doc = user(vec![Block::Document(kaeso_kpp::DocumentBlock::new(
+            Source::bytes("application/pdf", pdf.to_vec()),
+        ))]);
+        assert_eq!(
+            input_tokens(&doc),
+            Some(3 * MEDIA_TOKENS + 4),
+            "three pages"
+        );
+        assert_eq!(
+            pdf_pages(b"%PDF-1.7\n1 0 obj << /Count 12 /Type /Pages /Kids [] >>"),
+            12
+        );
+        assert_eq!(
+            pdf_pages(
+                b"%PDF-1.7\n1 0 obj << /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 >> \
+                  2 0 obj << /Type /Outlines /First 5 0 R /Last 6 0 R /Count 40 >> \
+                  7 0 obj << /Title (Intro) /Parent 2 0 R /Count 12 >>"
+            ),
+            2,
+            "an outline's bookmarks are no pages"
+        );
+        assert_eq!(
+            pdf_pages(
+                b"%PDF-1.7\n1 0 obj << /Resources << /Font << /F1 5 0 R >> >> /Type /Pages \
+                  /Kids [3 0 R] /Count 3 >> 9 0 obj << /Length 28 >> stream\n<< /Type /Pages /Count 99 >>\nendstream"
+            ),
+            3,
+            "inline resources come before the count, and stream data is no dictionary"
+        );
+        assert_eq!(
+            pdf_pages(
+                b"%PDF-1.7\n1 0 obj << /Title (Live stream notes) >> \
+                  2 0 obj << /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 >> 5 0 obj << /Length 3 >> stream\nabc\nendstream"
+            ),
+            2,
+            "a title's `stream` is text"
+        );
+        assert_eq!(
+            pdf_pages(
+                b"%PDF-1.7\n1 0 obj << /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 >> \
+                  9 0 obj << /Length 28 >>\n% the page tree's copy\n\n   stream\n<< /Type /Pages /Count 99 >>\nendstream"
+            ),
+            2,
+            "comments and whitespace may come before `stream`"
+        );
+        assert_eq!(
+            pdf_pages(
+                b"%PDF-1.7\n1 0 obj << /Contents (a >>\n% note\nstream of text) /T <73747265616d> >> \
+                  2 0 obj << /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 >>"
+            ),
+            2,
+            "strings are text, whatever they spell"
+        );
+        assert_eq!(
+            pdf_pages(
+                b"%PDF-1.7\n% << /Type /Pages /Count 40 >> /Type /Page /Type /Page\n\
+                  1 0 obj << /Type /Pages /Kids [2 0 R] /Count 1 >> 2 0 obj << /Type /Page >> \
+                  3 0 obj << /Length 17 >> stream\n/Type /Page /Type\nendstream"
+            ),
+            1,
+            "a comment or stream that spells page trees or pages counts nothing"
+        );
+        assert_eq!(
+            pdf_pages(
+                b"%PDF-1.7\n9 0 obj << /Type /ObjStm /N 2 /Length 0 >> stream\nendstream endobj \
+                  4 0 obj << /Type /Pages /Kids [5 0 R] /Count 1 /Parent 1 0 R >> endobj \
+                  5 0 obj << /Type /Page /Parent 4 0 R >> endobj 6 0 obj << /Type /Page >> endobj \
+                  7 0 obj<</Type/Page>>endobj"
+            ),
+            3,
+            "a visible branch of a page tree whose root is packed counts no fewer than its pages"
+        );
+        assert_eq!(object_id(b"12 0 obj", 5), Some((12, 0)));
+        assert_eq!(object_id(b"x12 0 obj", 6), None, "a number stands alone");
+        assert_eq!(object_id(b"0 obj", 2), None, "a header has two numbers");
+        assert_eq!(
+            pdf_pages(
+                b"%PDF-1.7\n1 0 obj << /Type /Pages /Kids [2 0 R 3 0 R] /Count 2 >> \
+                  2 0 obj << /Type /Page /Parent 1 0 R >> 3 0 obj << /Type /Page /Parent 1 0 R >> \
+                  %%EOF\n2 0 obj << /Type /Page /Parent 1 0 R /Annots [9 0 R] >> \
+                  3 0 obj << /Type /Page /Parent 1 0 R /Annots [9 0 R] >> %%EOF\n\
+                  2 0 obj << /Type /Page /Parent 1 0 R /Annots [10 0 R] >> \
+                  3 0 obj << /Type /Page /Parent 1 0 R /Annots [10 0 R] >> %%EOF\n"
+            ),
+            2,
+            "incremental saves keep old copies of a page; the page tree counts each once"
+        );
+        let mut many = b"%PDF-1.7\n".to_vec();
+        for _ in 0..200_000 {
+            many.extend_from_slice(b"/Count 1 ");
+        }
+        assert_eq!(pdf_pages(&many), 1, "one pass, whatever the PDF holds");
+        let mut packed = b"%PDF-1.7\n5 0 obj << /Type /ObjStm /N 40 >>".to_vec();
+        packed.resize(120_000, b'x');
+        assert_eq!(
+            pdf_pages(&packed),
+            3,
+            "a page for every 50 kB of a packed file"
+        );
+        let plain = user(vec![Block::Document(kaeso_kpp::DocumentBlock::new(
+            Source::text("text/plain", "abcdefgh"),
+        ))]);
+        assert_eq!(input_tokens(&plain), Some(2 + 4));
+
+        let audio = user(vec![Block::audio(Source::Url(
+            "https://example.com/a.mp3".into(),
+        ))]);
+        assert_eq!(
+            input_tokens(&audio),
+            None,
+            "audio has no length Kaeso reads"
+        );
+        assert!(!estimable(&audio));
+        let mut nested = user(vec![Block::tool_result(
+            "call_1",
+            vec![Block::audio(Source::Url(
+                "https://example.com/a.mp3".into(),
+            ))],
+            false,
+        )]);
+        assert_eq!(input_tokens(&nested), None);
+        assert!(!estimable(&nested));
+        nested.messages[0].blocks = vec![Block::tool_result(
+            "call_1",
+            vec![Block::text("12345678")],
+            false,
+        )];
+        assert_eq!(input_tokens(&nested), Some(2 + 4));
+        assert!(estimable(&nested) && estimable(&doc) && estimable(&plain));
     }
 }

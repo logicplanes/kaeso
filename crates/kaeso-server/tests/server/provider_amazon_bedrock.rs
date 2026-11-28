@@ -177,11 +177,7 @@ async fn bedrock_refusals_of_the_key_are_refused_keys_on_both_routes_and_token_c
         Some(json!({ "model": CLAUDE, "messages": [{ "role": "user", "content": "Hello" }] })),
     )
     .await;
-    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
-    assert_eq!(
-        r.json()["error"]["message"],
-        format!("The model `{CLAUDE}` cannot count tokens.")
-    );
+    assert!(r.estimated_count() > 0);
 }
 
 #[tokio::test]

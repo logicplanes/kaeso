@@ -401,7 +401,7 @@ async fn responses_and_embeddings_go_to_the_v1_api_and_token_counts_are_refused(
         Some(json!({ "model": GPT, "messages": [{ "role": "user", "content": "Hello" }] })),
     )
     .await;
-    assert!(r.status.is_client_error(), "{}", r.text());
+    assert!(r.estimated_count() > 0);
     assert!(env.mock.received().is_empty());
 }
 

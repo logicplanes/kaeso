@@ -46,5 +46,5 @@ Sources: Vercel's [OpenAI Responses API](https://vercel.com/docs/ai-gateway/sdks
 | `response.reasoning.delta` and `response.reasoning.done` events | as `response.reasoning_text.delta` and `response.reasoning_text.done` | Vercel's names for OpenAI's reasoning text events, with the same fields; Responses apps get them as Vercel sent them, other dialects get the reasoning (`streams/recorded-reasoning-stream`). |
 | `reasoning` items with `content` (`reasoning_text`) and no `encrypted_content` | as OpenAI's | OpenAI's models add `encrypted_content` when the request asks for it (`responses/recorded-gpt-reasoning-encrypted`). |
 | `provider_metadata` on the response, `usage.input_tokens_details.cache_write_tokens` | extras, `raw` usage | As for Chat Completions. |
-| `POST /v1/responses/input_tokens` | — | Vercel answers 404, and Kaeso refuses token counts for Vercel models before sending anything. |
+| `POST /v1/responses/input_tokens` | — | Vercel answers 404, and Kaeso estimates token counts for Vercel models without sending anything. |
 | errors | `KppError` | OpenAI's envelope with Vercel's own `type`, as for [Chat Completions](openai-chat-gateways.md#vercel). |
