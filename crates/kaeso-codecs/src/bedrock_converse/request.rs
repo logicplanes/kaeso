@@ -124,13 +124,13 @@ fn object_schema(schema: &kaeso_kpp::RawJson) -> bool {
 
 fn check_output(r: &GenerateRequest) -> Result<(), KppError> {
     match &r.output {
-        OutputSpec::Text => Ok(()),
-        _ => Err(KppError::unsupported_by(
+        OutputSpec::JsonSchema(_) => Err(KppError::unsupported_by(
             "structured output",
             D,
-            "Kaeso doesn't send JSON output formats through Converse yet; describe the format in the prompt.",
+            "Kaeso doesn't send JSON schemas through Converse yet; describe the format in the prompt.",
         )
         .with_param(app_field(r, Setting::OutputFormat, D))),
+        _ => Ok(()),
     }
 }
 

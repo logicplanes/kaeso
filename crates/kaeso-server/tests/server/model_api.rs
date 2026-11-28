@@ -1412,3 +1412,38 @@ async fn nextchats_neutral_penalties_reach_claude_left_out_and_named() {
     assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
     assert_eq!(r.json()["error"]["param"], "presence_penalty");
 }
+
+#[tokio::test]
+async fn instructors_json_mode_reaches_claude_as_a_sentence_in_the_system_prompt() {
+    let env = env().await;
+    let mut body: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../kaeso-codecs/fixtures/openai_chat/requests/instructor-json-mode.json"
+    ))
+    .unwrap();
+    body["model"] = json!("claude-haiku-4-5");
+    body["max_tokens"] = json!(200);
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(body),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.header("kaeso-adapted"), Some("response_format"));
+    let sent = env.mock.last().unwrap().json();
+    assert!(sent.get("output_config").is_none(), "{sent}");
+    let system: Vec<&str> = sent["system"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter_map(|b| b["text"].as_str())
+        .collect();
+    assert_eq!(system.len(), 2, "{sent}");
+    assert!(system[0].contains("json_schema"), "{sent}");
+    assert!(
+        system[1].starts_with("Answer with one JSON object"),
+        "{sent}"
+    );
+}
