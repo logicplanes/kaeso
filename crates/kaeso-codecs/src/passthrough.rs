@@ -273,7 +273,6 @@ impl RawSseFramer {
 // A provider's last frame may end without its blank line. Ending it keeps what Kaeso writes
 // after it, such as the usage chunk or an error, an event of its own instead of more lines of it.
 fn end_event(out: &mut Vec<u8>, from: usize) {
-    // The line ending a line ends with, and where the line starts.
     let ending = |t: &[u8]| -> Option<(usize, &'static [u8])> {
         [&b"\r\n"[..], b"\n", b"\r"]
             .into_iter()
@@ -1871,8 +1870,18 @@ mod tests {
             .rfind(|c| !c["usage"].is_null())
             .map(|c| c["usage"].clone());
         let chunks = data_chunks(out);
-        let with: Vec<&Value> = chunks.iter().filter(|c| !c["usage"].is_null()).collect();
         let text = String::from_utf8_lossy(out);
+        let events = crate::sse::parse_all(out)
+            .unwrap()
+            .into_iter()
+            .filter(|i| matches!(i, crate::sse::SseItem::Event(e) if e.data != "[DONE]"))
+            .count();
+        assert_eq!(
+            events,
+            chunks.len(),
+            "{name}: every event is one JSON chunk: {text}"
+        );
+        let with: Vec<&Value> = chunks.iter().filter(|c| !c["usage"].is_null()).collect();
         assert_eq!(with.len(), 1, "{name}: {text}");
         assert_eq!(
             Some(with[0]),
@@ -2043,6 +2052,11 @@ mod tests {
             ] {
                 let (_, out, errors) = run(&sent);
                 assert!(errors.is_empty(), "{end:?}: {errors:?}");
+                let finishes = data_chunks(out.as_bytes())
+                    .iter()
+                    .filter(|c| c["choices"][0]["finish_reason"] == "stop")
+                    .count();
+                assert_eq!(finishes, 1, "{end:?}: the finish chunk arrives: {out}");
                 assert_usage_once(
                     &format!("unterminated {end:?}"),
                     sent.as_bytes(),
