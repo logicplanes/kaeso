@@ -681,7 +681,7 @@ pub struct ModelCreate {
     pub overrides: Option<serde_json::Map<String, serde_json::Value>>,
     #[doc = "`true` for a model KPMR does not list; its required fields\n\
         (modalities, limits, input and output prices, egress dialect) must\n\
-        then be overrides."]
+        then be overrides. An embeddings model has no output limit."]
     #[serde(default)]
     pub custom: bool,
 }

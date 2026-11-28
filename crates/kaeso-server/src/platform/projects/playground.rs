@@ -24,7 +24,7 @@ use crate::model_api::hooks::{Caller as ModelCaller, Source};
 use crate::model_api::pipeline::{self, Failure, Incoming, Stage};
 use crate::platform::access::{Caller, Ctx};
 use crate::platform::error::{ApiError, ApiResult};
-use crate::platform::json::data_error;
+use crate::platform::json::read;
 use crate::platform::pagination::List;
 use crate::platform::params::Path;
 use crate::state::AppState;
@@ -164,8 +164,7 @@ fn split(bytes: Bytes) -> ApiResult<Split> {
     let model = fields
         .get("model")
         .and_then(|v| serde_json::from_str::<String>(v.get()).ok());
-    let test = serde_path_to_error::deserialize(serde_json::Value::Object(test))
-        .map_err(|e| data_error(&e.to_string()))?;
+    let test = read(&serde_json::Value::Object(test).to_string())?;
     Ok(Split {
         body: Bytes::from(rest),
         model,

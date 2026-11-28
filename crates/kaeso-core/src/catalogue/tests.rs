@@ -606,6 +606,25 @@ fn values_are_checked() {
         ..Fields::default()
     };
     assert_eq!(custom.validate_custom(), Ok(()));
+    let embeddings = Fields {
+        output_modalities: Some(vec!["embedding".into()]),
+        output_limit: None,
+        output_price: Some(dec!(0)),
+        egress_dialect: Some(DialectId::OpenAiEmbeddings),
+        ..custom.clone()
+    };
+    assert_eq!(embeddings.validate_custom(), Ok(()));
+    assert_eq!(embeddings.validate(openai), Ok(()));
+    let mixed = Fields {
+        egress_dialect: Some(DialectId::OpenAiChat),
+        ..embeddings.clone()
+    };
+    assert_eq!(mixed.validate(openai).unwrap_err().field, "egress_dialect");
+    let chat = Fields {
+        output_limit: None,
+        ..custom
+    };
+    assert_eq!(chat.validate_custom().unwrap_err().field, "output_limit");
 }
 
 fn alias(name: impl Into<String>, target: Uuid) -> Alias {
