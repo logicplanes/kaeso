@@ -109,6 +109,27 @@ fn every_stream_fixture_with_usage_reaches_an_app_that_asked_for_it_once() {
 }
 
 #[test]
+fn an_empty_finish_reason_on_a_chunk_kept_whole_does_not_let_usage_out_early() {
+    let frame = |data: &str| {
+        StreamEvent::Extra(RawItem::new(
+            DialectId::OpenAiChat,
+            RawJson::from_string(format!("{{\"data\":{data}}}")).unwrap(),
+        ))
+    };
+    let usage = r#"{"id":"c","choices":[],"usage":{"prompt_tokens":4,"completion_tokens":1,"total_tokens":5}}"#;
+    for (finish, early) in [("\"\"", true), ("\"stop\"", false)] {
+        let ctx = EncodeCtx::new(RequestKind::Generate, StreamMode::on(true));
+        let mut encoder = OpenAiChat::stream_encoder(&ctx);
+        let chunk = format!(
+            r#"{{"id":"c","choices":[{{"index":0,"delta":{{"content":"Hi"}},"finish_reason":{finish}}}]}}"#
+        );
+        assert!(!encoder.encode(&frame(&chunk)).unwrap().is_empty());
+        let out = encoder.encode(&frame(usage)).unwrap();
+        assert_eq!(out.is_empty(), early, "finish_reason {finish}");
+    }
+}
+
+#[test]
 fn every_stream_fixture_round_trips() {
     for (name, bytes) in fixtures(D, "streams", "sse") {
         let events = decode_whole(&bytes);

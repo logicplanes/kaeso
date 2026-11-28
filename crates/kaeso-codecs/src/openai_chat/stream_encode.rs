@@ -414,7 +414,8 @@ impl ChatStreamEncoder {
         let finishes = data
             .get("choices")
             .and_then(|c| c.get(0))
-            .is_some_and(|c| c.get("finish_reason").is_some_and(Value::is_string));
+            .and_then(|c| c.get("finish_reason")?.as_str())
+            .is_some_and(|f| !f.is_empty());
         let early = !self.finish_written;
         self.finish_written |= finishes;
         if data.get("usage").is_none_or(Value::is_null) {

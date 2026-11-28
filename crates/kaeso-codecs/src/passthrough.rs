@@ -270,6 +270,26 @@ impl RawSseFramer {
     }
 }
 
+// A provider's last frame may end without its blank line. Ending it keeps what Kaeso writes
+// after it, such as the usage chunk or an error, an event of its own instead of more lines of it.
+fn end_event(out: &mut Vec<u8>, from: usize) {
+    let strip = |t: &[u8]| -> Option<usize> {
+        [&b"\r\n"[..], b"\n", b"\r"]
+            .into_iter()
+            .find(|end| t.ends_with(end))
+            .map(|end| t.len() - end.len())
+    };
+    let Some(tail) = out.get(from..).filter(|t| !t.is_empty()) else {
+        return;
+    };
+    let missing: &[u8] = match strip(tail) {
+        None => b"\n\n",
+        Some(rest) if rest > 0 && tail.get(..rest).and_then(strip).is_none() => b"\n",
+        Some(_) => b"",
+    };
+    out.extend_from_slice(missing);
+}
+
 // Finds the byte offset right after the blank line terminating the frame starting at `from`, or
 // right after a standalone comment line terminator.
 fn find_frame_end(bytes: &[u8], from: usize) -> Option<usize> {
@@ -439,6 +459,7 @@ fn finish_framer<S: FrameState>(
         return (step, true);
     }
     let mut framed_err = None;
+    let from = out.len();
     let res = framer.finish(|frame| {
         if framed_err.is_none() && !state.is_inert() {
             state.process_frame(frame, out, &mut step);
@@ -447,6 +468,7 @@ fn finish_framer<S: FrameState>(
             }
         }
     });
+    end_event(out, from);
     if let Some(err) = framed_err {
         step.error = Some(err);
         return (step, true);
@@ -2005,6 +2027,20 @@ mod tests {
             out.ends_with(&format!("{ends}{early}data: [DONE]\n\n")),
             "{out}"
         );
+
+        // A stream that ends right after a chunk, without its blank line: Kaeso's usage chunk
+        // and errors stay events of their own.
+        let (_, out, errors) = run(&format!("{head}{}\n", finish.trim_end()));
+        assert!(errors.is_empty(), "{errors:?}");
+        assert_usage_once("unterminated", finish.as_bytes(), out.as_bytes());
+        let mut pass = for_stream(DialectId::OpenAiChat, &ectx, &enc).unwrap();
+        let mut out = Vec::new();
+        let _ = pass.feed(format!("{}\n", head.trim_end()).as_bytes(), &mut out);
+        assert!(pass.finish(&mut out).error.is_some(), "not finished");
+        out.extend(pass.encode_error(&KppError::provider("The connection broke.")));
+        let chunks = data_chunks(&out);
+        assert_eq!(chunks.len(), 2, "{}", String::from_utf8_lossy(&out));
+        assert!(chunks[1].get("error").is_some(), "{chunks:?}");
 
         // A comment, then an error: the usage the comment moved out of the chunk comes first.
         let (_, out, errors) = run(&format!(
