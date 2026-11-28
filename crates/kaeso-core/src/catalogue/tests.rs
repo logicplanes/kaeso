@@ -1663,10 +1663,8 @@ fn transcription_models_still_transcribe() {
 }
 
 #[test]
-fn a_generation_with_audio_reaches_every_providers_transcription_model() {
+fn a_generation_with_audio_reaches_transcription_models_in_formats_that_carry_audio() {
     for (provider, model, ingress) in [
-        ("xai", "grok-voice-transcribe-2.0", DialectId::OpenAiChat),
-        ("openai", "whisper-1", DialectId::OpenAiChat),
         (
             "mistral",
             "voxtral-small-transcribe-3-0",
@@ -1681,6 +1679,30 @@ fn a_generation_with_audio_reaches_every_providers_transcription_model() {
         let mut listen = Request::Generate(user(vec![Block::text("What is said?"), audio()]));
         prepare(&mut listen, ingress, &voice)
             .unwrap_or_else(|u| panic!("{model} with audio: {}", u.message));
+    }
+}
+
+#[test]
+fn a_format_without_audio_points_to_the_transcription_endpoint_even_with_audio() {
+    for (provider, model) in [
+        ("openai", "whisper-1"),
+        ("xai", "grok-voice-transcribe-2.0"),
+        ("elevenlabs", "scribe_v2"),
+        ("deepgram", "nova-3"),
+    ] {
+        let voice = eff_of(provider, model);
+        for blocks in [
+            vec![Block::text("hi")],
+            vec![Block::text("What is said?"), audio()],
+        ] {
+            assert_eq!(
+                refused_with(user(blocks), DialectId::OpenAiChat, &voice),
+                format!(
+                    "The model `{model}` is a transcription model; send it to `/v1/audio/transcriptions`."
+                ),
+                "{model}"
+            );
+        }
     }
 }
 

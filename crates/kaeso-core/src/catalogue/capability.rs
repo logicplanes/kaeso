@@ -521,29 +521,28 @@ fn refuse_decision_only(eff: &Effective) -> Result<(), Unsupported> {
     ))
 }
 
-// A transcription model needs audio. Some providers serve one at their generation endpoint too
-// (Gemini at `generateContent`, QwenCloud and Mistral at chat completions), and the others answer
-// with a 404, which doesn't cost the model its availability. So a generation without audio is
-// refused for every provider, and one with audio goes to the provider. Counts are refused.
+// Providers answer a generation for a transcription model with a 404, apart from those serving one
+// in a format that carries audio: Gemini at `generateContent`, QwenCloud and Mistral at chat.
 fn refuse_transcriber(
     eff: &Effective,
     generation: Option<&GenerateRequest>,
 ) -> Result<(), Unsupported> {
-    if !eff.transcribes_only || generation.is_some_and(may_hold_audio) {
+    if !eff.transcribes_only {
+        return Ok(());
+    }
+    let hears = matches!(eff.dialect, DialectId::OpenAiChat | DialectId::Gemini);
+    if hears && generation.is_some_and(may_hold_audio) {
         return Ok(());
     }
     let name = eff.model_id.as_str();
-    // Point to the transcription endpoint only where Kaeso has one for the model, and where it
-    // isn't the endpoint the app already calls.
-    let elsewhere = eff
-        .provider
-        .transcriptions(name)
-        .map(|t| t.dialect != eff.dialect);
-    let message = match (elsewhere, generation) {
-        (Some(true), _) | (Some(false), None) => format!(
+    let message = match (eff.provider.transcriptions(name), generation) {
+        (Some(t), Some(_)) if hears && t.dialect == eff.dialect => {
+            format!("The model `{name}` only transcribes; send it audio.")
+        }
+        (None, Some(_)) => format!("The model `{name}` only transcribes; send it audio."),
+        (Some(_), _) => format!(
             "The model `{name}` is a transcription model; send it to `/v1/audio/transcriptions`."
         ),
-        (_, Some(_)) => format!("The model `{name}` only transcribes; send it audio."),
         (None, None) => format!("The model `{name}` cannot count tokens."),
     };
     Err(refuse("generation", Some("model"), message))
