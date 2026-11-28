@@ -92,7 +92,7 @@ indexmap = { version = "2.14", features = ["serde"] }
 moka = { version = "0.12", features = ["future"] }
 toml = "1.2"
 semver = { version = "1.0", features = ["serde"] }
-jiff = { version = "0.2", default-features = false, features = ["std", "tzdb-bundle-always"] }
+jiff = { version = "1.0", default-features = false, features = ["std", "tzdb-bundle-always"] }
 sigstore = { version = "0.15", default-features = false, features = ["verify", "rustls-tls"] }
 rustls-pki-types = "1.15"
 rustix = { version = "1.1", default-features = false, features = ["std", "process"] }
