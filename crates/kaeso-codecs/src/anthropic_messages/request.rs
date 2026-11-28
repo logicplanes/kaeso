@@ -10,7 +10,7 @@ use super::blocks::{
     BlockEncoder, Dec, Side, decode_block, decode_cache, decode_content, empty_parameters,
     is_cache_mark, own_ext,
 };
-use super::check::{check_output, check_reasoning};
+use super::check::check_reasoning;
 use super::common::{D, internal, nested_ext, request_kind_name, to_raw};
 use super::wire::{
     JsonFormatW, MessageW, MetadataW, OutputConfigW, Raw, RequestW, ThinkingConfigW, ToolChoiceW,
@@ -419,11 +419,7 @@ pub(crate) fn encode_request(
         .reasoning
         .as_ref()
         .filter(|_| !is_count || check_reasoning(r).is_ok());
-    let output = if !is_count || check_output(r).is_ok() {
-        &r.output
-    } else {
-        &OutputSpec::Text
-    };
+    let output = &r.output;
     let mut plan = match reasoning {
         Some(c) => thinking_plan(c, r.sampling.max_output_tokens, ctx, is_count)?,
         None => ThinkingPlan::default(),
