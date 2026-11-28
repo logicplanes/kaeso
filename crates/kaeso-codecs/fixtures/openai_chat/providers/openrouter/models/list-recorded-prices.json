@@ -1,0 +1,154 @@
+{
+  "data": [
+    {
+      "id": "google/gemini-4-neon",
+      "canonical_slug": "google/gemini-4-neon-20261118",
+      "hugging_face_id": null,
+      "name": "Google: Gemini 4 Neon",
+      "created": 1795006977,
+      "description": "Gemini 4 Neon is a fast, mid-priced model in the Gemini 4 family from Google, built for coding and agentic work. It is suited for repository and terminal coding, web...",
+      "context_length": 1048576,
+      "architecture": {
+        "modality": "text+image+file+audio+video->text",
+        "input_modalities": [
+          "audio",
+          "file",
+          "image",
+          "text",
+          "video"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "tokenizer": "Gemini",
+        "instruct_type": null
+      },
+      "pricing": {
+        "prompt": "0.000003",
+        "completion": "0.000015",
+        "image": "0.000003",
+        "audio": "0.000003",
+        "input_audio_cache": "0.00000015",
+        "web_search": "0.014",
+        "internal_reasoning": "0.000015",
+        "input_cache_read": "0.00000015",
+        "input_cache_write": "0.0000000833333333333333"
+      },
+      "top_provider": {
+        "context_length": 1048576,
+        "max_completion_tokens": 943718,
+        "is_moderated": false
+      },
+      "per_request_limits": null,
+      "supported_parameters": [
+        "include_reasoning",
+        "max_tokens",
+        "reasoning",
+        "reasoning_effort",
+        "response_format",
+        "seed",
+        "stop",
+        "structured_outputs",
+        "temperature",
+        "tool_choice",
+        "tools",
+        "top_p"
+      ],
+      "default_parameters": {},
+      "supported_voices": null,
+      "knowledge_cutoff": null,
+      "expiration_date": null,
+      "links": {
+        "details": "/api/v1/models/google/gemini-4-neon-20261118/endpoints"
+      },
+      "endpoints": [
+        "/api/v1/chat/completions",
+        "/api/v1/completions",
+        "/api/v1/messages",
+        "/api/v1/responses"
+      ],
+      "benchmarks": {
+        "design_arena": [
+          {
+            "arena": "agents",
+            "category": "pdf",
+            "elo": 1268,
+            "win_rate": 59.6,
+            "rank": 6
+          },
+          {
+            "arena": "models",
+            "category": "3d",
+            "elo": 1486,
+            "win_rate": 75.4,
+            "rank": 2
+          },
+          {
+            "arena": "models",
+            "category": "codecategories",
+            "elo": 1434,
+            "win_rate": 63.5,
+            "rank": 4
+          },
+          {
+            "arena": "models",
+            "category": "dataviz",
+            "elo": 1313,
+            "win_rate": 61.5,
+            "rank": 13
+          },
+          {
+            "arena": "models",
+            "category": "gamedev",
+            "elo": 1396,
+            "win_rate": 65,
+            "rank": 5
+          },
+          {
+            "arena": "models",
+            "category": "uicomponent",
+            "elo": 1341,
+            "win_rate": 58.6,
+            "rank": 8
+          },
+          {
+            "arena": "models",
+            "category": "website",
+            "elo": 1382,
+            "win_rate": 58.1,
+            "rank": 5
+          }
+        ],
+        "artificial_analysis": {
+          "intelligence_index": 61.5,
+          "coding_index": null,
+          "agentic_index": null,
+          "finance_and_accounting_index": 65.1,
+          "strategy_and_ops_index": 63.8,
+          "legal_index": 63.8,
+          "healthcare_and_medical_index": 60.1,
+          "engineering_index": 67,
+          "economics_index": 61.9,
+          "cyber_index": null,
+          "openness_index": null,
+          "multilingual_index": null,
+          "decision_index": null
+        }
+      },
+      "reasoning": {
+        "mandatory": true,
+        "supported_efforts": [
+          "xhigh",
+          "high",
+          "medium",
+          "low"
+        ],
+        "default_effort": "medium"
+      }
+    }
+  ],
+  "total_count": 477,
+  "links": {
+    "next": null
+  }
+}

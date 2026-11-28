@@ -1,0 +1,52 @@
+{
+  "model": "grok-4.7",
+  "input": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "Weather in Paris? Use the tool."
+        }
+      ]
+    },
+    {
+      "type": "item_reference",
+      "id": "rs_kaeso_00000000000000000000000000000001_0"
+    },
+    {
+      "type": "function_call",
+      "call_id": "call_00000000000000000000000001",
+      "name": "weather",
+      "arguments": "{\"city\":\"Paris\"}"
+    },
+    {
+      "type": "function_call_output",
+      "call_id": "call_00000000000000000000000001",
+      "output": "Sunny 21C"
+    }
+  ],
+  "max_output_tokens": 800,
+  "tools": [
+    {
+      "type": "function",
+      "name": "weather",
+      "description": "Weather in a city",
+      "parameters": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "city": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "city"
+        ],
+        "additionalProperties": false
+      },
+      "strict": false
+    }
+  ],
+  "tool_choice": "auto"
+}

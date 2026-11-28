@@ -4,8 +4,9 @@ mod images;
 pub(crate) mod models;
 pub(crate) mod parts;
 mod path;
-mod request;
+pub(crate) mod request;
 mod response;
+pub(crate) mod schema;
 mod sdk;
 mod speech;
 pub(crate) mod stream;
@@ -21,6 +22,8 @@ mod tests_edges;
 mod tests_images;
 #[cfg(test)]
 mod tests_parts;
+#[cfg(test)]
+mod tests_schema;
 #[cfg(test)]
 mod tests_speech;
 

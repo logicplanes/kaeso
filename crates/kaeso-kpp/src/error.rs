@@ -18,6 +18,10 @@ pub struct KppError {
     pub param: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub retry_after: Option<Duration>,
+    /// Whether sending the same request again can succeed; `None` when the kind and status say
+    /// it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub retry: Option<Retry>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub origin: Option<Origin>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -32,6 +36,7 @@ impl KppError {
             status: None,
             param: None,
             retry_after: None,
+            retry: None,
             origin: None,
             raw: None,
         }
@@ -88,6 +93,12 @@ impl KppError {
     }
 
     #[must_use]
+    pub fn with_retry(mut self, retry: Retry) -> Self {
+        self.retry = Some(retry);
+        self
+    }
+
+    #[must_use]
     pub fn with_origin(mut self, origin: impl Into<Origin>) -> Self {
         self.origin = Some(origin.into());
         self
@@ -105,6 +116,21 @@ impl KppError {
             _ => None,
         }
     }
+}
+
+/// Whether sending the same request again can succeed.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[non_exhaustive]
+pub enum Retry {
+    /// It can, as after a short rate limit or an overloaded provider.
+    Helps,
+    /// It can't until someone changes the request, a key or a setting.
+    Futile,
+    /// A quota or budget is used up, which OpenAI calls `insufficient_quota`: a retry can pass
+    /// once it resets or someone raises it. `retry_after` says when it resets, for one that
+    /// resets on its own; a total budget never does.
+    AfterReset,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -222,6 +248,11 @@ mod tests {
             .with_retry_after(Duration::from_secs(20))
             .with_origin(DialectId::AnthropicMessages);
         let json = serde_json::to_string(&e).unwrap();
+        assert!(!json.contains("retry\""));
         assert_eq!(serde_json::from_str::<KppError>(&json).unwrap(), e);
+        let used_up = e.with_retry(Retry::AfterReset);
+        let json = serde_json::to_string(&used_up).unwrap();
+        assert!(json.contains("\"retry\":\"after_reset\""), "{json}");
+        assert_eq!(serde_json::from_str::<KppError>(&json).unwrap(), used_up);
     }
 }

@@ -33,6 +33,7 @@ Apply a change with `docker compose up -d --wait`. A gateway setting written onl
 | `KAESO_UPDATER_TOKEN`, `COMPOSE_PROFILES` | no | The token the gateway and the updater share, and `updater` to start the updater ([the updater](upgrades.md#the-updater)). |
 | `KAESO_DIR` | with the updater | The install's folder, the only folder the updater's Docker proxy allows bind mounts from. |
 | `DOCKER_SOCKET` | no | The path of Docker's socket for the updater, when it isn't `/var/run/docker.sock`. |
+| `KAESO_SEARCH_ENGINES` | no | `true` to let search engines and AI crawlers index the sign-in page; `false`, the default, keeps the whole install out of them. Compose passes it to the gateway and the console ([search engines](#search-engines)). |
 | `KAESO_TRUSTED_PROXIES` | no | The networks of proxies whose `X-Forwarded-For` the gateway believes, `127.0.0.0/8,::1/128` and `EDGE_SUBNET` by default. Set it to your own proxy's address ([your own reverse proxy](domains-and-tls.md#use-your-own-reverse-proxy)). |
 | `EDGE_SUBNET` | no | The subnet of the `edge` network, `172.30.83.0/24` by default, whose `X-Forwarded-For` the gateway believes. Change it when the server already uses that range. |
 | `GATEWAY_REPLICAS` | no | How many gateways run, `1` by default; Caddy spreads requests over them ([several gateways](scaling.md)). |
@@ -153,6 +154,14 @@ Set these when your install is public and the law where you run it asks for a le
 | --- | --- | --- | --- |
 | `KAESO_LEGAL_IMPRINT_URL`<br>`legal.imprint_url` | text | — | The `https` address of your legal notice (imprint), such as `https://example.com/imprint`. |
 | `KAESO_LEGAL_PRIVACY_URL`<br>`legal.privacy_url` | text | — | The `https` address of your privacy policy, such as `https://example.com/privacy`. |
+
+### Search engines
+
+The console's server reads this setting too, from its environment, so set `KAESO_SEARCH_ENGINES` for the gateway and the console alike, never the TOML key alone, which reaches only the gateway. `compose.yaml` passes the variable in `.env` to both, the Helm chart takes `searchEngines`, and each platform template sets it in one place ([managed platforms](platforms/index.md#what-every-path-keeps)). [Search engines](domains-and-tls.md#search-engines) shows what crawlers get either way.
+
+| Variable<br>TOML key | Type | Default | What it does |
+| --- | --- | --- | --- |
+| `KAESO_SEARCH_ENGINES`<br>`search_engines` | bool | `false` | Let search engines and AI crawlers index the console's sign-in page, and nothing else. Off, `robots.txt` and an `X-Robots-Tag` on every response ask them to keep the whole install out. Anything but a bool stops the gateway and the console at startup. |
 
 ### API key failures
 
@@ -308,7 +317,7 @@ An organization admin chooses a guardrail's address, so the gateway guards it li
 
 | Variable<br>TOML key | Type | Default | What it does |
 | --- | --- | --- | --- |
-| `KAESO_CONTINUITY_REASONING_TTL`<br>`continuity.reasoning_ttl` | text | `1h` | How long the gateway keeps a model's reasoning before a tool call for an OpenAI Chat Completions or Gemini app whose model speaks another format. `0s` turns it off; otherwise 1m to 24h. |
+| `KAESO_CONTINUITY_REASONING_TTL`<br>`continuity.reasoning_ttl` | text | `1h` | How long the gateway keeps a model's reasoning before a tool call for an OpenAI Chat Completions or Gemini app whose model speaks another format, and for an OpenAI Responses app that doesn't send `store: false`. `0s` turns it off; otherwise 1m to 24h. |
 
 [Format translation](../concepts/format-translation.md#chat-completions) explains how the gateway keeps it.
 

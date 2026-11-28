@@ -6,3 +6,4 @@ pub mod cors;
 pub mod decompress;
 pub mod metrics;
 pub mod request_id;
+pub mod robots;

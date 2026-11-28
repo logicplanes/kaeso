@@ -497,6 +497,8 @@ struct ChatState {
     model: String,
     usage: Usage,
     running_usage: Option<Usage>,
+    held: Option<Held>,
+    usage_chunk: Option<Vec<u8>>,
     stop: StopReason,
     started: bool,
     has_text: bool,
@@ -523,6 +525,8 @@ impl ChatPassthrough {
                 model: String::new(),
                 usage: Usage::default(),
                 running_usage: None,
+                held: None,
+                usage_chunk: None,
                 stop: StopReason::EndTurn,
                 started: false,
                 has_text: false,
@@ -544,11 +548,13 @@ impl ChatState {
         }
         let frame = parse_frame(raw);
         if frame.comment_only {
+            self.release_held(false, out);
             out.extend_from_slice(raw);
             step.events = step.events.saturating_add(1);
             return;
         }
         if frame.has_data && frame.event == Some("error") {
+            self.release_before_error(out);
             let err = crate::openai_chat::error::with_detail(
                 crate::openai_chat::error::decode_body(None, frame.data.as_bytes()),
                 self.error_detail,
@@ -561,6 +567,7 @@ impl ChatState {
         let plain =
             frame.event.is_none() && !(frame.has_non_plain_framing && frame.data == "[DONE]");
         if !plain || self.done || frame.data.is_empty() {
+            self.release_held(false, out);
             out.extend_from_slice(raw);
             step.events = step.events.saturating_add(1);
             return;
@@ -584,6 +591,10 @@ impl ChatState {
             self.complete = true;
             step.ended = true;
             step.events = step.events.saturating_add(1);
+            self.release_held(false, out);
+            if let Some(chunk) = self.usage_chunk.take() {
+                out.extend_from_slice(&chunk);
+            }
             out.extend_from_slice(raw);
             return;
         }
@@ -652,6 +663,7 @@ impl ChatState {
         let tap: ChatTap<'_> = match serde_json::from_str(&frame.data) {
             Ok(t) => t,
             Err(e) => {
+                self.release_before_error(out);
                 self.inert = true;
                 step.error = Some(
                     KppError::provider(format!(
@@ -670,6 +682,7 @@ impl ChatState {
                 self.error_detail,
             )
             .with_origin(self.origin.clone());
+            self.release_before_error(out);
             self.inert = true;
             step.error = Some(err);
             return;
@@ -691,6 +704,7 @@ impl ChatState {
 
         let choices_empty = match &tap.choices {
             Some(choices) if choices.len() > 1 => {
+                self.release_before_error(out);
                 self.inert = true;
                 step.error = Some(
                     KppError::unsupported_by(
@@ -706,6 +720,7 @@ impl ChatState {
             Some(choices) => {
                 if let Some(ch) = choices.first() {
                     if ch.index != 0 {
+                        self.release_before_error(out);
                         self.inert = true;
                         step.error = Some(
                             KppError::unsupported_by(
@@ -720,6 +735,7 @@ impl ChatState {
                     if ch.finish_reason.as_deref() == Some("error") {
                         let raw_val =
                             serde_json::from_str::<Value>(&frame.data).unwrap_or(Value::Null);
+                        self.release_before_error(out);
                         self.inert = true;
                         step.error = Some(
                             KppError::provider(
@@ -744,6 +760,7 @@ impl ChatState {
             match crate::openai_chat::response::decode_usage(&raw_json, &self.origin) {
                 Ok(decoded) => decoded_usage = Some(decoded),
                 Err(err) => {
+                    self.release_before_error(out);
                     self.inert = true;
                     step.error = Some(err.with_origin(self.origin.clone()));
                     return;
@@ -840,24 +857,88 @@ impl ChatState {
             if has_non_null_usage && choices_empty {
                 return;
             }
-            if write_without_usage(&frame.data, raw, frame.has_non_plain_framing, out) {
+            if write_usage(&frame.data, raw, frame.has_non_plain_framing, false, out) {
                 return;
             }
         }
+        let provider_usage_chunk = has_non_null_usage && choices_empty;
+        self.release_held(provider_usage_chunk, out);
+        // OpenAI sends the usage in a chunk of its own with empty `choices`
+        // (`stream_options.include_usage`); DeepSeek and Mistral put it on the chunk that
+        // finishes. That chunk waits for the next one: if it is the provider's own usage chunk,
+        // both go as sent, otherwise the usage moves into a chunk of its own before `[DONE]`.
+        if self.include_usage && has_non_null_usage && !choices_empty && self.finished {
+            self.held = Some(Held {
+                data: frame.data.to_string(),
+                raw: raw.to_vec(),
+                has_non_plain_framing: frame.has_non_plain_framing,
+            });
+            return;
+        }
+        if provider_usage_chunk {
+            self.usage_chunk = None;
+        }
         out.extend_from_slice(raw);
+    }
+
+    // An error ends the stream: what the app would have got before it, the held chunk as sent or
+    // the usage a comment already moved out of it, goes first.
+    fn release_before_error(&mut self, out: &mut Vec<u8>) {
+        self.release_held(true, out);
+        if let Some(chunk) = self.usage_chunk.take() {
+            out.extend_from_slice(&chunk);
+        }
+    }
+
+    fn release_held(&mut self, as_sent: bool, out: &mut Vec<u8>) {
+        let Some(held) = self.held.take() else {
+            return;
+        };
+        if !as_sent
+            && let Some(chunk) = usage_chunk(&held.data)
+            && write_usage(&held.data, &held.raw, held.has_non_plain_framing, true, out)
+        {
+            self.usage_chunk = Some(chunk);
+            return;
+        }
+        // The chunk goes with its own usage, newer than any an earlier chunk left for the end.
+        self.usage_chunk = None;
+        out.extend_from_slice(&held.raw);
     }
 }
 
-fn write_without_usage(
+struct Held {
+    data: String,
+    raw: Vec<u8>,
+    has_non_plain_framing: bool,
+}
+
+// The chunk's `usage` removed, or set to `null` with `null_usage`.
+fn write_usage(
     data: &str,
     raw: &[u8],
     has_non_plain_framing: bool,
+    null_usage: bool,
     out: &mut Vec<u8>,
 ) -> bool {
     let Ok(mut map) = serde_json::from_str::<IndexMap<String, &RawValue>>(data) else {
         return false;
     };
-    if map.shift_remove("usage").is_none() {
+    let found = if null_usage {
+        match (
+            map.get_mut("usage"),
+            serde_json::from_str::<&RawValue>("null"),
+        ) {
+            (Some(usage), Ok(null)) => {
+                *usage = null;
+                true
+            }
+            _ => false,
+        }
+    } else {
+        map.shift_remove("usage").is_some()
+    };
+    if !found {
         return false;
     }
     let start = out.len();
@@ -870,16 +951,11 @@ fn write_without_usage(
         for (line, eol) in split_sse_lines(text) {
             if line == "data" || line.starts_with("data:") {
                 if !wrote_data {
-                    out.extend_from_slice(b"data: ");
-                    if serde_json::to_writer(&mut *out, &map).is_err() {
+                    let Ok(json) = serde_json::to_string(&map) else {
                         out.truncate(start);
                         return false;
-                    }
-                    out.extend_from_slice(if eol.is_empty() {
-                        b"\n"
-                    } else {
-                        eol.as_bytes()
-                    });
+                    };
+                    write_data_lines(&json, if eol.is_empty() { "\n" } else { eol }, out);
                     wrote_data = true;
                 }
             } else {
@@ -892,13 +968,34 @@ fn write_without_usage(
         }
         return wrote_data;
     }
-    out.extend_from_slice(b"data: ");
-    if serde_json::to_writer(&mut *out, &map).is_err() {
+    let Ok(json) = serde_json::to_string(&map) else {
         out.truncate(start);
         return false;
-    }
-    out.extend_from_slice(b"\n\n");
+    };
+    write_data_lines(&json, "\n", out);
+    out.extend_from_slice(b"\n");
     true
+}
+
+// A raw value the provider split across `data:` lines keeps its line breaks; each line needs a
+// `data:` of its own again, or the client reads the rest as other fields.
+fn write_data_lines(json: &str, eol: &str, out: &mut Vec<u8>) {
+    for line in json.split('\n') {
+        out.extend_from_slice(b"data: ");
+        out.extend_from_slice(line.strip_suffix('\r').unwrap_or(line).as_bytes());
+        out.extend_from_slice(eol.as_bytes());
+    }
+}
+
+// The usage chunk OpenAI sends last: the chunk's other keys, `choices: []` and its `usage`.
+fn usage_chunk(data: &str) -> Option<Vec<u8>> {
+    let mut map = serde_json::from_str::<IndexMap<String, &RawValue>>(data).ok()?;
+    let empty: &RawValue = serde_json::from_str("[]").ok()?;
+    *map.get_mut("choices")? = empty;
+    let mut out = Vec::new();
+    write_data_lines(&serde_json::to_string(&map).ok()?, "\n", &mut out);
+    out.extend_from_slice(b"\n");
+    Some(out)
 }
 
 impl FrameState for ChatState {
@@ -938,6 +1035,10 @@ impl StreamPassthrough for ChatPassthrough {
                 self.state.usage = u;
                 self.state.tally.final_usage = true;
             }
+            self.state.release_held(false, out);
+            if let Some(chunk) = self.state.usage_chunk.take() {
+                out.extend_from_slice(&chunk);
+            }
             self.state.complete = true;
             step.ended = true;
             self.state.inert = true;
@@ -954,12 +1055,14 @@ impl StreamPassthrough for ChatPassthrough {
     }
 
     fn flush_eof_error(&mut self, out: &mut Vec<u8>) -> PassthroughStep {
+        self.state.release_before_error(out);
         flush_eof_framer(&mut self.framer, &mut self.state, out)
     }
 
     fn encode_error(&mut self, err: &KppError) -> Vec<u8> {
         let body = crate::openai_chat::error::error_body(err);
         let mut out = Vec::new();
+        self.state.release_before_error(&mut out);
         out.extend_from_slice(b"data: ");
         let _ = serde_json::to_writer(&mut out, &body);
         out.extend_from_slice(b"\n\n");
@@ -1729,6 +1832,221 @@ mod tests {
         (out, errors, ended)
     }
 
+    fn usage_chunks(out: &[u8]) -> (Vec<Value>, Vec<Value>) {
+        let chunks: Vec<Value> = crate::sse::parse_all(out)
+            .unwrap()
+            .into_iter()
+            .filter_map(|i| match i {
+                crate::sse::SseItem::Event(e) if e.data != "[DONE]" => {
+                    serde_json::from_str(&e.data).ok()
+                }
+                _ => None,
+            })
+            .collect();
+        // Running usage on chunks before the finish stays as the provider sent it.
+        let (own, inline): (Vec<Value>, Vec<Value>) = chunks
+            .into_iter()
+            .filter(|c| !c["usage"].is_null())
+            .partition(|c| c["choices"] == serde_json::json!([]));
+        let finishing = inline
+            .into_iter()
+            .filter(|c| c["choices"][0]["finish_reason"].is_string())
+            .collect();
+        (own, finishing)
+    }
+
+    #[test]
+    fn chat_streams_with_include_usage_end_with_a_usage_chunk_of_their_own() {
+        let ectx = EgressCtx::for_kind(RequestKind::Generate, StreamMode::on(true));
+        let enc = EncodeCtx::new(RequestKind::Generate, StreamMode::on(true));
+        for (name, usage) in [
+            ("deepseek", 25),
+            ("mistral", 35),
+            ("standardcompute", -1),
+            ("cloudflare-ai-gateway", 24),
+        ] {
+            let bytes = fixture(&format!(
+                "openai_chat/providers/{name}/streams/recorded-stream-include-usage.sse"
+            ));
+            let mut pass = for_stream(DialectId::OpenAiChat, &ectx, &enc).unwrap();
+            let (out, errs, ended) = feed_chunked(pass.as_mut(), &bytes, 37);
+            assert!(errs.is_empty() && ended, "{name}: {errs:?}");
+            let (own, inline) = usage_chunks(&out);
+            assert!(inline.is_empty(), "{name}: {inline:?}");
+            assert_eq!(own.len(), 1, "{name}");
+            if usage >= 0 {
+                assert_eq!(own[0]["usage"]["total_tokens"], usage, "{name}");
+            }
+            let text = String::from_utf8(out).unwrap();
+            assert!(text.ends_with("data: [DONE]\n\n"), "{name}: {text}");
+            let (text_in, _) = usage_chunks(&bytes);
+            assert!(text_in.is_empty(), "{name} has no usage chunk of its own");
+            let said = |b: &[u8]| -> String {
+                crate::sse::parse_all(b)
+                    .unwrap()
+                    .into_iter()
+                    .filter_map(|i| match i {
+                        crate::sse::SseItem::Event(e) => {
+                            serde_json::from_str::<Value>(&e.data).ok()
+                        }
+                        _ => None,
+                    })
+                    .filter_map(|c| {
+                        c["choices"][0]["delta"]["content"]
+                            .as_str()
+                            .map(str::to_owned)
+                    })
+                    .collect()
+            };
+            assert_eq!(said(text.as_bytes()), said(&bytes), "{name}");
+        }
+        for rel in [
+            "openai_chat/providers/groq/streams/recorded-stream-include-usage.sse",
+            "openai_chat/providers/xai/streams/recorded-stream-include-usage.sse",
+            "openai_chat/streams/usage-every-chunk.sse",
+            "openai_chat/streams/stream-include-usage.sse",
+        ] {
+            let bytes = fixture(rel);
+            let mut pass = for_stream(DialectId::OpenAiChat, &ectx, &enc).unwrap();
+            let (out, errs, ended) = feed_chunked(pass.as_mut(), &bytes, 37);
+            assert!(errs.is_empty() && ended, "{rel}: {errs:?}");
+            assert_eq!(out, bytes, "{rel} goes as sent");
+        }
+    }
+
+    #[test]
+    fn a_held_finish_chunk_survives_split_data_errors_and_comments() {
+        let ectx = EgressCtx::for_kind(RequestKind::Generate, StreamMode::on(true));
+        let enc = EncodeCtx::new(RequestKind::Generate, StreamMode::on(true));
+        let head = "data: {\"id\":\"c\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"Hi\"},\"finish_reason\":null}]}\n\n";
+        let finish = "data: {\"id\":\"c\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"!\"},\"finish_reason\":\"stop\"}],\"usage\":{\"prompt_tokens\":5,\"completion_tokens\":2,\"total_tokens\":7}}\n\n";
+        let run = |bytes: &str| {
+            let mut pass = for_stream(DialectId::OpenAiChat, &ectx, &enc).unwrap();
+            let (out, errors, _) = feed_chunked(pass.as_mut(), bytes.as_bytes(), 9);
+            (pass, String::from_utf8(out).unwrap(), errors)
+        };
+        let data = |out: &str| -> Vec<Value> {
+            crate::sse::parse_all(out.as_bytes())
+                .unwrap()
+                .into_iter()
+                .filter_map(|i| match i {
+                    crate::sse::SseItem::Event(e) if e.data != "[DONE]" => {
+                        Some(serde_json::from_str(&e.data).unwrap())
+                    }
+                    _ => None,
+                })
+                .collect()
+        };
+
+        // A usage object the provider split across `data:` lines.
+        let split = finish.replace("\"prompt_tokens\":5,", "\"prompt_tokens\":5,\ndata: ");
+        let (_, out, errors) = run(&format!("{head}{split}data: [DONE]\n\n"));
+        assert!(errors.is_empty(), "{errors:?}");
+        let chunks = data(&out);
+        assert_eq!(chunks.len(), 3, "{out}");
+        assert_eq!(chunks[1]["usage"], Value::Null, "{out}");
+        assert_eq!(chunks[1]["choices"][0]["delta"]["content"], "!", "{out}");
+        assert_eq!(chunks[2]["choices"], serde_json::json!([]), "{out}");
+        assert_eq!(chunks[2]["usage"]["total_tokens"], 7, "{out}");
+
+        // A named error right after it: the chunk goes as the provider sent it.
+        let (_, out, errors) = run(&format!(
+            "{head}{finish}event: error\ndata: {{\"error\":{{\"message\":\"boom\"}}}}\n\n"
+        ));
+        assert_eq!(errors.len(), 1);
+        assert!(out.ends_with(finish), "{out}");
+
+        // A transport error: the gateway writes the error after the chunk.
+        let mut pass = for_stream(DialectId::OpenAiChat, &ectx, &enc).unwrap();
+        let mut out = Vec::new();
+        assert!(
+            pass.feed(format!("{head}{finish}").as_bytes(), &mut out)
+                .error
+                .is_none()
+        );
+        let error = pass.encode_error(&KppError::provider("The connection to the provider broke."));
+        assert!(
+            String::from_utf8(error).unwrap().starts_with(finish),
+            "the held chunk comes first"
+        );
+
+        // A comment between it and the provider's own usage chunk.
+        let own = "data: {\"id\":\"c\",\"choices\":[],\"usage\":{\"prompt_tokens\":5,\"completion_tokens\":2,\"total_tokens\":7}}\n\n";
+        let (_, out, errors) = run(&format!(
+            "{head}{finish}: keepalive\n\n{own}data: [DONE]\n\n"
+        ));
+        assert!(errors.is_empty(), "{errors:?}");
+        let chunks = data(&out);
+        assert_eq!(chunks.len(), 3, "{out}");
+        assert_eq!(chunks[1]["usage"], Value::Null, "{out}");
+        assert_eq!(chunks[2]["usage"]["total_tokens"], 7, "{out}");
+        assert!(out.contains(": keepalive\n\n"), "{out}");
+
+        // A comment, then an error: the usage the comment moved out of the chunk comes first.
+        let (_, out, errors) = run(&format!(
+            "{head}{finish}: keepalive\n\nevent: error\ndata: {{\"error\":{{\"message\":\"boom\"}}}}\n\n"
+        ));
+        assert_eq!(errors.len(), 1);
+        let chunks = data(&out);
+        assert_eq!(chunks.len(), 3, "{out}");
+        assert_eq!(chunks[2]["choices"], serde_json::json!([]), "{out}");
+        assert_eq!(chunks[2]["usage"]["total_tokens"], 7, "{out}");
+        let mut pass = for_stream(DialectId::OpenAiChat, &ectx, &enc).unwrap();
+        let mut out = Vec::new();
+        let fed = format!("{head}{finish}: keepalive\n\n");
+        assert!(pass.feed(fed.as_bytes(), &mut out).error.is_none());
+        let error =
+            String::from_utf8(pass.encode_error(&KppError::provider("The connection broke.")))
+                .unwrap();
+        assert!(error.contains("\"choices\":[]"), "{error}");
+        // Two finishing chunks with usage, then an error: only the newer counts reach the app.
+        let older = finish.replace("\"total_tokens\":7", "\"total_tokens\":0");
+        let (_, out, errors) = run(&format!(
+            "{head}{older}{finish}event: error\ndata: {{\"error\":{{\"message\":\"boom\"}}}}\n\n"
+        ));
+        assert_eq!(errors.len(), 1);
+        let totals: Vec<Value> = data(&out)
+            .iter()
+            .filter(|c| !c["usage"].is_null())
+            .map(|c| c["usage"]["total_tokens"].clone())
+            .collect();
+        assert_eq!(totals, [serde_json::json!(7)], "{out}");
+    }
+
+    #[test]
+    fn a_recorded_stream_cut_by_an_error_after_its_usage_keeps_the_newest_counts() {
+        let ectx = EgressCtx::for_kind(RequestKind::Generate, StreamMode::on(true));
+        let enc = EncodeCtx::new(RequestKind::Generate, StreamMode::on(true));
+        let bytes = fixture(
+            "openai_chat/providers/cloudflare-ai-gateway/streams/recorded-stream-include-usage.sse",
+        );
+        let text = String::from_utf8(bytes).unwrap();
+        let cut = text.strip_suffix("data: [DONE]\n\n").unwrap();
+        let failed = format!("{cut}event: error\ndata: {{\"error\":{{\"message\":\"boom\"}}}}\n\n");
+        let mut pass = for_stream(DialectId::OpenAiChat, &ectx, &enc).unwrap();
+        let (out, errors, _) = feed_chunked(pass.as_mut(), failed.as_bytes(), 41);
+        assert_eq!(errors.len(), 1);
+        let chunks: Vec<Value> = crate::sse::parse_all(&out)
+            .unwrap()
+            .into_iter()
+            .filter_map(|i| match i {
+                crate::sse::SseItem::Event(e) => serde_json::from_str(&e.data).ok(),
+                _ => None,
+            })
+            .collect();
+        let finishing: Vec<&Value> = chunks
+            .iter()
+            .filter(|c| {
+                c["choices"][0]["finish_reason"].is_string()
+                    || c["choices"] == serde_json::json!([])
+            })
+            .collect();
+        let last = finishing.last().unwrap();
+        assert_eq!(last["usage"]["total_tokens"], 24, "{last}");
+        let with_usage = finishing.iter().filter(|c| !c["usage"].is_null()).count();
+        assert_eq!(with_usage, 1, "{finishing:?}");
+    }
+
     #[test]
     fn chat_passthrough_preserves_wire_and_hides_unasked_usage() {
         let raw = concat!(
@@ -1744,10 +2062,20 @@ mod tests {
         let mut pass_with = for_stream(DialectId::OpenAiChat, &ectx, &enc_with).unwrap();
         let (out_with, errs, ended) = feed_chunked(pass_with.as_mut(), raw.as_bytes(), 11);
         assert!(errs.is_empty() && ended);
+        let finish = "{\"id\":\"chatcmpl-1\",\"object\":\"chat.completion.chunk\",\"created\":1700000000,\"model\":\"gpt-4o-mini\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"stop\"}],\"usage\":{\"prompt_tokens\":10,\"completion_tokens\":2,\"total_tokens\":12}}";
+        let (before, _) = raw.split_once(finish).unwrap();
+        let normalised = format!(
+            "{before}{}\n\ndata: {}\n\ndata: [DONE]\n\n",
+            finish.replace(
+                "\"usage\":{\"prompt_tokens\":10,\"completion_tokens\":2,\"total_tokens\":12}",
+                "\"usage\":null"
+            ),
+            "{\"id\":\"chatcmpl-1\",\"object\":\"chat.completion.chunk\",\"created\":1700000000,\"model\":\"gpt-4o-mini\",\"choices\":[],\"usage\":{\"prompt_tokens\":10,\"completion_tokens\":2,\"total_tokens\":12}}",
+        );
         assert_eq!(
-            out_with,
-            raw.as_bytes(),
-            "include_usage=true is byte-identical"
+            String::from_utf8(out_with).unwrap(),
+            normalised,
+            "include_usage=true moves the finish chunk's usage into a chunk of its own"
         );
         let summary = pass_with.summary();
         assert_eq!(summary.id, "chatcmpl-1");
@@ -2227,31 +2555,35 @@ mod tests {
         let _ = p.feed(b"data: {\"id\":\"c1\"", &mut o);
         assert!(p.finish(&mut o).error.is_some());
 
-        // `write_without_usage` truncates on failure and handles bare `data` line.
+        // `write_usage` truncates on failure and handles bare `data` line.
         let mut buf = b"prefix".to_vec();
-        assert!(!write_without_usage(
+        assert!(!write_usage(
             "not json",
             b"not json",
             false,
-            &mut buf
-        ));
-        assert!(!write_without_usage(
-            "{\"a\":1}",
-            b"data: {\"a\":1}\n\n",
             false,
             &mut buf
         ));
-        assert!(!write_without_usage(
+        assert!(!write_usage(
+            "{\"a\":1}",
+            b"data: {\"a\":1}\n\n",
+            false,
+            false,
+            &mut buf
+        ));
+        assert!(!write_usage(
             "{\"a\":1,\"usage\":null}",
             b"id: 1\n\n",
             true,
+            false,
             &mut buf,
         ));
         assert_eq!(buf, b"prefix");
-        assert!(write_without_usage(
+        assert!(write_usage(
             "{\"a\":1,\"usage\":null}",
             b"id: 1\ndata\n\n",
             true,
+            false,
             &mut buf,
         ));
         assert!(String::from_utf8_lossy(&buf).contains("id: 1\ndata: {\"a\":1}\n"));

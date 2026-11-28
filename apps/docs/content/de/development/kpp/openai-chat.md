@@ -108,7 +108,6 @@ Für KPP aus anderen Dialekten lehnt `check()` ab:
 - eine Bild- oder andere Ausgabemodalität, Audio ohne Stimme, eine Stimme, die OpenAI nicht nennt, und Audioeinstellungen ohne Audioausgabe;
 - Verweigerungen und Zitate außerhalb von Assistentennachrichten;
 - über `check_foreign` die Zitate anderer Dialekte;
-- `top_k` ([Sampling](sampling.md));
 - unbekannte Reasoning-Modi und Aufwandsstufen außerhalb des Enums der Spezifikation.
 
 Budgets und `disabled` werden umgerechnet ([Aufwand und Budget](reasoning.md#aufwand-und-budget)). Diese Hinweise werden stattdessen verworfen:
@@ -118,7 +117,8 @@ Budgets und `disabled` werden umgerechnet ([Aufwand und Budget](reasoning.md#auf
 - `ToolResult::is_error`, dessen Information der Fehlerinhalt trägt ([Tool-Fehler](cross-format.md#tool-fehler));
 - `reasoning.summary` und `reasoning.include_encrypted` anderer Dialekte, weil Chat kein Feld hat, das sie anfordert ([lesbares Reasoning und Zusammenfassungen](reasoning.md#lesbares-reasoning-und-zusammenfassungen));
 - ein `web_search`-Tool und `web_search_call`-Items von OpenAI Responses, weil Chat keine gehostete Websuche hat ([weggelassene Tools](cross-format.md#weggelassene-tools));
-- ein `text.verbosity` von OpenAI Responses, außer das Anbieterprofil nimmt `verbosity` an ([bedingte Einträge](cross-format.md#bedingte-einträge)).
+- ein `text.verbosity` von OpenAI Responses, außer das Anbieterprofil nimmt `verbosity` an ([bedingte Einträge](cross-format.md#bedingte-einträge));
+- `top_k`, das es in Chat nicht gibt, außer das Anbieterprofil nimmt es an (`with_top_k()`); in `kaeso-left-out` genannt ([Top K](sampling.md#top-k)).
 
 `custom_tool_call`- und `local_shell_call`-Items von OpenAI Responses und ihre Ausgaben werden zu Tool-Aufrufen und `tool`-Nachrichten ([Tool-Verlauf von Codex](cross-format.md#tool-verlauf-von-codex)).
 
@@ -237,6 +237,8 @@ Während solche weggelassenen Inhalte ankommen, schreibt der Encoder getaktete S
 
 Nutzung wird nur geschrieben, wenn die App danach gefragt hat (`EncodeCtx::stream` mit `include_usage`). Jeder Chunk hat dann `usage: null`, und ein letzter Chunk mit `choices: []` trägt die Nutzung. Aus anderen Dialekten ist das die zuletzt gemeldete Nutzung, mit den Eingabezahlen aus `ResponseStart`, wenn die spätere Meldung keine hat.
 
+Ein Chat-Anbieter, der die Nutzung an den abschließenden Chunk hängt, wie DeepSeek und Mistral, bekommt für seine eigenen Streams dieselbe Form: Dieser Chunk geht mit `usage: null`, und die Nutzung in einem eigenen Chunk mit `choices: []` vor `[DONE]`. Der abschließende Chunk wartet auf den nächsten, sodass ein eigener `choices: []`-Nutzungschunk des Anbieters und laufende Nutzung an früheren Chunks unverändert bleiben. `passthrough::for_stream`, das einen Stream desselben Dialekts weiterleitet, ohne ihn zu dekodieren, macht es genauso, und der Round Trip eines solchen Fixtures erwartet diese Form (`test_support::chat_usage_in_its_own_chunk`).
+
 ## Fehler (`ErrorResponse`)
 
 Der Fehler-Body ist `{error: {message, type, param, code}}`.
@@ -254,7 +256,7 @@ Der Fehler-Body ist `{error: {message, type, param, code}}`.
 | 403 | `PermissionDenied` | 403 `request_forbidden` |
 | 404 | `NotFound` | 404 `invalid_request_error` |
 | 413 | `RequestTooLarge` | 413 `invalid_request_error` |
-| 429 | `RateLimited` | 429 `rate_limit_error`, Code `rate_limit_exceeded` |
+| 429 | `RateLimited` | 429 `rate_limit_error`, Code `rate_limit_exceeded`; mit `retry: after_reset`, ein bis zum Zurücksetzen aufgebrauchtes Kontingent, 429 `insufficient_quota`, Code `insufficient_quota` |
 | 503 | `Overloaded` | 503 `service_unavailable_error`, Code `server_is_overloaded` |
 | 408, 504, `code` `vector_store_timeout` | `Timeout` | 504 `server_error`, Code `timeout` |
 | andere | `ProviderError` | sein 5xx-Status (außer 503) oder 500, `server_error` |
@@ -295,9 +297,14 @@ OpenAI blättert nicht, deshalb ruft das Gateway `ModelList::page` ohne Standard
 | `created` (Unix-Sekunden) | `created_at` | `0` |
 | `owned_by` | `owned_by` | `"kaeso"`: Der Eigentümer ist unbekannt, wie bei einem von Anthropic gelisteten Modell, und das Modell wird vom Kaeso-Gateway bereitgestellt. |
 | `shutdown_date` (`YYYY-MM-DD` oder `null`) | `retires_at` (dieses Datum um 00:00 UTC) | `null` |
+| `name` (nur geschrieben) | `display_name` | weggelassen |
+| `context_length`, `top_provider` `{context_length, max_completion_tokens}` (nur geschrieben) | `context_window`, `max_output_tokens` | weggelassen |
+| `architecture` `{modality, input_modalities, output_modalities}` (nur geschrieben) | `input_modalities`, `output_modalities`; `modality` verbindet sie als `text+image->text`, wenn beide bekannt und nicht leer sind | weggelassen |
+| `pricing` `{prompt, completion, input_cache_read, input_cache_write, internal_reasoning}`, USD pro Token als Dezimal-Strings (nur geschrieben) | `prices` `input`, `output`, `cache_read`, `cache_write`, `reasoning`, USD pro Million Token, exakt durch eine Million geteilt (`"3.00"` wird `"0.000003"`) | weggelassen |
+| `supported_parameters` (nur geschrieben) | `features`: `Tools` ist `tools` und `tool_choice`, `Reasoning` ist `reasoning`, `ReasoningEffort` ist `reasoning_effort`, `StructuredOutput` ist `response_format` und `structured_outputs`, `Temperature` ist `temperature` | weggelassen; `[]`, wenn `features` leer ist |
 | unbekannte Schlüssel | Extras-Felder | |
 
-Das Gateway listet Modelle aus seinem Katalog: Es setzt `owned_by` auf die ID des Anbieters und `created_at` auf das Veröffentlichungsdatum des Modells, wenn der Katalog eines hat.
+Das Gateway listet Modelle aus seinem Katalog: Es setzt `owned_by` auf die ID des Anbieters und `created_at` auf das Veröffentlichungsdatum des Modells, wenn der Katalog eines hat. Auch die nur geschriebenen Felder füllt es aus dem Katalog ([Modelle auflisten](../../api/model-api.md#modelle-auflisten)). Es sind die Felder der Liste von OpenRouter (Fixture `providers/openrouter/models/list-recorded.json`), aus denen Apps, die OpenAI-Modelllisten lesen, Name, Grenzen, Modalitäten und Preise eines Modells nehmen. Der Codec liest sie nicht: Eine Liste, die sie sendet, wie die von OpenRouter, behält sie als Extras und bekommt sie so zurück, wie sie kamen; die Anbietererkennung des Gateways liest `context_length` von dort.
 
 Ein Feld, das fehlend ankommt oder als `null`, wo der Standard ein Wert ist, wird in der Form `none` vermerkt und genauso geschrieben; `shutdown_date` ist in der Spezifikation optional. `object` ist in der Spezifikation Pflicht, aber OpenRouters Liste ([`GET /api/v1/models`](https://openrouter.ai/docs/guides/overview/models)) lässt es in der Liste und bei jedem Modell weg, daher wird es genauso gelesen (Fixture `providers/openrouter/models/list-recorded.json`). Ein `shutdown_date`, das kein `full-date` ist, ergibt `ProviderError`. Extras aus jedem der drei OpenAI-Dialekte werden von allen drei Encodern berücksichtigt.
 
@@ -311,6 +318,6 @@ Ein Feld, das fehlend ankommt oder als `null`, wo der Standard ein Wert ist, wir
 | ein bloßes Array von Modellen statt des Objekts, wie Together AI es sendet | `models`, Form `bare_list` |
 | `models` mit einem `slug` je Modell statt `data`, wie `GET /v1/models` es dem Zugriffstoken eines ChatGPT-Abos sendet ([Models and inference](https://developers.openai.com/siwc/token-sharing-open-source/models-and-inference)) | `models`, jeder `slug` als `id`, die übrigen Felder als Extras-Felder; Form `plan_list` |
 
-Für OpenAI-Apps geht dabei etwas verloren: `display_name`, `lifecycle`, `deprecated_at`, `context_window`, `max_output_tokens`, `has_more` und Extras anderer Dialekte (Anthropic `capabilities`, `line`) haben kein Feld und werden weggelassen ([Antworten](cross-format.md#antworten)). Ein `retires_at`, das nicht auf Mitternacht UTC fällt, wird auf sein UTC-Datum gekürzt, und eines nach dem Jahr 9999 wird als `shutdown_date: null` geschrieben. `created` ist eine Ganzzahl und wird so geschrieben, wie es gespeichert ist; ein Wert in Millisekunden bleibt also einer.
+Für OpenAI-Apps geht dabei etwas verloren: `lifecycle`, `deprecated_at`, `has_more` und Extras anderer Dialekte (Anthropic `capabilities`, `line`) haben kein Feld und werden weggelassen ([Antworten](cross-format.md#antworten)). Ein `retires_at`, das nicht auf Mitternacht UTC fällt, wird auf sein UTC-Datum gekürzt, und eines nach dem Jahr 9999 wird als `shutdown_date: null` geschrieben. `created` ist eine Ganzzahl und wird so geschrieben, wie es gespeichert ist; ein Wert in Millisekunden bleibt also einer.
 
 `encode_model_request` baut `GET /v1/models/{model}` ohne Header und Body (`retrieveModel` der Spezifikation); den Schlüssel fügt das Gateway hinzu. `encode_models_request` baut `GET /v1/models` (`listModels` der Spezifikation, das keine Query-Parameter kennt; eine Query mit `limit`, `after_id`, `before_id`, `lifecycle` oder anderen Parametern ist daher `Unsupported`). In `decode_models` und `decode_model` geht ein Status außerhalb von 2xx an `decode_error`. Die ID `.` oder `..` ist `InvalidRequest`, weil URL-Parser ein solches Segment auch prozentkodiert entfernen.

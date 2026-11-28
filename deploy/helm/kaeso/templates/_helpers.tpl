@@ -105,6 +105,13 @@ key: {{ $store.key }}
   value: json
 - name: KAESO_TRUSTED_PROXIES
   value: {{ .Values.gateway.trustedProxies | quote }}
+{{- $extra := list }}
+{{- range .Values.gateway.extraEnv }}{{ $extra = append $extra .name }}{{ end }}
+{{- if or (hasKey .Values.gateway.env "KAESO_SEARCH_ENGINES") (hasKey .Values.gateway.config "search_engines") (has "KAESO_SEARCH_ENGINES" $extra) }}
+{{- fail "set searchEngines instead: the console reads it too" }}
+{{- end }}
+- name: KAESO_SEARCH_ENGINES
+  value: {{ .Values.searchEngines | quote }}
 {{- if .Values.gateway.metrics.enabled }}
 - name: KAESO_METRICS_LISTEN
   value: {{ printf "0.0.0.0:%v" .Values.gateway.metrics.port | quote }}

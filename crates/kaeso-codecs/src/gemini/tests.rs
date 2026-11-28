@@ -570,19 +570,15 @@ fn output_formats_tools_and_sampling_from_other_formats() {
     );
     let mut r = base();
     spec.description = Some("A reply".into());
-    r.output = OutputSpec::JsonSchema(spec.clone());
-    assert_eq!(
-        refused(&from(DialectId::OpenAiChat, r)).unsupported_feature(),
-        Some("output schema description")
-    );
-    let mut r = base();
-    spec.description = None;
     spec.strict = Some(false);
     r.output = OutputSpec::JsonSchema(spec);
+    let (body, ctx) = encode_value(&from(DialectId::OpenAiChat, r));
     assert_eq!(
-        refused(&from(DialectId::OpenAiChat, r)).unsupported_feature(),
-        Some("non-strict output schema")
+        body["generationConfig"]["responseJsonSchema"],
+        json!({"type": "object", "description": "A reply"}),
+        "Gemini enforces every schema and takes a description in it"
     );
+    assert_eq!(ctx.adapted, ["response_format"]);
 
     let mut strict = FunctionTool::new("f", Some(schema.clone()));
     strict.strict = Some(true);
@@ -1635,5 +1631,67 @@ fn gemini_keepalives_follow_go_python_and_js_sdk_framing_rules() {
     assert!(
         parse_python_genai_stream(b": keepalive\n\ndata: {\"candidates\":[]}\n\n").is_err(),
         "an SSE comment breaks google-genai"
+    );
+}
+
+#[test]
+fn gemini_clis_turn_reaches_other_formats_with_top_k_only_where_the_target_takes_it() {
+    use crate::openai_chat::{ChatProfile, OpenAiChat};
+    use crate::openai_responses::OpenAiResponses;
+    let body = fixtures(DIR, "requests", "json")
+        .into_iter()
+        .find(|(name, _)| name == "gemini-cli-turn")
+        .unwrap()
+        .1;
+    let req = crate::dispatch::decode_gemini_request(
+        MODEL,
+        GeminiAction::StreamGenerateContent,
+        &body,
+        &HeaderList::new(),
+    )
+    .unwrap();
+    let sent = |out: EncodedRequest| -> Value { serde_json::from_slice(&out.body).unwrap() };
+
+    let mut ctx = EgressCtx::new(&req);
+    let chat = sent(OpenAiChat::encode_request(&req, &mut ctx).unwrap());
+    assert!(chat.get("top_k").is_none(), "{chat}");
+    assert_eq!(
+        (&chat["temperature"], &chat["top_p"]),
+        (&json!(1.0), &json!(0.95))
+    );
+    assert_eq!(ctx.left_out, ["generationConfig.topK"]);
+
+    let mut ctx = EgressCtx::new(&req)
+        .with_chat_profile(ChatProfile::compatible("Example Cloud").with_top_k());
+    let chat = sent(OpenAiChat::encode_request(&req, &mut ctx).unwrap());
+    assert_eq!(chat["top_k"], 64, "{chat}");
+    assert!(ctx.left_out.is_empty());
+
+    let mut ctx = EgressCtx::new(&req);
+    let responses = sent(OpenAiResponses::encode_request(&req, &mut ctx).unwrap());
+    assert!(responses.get("top_k").is_none(), "{responses}");
+    assert_eq!(ctx.left_out, ["generationConfig.topK"]);
+}
+
+#[test]
+fn a_wrapped_token_count_names_top_k_where_the_app_wrote_it() {
+    use crate::openai_responses::OpenAiResponses;
+    let body = json!({"generateContentRequest": {
+        "model": "models/gpt-5.5",
+        "contents": [{"role": "user", "parts": [{"text": "Hi"}]}],
+        "generationConfig": {"topK": 64}
+    }});
+    let req = crate::dispatch::decode_gemini_request(
+        "gpt-5.5",
+        GeminiAction::CountTokens,
+        &serde_json::to_vec(&body).unwrap(),
+        &HeaderList::new(),
+    )
+    .unwrap();
+    let mut ctx = EgressCtx::new(&req);
+    OpenAiResponses::encode_request(&req, &mut ctx).unwrap();
+    assert_eq!(
+        ctx.left_out,
+        ["generateContentRequest.generationConfig.topK"]
     );
 }

@@ -94,7 +94,7 @@ Der Fehler nennt das Feld, nie eine Parser-Position, und setzt `param`: `` The r
 
 `check()` lehnt außerdem bei Anfragen aus jedem Dialekt ab:
 
-- `sampling.top_k`, `seed`, `frequency_penalty`, `presence_penalty` und Stoppsequenzen, die es in der Responses-API nicht gibt ([Sampling](sampling.md)); eine Penalty von `0` wird weggelassen ([neutrale Werte](sampling.md#neutrale-werte));
+- `seed`, `frequency_penalty`, `presence_penalty` und Stoppsequenzen, die es in der Responses-API nicht gibt ([Sampling](sampling.md)); eine Penalty von `0` wird weggelassen ([neutrale Werte](sampling.md#neutrale-werte));
 - unbekannte Reasoning-Modi, benannt nach ihrem Wire-Wert;
 - Textdokumente, `title`/`context`/`citations` von Dokumenten und Text-Bildquellen;
 - Audio- und Videoblöcke, weil `InputContent` nur `input_text`, `input_image` und `input_file` kennt (`audio block`, `video block`); OpenRouters `input_audio`- und `input_video`-Teile, die OpenAI nicht hat, bleiben `Block::Unknown`;
@@ -118,7 +118,8 @@ Eine Reasoning-Konfiguration aus einem anderen Dialekt wird als ihre Aufwandsstu
 | `reasoning` (`ReasoningItem`) | `Block::Reasoning` (Ursprung `openai_responses`) in der aktuellen Assistentennachricht | Eine von Kaeso erfundene ID (`rs_kaeso_…`) wird nicht behalten (Form `kaeso_id`); ein solches Item ohne `encrypted_content` wird gar nicht an den Anbieter gesendet, weil es weder eine `id` noch Inhalt hätte, mit dem OpenAI etwas anfangen kann. `id` → opake `OpenAiReasoningItemId`, `encrypted_content` → opakes `OpenAiEncryptedReasoning`, `summary[].text` → `summary`, `content[].text` → `text`; `status` und die `type`s der Parts: Form; unbekannte Schlüssel: Extras. Wird nur an `openai_responses` beim selben Anbieter zurückgespielt ([Reasoning](reasoning.md)). Ein Item, dessen `encrypted_content` ein Reasoning-Blob ist (`kpp:reasoning:v1:…`, Reasoning eines anderen Dialekts, das Kaeso der App gegeben hat, siehe [Reasoning-Blobs](reasoning.md#reasoning-blobs)), wird zum ursprünglichen Block darin dekodiert, einschließlich Ursprung (zum Beispiel Claudes signiertes Thinking), egal was der Rest des Items sagt. In Anfragen, die Kaeso mit `store: false` sendet (aus anderen Dialekten, siehe [Speicherung und IDs bei Responses](cross-format.md#speicherung-und-ids-bei-responses)), wird Reasoning ohne verschlüsselten Inhalt nicht gesendet, weil OpenAI die Item-ID nicht auflösen kann. |
 | `custom_tool_call`, `custom_tool_call_output`, `local_shell_call`, `local_shell_call_output` | wie unten; für Anthropic und Chat Completions Tool-Aufrufe und -Ergebnisse ([Tool-Verlauf von Codex](cross-format.md#tool-verlauf-von-codex)) | |
 | `agent_message` (Nachrichten zwischen Codex-Agenten) | wie unten; für jeden Anbieter außer OpenAI eine Nachricht ([Agentennachrichten von Codex](cross-format.md#agentennachrichten-von-codex)) | |
-| `item_reference` und jeder andere Item-Typ (Aufrufe und Ausgaben von Server-Tools, `compaction`, künftige Typen) | eine Nachricht mit einem `Block::Unknown`, Form `raw_item` | Rolle `Assistant` für Typen, die auf `_call` enden, sowie `mcp_list_tools` und `mcp_approval_request`; sonst `User`. Die Rolle zählt nur für die KPP-Validierung, weil diese Items nie an einen anderen Dialekt gehen. Nur im selben Dialekt; SpaceX nimmt nur die Typen an, die es auflistet, und Kaeso lehnt jeden anderen vor dem Senden ab ([SpaceX](openai-responses-providers.md#spacex)). |
+| `item_reference` auf ein Reasoning-Item (`rs_…`, kein anderes Feld) | ein `Block::Reasoning`, der im Zug der folgenden Aufrufe dafür steht, Form `item_reference` ([vom Gateway aufbewahrtes Reasoning](reasoning.md#vom-gateway-aufbewahrtes-reasoning)) | So zurückgeschrieben, wie es war; für andere Dialekte abgelehnt. |
+| Andere `item_reference`-Items und jeder andere Item-Typ (Aufrufe und Ausgaben von Server-Tools, `compaction`, künftige Typen) | eine Nachricht mit einem `Block::Unknown`, Form `raw_item` | Rolle `Assistant` für Typen, die auf `_call` enden, sowie `mcp_list_tools` und `mcp_approval_request`; sonst `User`. Die Rolle zählt nur für die KPP-Validierung, weil diese Items nie an einen anderen Dialekt gehen. Nur im selben Dialekt; SpaceX nimmt nur die Typen an, die es auflistet, und Kaeso lehnt jeden anderen vor dem Senden ab ([SpaceX](openai-responses-providers.md#spacex)). |
 | Items, die sich nicht als ihr Typ parsen lassen (zum Beispiel ein `function_call_output` mit `call_id: null`) | `Block::Unknown` (wie oben) | Verlustfrei; der Anbieter beurteilt sie. |
 
 Gruppierung: Aufeinanderfolgende `function_call`- und `reasoning`-Items kommen in die aktuelle Assistentennachricht, aufeinanderfolgende `function_call_output`-Items in die aktuelle Benutzernachricht. Ein Nachrichten-Item kommt in eine Nachricht seiner Rolle, die noch kein Nachrichten-Item enthält; System- und Developer-Items kommen nie in eine bestehende Nachricht.
@@ -306,7 +307,7 @@ Beim Kodieren werden Body und Status von Fehlern, die aus einem OpenAI-Dialekt (
 | `PermissionDenied` | 403 | `request_forbidden` | `null` |
 | `NotFound` | 404 | `invalid_request_error` | `null` |
 | `RequestTooLarge` | 413 | `invalid_request_error` | `null` |
-| `RateLimited` | 429 | `rate_limit_error` | `rate_limit_exceeded` |
+| `RateLimited` | 429 | `rate_limit_error`; `insufficient_quota` mit `retry: after_reset` | `rate_limit_exceeded`; `insufficient_quota` |
 | `Billing` | 429 | `insufficient_quota` | `insufficient_quota` |
 | `Overloaded` | 503 | `service_unavailable_error` | `server_is_overloaded` |
 | `Timeout` | 504 | `server_error` | `timeout` |

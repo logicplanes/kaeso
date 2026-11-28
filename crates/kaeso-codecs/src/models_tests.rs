@@ -534,7 +534,8 @@ fn models_without_extras_get_documented_defaults() {
     assert_eq!(
         o,
         json!({"id": "m-2", "object": "model", "created": 1_700_000_000, "owned_by": "acme",
-               "shutdown_date": "2026-10-23"}),
+               "shutdown_date": "2026-10-23", "name": "Model Two", "context_length": 200_000,
+               "top_provider": {"context_length": 200_000, "max_completion_tokens": 8_192}}),
         "the time of day of retires_at is cut off"
     );
 
@@ -557,10 +558,13 @@ fn anthropic_list_reaches_openai_apps_and_back() {
     let o = json_of(&dispatch::encode_models(DialectId::OpenAiChat, &a).unwrap());
     assert_eq!(o["object"], json!("list"));
     let first = &o["data"][0];
+    let limits = (&a.models[0].context_window, &a.models[0].max_output_tokens);
     assert_eq!(
         first,
         &json!({"id": "claude-opus-5", "object": "model", "created": 1_784_851_200,
-                "owned_by": "kaeso", "shutdown_date": null}),
+                "owned_by": "kaeso", "shutdown_date": null, "name": "Claude Opus 5",
+                "context_length": limits.0,
+                "top_provider": {"context_length": limits.0, "max_completion_tokens": limits.1}}),
         "no Anthropic extras (capabilities, line) reach an OpenAI app"
     );
     assert_eq!(o["data"][3]["shutdown_date"], json!("2026-12-10"));
@@ -578,7 +582,7 @@ fn anthropic_list_reaches_openai_apps_and_back() {
     assert_eq!(
         m["display_name"],
         json!("claude-sonnet-4-5-20250929"),
-        "display name lost in OpenAI, id as fallback"
+        "OpenAI's `name` is written, not read: the id is the fallback"
     );
     assert_eq!(
         m["lifecycle"],
@@ -1857,5 +1861,121 @@ fn a_qianfan_listing_decodes_and_its_codes_give_their_kinds() {
         let e = dispatch::decode_models(DialectId::OpenAiChat, status, &h(), body.as_bytes())
             .unwrap_err();
         assert_eq!(e.kind, kind, "{code}");
+    }
+}
+
+#[test]
+fn the_catalogue_description_reaches_openai_apps_in_openrouters_fields() {
+    let mut m = ModelInfo::new("grok-4.7");
+    m.display_name = Some("Grok 4.7".into());
+    m.context_window = Some(2_000_000);
+    m.max_output_tokens = Some(64_000);
+    m.input_modalities = Some(vec!["text".into(), "image".into()]);
+    m.output_modalities = Some(vec!["text".into()]);
+    m.features = Some(vec![
+        kaeso_kpp::ModelFeature::Tools,
+        kaeso_kpp::ModelFeature::Reasoning,
+        kaeso_kpp::ModelFeature::ReasoningEffort,
+        kaeso_kpp::ModelFeature::StructuredOutput,
+    ]);
+    let mut prices = kaeso_kpp::ModelPrices::default();
+    prices.input = Some("3.00".into());
+    prices.output = Some("15".into());
+    prices.cache_read = Some("0.075".into());
+    prices.cache_write = Some("3.75".into());
+    prices.reasoning = Some("15".into());
+    m.prices = Some(prices);
+    for d in OPENAI {
+        let o = json_of(&dispatch::encode_model(d, &m).unwrap());
+        assert_eq!(
+            o,
+            json!({"id": "grok-4.7", "object": "model", "created": 0, "owned_by": "kaeso",
+                   "shutdown_date": null, "name": "Grok 4.7", "context_length": 2_000_000,
+                   "architecture": {"modality": "text+image->text",
+                                    "input_modalities": ["text", "image"],
+                                    "output_modalities": ["text"]},
+                   "pricing": {"prompt": "0.000003", "completion": "0.000015",
+                               "input_cache_read": "0.000000075",
+                               "input_cache_write": "0.00000375",
+                               "internal_reasoning": "0.000015"},
+                   "top_provider": {"context_length": 2_000_000, "max_completion_tokens": 64_000},
+                   "supported_parameters": ["tools", "tool_choice", "reasoning", "reasoning_effort",
+                                            "response_format", "structured_outputs"]}),
+            "{d}"
+        );
+    }
+    let mut levels_unknown = ModelInfo::new("m");
+    levels_unknown.features = Some(vec![kaeso_kpp::ModelFeature::Reasoning]);
+    let o = json_of(&dispatch::encode_model(DialectId::OpenAiChat, &levels_unknown).unwrap());
+    assert_eq!(
+        o["supported_parameters"],
+        json!(["reasoning"]),
+        "a model without effort levels takes no `reasoning_effort`"
+    );
+    let mut none = ModelInfo::new("m");
+    none.features = Some(Vec::new());
+    let o = json_of(&dispatch::encode_model(DialectId::OpenAiChat, &none).unwrap());
+    assert_eq!(
+        o["supported_parameters"],
+        json!([]),
+        "known to take none of them"
+    );
+
+    // Every field Kaeso writes is one OpenRouter's recorded listing has, with the same type.
+    fn same_shape(ours: &Value, theirs: &Value, at: &str) {
+        match (ours, theirs) {
+            (Value::Object(o), Value::Object(t)) => {
+                for (k, v) in o {
+                    let there = t
+                        .get(k)
+                        .unwrap_or_else(|| panic!("{at}.{k} is not OpenRouter's"));
+                    same_shape(v, there, &format!("{at}.{k}"));
+                }
+            }
+            (Value::Array(o), Value::Array(t)) => {
+                if let (Some(a), Some(b)) = (o.first(), t.first()) {
+                    same_shape(a, b, &format!("{at}[]"));
+                }
+            }
+            (Value::Number(_), Value::Number(_))
+            | (Value::String(_), Value::String(_))
+            | (Value::Bool(_), Value::Bool(_)) => {}
+            _ => panic!("{at}: {ours} is not of the type of OpenRouter's {theirs}"),
+        }
+    }
+    let recorded = json_of(&fixture(
+        "openai_chat",
+        "providers/openrouter/list-recorded-prices",
+    ));
+    let theirs = &recorded["data"][0];
+    let mut ours = json_of(&dispatch::encode_model(DialectId::OpenAiChat, &m).unwrap());
+    for k in ["object", "owned_by", "shutdown_date"] {
+        ours.as_object_mut().unwrap().remove(k);
+    }
+    same_shape(&ours, theirs, "model");
+}
+
+#[test]
+fn prices_per_million_tokens_become_exact_prices_per_token() {
+    for (per_million, per_token) in [
+        ("3", "0.000003"),
+        ("3.00", "0.000003"),
+        ("0.075", "0.000000075"),
+        ("15.5", "0.0000155"),
+        ("0", "0"),
+        ("0.000", "0"),
+        ("1000000", "1"),
+        ("2500000.5", "2.5000005"),
+        (".5", "0.0000005"),
+        ("12.", "0.000012"),
+    ] {
+        assert_eq!(
+            crate::openai_models::per_token(per_million).as_deref(),
+            Some(per_token),
+            "{per_million}"
+        );
+    }
+    for bad in ["", ".", "-1", "1e-6", "1.2.3", " 1", "x"] {
+        assert_eq!(crate::openai_models::per_token(bad), None, "{bad:?}");
     }
 }

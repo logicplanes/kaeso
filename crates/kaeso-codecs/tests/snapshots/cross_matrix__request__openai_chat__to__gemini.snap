@@ -460,14 +460,95 @@ expression: outcomes
     "path": "/v1beta/models/gpt-4.1-mini:generateContent"
   },
   "json-schema": {
-    "message": "`output schema description` is not supported by Gemini API. Gemini structured output takes a schema only. Move the description into the prompt or the schema's own `description`.",
-    "param": "response_format",
-    "unsupported": "output schema description"
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Alice and Bob are going to a science fair on 2026-10-16."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "responseJsonSchema": {
+          "additionalProperties": false,
+          "description": "A calendar event",
+          "properties": {
+            "date": {
+              "description": "ISO 8601 date",
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "participants": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "name",
+            "date",
+            "participants"
+          ],
+          "type": "object"
+        },
+        "responseMimeType": "application/json",
+        "thinkingConfig": {
+          "thinkingLevel": "LOW"
+        }
+      },
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "Extract the event information."
+          }
+        ]
+      }
+    },
+    "path": "/v1beta/models/gpt-5.4-mini:generateContent"
   },
   "legacy-functions": {
     "message": "`functions` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
     "param": null,
     "unsupported": "functions"
+  },
+  "llm-schema": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Tokyo"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "responseJsonSchema": {
+          "properties": {
+            "country": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name",
+            "country"
+          ],
+          "type": "object"
+        },
+        "responseMimeType": "application/json"
+      }
+    },
+    "path": "/v1beta/models/claude-haiku-5-5:streamGenerateContent?alt=sse"
   },
   "logit-bias": {
     "message": "`logit_bias` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
@@ -587,6 +668,66 @@ expression: outcomes
       }
     },
     "path": "/v1beta/models/gpt-4o-mini:streamGenerateContent?alt=sse"
+  },
+  "openai-python-parse-constraints": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Describe Tokyo."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "responseJsonSchema": {
+          "additionalProperties": false,
+          "properties": {
+            "country": {
+              "description": "ISO country name",
+              "title": "Country",
+              "type": "string"
+            },
+            "name": {
+              "title": "Name",
+              "type": "string"
+            },
+            "population": {
+              "minimum": 0,
+              "title": "Population",
+              "type": "integer"
+            },
+            "rating": {
+              "maximum": 5,
+              "minimum": 1,
+              "title": "Rating",
+              "type": "number"
+            },
+            "tags": {
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 3,
+              "title": "Tags",
+              "type": "array"
+            }
+          },
+          "required": [
+            "name",
+            "country",
+            "population",
+            "rating",
+            "tags"
+          ],
+          "title": "City",
+          "type": "object"
+        },
+        "responseMimeType": "application/json"
+      }
+    },
+    "path": "/v1beta/models/claude-haiku-5-5:generateContent"
   },
   "openrouter-reasoning": {
     "body": {

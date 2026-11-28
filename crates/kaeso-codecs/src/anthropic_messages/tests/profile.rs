@@ -55,7 +55,6 @@ fn request(extra: Value) -> Value {
 #[test]
 fn ignored_fields_are_refused_with_the_field_the_app_wrote() {
     for (extra, param) in [
-        (json!({ "top_k": 5 }), "top_k"),
         (json!({ "stop_sequences": ["END"] }), "stop_sequences"),
         (json!({ "container": "container_011" }), "container"),
         (
@@ -78,6 +77,24 @@ fn ignored_fields_are_refused_with_the_field_the_app_wrote() {
     });
     let (param, _) = sent_with(DialectId::OpenAiChat, chat, IGNORING).unwrap_err();
     assert_eq!(param, "stop");
+}
+
+#[test]
+fn top_k_a_provider_ignores_is_left_out_by_the_apps_name_for_it() {
+    let (body, left_out) = sent(request(json!({ "top_k": 5 }))).unwrap();
+    assert!(body.get("top_k").is_none(), "{body}");
+    assert_eq!(left_out, ["top_k"]);
+    let gemini_cli = json!({
+        "contents": [{ "role": "user", "parts": [{ "text": "Hi" }] }],
+        "generationConfig": { "temperature": 1, "topP": 0.95, "topK": 64, "maxOutputTokens": 64 }
+    });
+    let (body, left_out) = sent_with(DialectId::Gemini, gemini_cli, IGNORING).unwrap();
+    assert!(body.get("top_k").is_none(), "{body}");
+    assert_eq!(
+        (body["temperature"].clone(), body["top_p"].clone()),
+        (json!(1.0), json!(0.95))
+    );
+    assert_eq!(left_out, ["generationConfig.topK"]);
 }
 
 #[test]

@@ -47,6 +47,7 @@ AWS 和 Google Cloud 上的托管堆栈不是一键部署：您需要选择区�
 - **健康检查**用 `/healthz` 检查进程，用 `/readyz` 检查 PostgreSQL、Valkey 和 ClickHouse（[健康状态和指标](../monitoring.md)）。指标端口永不公开。
 - **更新器关闭。** 由平台推出和回滚新版本；版本的迁移只向前进行（[升级](../upgrades.md)）。
 - **同一版本。** 网关、控制台和边缘服务固定为同一版本；发布新版本时会更新模板。
+- **搜索引擎不收录实例**，直到网关和控制台的 `KAESO_SEARCH_ENGINES` 为 `true`（[搜索引擎](../domains-and-tls.md#搜索引擎)）。每个模板都只在一处设置它：在 Render 上以及 Railway 的基础设施文件中设在网关上，控制台沿用网关的值；在 DigitalOcean 上作为整个应用的变量；在 Coolify、Dokploy 和 CapRover 上作为堆栈的变量；在 AWS 上作为 `SearchEngines` 参数，在 Google Cloud 上作为 `search_engines` 变量；在 Fly.io 上则同时写在 `gateway.toml` 和 `console.toml` 中。
 
 ## 每条路径都需要的内容
 
