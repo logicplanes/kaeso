@@ -51,7 +51,7 @@ Schema `GenerateContentRequest`.
 | `functionDeclarations[].name`, `.description` | `name`, `description` | |
 | `functionDeclarations[].parametersJsonSchema` | `parameters` | Volles JSON Schema. Fremde Tools bekommen immer `parametersJsonSchema`, sodass nichts an die OpenAPI-Teilmenge verloren geht. |
 | `functionDeclarations[].parameters` (OpenAPI-`Schema`) | `parameters` | Form `schema: "parameters"`, sodass Gemini es in `parameters` zurückbekommt. Andere Dialekte bekommen es als JSON Schema ([Schemas](#schemas)). Mit `parametersJsonSchema` daneben → Feld `parameters`. |
-| `functionDeclarations[].response`, `.responseJsonSchema`, `.behavior` | Felder des Tools | |
+| `functionDeclarations[].response`, `.responseJsonSchema`, `.behavior` | Felder des Tools | `response` und `responseJsonSchema` beschreiben, was die Funktion der App zurückgibt: Andere Dialekte bekommen sie nicht, und sie werden in `kaeso-left-out` genannt ([Allowlist](cross-format.md#allowlist)). Fehler nennen eine Deklaration als `tools[0].functionDeclarations[1]`. |
 | `toolConfig.functionCallingConfig` `mode: AUTO` / `NONE` / `ANY` | `tool_choice` `Auto` / `None` / `Required` | |
 | `mode: ANY` mit einem Eintrag in `allowedFunctionNames` | `ToolChoice::Tool(name)` | |
 | `mode: VALIDATED`, `ANY` mit mehreren Namen, jede andere Kombination | `ToolChoice::Unknown` (roh) | Über Dialekte hinweg abgelehnt. |

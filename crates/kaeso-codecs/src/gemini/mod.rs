@@ -1,4 +1,5 @@
 mod audio;
+pub(crate) mod declarations;
 pub(crate) mod error;
 mod images;
 pub(crate) mod models;
@@ -16,6 +17,8 @@ mod wire;
 mod tests;
 #[cfg(test)]
 mod tests_audio;
+#[cfg(test)]
+mod tests_declarations;
 #[cfg(test)]
 mod tests_edges;
 #[cfg(test)]

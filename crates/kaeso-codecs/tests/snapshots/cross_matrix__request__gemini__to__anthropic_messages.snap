@@ -380,6 +380,92 @@ expression: outcomes
     "param": null,
     "unsupported": "safetySettings"
   },
+  "sdk-automatic-function-calling": {
+    "body": {
+      "max_tokens": 800,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Weather in Paris? Use the tool, then answer in one sentence.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "tools": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "description": "Weather for a city.\n\nArgs:\n  city: The city name.\n  unit: celsius or fahrenheit.",
+          "input_schema": {
+            "properties": {
+              "city": {
+                "type": "string"
+              },
+              "unit": {
+                "default": "celsius",
+                "type": "string"
+              }
+            },
+            "required": [
+              "city"
+            ],
+            "type": "object"
+          },
+          "name": "get_weather"
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
+  "sdk-function-response-schema": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Weather?",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "tools": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "description": "Weather for a city.",
+          "input_schema": {
+            "properties": {
+              "city": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "city"
+            ],
+            "type": "object"
+          },
+          "name": "get_weather"
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
   "sdk-parameters-schema": {
     "body": {
       "max_tokens": 800,
@@ -1159,6 +1245,63 @@ expression: outcomes
             "required": [
               "location"
             ],
+            "type": "object"
+          },
+          "name": "get_weather"
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
+  "tools-union-root": {
+    "body": {
+      "max_tokens": 256,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "What's the weather where I am?",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "tools": [
+        {
+          "description": "Returns the current time.",
+          "input_schema": {
+            "properties": {},
+            "type": "object"
+          },
+          "name": "get_time"
+        },
+        {
+          "description": "Returns the user's city.",
+          "input_schema": {
+            "properties": {},
+            "type": "object"
+          },
+          "name": "get_location"
+        },
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "description": "Returns the weather for a city or a postal code.\n\nThe arguments match one of these variants:\n1. requires city.\n2. requires zip.",
+          "input_schema": {
+            "properties": {
+              "city": {
+                "type": "string"
+              },
+              "zip": {
+                "type": "string"
+              }
+            },
             "type": "object"
           },
           "name": "get_weather"
