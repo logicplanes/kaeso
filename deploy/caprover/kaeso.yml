@@ -77,7 +77,7 @@ services:
       notExposeAsWebApp: "true"
 
   $$cap_appname-clickhouse:
-    image: clickhouse/clickhouse-server:26.3.62.3-alpine@sha256:1d45e52080e6ed136a6377863046a0e53d69fb0418d799f12e23184ed6460c55
+    image: clickhouse/clickhouse-server:26.3.67.30-alpine@sha256:44ed7f257af9a8f8ecc5bac3f0c95205e96da1361f2f6406597edf43d05d2c83
     # ClickHouse's own diagnostics tables, which Kaeso never reads, as in deploy/compose.yaml.
     command:
       - sh
@@ -122,7 +122,7 @@ services:
       notExposeAsWebApp: "true"
 
   $$cap_appname-valkey:
-    image: valkey/valkey:9.1.3-alpine@sha256:bf09d58e96d6b4524a15396b65b242bbe18beebbcc15a04d8ee75ddac62fae0b
+    image: valkey/valkey:9.2.0-alpine@sha256:c8e2d17498838af5d91e12eb7c11220b3434a7b7131a333e3af52ad5e0b80882
     # Through the image's entrypoint, so Valkey runs as its own user. Never evict, so a full Valkey refuses
     # writes instead of dropping limit counters.
     command:
