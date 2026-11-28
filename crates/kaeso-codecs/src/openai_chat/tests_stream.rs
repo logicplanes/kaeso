@@ -70,7 +70,24 @@ fn frames(bytes: &[u8]) -> Vec<Value> {
 
 // OpenAI's shape for `include_usage`: one chunk carries the usage, the last before `[DONE]`,
 // with empty `choices`. Clients such as LangChain add up every chunk's usage.
+// `[DONE]`, where the stream has it, is last: clients stop reading there.
+fn assert_done_last(name: &str, out: &[u8]) {
+    let events: Vec<Value> = frames(out)
+        .into_iter()
+        .filter(|f| !f.as_str().is_some_and(|s| s.starts_with(": ")))
+        .collect();
+    if let Some(done) = events.iter().position(|f| f == "[DONE]") {
+        assert_eq!(
+            done,
+            events.len() - 1,
+            "{name}: {}",
+            String::from_utf8_lossy(out)
+        );
+    }
+}
+
 fn assert_usage_once(name: &str, out: &[u8], total: u64) {
+    assert_done_last(name, out);
     let chunks: Vec<Value> = frames(out).into_iter().filter(|c| c.is_object()).collect();
     let with: Vec<&Value> = chunks.iter().filter(|c| !c["usage"].is_null()).collect();
     let text = String::from_utf8_lossy(out);
@@ -96,6 +113,7 @@ fn every_stream_fixture_with_usage_reaches_an_app_that_asked_for_it_once() {
             continue;
         }
         let out = encode(&events, true);
+        assert_done_last(&name, &out);
         let chunks: Vec<Value> = frames(&out).into_iter().filter(Value::is_object).collect();
         let with: Vec<&Value> = chunks.iter().filter(|c| !c["usage"].is_null()).collect();
         let text = String::from_utf8_lossy(&out);

@@ -1881,6 +1881,18 @@ mod tests {
             chunks.len(),
             "{name}: every event is one JSON chunk: {text}"
         );
+        // `[DONE]`, where the stream has it, is last: clients stop reading there.
+        let all: Vec<String> = crate::sse::parse_all(out)
+            .unwrap()
+            .into_iter()
+            .filter_map(|i| match i {
+                crate::sse::SseItem::Event(e) => Some(e.data),
+                _ => None,
+            })
+            .collect();
+        if let Some(done) = all.iter().position(|d| d == "[DONE]") {
+            assert_eq!(done, all.len() - 1, "{name}: {text}");
+        }
         let with: Vec<&Value> = chunks.iter().filter(|c| !c["usage"].is_null()).collect();
         assert_eq!(with.len(), 1, "{name}: {text}");
         assert_eq!(
