@@ -293,6 +293,7 @@ When a change alters cross-dialect output, review the snapshot diff: run `INSTA_
 - [Sampling across formats](sampling.md): Look up which sampling settings each format takes, and which values Kaeso leaves out.
 - [Media across formats](media.md): Look up how audio, video and images move between the formats, in requests, replies and tool results.
 - [Decisions across formats](decisions-across-formats.md): Look up how decision requests and answers move between the decision formats.
+- [Hosted web search across formats](hosted-web-search.md): Look up how hosted web search tools move between OpenAI, SpaceX and Anthropic.
 - [Anthropic Messages](anthropic-messages.md): Find where every field of the Anthropic Messages format goes in KPP.
 - [Messages providers](anthropic-messages-providers.md): See how the Messages codec adapts to each provider that speaks the format.
 - [OpenAI Chat Completions](openai-chat.md): Find where every field of the Chat Completions format goes in KPP.

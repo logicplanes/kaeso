@@ -293,6 +293,7 @@ Verändert ein Pull Request die Ausgabe über Dialekte hinweg, prüfen Sie den S
 - [Sampling über Formate hinweg](sampling.md): Schlagen Sie nach, welche Sampling-Einstellungen jedes Format annimmt und welche Werte Kaeso weglässt.
 - [Medien über Formate hinweg](media.md): Schlagen Sie nach, wie Audio, Video und Bilder zwischen den Formaten wechseln, in Anfragen, Antworten und Tool-Ergebnissen.
 - [Entscheidungen über Formate hinweg](decisions-across-formats.md): Schlagen Sie nach, wie Entscheidungsanfragen und Antworten zwischen den Entscheidungsformaten wechseln.
+- [Gehostete Websuche über Formate hinweg](hosted-web-search.md): Schlagen Sie nach, wie gehostete Websuche-Tools zwischen OpenAI, SpaceX und Anthropic wechseln.
 - [Anthropic Messages](anthropic-messages.md): Finden Sie, wohin jedes Feld des Formats Anthropic Messages in KPP gehört.
 - [Messages-Anbieter](anthropic-messages-providers.md): Sehen Sie, wie sich der Messages-Codec an jeden Anbieter anpasst, der das Format spricht.
 - [OpenAI Chat Completions](openai-chat.md): Finden Sie, wohin jedes Feld des Formats Chat Completions in KPP gehört.

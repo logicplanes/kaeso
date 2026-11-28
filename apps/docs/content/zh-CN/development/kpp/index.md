@@ -293,6 +293,7 @@ OpenAI Responses 把不同的写法记录为形式覆盖项，只在值未改变
 - [跨格式的采样参数](sampling.md)：查阅每种格式接受哪些采样设置，以及 Kaeso 省略哪些值。
 - [跨格式的媒体](media.md)：查阅音频、视频和图像如何在各格式之间转换，包括请求、回复和工具结果中的媒体。
 - [跨格式的决策](decisions-across-formats.md)：查阅决策请求和答案如何在各决策格式之间转换。
+- [跨格式的托管网页搜索](hosted-web-search.md)：查阅托管网页搜索工具如何在 OpenAI、SpaceX 和 Anthropic 之间转换。
 - [Anthropic Messages](anthropic-messages.md)：查找 Anthropic Messages 格式的每个字段在 KPP 中的位置。
 - [Messages 服务商](anthropic-messages-providers.md)：查看 Messages 编解码器如何适配使用该格式的每个服务商。
 - [OpenAI Chat Completions](openai-chat.md)：查找 Chat Completions 格式的每个字段在 KPP 中的位置。
