@@ -1,0 +1,34 @@
+{
+  "model": "claude-haiku-5-5",
+  "stream": false,
+  "messages": [
+    {
+      "content": "You are a helpful AI assistant. Solve tasks using your tools. Reply with TERMINATE when the task has been completed.",
+      "role": "system"
+    },
+    {
+      "role": "user",
+      "name": "user",
+      "content": "What's the weather in Paris?"
+    },
+    {
+      "role": "assistant",
+      "tool_calls": [
+        {
+          "id": "call_1",
+          "function": {
+            "arguments": "{\"city\": \"Paris\"}",
+            "name": "weather"
+          },
+          "type": "function"
+        }
+      ],
+      "content": null
+    },
+    {
+      "content": "Sunny in Paris",
+      "role": "tool",
+      "tool_call_id": "call_1"
+    }
+  ]
+}

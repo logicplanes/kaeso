@@ -1949,23 +1949,9 @@ expression: outcomes
     "object": "response",
     "output": [
       {
-        "content": [
-          {
-            "annotations": [],
-            "logprobs": [],
-            "text": "",
-            "type": "output_text"
-          }
-        ],
-        "id": "msg_kaeso_chatcmplf8939946511e9855b00d83cb0a837837_0",
-        "role": "assistant",
-        "status": "completed",
-        "type": "message"
-      },
-      {
         "arguments": "{\"city\": \"Paris\"}",
         "call_id": "call_8a161da797f84eed83651e6e",
-        "id": "fc_kaeso_chatcmplf8939946511e9855b00d83cb0a837837_1",
+        "id": "fc_kaeso_chatcmplf8939946511e9855b00d83cb0a837837_0",
         "name": "get_weather",
         "status": "completed",
         "type": "function_call"
@@ -2087,23 +2073,9 @@ expression: outcomes
     "object": "response",
     "output": [
       {
-        "content": [
-          {
-            "annotations": [],
-            "logprobs": [],
-            "text": "",
-            "type": "output_text"
-          }
-        ],
-        "id": "msg_kaeso_chatcmpld56d7b72269f939c9360543d8c454ef0_0",
-        "role": "assistant",
-        "status": "completed",
-        "type": "message"
-      },
-      {
         "arguments": "{\"city\": \"Paris\"}",
         "call_id": "call_0edfa4b3cefa4ba18230660e",
-        "id": "fc_kaeso_chatcmpld56d7b72269f939c9360543d8c454ef0_1",
+        "id": "fc_kaeso_chatcmpld56d7b72269f939c9360543d8c454ef0_0",
         "name": "get_weather",
         "status": "completed",
         "type": "function_call"
@@ -2111,7 +2083,7 @@ expression: outcomes
       {
         "arguments": "{\"city\": \"Paris\"}",
         "call_id": "call_52ffcaad3d984b43b440c0a7",
-        "id": "fc_kaeso_chatcmpld56d7b72269f939c9360543d8c454ef0_2",
+        "id": "fc_kaeso_chatcmpld56d7b72269f939c9360543d8c454ef0_1",
         "name": "get_time",
         "status": "completed",
         "type": "function_call"
@@ -2168,23 +2140,9 @@ expression: outcomes
     "object": "response",
     "output": [
       {
-        "content": [
-          {
-            "annotations": [],
-            "logprobs": [],
-            "text": "",
-            "type": "output_text"
-          }
-        ],
-        "id": "msg_kaeso_chatcmpl35436293dd0f90b0b015066281f208fd_0",
-        "role": "assistant",
-        "status": "completed",
-        "type": "message"
-      },
-      {
         "arguments": "{\"city\": \"Paris\"}",
         "call_id": "call_6023bbd3aada4b97bec6d787",
-        "id": "fc_kaeso_chatcmpl35436293dd0f90b0b015066281f208fd_1",
+        "id": "fc_kaeso_chatcmpl35436293dd0f90b0b015066281f208fd_0",
         "name": "get_time",
         "status": "completed",
         "type": "function_call"
@@ -2241,23 +2199,9 @@ expression: outcomes
     "object": "response",
     "output": [
       {
-        "content": [
-          {
-            "annotations": [],
-            "logprobs": [],
-            "text": "",
-            "type": "output_text"
-          }
-        ],
-        "id": "msg_kaeso_chatcmpl452329176ed1972986770270e1625d41_0",
-        "role": "assistant",
-        "status": "completed",
-        "type": "message"
-      },
-      {
         "arguments": "{\"city\": \"New York\"}",
         "call_id": "call_70c7bd135ff24ad5b3ef8e83",
-        "id": "fc_kaeso_chatcmpl452329176ed1972986770270e1625d41_1",
+        "id": "fc_kaeso_chatcmpl452329176ed1972986770270e1625d41_0",
         "name": "get_weather",
         "status": "completed",
         "type": "function_call"
@@ -5689,23 +5633,9 @@ expression: outcomes
     "object": "response",
     "output": [
       {
-        "content": [
-          {
-            "annotations": [],
-            "logprobs": [],
-            "text": "",
-            "type": "output_text"
-          }
-        ],
-        "id": "msg_kaeso_2a676b20042f477894b38eeebdaef0ea_0",
-        "role": "assistant",
-        "status": "completed",
-        "type": "message"
-      },
-      {
         "arguments": "{\"location\": \"Paris, France\", \"unit\": \"celsius\"}",
         "call_id": "call_00_XWCK6iIwTQiMlGGS8D6O4965",
-        "id": "fc_kaeso_2a676b20042f477894b38eeebdaef0ea_1",
+        "id": "fc_kaeso_2a676b20042f477894b38eeebdaef0ea_0",
         "name": "get_weather",
         "status": "completed",
         "type": "function_call"
@@ -7318,23 +7248,9 @@ expression: outcomes
     "object": "response",
     "output": [
       {
-        "content": [
-          {
-            "annotations": [],
-            "logprobs": [],
-            "text": "",
-            "type": "output_text"
-          }
-        ],
-        "id": "msg_kaeso_70c1666cb00d4791ba3e37dfbd3f3f0d_0",
-        "role": "assistant",
-        "status": "completed",
-        "type": "message"
-      },
-      {
         "arguments": "{\"city\": \"Lisbon\"}",
         "call_id": "yVjSUoKG6",
-        "id": "fc_kaeso_70c1666cb00d4791ba3e37dfbd3f3f0d_1",
+        "id": "fc_kaeso_70c1666cb00d4791ba3e37dfbd3f3f0d_0",
         "name": "get_weather",
         "status": "completed",
         "type": "function_call"
@@ -7923,23 +7839,9 @@ expression: outcomes
     "object": "response",
     "output": [
       {
-        "content": [
-          {
-            "annotations": [],
-            "logprobs": [],
-            "text": "",
-            "type": "output_text"
-          }
-        ],
-        "id": "msg_kaeso_chatcmpl6ae4cd2e22b979ecd05adc6c_0",
-        "role": "assistant",
-        "status": "completed",
-        "type": "message"
-      },
-      {
         "arguments": "{\"city\": \"Paris\"}",
         "call_id": "get_weather_0_f6e0e747",
-        "id": "fc_kaeso_chatcmpl6ae4cd2e22b979ecd05adc6c_1",
+        "id": "fc_kaeso_chatcmpl6ae4cd2e22b979ecd05adc6c_0",
         "name": "get_weather",
         "status": "completed",
         "type": "function_call"
@@ -7947,7 +7849,7 @@ expression: outcomes
       {
         "arguments": "{\"city\": \"Rome\"}",
         "call_id": "get_weather_1_6cb64aba",
-        "id": "fc_kaeso_chatcmpl6ae4cd2e22b979ecd05adc6c_2",
+        "id": "fc_kaeso_chatcmpl6ae4cd2e22b979ecd05adc6c_1",
         "name": "get_weather",
         "status": "completed",
         "type": "function_call"
@@ -8329,23 +8231,9 @@ expression: outcomes
     "object": "response",
     "output": [
       {
-        "content": [
-          {
-            "annotations": [],
-            "logprobs": [],
-            "text": "",
-            "type": "output_text"
-          }
-        ],
-        "id": "msg_kaeso_chatcmpl6ae4cc2d81c3fb4bf2773d31_0",
-        "role": "assistant",
-        "status": "completed",
-        "type": "message"
-      },
-      {
         "arguments": "{\"city\": \"Paris\"}",
         "call_id": "get_weather_0_2fdaa899",
-        "id": "fc_kaeso_chatcmpl6ae4cc2d81c3fb4bf2773d31_1",
+        "id": "fc_kaeso_chatcmpl6ae4cc2d81c3fb4bf2773d31_0",
         "name": "get_weather",
         "status": "completed",
         "type": "function_call"
@@ -8916,23 +8804,9 @@ expression: outcomes
     "object": "response",
     "output": [
       {
-        "content": [
-          {
-            "annotations": [],
-            "logprobs": [],
-            "text": "",
-            "type": "output_text"
-          }
-        ],
-        "id": "msg_kaeso_07a4dedfdb1498b045498dfd42497639_0",
-        "role": "assistant",
-        "status": "completed",
-        "type": "message"
-      },
-      {
         "arguments": "{\"location\": \"ShangHai\"}",
         "call_id": "call_function_9w7wq1j9zmpl_1",
-        "id": "fc_kaeso_07a4dedfdb1498b045498dfd42497639_1",
+        "id": "fc_kaeso_07a4dedfdb1498b045498dfd42497639_0",
         "name": "get_weather",
         "status": "completed",
         "type": "function_call"
@@ -9578,23 +9452,9 @@ expression: outcomes
     "object": "response",
     "output": [
       {
-        "content": [
-          {
-            "annotations": [],
-            "logprobs": [],
-            "text": "",
-            "type": "output_text"
-          }
-        ],
-        "id": "msg_kaeso_chatcmpl497_0",
-        "role": "assistant",
-        "status": "completed",
-        "type": "message"
-      },
-      {
         "arguments": "{\"city\":\"Paris\"}",
         "call_id": "call_p4wpxak3",
-        "id": "fc_kaeso_chatcmpl497_1",
+        "id": "fc_kaeso_chatcmpl497_0",
         "name": "get_weather",
         "status": "completed",
         "type": "function_call"
@@ -9846,23 +9706,9 @@ expression: outcomes
     "object": "response",
     "output": [
       {
-        "content": [
-          {
-            "annotations": [],
-            "logprobs": [],
-            "text": "",
-            "type": "output_text"
-          }
-        ],
-        "id": "msg_kaeso_chatcmpl454_0",
-        "role": "assistant",
-        "status": "completed",
-        "type": "message"
-      },
-      {
         "arguments": "{\"location\":\"Paris, France\",\"unit\":\"celsius\"}",
         "call_id": "call_dunvhu1f",
-        "id": "fc_kaeso_chatcmpl454_1",
+        "id": "fc_kaeso_chatcmpl454_0",
         "name": "get_weather",
         "status": "completed",
         "type": "function_call"
@@ -9870,7 +9716,7 @@ expression: outcomes
       {
         "arguments": "{\"timezone\":\"Asia/Tokyo\"}",
         "call_id": "call_qrsgo35q",
-        "id": "fc_kaeso_chatcmpl454_2",
+        "id": "fc_kaeso_chatcmpl454_1",
         "name": "get_local_time",
         "status": "completed",
         "type": "function_call"
@@ -9927,23 +9773,9 @@ expression: outcomes
     "object": "response",
     "output": [
       {
-        "content": [
-          {
-            "annotations": [],
-            "logprobs": [],
-            "text": "",
-            "type": "output_text"
-          }
-        ],
-        "id": "msg_kaeso_chatcmpl909_0",
-        "role": "assistant",
-        "status": "completed",
-        "type": "message"
-      },
-      {
         "arguments": "{\"location\":\"Paris, France\",\"unit\":\"Celsius\"}",
         "call_id": "call_u5a4vdpz",
-        "id": "fc_kaeso_chatcmpl909_1",
+        "id": "fc_kaeso_chatcmpl909_0",
         "name": "get_weather",
         "status": "completed",
         "type": "function_call"
@@ -10436,23 +10268,9 @@ expression: outcomes
     "object": "response",
     "output": [
       {
-        "content": [
-          {
-            "annotations": [],
-            "logprobs": [],
-            "text": "",
-            "type": "output_text"
-          }
-        ],
-        "id": "msg_kaeso_chatcmplb444baf2cad75069_0",
-        "role": "assistant",
-        "status": "completed",
-        "type": "message"
-      },
-      {
         "arguments": "{\"city\": \"Paris\"}",
         "call_id": "chatcmpl-tool-955a8bc324c15bff",
-        "id": "fc_kaeso_chatcmplb444baf2cad75069_1",
+        "id": "fc_kaeso_chatcmplb444baf2cad75069_0",
         "name": "get_weather",
         "status": "completed",
         "type": "function_call"
@@ -10834,23 +10652,9 @@ expression: outcomes
     "object": "response",
     "output": [
       {
-        "content": [
-          {
-            "annotations": [],
-            "logprobs": [],
-            "text": "",
-            "type": "output_text"
-          }
-        ],
-        "id": "msg_kaeso_asunkecbb1ap_0",
-        "role": "assistant",
-        "status": "completed",
-        "type": "message"
-      },
-      {
         "arguments": "{\"location\": \"杭州市\"}",
         "call_id": "68e892c388e44c83a06867f44ecee6f3",
-        "id": "fc_kaeso_asunkecbb1ap_1",
+        "id": "fc_kaeso_asunkecbb1ap_0",
         "name": "get_current_weather",
         "status": "completed",
         "type": "function_call"
@@ -10858,7 +10662,7 @@ expression: outcomes
       {
         "arguments": "{\"timezone\": \"Asia/Shanghai\"}",
         "call_id": "8de2c4c50bf0440995e7a496767d13d2",
-        "id": "fc_kaeso_asunkecbb1ap_2",
+        "id": "fc_kaeso_asunkecbb1ap_1",
         "name": "get_current_time",
         "status": "completed",
         "type": "function_call"
@@ -10915,23 +10719,9 @@ expression: outcomes
     "object": "response",
     "output": [
       {
-        "content": [
-          {
-            "annotations": [],
-            "logprobs": [],
-            "text": "",
-            "type": "output_text"
-          }
-        ],
-        "id": "msg_kaeso_as32tdstad6t_0",
-        "role": "assistant",
-        "status": "completed",
-        "type": "message"
-      },
-      {
         "arguments": "{\"location\": \"上海市\", \"time\": \"2025-08-21\"}",
         "call_id": "04fed17840d34b1e99bf3cd6dc94150d",
-        "id": "fc_kaeso_as32tdstad6t_1",
+        "id": "fc_kaeso_as32tdstad6t_0",
         "name": "get_current_weather",
         "status": "completed",
         "type": "function_call"
@@ -10939,7 +10729,7 @@ expression: outcomes
       {
         "arguments": "{\"location\": \"北京市\", \"time\": \"2025-08-21\"}",
         "call_id": "a37ee51b99a64723bcb7f2f4d8081770",
-        "id": "fc_kaeso_as32tdstad6t_2",
+        "id": "fc_kaeso_as32tdstad6t_1",
         "name": "get_current_weather",
         "status": "completed",
         "type": "function_call"
@@ -12220,23 +12010,9 @@ expression: outcomes
     "object": "response",
     "output": [
       {
-        "content": [
-          {
-            "annotations": [],
-            "logprobs": [],
-            "text": "",
-            "type": "output_text"
-          }
-        ],
-        "id": "msg_kaeso_291c59ebf4017a937a2a42a8ed52581fc2669ebc05a491c70f821b4e568b6433_0",
-        "role": "assistant",
-        "status": "completed",
-        "type": "message"
-      },
-      {
         "arguments": "{\"city\": \" Shanghai \"}",
         "call_id": "call_brg23SRcTgmpm_V0jfP-iA",
-        "id": "fc_kaeso_291c59ebf4017a937a2a42a8ed52581fc2669ebc05a491c70f821b4e568b6433_1",
+        "id": "fc_kaeso_291c59ebf4017a937a2a42a8ed52581fc2669ebc05a491c70f821b4e568b6433_0",
         "name": "get_weather",
         "status": "completed",
         "type": "function_call"
@@ -13671,23 +13447,9 @@ expression: outcomes
     "object": "response",
     "output": [
       {
-        "content": [
-          {
-            "annotations": [],
-            "logprobs": [],
-            "text": "",
-            "type": "output_text"
-          }
-        ],
-        "id": "msg_kaeso_chatcmplRX7qvReuXMefIzL6PlxqNbSG_0",
-        "role": "assistant",
-        "status": "completed",
-        "type": "message"
-      },
-      {
         "arguments": "{\"x\": 17, \"y\": 25}",
         "call_id": "chatcmpl-tool-b54856bec05e7563",
-        "id": "fc_kaeso_chatcmplRX7qvReuXMefIzL6PlxqNbSG_1",
+        "id": "fc_kaeso_chatcmplRX7qvReuXMefIzL6PlxqNbSG_0",
         "name": "add",
         "status": "completed",
         "type": "function_call"
@@ -14258,23 +14020,9 @@ expression: outcomes
     "object": "response",
     "output": [
       {
-        "content": [
-          {
-            "annotations": [],
-            "logprobs": [],
-            "text": "",
-            "type": "output_text"
-          }
-        ],
-        "id": "msg_kaeso_0217661267019147d8950efa0e2f7c9d9cc7a1cc971272cf4548c_0",
-        "role": "assistant",
-        "status": "completed",
-        "type": "message"
-      },
-      {
         "arguments": "{\"location\": \"北京\"}",
         "call_id": "call_wiezxeyae8jzxl3jx8nhfgb5",
-        "id": "fc_kaeso_0217661267019147d8950efa0e2f7c9d9cc7a1cc971272cf4548c_1",
+        "id": "fc_kaeso_0217661267019147d8950efa0e2f7c9d9cc7a1cc971272cf4548c_0",
         "name": "get_weather",
         "status": "completed",
         "type": "function_call"
@@ -14656,23 +14404,9 @@ expression: outcomes
     "object": "response",
     "output": [
       {
-        "content": [
-          {
-            "annotations": [],
-            "logprobs": [],
-            "text": "",
-            "type": "output_text"
-          }
-        ],
-        "id": "msg_kaeso_7b4647dd256f96ecbae72f264ac87131_0",
-        "role": "assistant",
-        "status": "completed",
-        "type": "message"
-      },
-      {
         "arguments": "{\"location\":\"Paris, France\",\"unit\":\"celsius\"}",
         "call_id": "call-f1673ef5-ebac-43b0-a80a-ebf4abb818ad-0",
-        "id": "fc_kaeso_7b4647dd256f96ecbae72f264ac87131_1",
+        "id": "fc_kaeso_7b4647dd256f96ecbae72f264ac87131_0",
         "name": "get_weather",
         "status": "completed",
         "type": "function_call"
@@ -14680,7 +14414,7 @@ expression: outcomes
       {
         "arguments": "{\"timezone\":\"Asia/Tokyo\"}",
         "call_id": "call-f1673ef5-ebac-43b0-a80a-ebf4abb818ad-1",
-        "id": "fc_kaeso_7b4647dd256f96ecbae72f264ac87131_2",
+        "id": "fc_kaeso_7b4647dd256f96ecbae72f264ac87131_1",
         "name": "get_local_time",
         "status": "completed",
         "type": "function_call"
@@ -14737,23 +14471,9 @@ expression: outcomes
     "object": "response",
     "output": [
       {
-        "content": [
-          {
-            "annotations": [],
-            "logprobs": [],
-            "text": "",
-            "type": "output_text"
-          }
-        ],
-        "id": "msg_kaeso_a590f19dffce94c0a90c1d5c897dd3cd_0",
-        "role": "assistant",
-        "status": "completed",
-        "type": "message"
-      },
-      {
         "arguments": "{\"location\":\"Paris, France\",\"unit\":\"celsius\"}",
         "call_id": "call-79d7bafb-a82b-471d-a790-994e159ffa2d-0",
-        "id": "fc_kaeso_a590f19dffce94c0a90c1d5c897dd3cd_1",
+        "id": "fc_kaeso_a590f19dffce94c0a90c1d5c897dd3cd_0",
         "name": "get_weather",
         "status": "completed",
         "type": "function_call"

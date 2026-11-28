@@ -40214,6 +40214,14 @@
                   "$ref": "#/components/schemas/UsageMedia",
                   "description": "What the group's media requests made or heard."
                 },
+                "name": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "By `model`, the model's name in KPMR, such as `Gemini 4 Carbon`; a model id\nlogged with a setting at its end, such as `gemini-4-carbon-high`, has the\nname of the model it stands for and the setting: `Gemini 4 Carbon (high)`.\n`null` for models KPMR doesn't know and for every other grouping.",
+                  "example": "Gemini 4 Carbon"
+                },
                 "output_tokens": {
                   "type": "integer",
                   "format": "int64",
@@ -51183,6 +51191,14 @@
           "media": {
             "$ref": "#/components/schemas/UsageMedia",
             "description": "What the group's media requests made or heard."
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "By `model`, the model's name in KPMR, such as `Gemini 4 Carbon`; a model id\nlogged with a setting at its end, such as `gemini-4-carbon-high`, has the\nname of the model it stands for and the setting: `Gemini 4 Carbon (high)`.\n`null` for models KPMR doesn't know and for every other grouping.",
+            "example": "Gemini 4 Carbon"
           },
           "output_tokens": {
             "type": "integer",

@@ -13,7 +13,7 @@ Each provider in `PROVIDERS` names a `kaeso_codecs::openai_responses::ResponsesP
 
 | Setting | What the encoder does |
 |---|---|
-| `xai_web_search()` | Sends hosted search as xAI's `web_search` tool ([hosted web search](cross-format.md#hosted-web-search)). |
+| `xai_web_search()` | Sends hosted search as xAI's `web_search` tool ([hosted web search](hosted-web-search.md)). |
 | `without_null_reasoning_content()` | Leaves out an explicit `content: null` of a reasoning item the app sends back. |
 | `tool_schema_root(root)` | Merges a function tool's root union that the provider can't take into one object schema; `ToolSchemaRoot::ObjectUnions` keeps a union of inline objects ([union tool schemas](cross-format.md#union-tool-schemas)). |
 | `without_openai_encrypted_reasoning()` | Leaves out reasoning items the app sends back with OpenAI's `encrypted_content`. It is a Fernet token ([Fernet spec](https://github.com/fernet/spec/blob/master/Spec.md)), so it starts with `gAAAAA`, as in every OpenAI recording in `fixtures/openai_responses/`. |
@@ -27,7 +27,7 @@ Sources: xAI's [Responses reference](https://docs.x.ai/developers/rest-api-refer
 | `reasoning` items with `summary`, and `encrypted_content`, which `grok-4.3` always sends | as OpenAI's | SpaceX refuses an `encrypted_content` that another provider wrote with a 400 `invalid-argument` (`errors/recorded-reasoning-encrypted.json`, for OpenAI's). An app's history doesn't say which provider wrote an item, so items with OpenAI's are left out (`without_openai_encrypted_reasoning()`), as when a Codex thread switches from GPT to Grok. |
 | `web_search_call` items, `url_citation` annotations | as OpenAI's | |
 | `namespace` tools (request) | flattened to function tools | SpaceX refuses them with a 422 (`unknown variant namespace`); its profile is `compatible` ([tool namespaces](cross-format.md#tool-namespaces)). |
-| `web_search` tool (request) | xAI's tool (`xai_web_search()`) | SpaceX refuses `external_web_access` (`Argument not supported: external_web_access`) and always searches live ([hosted web search](cross-format.md#hosted-web-search)). |
+| `web_search` tool (request) | xAI's tool (`xai_web_search()`) | SpaceX refuses `external_web_access` (`Argument not supported: external_web_access`) and always searches live ([hosted web search](hosted-web-search.md)). |
 | tool parameters with a root union whose branches aren't all inline objects, or a root `allOf` (request) | one object schema (`tool_schema_root(ToolSchemaRoot::ObjectUnions)`) | SpaceX refuses them with `invalid_client_tool_schema` ([union tool schemas](cross-format.md#union-tool-schemas)). |
 | `content: null` on a `reasoning` item sent back (request) | left out (`without_null_reasoning_content()`) | Codex sends its earlier reasoning items back this way. With the `null`, SpaceX can't read the item's `encrypted_content` (`Could not decode the compaction blob`). |
 | `usage.num_sources_used`, `num_server_side_tools_used`, `server_side_tool_usage_details`, `cost_in_usd_ticks`, `context_details` | `raw` usage | Responses apps get them back; the token counts are typed as for OpenAI. |

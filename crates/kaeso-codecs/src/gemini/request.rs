@@ -36,7 +36,7 @@ const FORM_INCLUDE: &str = "include_thoughts";
 const FORM_CANDIDATES: &str = "candidate_count";
 const FORM_STOP: &str = "stop";
 const FORM_MIME: &str = "response_mime_type";
-const FORM_SDK_NAMES: &str = "sdk_names";
+pub(crate) const FORM_SDK_NAMES: &str = "sdk_names";
 const FORM_TOP_K_FLOAT: &str = "top_k_float";
 const JSON_MIME: &str = "application/json";
 /// Gemini takes at most five stop sequences (`GenerationConfig.stopSequences`).

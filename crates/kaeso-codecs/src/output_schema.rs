@@ -46,14 +46,74 @@ const STRING_FORMATS: [&str; 10] = [
 const SCHEMA_MAPS: [&str; 3] = ["properties", "$defs", "definitions"];
 const SCHEMA_LISTS: [&str; 3] = ["anyOf", "allOf", "oneOf"];
 const SCHEMAS: [&str; 4] = ["items", "if", "then", "else"];
-struct NoKeys;
+const MERGEABLE: [&str; 6] = [
+    "type",
+    "properties",
+    "required",
+    "description",
+    "title",
+    "additionalProperties",
+];
+
+enum Unfit {
+    NoKeys,
+    OpenObject(String),
+    ObjectBranches(String),
+    Unlisted(String),
+}
 
 struct Rewrite {
     changed: bool,
+    refs: Vec<String>,
+}
+
+// Where a schema sits: as the error names it (`properties.totals`) and as a `$ref` points to it.
+struct Place {
+    at: String,
+    ptr: String,
+}
+
+impl Place {
+    fn root() -> Place {
+        Place {
+            at: String::new(),
+            ptr: String::new(),
+        }
+    }
+
+    fn field(&self, key: &str) -> Place {
+        Place {
+            at: within(&self.at, key),
+            ptr: format!("{}/{key}", self.ptr),
+        }
+    }
+
+    fn member(&self, key: &str, name: &str) -> Place {
+        let escaped = name.replace('~', "~0").replace('/', "~1");
+        Place {
+            at: within(&self.at, &format!("{key}.{name}")),
+            ptr: format!("{}/{key}/{escaped}", self.ptr),
+        }
+    }
+
+    fn item(&self, key: &str, i: usize) -> Place {
+        Place {
+            at: within(&self.at, &format!("{key}[{i}]")),
+            ptr: format!("{}/{key}/{i}", self.ptr),
+        }
+    }
 }
 
 impl Rewrite {
-    fn node(&mut self, node: &mut Map<String, Value>) {
+    fn node(&mut self, node: &mut Map<String, Value>, place: &Place) -> Result<(), Unfit> {
+        self.join_all_of(node, place)?;
+        // Claude closes every object, so one that lists no keys could only ever be `{}`.
+        if !place.at.is_empty()
+            && !lists_keys(node)
+            && node.get("additionalProperties") != Some(&Value::Bool(false))
+        {
+            return Err(Unfit::OpenObject(place.at.clone()));
+        }
         let mut moved = Map::new();
         for key in REFUSED {
             if let Some(value) = node.remove(key) {
@@ -93,6 +153,9 @@ impl Rewrite {
             self.changed = true;
         }
         if is_object(node) && node.get("additionalProperties") != Some(&Value::Bool(false)) {
+            if !lists_every_required_key(node) {
+                return Err(Unfit::Unlisted(place.at.clone()));
+            }
             node.insert("additionalProperties".to_owned(), Value::Bool(false));
             self.changed = true;
         }
@@ -102,30 +165,291 @@ impl Rewrite {
         }
         for key in SCHEMA_MAPS {
             if let Some(Value::Object(schemas)) = node.get_mut(key) {
-                for schema in schemas.values_mut() {
-                    self.value(schema);
+                for (name, schema) in schemas.iter_mut() {
+                    self.value(schema, &place.member(key, name))?;
                 }
             }
         }
         for key in SCHEMA_LISTS {
             if let Some(Value::Array(schemas)) = node.get_mut(key) {
-                for schema in schemas {
-                    self.value(schema);
+                for (i, schema) in schemas.iter_mut().enumerate() {
+                    self.value(schema, &place.item(key, i))?;
                 }
             }
         }
         for key in SCHEMAS {
             if let Some(schema) = node.get_mut(key) {
-                self.value(schema);
+                self.value(schema, &place.field(key))?;
             }
+        }
+        Ok(())
+    }
+
+    fn value(&mut self, value: &mut Value, place: &Place) -> Result<(), Unfit> {
+        match value {
+            Value::Object(node) => self.node(node, place),
+            _ => Ok(()),
         }
     }
 
-    fn value(&mut self, value: &mut Value) {
-        if let Value::Object(node) = value {
-            self.node(node);
+    fn points_into(&self, ptr: &str) -> bool {
+        let target = format!("#{ptr}");
+        self.refs.iter().any(|r| {
+            r.strip_prefix(&target)
+                .is_some_and(|rest| rest.is_empty() || rest.starts_with('/'))
+        })
+    }
+
+    // Claude refuses a nested `allOf` and keys such as `properties` beside one (checked live on
+    // 2026-11-27), so the parts are flattened and the plain objects among them join the node.
+    fn join_all_of(&mut self, node: &mut Map<String, Value>, place: &Place) -> Result<(), Unfit> {
+        let Some(Value::Array(list)) = node.get("allOf") else {
+            return Ok(());
+        };
+        let mut parts = Vec::with_capacity(list.len());
+        for item in list.iter().cloned() {
+            conjuncts(item, &mut parts);
+        }
+        let objects: Vec<bool> = parts.iter().map(object_like).collect();
+        let count = objects.iter().filter(|o| **o).count();
+        let join = count + usize::from(objectish(node)) >= 2;
+        if !join && parts == *list {
+            return Ok(());
+        }
+        let refused = || Unfit::ObjectBranches(within(&place.at, "allOf"));
+        if self.points_into(&place.field("allOf").ptr) {
+            return Err(refused());
+        }
+        let mut merged = Vec::new();
+        let mut rest = Vec::new();
+        for (part, object) in parts.into_iter().zip(objects) {
+            match part {
+                Value::Object(b) if join && object && mergeable(&b) && open(&b) => merged.push(b),
+                _ if join && object => return Err(refused()),
+                other => rest.push(other),
+            }
+        }
+        if join {
+            let ty = merged
+                .iter()
+                .fold(types_of(node), |types, b| both(types, types_of(b)));
+            // Without a written type the node stays untyped: `node` types it once its keys are known.
+            let ty = match ty {
+                None => None,
+                Some(t) if t == ["object"] => Some(Value::from("object")),
+                Some(t) if t.iter().any(|t| t == "object") => {
+                    Some(t.into_iter().map(Value::from).collect())
+                }
+                Some(_) => return Err(refused()),
+            };
+            let combined = changed_by_join(node, &merged)
+                .iter()
+                .any(|name| self.points_into(&place.member("properties", name).ptr));
+            if !open(node) || combined {
+                return Err(refused());
+            }
+            for branch in merged {
+                join_object(node, branch);
+            }
+            if let Some(ty) = ty {
+                node.insert("type".to_owned(), ty);
+            }
+            node.remove("additionalProperties");
+        }
+        node.remove("allOf");
+        if !rest.is_empty() {
+            node.insert("allOf".to_owned(), Value::Array(rest));
+        }
+        self.changed = true;
+        Ok(())
+    }
+}
+
+// `allOf` is associative: a nested list's parts, and a wrapper's own keys, apply to one value.
+fn conjuncts(schema: Value, out: &mut Vec<Value>) {
+    let Value::Object(mut m) = schema else {
+        push_new(out, schema);
+        return;
+    };
+    match m.remove("allOf") {
+        Some(Value::Array(list)) => {
+            if !m.is_empty() {
+                push_new(out, Value::Object(m));
+            }
+            for item in list {
+                conjuncts(item, out);
+            }
+        }
+        Some(other) => {
+            m.insert("allOf".to_owned(), other);
+            push_new(out, Value::Object(m));
+        }
+        None => push_new(out, Value::Object(m)),
+    }
+}
+
+fn push_new(out: &mut Vec<Value>, part: Value) {
+    if !out.contains(&part) {
+        out.push(part);
+    }
+}
+
+fn open(n: &Map<String, Value>) -> bool {
+    n.get("additionalProperties")
+        .is_none_or(|a| *a == Value::Bool(true))
+}
+
+fn objectish(node: &Map<String, Value>) -> bool {
+    is_object(node) || node.contains_key("properties") || node.contains_key("required")
+}
+
+fn lists_every_required_key(node: &Map<String, Value>) -> bool {
+    let listed = node.get("properties").and_then(Value::as_object);
+    node.get("required")
+        .and_then(Value::as_array)
+        .is_none_or(|required| {
+            required
+                .iter()
+                .filter_map(Value::as_str)
+                .all(|k| listed.is_some_and(|p| p.contains_key(k)))
+        })
+}
+
+fn types_of(node: &Map<String, Value>) -> Option<Vec<String>> {
+    match node.get("type")? {
+        Value::String(t) => Some(vec![t.clone()]),
+        Value::Array(types) => Some(
+            types
+                .iter()
+                .filter_map(|t| t.as_str().map(str::to_owned))
+                .collect(),
+        ),
+        _ => None,
+    }
+}
+
+fn both(a: Option<Vec<String>>, b: Option<Vec<String>>) -> Option<Vec<String>> {
+    match (a, b) {
+        (Some(a), Some(b)) => Some(a.into_iter().filter(|t| b.contains(t)).collect()),
+        (a, b) => a.or(b),
+    }
+}
+
+fn changed_by_join(node: &Map<String, Value>, branches: &[Map<String, Value>]) -> Vec<String> {
+    let mut first: Vec<(&String, &Value)> = Vec::new();
+    let mut changed = Vec::new();
+    let properties = std::iter::once(node)
+        .chain(branches)
+        .filter_map(|n| n.get("properties").and_then(Value::as_object))
+        .flatten();
+    for (name, schema) in properties {
+        match first.iter().find(|(n, _)| *n == name) {
+            Some((_, own)) if *own != schema && !changed.contains(name) => {
+                changed.push(name.clone());
+            }
+            Some(_) => {}
+            None => first.push((name, schema)),
         }
     }
+    changed
+}
+
+fn within(at: &str, key: &str) -> String {
+    if at.is_empty() {
+        key.to_owned()
+    } else {
+        format!("{at}.{key}")
+    }
+}
+
+fn object_like(schema: &Value) -> bool {
+    let Value::Object(s) = schema else {
+        return false;
+    };
+    is_object(s)
+        || ["properties", "required", "$ref", "anyOf", "oneOf", "allOf"]
+            .iter()
+            .any(|k| s.contains_key(*k))
+}
+
+fn mergeable(branch: &Map<String, Value>) -> bool {
+    branch.keys().all(|k| MERGEABLE.contains(&k.as_str()))
+        && branch.get("type").is_none_or(|_| is_object(branch))
+}
+
+fn join_object(node: &mut Map<String, Value>, branch: Map<String, Value>) {
+    for (key, value) in branch {
+        match (key.as_str(), value) {
+            ("properties", Value::Object(added)) => {
+                let Value::Object(properties) = node
+                    .entry("properties")
+                    .or_insert_with(|| Value::Object(Map::new()))
+                else {
+                    continue;
+                };
+                for (name, schema) in added {
+                    match properties.get_mut(&name) {
+                        Some(own) if *own != schema => combine(own, schema),
+                        Some(_) => {}
+                        None => {
+                            properties.insert(name, schema);
+                        }
+                    }
+                }
+            }
+            ("required", Value::Array(added)) => {
+                if let Value::Array(required) = node
+                    .entry("required")
+                    .or_insert_with(|| Value::Array(Vec::new()))
+                {
+                    for name in added {
+                        if !required.contains(&name) {
+                            required.push(name);
+                        }
+                    }
+                }
+            }
+            ("description", Value::String(text)) => {
+                let joined = match node.get("description").and_then(Value::as_str) {
+                    Some(own) if !own.is_empty() => format!("{own}\n\n{text}"),
+                    _ => text,
+                };
+                node.insert("description".to_owned(), Value::String(joined));
+            }
+            ("title", title) => {
+                node.entry("title").or_insert(title);
+            }
+            _ => {}
+        }
+    }
+}
+
+// A property several branches define takes all of their schemas in one flat `allOf`.
+fn combine(own: &mut Value, schema: Value) {
+    let mut parts = Vec::new();
+    flat_parts(std::mem::take(own), &mut parts);
+    flat_parts(schema, &mut parts);
+    *own = match parts.len() {
+        1 => parts.pop().unwrap_or_default(),
+        _ => serde_json::json!({ "allOf": parts }),
+    };
+}
+
+fn flat_parts(schema: Value, out: &mut Vec<Value>) {
+    match schema {
+        Value::Object(mut s) if all_of_only(&s) => {
+            if let Some(Value::Array(parts)) = s.remove("allOf") {
+                for part in parts {
+                    flat_parts(part, out);
+                }
+            }
+        }
+        other => push_new(out, other),
+    }
+}
+
+fn all_of_only(o: &Map<String, Value>) -> bool {
+    o.len() == 1 && matches!(o.get("allOf"), Some(Value::Array(_)))
 }
 
 fn is_object(node: &Map<String, Value>) -> bool {
@@ -144,7 +468,7 @@ fn lists_keys(node: &Map<String, Value>) -> bool {
         .get("properties")
         .and_then(Value::as_object)
         .is_some_and(|p| !p.is_empty());
-    composed || listed || !is_object(node)
+    composed || listed || !objectish(node)
 }
 
 fn describe(node: &mut Map<String, Value>, moved: &Map<String, Value>) {
@@ -157,41 +481,85 @@ fn describe(node: &mut Map<String, Value>, moved: &Map<String, Value>) {
     node.insert("description".to_owned(), Value::String(text));
 }
 
-fn rewritten(raw: &RawJson, output: bool) -> Result<Option<RawJson>, NoKeys> {
+fn rewritten(raw: &RawJson, output: bool) -> Result<Option<RawJson>, Unfit> {
     let Ok(Value::Object(mut root)) = raw.to_value() else {
         return Ok(None);
     };
     if output && !lists_keys(&root) {
-        return Err(NoKeys);
+        return Err(Unfit::NoKeys);
     }
-    let mut rewrite = Rewrite { changed: false };
-    rewrite.node(&mut root);
+    let mut refs = Vec::new();
+    refs_in(&Value::Object(root.clone()), &mut refs);
+    let mut rewrite = Rewrite {
+        changed: false,
+        refs,
+    };
+    rewrite.node(&mut root, &Place::root())?;
     if !rewrite.changed {
         return Ok(None);
     }
     Ok(RawJson::from_serialize(&root).ok())
 }
 
-fn refusal(param: &str) -> KppError {
-    KppError::unsupported_by(
-        "output schema without keys",
-        D,
-        "Claude's structured outputs return only the keys a schema lists, and this one lists none; list them in `properties`.",
-    )
-    .with_param(param)
+fn refs_in(value: &Value, refs: &mut Vec<String>) {
+    match value {
+        Value::Object(map) => {
+            for (key, v) in map {
+                match (key.as_str(), v) {
+                    ("$ref", Value::String(r)) => refs.push(r.clone()),
+                    _ => refs_in(v, refs),
+                }
+            }
+        }
+        Value::Array(items) => items.iter().for_each(|v| refs_in(v, refs)),
+        _ => {}
+    }
+}
+
+fn refusal(unfit: Unfit, param: &str) -> KppError {
+    let (feature, hint) = match unfit {
+        Unfit::NoKeys => (
+            "output schema without keys".to_owned(),
+            "Claude's structured outputs return only the keys a schema lists, and this one lists none; list them in `properties`.",
+        ),
+        Unfit::OpenObject(at) => (
+            format!("`{at}`, an object without keys,"),
+            "Claude returns only the keys a schema lists; list them in `properties`, or send key and value pairs as a list of objects.",
+        ),
+        Unfit::Unlisted(at) => (
+            format!(
+                "`{}` without a key that `required` names",
+                within(&at, "properties")
+            ),
+            "Claude returns only the keys a schema lists; list every required key in `properties`.",
+        ),
+        Unfit::ObjectBranches(at) => (
+            format!("`{at}`, which Kaeso can't join into one object,"),
+            "Claude closes every object, so list all of their keys in one object.",
+        ),
+    };
+    KppError::unsupported_by(feature, D, hint).with_param(param)
 }
 
 // Schemas from other formats are rewritten into the subset Claude takes, as Anthropic's SDKs
 // do: objects are closed, `oneOf` becomes `anyOf`, and constraints Claude can't enforce move
 // into descriptions. Claude then enforces a little more than the app asked, which never gives
 // it output it can't use. An Anthropic app's own schema goes as it wrote it. Claude always
-// enforces the schema, so OpenAI's `strict: false` is served strictly.
-pub(crate) fn for_claude(d: &mut Draft<'_>) -> Result<(), KppError> {
+// enforces the schema, so OpenAI's `strict: false` is served strictly. A token count leaves out
+// an output schema it can't rewrite, as it does other output settings generation would refuse.
+pub(crate) fn for_claude(d: &mut Draft<'_>, count: bool) -> Result<(), KppError> {
     if d.get().extras.is_from(D) {
         return Ok(());
     }
-    output(d, D, true)?;
-    strict_tools(d)
+    match output(d, D, true) {
+        Err(_) if count => {
+            let param = cross::app_field(d.get(), Setting::OutputFormat, D);
+            d.edit().output = OutputSpec::Text;
+            d.leave_out(param.to_owned());
+        }
+        other => other?,
+    }
+    strict_tools(d, count)
 }
 
 // Anthropic Messages and Bedrock Converse have no JSON mode, Claude's structured outputs can't
@@ -225,7 +593,7 @@ fn output(d: &mut Draft<'_>, target: DialectId, rewrite: bool) -> Result<(), Kpp
     };
     let param = cross::app_field(d.get(), Setting::OutputFormat, target);
     let schema = if rewrite {
-        rewritten(&spec.schema, true).map_err(|_| refusal(param))?
+        rewritten(&spec.schema, true).map_err(|unfit| refusal(unfit, param))?
     } else {
         None
     };
@@ -266,7 +634,7 @@ fn with_description(schema: &RawJson, text: &str) -> RawJson {
     RawJson::from_serialize(&root).unwrap_or_else(|_| schema.clone())
 }
 
-fn strict_tools(d: &mut Draft<'_>) -> Result<(), KppError> {
+fn strict_tools(d: &mut Draft<'_>, count: bool) -> Result<(), KppError> {
     let mut changed = Vec::new();
     for (i, tool) in d.get().tools.iter().enumerate() {
         let ToolDef::Function(f) = tool else {
@@ -279,8 +647,10 @@ fn strict_tools(d: &mut Draft<'_>) -> Result<(), KppError> {
             continue;
         };
         let path = namespaces::app_path(d.original(), &f.name).unwrap_or(format!("tools[{i}]"));
-        if let Ok(Some(schema)) = rewritten(raw, false) {
-            changed.push((i, path, schema));
+        match rewritten(raw, false) {
+            Ok(Some(schema)) => changed.push((i, path, schema)),
+            Err(unfit) if !count => return Err(refusal(unfit, &path)),
+            _ => {}
         }
     }
     if changed.is_empty() {
@@ -516,6 +886,312 @@ mod tests {
             sent(A, &empty).unwrap_err().param.as_deref(),
             Some("response_format")
         );
+    }
+
+    #[test]
+    fn typeboxs_intersection_reaches_claude_as_one_closed_object() {
+        let (schema, adapted) = claude_schema(&fixture("typebox-intersect"));
+        assert_eq!(
+            schema,
+            json!({
+                "type": "object",
+                "properties": {"name": {"type": "string"}, "country": {"type": "string"}},
+                "required": ["name", "country"],
+                "additionalProperties": false
+            })
+        );
+        assert_eq!(adapted, ["response_format"]);
+    }
+
+    #[test]
+    fn typeboxs_nested_intersection_reaches_claude_as_one_closed_object() {
+        let (schema, _) = claude_schema(&fixture("typebox-intersect-nested"));
+        assert_eq!(
+            schema,
+            json!({
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string"},
+                    "country": {"type": "string"},
+                    "population": {"type": "integer"}
+                },
+                "required": ["name", "country", "population"],
+                "additionalProperties": false
+            })
+        );
+    }
+
+    #[test]
+    fn a_nested_join_keeps_null_and_lifts_what_isnt_an_object() {
+        let req = with_schema(json!({"name": "x", "schema": {
+            "type": "object", "required": ["maybe"],
+            "properties": {"maybe": {"type": ["object", "null"], "allOf": [
+                {"properties": {"a": {"type": "string"}}, "allOf": [
+                    {"properties": {"c": {"type": "string"}}}, {"minProperties": 1}
+                ]},
+                {"properties": {"b": {"type": "string"}}}
+            ]}}
+        }}));
+        let (schema, _) = claude_schema(&req);
+        let maybe = &schema["properties"]["maybe"];
+        assert_eq!(maybe["type"], json!(["object", "null"]), "{schema}");
+        assert_eq!(
+            maybe["properties"],
+            json!({"a": {"type": "string"}, "c": {"type": "string"}, "b": {"type": "string"}})
+        );
+        assert_eq!(
+            maybe["allOf"],
+            json!([{"description": "{minProperties: 1}"}])
+        );
+    }
+
+    #[test]
+    fn a_wrapper_with_a_note_joins_its_object_and_keeps_the_note() {
+        let req = with_schema(json!({"name": "x", "schema": {"allOf": [
+            {"description": "Where it is.", "allOf": [
+                {"properties": {"a": {"type": "string"}}, "required": ["a"]}
+            ]},
+            {"properties": {"b": {"type": "string"}}, "required": ["b"]}
+        ]}}));
+        let (schema, _) = claude_schema(&req);
+        assert_eq!(schema["required"], json!(["a", "b"]), "{schema}");
+        assert_eq!(schema["additionalProperties"], false);
+        assert_eq!(schema["allOf"], json!([{"description": "Where it is."}]));
+    }
+
+    #[test]
+    fn closing_never_forbids_a_key_the_schema_requires() {
+        let keyless = with_schema(json!({"name": "x", "schema": {
+            "type": "object", "properties": {"k": {"allOf": [{"properties": {}}, {"required": ["z"]}]}}
+        }}));
+        let e = sent(A, &keyless).unwrap_err();
+        assert!(
+            e.message
+                .starts_with("`properties.k`, an object without keys,"),
+            "{}",
+            e.message
+        );
+        let unlisted = with_schema(json!({"name": "x", "schema": {
+            "type": "object", "properties": {"a": {"type": "string"}}, "required": ["a", "b"]
+        }}));
+        let e = sent(A, &unlisted).unwrap_err();
+        assert!(
+            e.message
+                .starts_with("`properties` without a key that `required` names"),
+            "{}",
+            e.message
+        );
+    }
+
+    #[test]
+    fn a_pydantic_dictionary_is_refused_for_claude_with_its_path() {
+        let e = sent(A, &fixture("openai-python-parse-dict")).unwrap_err();
+        assert_eq!(e.param.as_deref(), Some("response_format"));
+        assert!(
+            e.message
+                .starts_with("`properties.totals`, an object without keys,"),
+            "{}",
+            e.message
+        );
+    }
+
+    #[test]
+    fn all_of_branches_join_into_one_closed_object() {
+        let req = with_schema(json!({"name": "x", "schema": {
+            "type": "object", "description": "A city.",
+            "properties": {"name": {"type": "string"}},
+            "allOf": [
+                {"properties": {"name": {"minLength": 1}}, "required": ["name"]},
+                {"properties": {"country": {"type": "string"}}, "required": ["country"],
+                    "description": "Where it is."}
+            ]
+        }}));
+        let (schema, adapted) = claude_schema(&req);
+        assert_eq!(
+            schema,
+            json!({
+                "type": "object", "description": "A city.\n\nWhere it is.",
+                "properties": {
+                    "name": {"allOf": [{"type": "string"}, {"minLength": 1}]},
+                    "country": {"type": "string"}
+                },
+                "required": ["name", "country"],
+                "additionalProperties": false
+            }),
+            "both keys stay allowed: {schema}"
+        );
+        assert_eq!(adapted, ["response_format"]);
+
+        let referenced = with_schema(json!({"name": "x", "schema": {
+            "$defs": {"Base": {"type": "object", "properties": {"id": {"type": "string"}}}},
+            "allOf": [{"$ref": "#/$defs/Base"}, {"properties": {"n": {"type": "string"}}}]
+        }}));
+        let e = sent(A, &referenced).unwrap_err();
+        assert_eq!(e.param.as_deref(), Some("response_format"));
+        assert!(
+            e.message.starts_with("`allOf`, which Kaeso can't join"),
+            "{}",
+            e.message
+        );
+    }
+
+    #[test]
+    fn a_property_several_branches_define_takes_all_their_schemas_in_one_list() {
+        let address = |n: u32| {
+            json!({"properties": {"address": {"type": "object", "required": ["zip"],
+                "properties": {"zip": {"type": "string", "maxLength": n}}}}})
+        };
+        let req = with_schema(json!({"name": "x", "schema": {
+            "type": "object", "required": ["address"],
+            "allOf": [address(8), address(9), address(10)]
+        }}));
+        let (schema, _) = claude_schema(&req);
+        let a = &schema["properties"]["address"];
+        assert_eq!(a["type"], "object", "{schema}");
+        assert_eq!(a["additionalProperties"], false);
+        assert_eq!(a["required"], json!(["zip"]));
+        assert_eq!(
+            a["properties"]["zip"]["allOf"],
+            json!([
+                {"type": "string", "maxLength": 8},
+                {"type": "string", "maxLength": 9},
+                {"type": "string", "maxLength": 10}
+            ])
+        );
+    }
+
+    #[test]
+    fn a_join_keeps_null_where_every_part_allows_it_and_keeps_references_whole() {
+        let req = with_schema(json!({"name": "x", "schema": {
+            "type": "object", "required": ["maybe"],
+            "properties": {"maybe": {
+                "type": ["object", "null"], "properties": {"a": {"type": "string"}},
+                "allOf": [{"type": ["object", "null"], "properties": {"b": {"type": "string"}}}]
+            }}
+        }}));
+        let (schema, _) = claude_schema(&req);
+        assert_eq!(
+            schema["properties"]["maybe"]["type"],
+            json!(["object", "null"])
+        );
+
+        let pointing = with_schema(json!({"name": "x", "schema": {
+            "type": "object",
+            "properties": {
+                "source": {"allOf": [
+                    {"properties": {"id": {"type": "string"}}},
+                    {"properties": {"n": {"type": "integer"}}}
+                ]},
+                "copy": {"$ref": "#/properties/source/allOf/0/properties/id"}
+            }
+        }}));
+        let e = sent(A, &pointing).unwrap_err();
+        assert!(
+            e.message.starts_with("`properties.source.allOf`, which"),
+            "{}",
+            e.message
+        );
+
+        let unchanged = with_schema(json!({"name": "x", "schema": {
+            "type": "object",
+            "properties": {"id": {"type": "string"}, "copy": {"$ref": "#/properties/id"}},
+            "allOf": [{"properties": {"id": {"type": "string"}, "region": {"type": "string"}}}]
+        }}));
+        let (schema, _) = claude_schema(&unchanged);
+        assert_eq!(
+            schema["properties"]["id"],
+            json!({"type": "string"}),
+            "{schema}"
+        );
+        assert_eq!(schema["properties"]["region"], json!({"type": "string"}));
+    }
+
+    #[test]
+    fn a_join_flattens_lists_in_either_order() {
+        let list = json!({"allOf": [{"maxLength": 8}, {"maxLength": 9}]});
+        let one = json!({"maxLength": 10});
+        let joined = |a: &Value, b: &Value| {
+            let req = with_schema(json!({"name": "x", "schema": {
+                "type": "object", "allOf": [
+                    {"properties": {"zip": a}}, {"properties": {"zip": b}}
+                ]
+            }}));
+            claude_schema(&req).0["properties"]["zip"]["allOf"]
+                .as_array()
+                .map(Vec::len)
+        };
+        assert_eq!(joined(&list, &one), Some(3));
+        assert_eq!(joined(&one, &list), Some(3));
+
+        let nested = with_schema(json!({"name": "x", "schema": {
+            "type": "object", "properties": {"zip": {"allOf": [
+                {"allOf": [{"type": "string"}, {"maxLength": 12}]}, {"maxLength": 10}
+            ]}}
+        }}));
+        let (schema, _) = claude_schema(&nested);
+        assert_eq!(
+            schema["properties"]["zip"],
+            json!({"allOf": [{"type": "string"}, {"maxLength": 12}, {"maxLength": 10}]}),
+            "Claude refuses a nested allOf"
+        );
+    }
+
+    #[test]
+    fn an_open_object_without_keys_is_refused_wherever_it_sits() {
+        let dictionary = with_schema(json!({"name": "x", "schema": {
+            "type": "object", "required": ["totals"],
+            "properties": {"totals": {"type": "object", "additionalProperties": {"type": "integer"}}}
+        }}));
+        let e = sent(A, &dictionary).unwrap_err();
+        assert_eq!(e.param.as_deref(), Some("response_format"));
+        assert!(
+            e.message
+                .starts_with("`properties.totals`, an object without keys,"),
+            "{}",
+            e.message
+        );
+        let closed = with_schema(json!({"name": "x", "schema": {
+            "type": "object", "properties": {"none": {"type": "object", "additionalProperties": false}}
+        }}));
+        assert!(
+            sent(A, &closed).is_ok(),
+            "an object closed by the app stays"
+        );
+
+        let tool = decoded(
+            C,
+            &json!({
+                "model": "m", "max_completion_tokens": 200,
+                "messages": [{"role": "user", "content": "Count"}],
+                "tools": [{"type": "function", "function": {"name": "count", "strict": true, "parameters": {
+                    "type": "object", "required": ["by"],
+                    "properties": {"by": {"type": "object", "additionalProperties": {"type": "integer"}}}
+                }}}]
+            }),
+        );
+        let e = sent(A, &tool).unwrap_err();
+        assert_eq!(e.param.as_deref(), Some("tools[0]"));
+        assert!(e.message.contains("`properties.by`"), "{}", e.message);
+    }
+
+    #[test]
+    fn a_token_count_leaves_out_a_schema_claude_couldnt_take() {
+        let req = dispatch::decode_request(
+            R,
+            RequestKind::CountTokens,
+            json!({"model": "m", "input": "Tokyo", "text": {"format": {
+                "type": "json_schema", "name": "x", "strict": false, "schema": {"type": "object"}}}})
+            .to_string()
+            .as_bytes(),
+            &HeaderList::new(),
+        )
+        .unwrap();
+        let mut ctx = EgressCtx::new(&req);
+        dispatch::check(A, &req, &ctx).unwrap();
+        let out = dispatch::encode_request(A, &req, &mut ctx).unwrap();
+        let body: Value = serde_json::from_slice(&out.body).unwrap();
+        assert!(body.get("output_config").is_none(), "{body}");
+        assert_eq!(ctx.left_out, ["text.format"]);
     }
 
     #[test]

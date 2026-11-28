@@ -7,6 +7,7 @@ use std::time::Duration;
 
 use kaeso_core::catalogue::Fields;
 use kaeso_core::id::RequestId;
+use kaeso_core::kpmr::IdSetting;
 use kaeso_core::rights::{ProjectRight, effective_project_rights};
 use kaeso_core::sources::{Counted, SourceKind};
 use kaeso_kpp::{
@@ -875,18 +876,6 @@ pub struct Priced {
     pub prices: Option<Fields>,
 }
 
-/// A model's id without the effort level a client ends it with, and the level, as Antigravity
-/// names Gemini 3 Flash at low effort `gemini-3-flash-low`.
-fn without_effort(model: &str) -> Option<(&str, &'static str)> {
-    ["minimal", "low", "medium", "high", "xhigh", "max"]
-        .iter()
-        .find_map(|effort| {
-            let base = model.strip_suffix(effort)?.strip_suffix('-')?;
-            Some((base, *effort))
-        })
-        .filter(|(m, _)| !m.is_empty())
-}
-
 /// An effort level as the log keeps it: a short lowercase word, such as `high`; anything else a
 /// record names isn't one.
 fn effort_level(level: &str) -> Option<String> {
@@ -1311,17 +1300,30 @@ async fn record_request(
     let mut priced = priced_as(model.clone()).await;
     let mut effort = r.reasoning_effort.as_deref().and_then(effort_level);
     let mut model = model;
-    // A model named with its effort level is one model at that level: logged under the model
-    // the catalogue or KPMR knows, unless they know the whole name.
+    // Antigravity names one model per setting (`gemini-3.8-flash-low`); logged as is, each level
+    // would count as a model of its own, without a price.
     if priced.prices.is_none()
         && !r.unguessed
-        && let Some((base, level)) = without_effort(&model)
+        && let Some((base, setting)) = IdSetting::split(&model)
+        && !state.kpmr.current().snapshot.lists(&model)
     {
         let base = base.to_owned();
         let base_priced = priced_as(base.clone()).await;
-        if base_priced.prices.is_some() {
+        let takes = match &base_priced.prices {
+            Some(f) => setting.fits(f.efforts.as_deref(), f.reasoning),
+            // A model only resellers sell has no price here, but is still one model.
+            None => state
+                .kpmr
+                .current()
+                .snapshot
+                .at_setting(base_priced.provider.as_deref().unwrap_or_default(), &model)
+                .is_some(),
+        };
+        if takes {
             priced = base_priced;
-            effort.get_or_insert_with(|| level.to_owned());
+            if let Some(level) = setting.effort() {
+                effort.get_or_insert_with(|| level.to_owned());
+            }
             model = base;
         }
     }
@@ -1525,27 +1527,6 @@ mod tests {
         let mut local = request();
         fill(&mut local, Wanted::Provider, UNNAMED_PROVIDER);
         assert_eq!((local.provider, local.unguessed), (None, true));
-    }
-
-    #[test]
-    fn a_model_named_with_its_effort_level_is_priced_as_the_model() {
-        assert_eq!(
-            without_effort("gemini-3.8-flash-low"),
-            Some(("gemini-3.8-flash", "low"))
-        );
-        assert_eq!(
-            without_effort("gemini-4-neon-xhigh"),
-            Some(("gemini-4-neon", "xhigh"))
-        );
-        assert_eq!(
-            without_effort("gemini-4-carbon-high"),
-            Some(("gemini-4-carbon", "high"))
-        );
-        assert_eq!(without_effort("gemini-4-max"), Some(("gemini-4", "max")));
-        assert_eq!(without_effort("gpt-5.4-mini"), None);
-        assert_eq!(without_effort("gemini-shallow"), None);
-        assert_eq!(without_effort("-low"), None);
-        assert_eq!(without_effort("low"), None);
     }
 
     #[test]

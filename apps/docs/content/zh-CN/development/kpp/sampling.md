@@ -28,10 +28,10 @@ KPP 没有 `n`：`n` 大于 1 的 Chat 请求在解码时就会被拒绝，与�
 Responses 编解码器会拒绝停止序列、`seed` 和低于 16 个 Token 的输出上限。当网关把其他格式的请求发给通过 Responses 提供的模型（例如 Grok）时，会改为由自己处理：
 
 - **停止序列。** 请求不带停止序列发送，Kaeso 在回复文本中出现第一个停止序列之前自行结束回复。打开的块会结束，回复按应用格式的方式结束：`finish_reason: "stop"`，或带有 `stop_sequence` 的 `stop_reason: "stop_sequence"`。可能是停止序列开头的文本会等待下一个增量，因此分散在多个增量中的停止序列同样会结束回复。推理内容和工具参数不会结束回复。`kaeso-adapted` 会注明应用中的字段名，例如 `stop`。
-- **低于 16 个 Token 的输出上限。** Kaeso 发送 16，并在应用的上限处以该格式的长度原因结束回复。对于上限不计推理的服务商（例如 xAI），推理内容不计入。`kaeso-adapted` 会注明应用中的字段名，例如 `max_tokens`。Responses 应用自己设置的低于 16 的上限仍会被拒绝。
+- **低于 16 个 Token 的输出上限。** Kaeso 发送 16，并在应用的上限处（约每个 Token 四个字节）以该格式的长度原因结束回复，即使后面还有停止序列。对于上限不计推理的服务商（例如 xAI），推理内容不计入。`kaeso-adapted` 会注明应用中的字段名，例如 `max_tokens`。Responses 应用自己设置的低于 16 的上限仍会被拒绝。
 - **`seed`。** 会被省略，并在 `kaeso-left-out` 中注明：OpenAI 只尽力而为地遵循它，而 Responses 没有对应字段。
 
-Kaeso 会以流的方式读取这类回复，即使应用没有要求流式输出，这样 Kaeso 结束回复时服务商也会停止生成。Kaeso 根据已读取的内容估算用量，与 [ChatGPT 套餐的输出上限](openai-responses.md#chatgpt-套餐用量)相同。
+Kaeso 会以流的方式读取这类回复，即使应用没有要求流式输出，这样 Kaeso 结束回复时服务商也会停止生成。Kaeso 根据已读取的全部内容（包括截断之后的部分）估算用量，与 [ChatGPT 套餐的输出上限](openai-responses.md#chatgpt-套餐用量)相同，非流式回复也会带上这个估算值。响应缓存会把 Kaeso 在不同位置结束的回复分开保存。
 
 ## Top K
 
@@ -54,6 +54,6 @@ NextChat 等聊天应用在每个请求中都会发送 OpenAI 的采样字段，
 | `verbosity` | `"medium"` | 同上 |
 | `modalities` | `["text"]` | 拒绝它的 Chat 提供商；其他格式本来就输出文本 |
 
-每个值都是该字段在 OpenAI 的 OpenAPI 文档和 Anthropic 的 API 参考中的 `default`；空的 `logit_bias` 或 `metadata` 与其默认值 `null` 含义相同。`service_tier: "default"` 不是中性值：它要求标准处理，而项目设置可能会选择其他层级。`web_search_options: {}` 也不是：它会让搜索模型进行搜索。以 `null` 发送的字段属于 form，其他格式永远不会收到；拒绝该字段的 Chat 提供商也不会收到这个 `null`。
+每个值都是该字段在 OpenAI 的 OpenAPI 文档和 Anthropic 的 API 参考中的 `default`；空的 `logit_bias` 或 `metadata` 与其默认值 `null` 含义相同。`service_tier: "default"` 不是中性值：它要求标准处理，而项目设置可能会选择其他层级。`web_search_options: {}` 也不是：它会让搜索模型进行搜索。以 `null` 或 `[]` 发送的字段属于 form，其他格式永远不会收到；拒绝该字段的 Chat 提供商也不会收到它。
 
 Fixtures：`crates/kaeso-codecs/fixtures/openai_chat/requests/nextchat-defaults.json`（NextChat 的请求）、`crates/kaeso-codecs/fixtures/openai_chat/requests/neutral-defaults.json`。

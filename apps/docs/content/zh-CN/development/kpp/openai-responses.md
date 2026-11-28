@@ -51,8 +51,8 @@ order: 7
 | `instructions` | `system[0]` 文本块，类型化 | 来自其他方言时，单个文本块变为 `instructions`；多个文本块变为一个开头的 `developer` 消息 item，其中包含 `input_text` 部分。这样保留了块的边界，但不再区分 `instructions` 和系统消息（API 把两者都视为开发者指令）。`null`：形式标记。 |
 | `tools[]` `{type: function, name, description, parameters, strict}`（`FunctionTool`） | `ToolDef::Function` 类型化（`parameters` 为原始 JSON） | 其他键（`defer_loading`、`allowed_callers`、`output_schema` 等）是该工具的 extras。来自其他方言的工具上的缓存提示会被丢弃（参见[缓存提示](cross-format.md#缓存提示)）。来自其他方言、不符合 `^[a-zA-Z0-9_-]{1,64}$` 的名称会以确定的方式改写（其他字符变为 `_`，再追加 `_` 和 16 位十六进制的 FNV-1a 哈希，总长不超过 64 个字符），记录在 `EgressCtx::tool_names` 中，并在解码时映射回原值。 |
 | `tools[]` `namespace` | `ToolDef::Unknown` | 仅限同一方言；对于不支持命名空间的目标，其中的工具变为函数工具（参见[工具命名空间](cross-format.md#工具命名空间)）。 |
-| `tools[]` `web_search`、`web_search_2025_08_26`、`web_search_preview`、`web_search_preview_2025_03_11` | `ToolDef::Unknown` | 仅限同一方言；发往 Anthropic 时变为 Anthropic 的网页搜索工具；发往 SpaceX 时变为 xAI 的网页搜索工具；发往 Chat Completions 时，以及只要求缓存搜索时省略（参见[托管网页搜索](cross-format.md#托管网页搜索)）。 |
-| `max_tool_calls` 和 `include` `"web_search_call.action.sources"`（请求，来自 Anthropic） | 为 Anthropic 的 `web_search_20250305` 写入 | `max_uses` 变为 `max_tool_calls`，并请求来源，使结果能到达应用（[托管网页搜索](cross-format.md#托管网页搜索)）。SpaceX 改为收到 `max_turns`。 |
+| `tools[]` `web_search`、`web_search_2025_08_26`、`web_search_preview`、`web_search_preview_2025_03_11` | `ToolDef::Unknown` | 仅限同一方言；发往 Anthropic 时变为 Anthropic 的网页搜索工具；发往 SpaceX 时变为 xAI 的网页搜索工具；发往 Chat Completions 时，以及只要求缓存搜索时省略（参见[托管网页搜索](hosted-web-search.md)）。 |
+| `max_tool_calls` 和 `include` `"web_search_call.action.sources"`（请求，来自 Anthropic） | 为 Anthropic 的 `web_search_20250305` 写入 | `max_uses` 变为 `max_tool_calls`，并请求来源，使结果能到达应用（[托管网页搜索](hosted-web-search.md)）。SpaceX 改为收到 `max_turns`。 |
 | `tools[]` 其他类型（`file_search`、`mcp`、`custom` 等） | `ToolDef::Unknown` | 仅限同一方言。 |
 | `tool_choice` `"auto"` / `"none"` / `"required"` | `ToolChoice::Auto` / `None` / `Required` 类型化 | |
 | `tool_choice` `{type: function, name}` | `ToolChoice::Tool(name)` 类型化 | 带有其他键时：`ToolChoice::Unknown`。 |
@@ -118,7 +118,7 @@ order: 7
 | `reasoning`（`ReasoningItem`） | 当前助手消息中的 `Block::Reasoning`（来源 `openai_responses`） | Kaeso 生成的 ID（`rs_kaeso_…`）不会保留（形式标记 `kaeso_id`）；这类 item 如果没有 `encrypted_content`，根本不会发给服务商，因为它既没有 `id`，也没有 OpenAI 能用的内容。`id` → 不透明的 `OpenAiReasoningItemId`，`encrypted_content` → 不透明的 `OpenAiEncryptedReasoning`，`summary[].text` → `summary`，`content[].text` → `text`；`status` 和各部分的 `type`：形式标记；未知键：extras。只回放给同一服务商的 `openai_responses`（参见[推理](reasoning.md)）。如果 item 的 `encrypted_content` 是一个推理数据块（`kpp:reasoning:v1:…`，即 Kaeso 交给应用的其他方言的推理，参见[推理数据块](reasoning.md#推理数据块)），无论 item 其余部分写了什么，都会解码为其中的原始块，连同来源（例如 Claude 的签名思考）。在 Kaeso 以 `store: false` 发送的请求中（来自其他方言的请求，参见 [Responses 的存储与 ID](cross-format.md#responses-的存储与-id)），没有加密内容的推理不会发送，因为 OpenAI 无法解析该 item ID。 |
 | `custom_tool_call`、`custom_tool_call_output`、`local_shell_call`、`local_shell_call_output` | 同下；发往 Anthropic 和 Chat Completions 时变为工具调用和结果（参见 [Codex 工具历史](cross-format.md#codex-工具历史)） | |
 | `agent_message`（Codex 智能体之间的消息） | 同下；除 OpenAI 外的所有提供商收到一条消息（[Codex 智能体消息](cross-format.md#codex-智能体消息)） | |
-| 指向推理 item 的 `item_reference`（`rs_…`，无其他字段） | 在其后调用所在轮次中代表它的 `Block::Reasoning`，形式标记 `item_reference`（[由网关保存的推理](reasoning.md#由网关保存的推理)） | 按原样写回；其他方言拒绝。 |
+| 指向推理 item（`rs_…`）或消息（`msg_…`）的 `item_reference`，无其他字段 | 在其后调用所在轮次中代表它的 `Block::Reasoning` 或空的 `Block::Text`，形式标记 `item_reference`（[由网关保存的推理](reasoning.md#由网关保存的推理)） | 按原样写回；其他方言拒绝。 |
 | 其他 `item_reference` 及所有其他 item 类型（服务端工具的调用与输出、`compaction`、未来的类型） | 一条只含一个 `Block::Unknown` 的消息，形式标记 `raw_item` | 以 `_call` 结尾的类型以及 `mcp_list_tools`、`mcp_approval_request` 的角色为 `Assistant`；其余为 `User`。角色只对 KPP 校验有意义，因为这些 item 永远不会发往其他方言。仅限同一方言；SpaceX 只接受其列出的类型，其他类型由 Kaeso 在发送前拒绝（[SpaceX](openai-responses-providers.md#spacex)）。 |
 | 无法按其类型解析的 item（例如 `call_id: null` 的 `function_call_output`） | `Block::Unknown`（同上） | 无损保留；由服务商判断。 |
 
@@ -166,7 +166,7 @@ order: 7
 - 没有对应项的停止原因（`StopSequence`、`Refusal`、`PauseTurn`、`Other`）报告为 `completed`。这会丢失信息：Anthropic 的 `pause_turn` 要求应用继续，而 Responses 应用无从得知。回复为 `incomplete` 时，消息 item 也是 `incomplete`。
 - 其他方言的推理变为一个 ID 为 `rs_kaeso_…` 的推理 item（参见[推理数据块](reasoning.md#推理数据块)）。其推理文本作为一个 `summary_text`，后接其摘要，`encrypted_content` 则是原始块的推理数据块。无论应用是否在 `include` 中请求，推理数据块都会发送。Kaeso 不存储任何内容，而各 SDK 的 agent 循环会把输出 item 原样发回。
 - 本方言无法呈现的回复数据会被省略（参见[回复](cross-format.md#回复)）：外来的 `Unknown` 块、外来的引用和 extras、图像、文档和工具结果。
-- Anthropic 的网页搜索变为 `web_search_call` 项（参见[托管网页搜索](cross-format.md#托管网页搜索)），对展开后的命名空间工具的调用会恢复其 `namespace`（参见[工具命名空间](cross-format.md#工具命名空间)）。
+- Anthropic 的网页搜索变为 `web_search_call` 项（参见[搜索的回复](cross-format.md#省略的工具)），对展开后的命名空间工具的调用会恢复其 `namespace`（参见[工具命名空间](cross-format.md#工具命名空间)）。
 - 消息 item、函数调用 item 和网页搜索 item 的 ID 为 `msg_kaeso_…`、`fc_kaeso_…` 和 `ws_kaeso_…`。请求解码时会识别这些由 Kaeso 生成的 ID，绝不会把它们发给服务商。
 
 ## 输入 Token 计数：`TokenCountsResource`
@@ -346,7 +346,7 @@ order: 7
 `openai_responses::for_chatgpt_plan` 会为通过 Sign in with ChatGPT 提供 ChatGPT 套餐的 Responses 路由改写 `GenerateRequest`（[预览版限制](https://developers.openai.com/siwc/token-sharing-open-source/preview-limitations)）。网关会对属于 ChatGPT 账户的服务商密钥调用它。
 
 - 它会省略 `background`、`conversation`、`max_output_tokens`、`max_tool_calls`、`metadata`、`moderation`、`multi_agent`、`prompt`、`prompt_cache_retention`、`safety_identifier`、`temperature`、`top_logprobs`、`top_p`、`truncation`、`user` 和 `previous_response_id`。这涉及类型化字段、extras 字段，以及形式标记 `set`、`unset` 和 `canon` 中显式的默认值和 null。
-- 它会省略 Anthropic 网页搜索工具的 `max_uses`，否则该字段会变为 `max_tool_calls`（[托管网页搜索](cross-format.md#托管网页搜索)）。
+- 它会省略 Anthropic 网页搜索工具的 `max_uses`，否则该字段会变为 `max_tool_calls`（[托管网页搜索](hosted-web-search.md)）。
 - 网关自行在应用的输出上限处结束回复：达到估算的上限时关闭未结束的块，以 `StopReason::MaxTokens` 停止并取消流；`kaeso-adapted` 列出应用的字段。
 - 它会设置 `stream: true` 和 `store: false`。
 - 它会删除形式标记 `input`，因此 `input` 为数组。若某个开头的项角色为 `system`，它还会删除形式标记 `system_items` 和 `instructions`，开头的系统文本成为 `instructions`；Codex 发送的开头 `developer` 项保留其结构和 ID。其他系统消息会失去 `role` 覆盖，并作为 `developer` 消息写出，因为该路由拒绝 `system` 项。

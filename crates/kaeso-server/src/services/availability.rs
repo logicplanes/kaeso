@@ -49,7 +49,9 @@ enum Listing {
 
 type ListingKey = (String, DialectId, KeyInUse);
 
-type ProbeKey = (String, DialectId, KeyInUse, String);
+// Whether the model only transcribes is part of the key: a project's own settings can make the
+// same model id one, and an unlisted transcription model is no verdict for the others.
+type ProbeKey = (String, DialectId, KeyInUse, String, bool);
 
 #[derive(Debug)]
 pub struct Listings(Cache<ListingKey, Arc<Listing>>);
@@ -107,6 +109,7 @@ impl Recall {
             eff.dialect,
             credential.key(),
             eff.model_id.clone(),
+            eff.transcribes_only,
         );
         self.probes
             .get_with(key, probe(state, credential, eff, &self.listings))
@@ -351,7 +354,7 @@ pub async fn probe(
         return match listing.as_ref() {
             Listing::Complete(ids) => match eff.provider.listing().serves(ids, &eff.model_id) {
                 Some(true) => Probe::Served,
-                Some(false) => Probe::Unserved,
+                Some(false) => unlisted(eff),
                 None => Probe::Inconclusive(KppError::provider(
                     "the account's model listing leaves the model out, and it may still serve it",
                 )),
@@ -392,12 +395,23 @@ pub async fn probe(
     match listing.as_ref() {
         Listing::Complete(ids) => match eff.provider.listing().serves(ids, eff.sent_model()) {
             Some(true) => Probe::Served,
-            Some(false) => Probe::Unserved,
+            Some(false) => unlisted(eff),
             None => Probe::Inconclusive(not_found),
         },
         Listing::Failed(e) if e.kind == ErrorKind::Authentication => Probe::Failed(e.clone()),
         Listing::Unfinished | Listing::Failed(_) => Probe::Inconclusive(not_found),
     }
+}
+
+// A listing of the generation endpoint's models may leave out transcription models it serves:
+// xAI's names none of its voice models (`providers/xai/models/list-recorded.json`).
+fn unlisted(eff: &Effective) -> Probe {
+    if eff.transcribes_only {
+        return Probe::Inconclusive(KppError::provider(
+            "the provider's model listing leaves out transcription models it may still serve",
+        ));
+    }
+    Probe::Unserved
 }
 
 // A listing of the models a provider offers rather than the ones the key can call, such as

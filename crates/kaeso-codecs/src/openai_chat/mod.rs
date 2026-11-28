@@ -1,6 +1,7 @@
 mod check;
 mod convert;
 pub(crate) mod error;
+pub(crate) mod names;
 pub(crate) mod profile;
 mod request;
 mod request_encode;
@@ -22,6 +23,8 @@ mod tests_deepseek;
 mod tests_error_detail;
 #[cfg(test)]
 mod tests_malformed;
+#[cfg(test)]
+mod tests_names;
 #[cfg(test)]
 mod tests_profile;
 #[cfg(test)]

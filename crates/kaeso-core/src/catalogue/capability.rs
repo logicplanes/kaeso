@@ -183,6 +183,7 @@ pub fn prepare(
         }
         Request::CountTokens(g) => {
             refuse_decision_only(eff)?;
+            refuse_transcriber(eff, None)?;
             let Some(dialect) = eff.provider.count_tokens_for(eff.dialect) else {
                 return Err(refuse(
                     "token counting",
@@ -518,6 +519,44 @@ fn refuse_decision_only(eff: &Effective) -> Result<(), Unsupported> {
             eff.model_id
         ),
     ))
+}
+
+// Providers answer a generation for a transcription model with a 404, apart from those serving one
+// in a format that carries audio: Gemini at `generateContent`, QwenCloud and Mistral at chat.
+fn refuse_transcriber(
+    eff: &Effective,
+    generation: Option<&GenerateRequest>,
+) -> Result<(), Unsupported> {
+    if !eff.transcribes_only {
+        return Ok(());
+    }
+    let hears = matches!(eff.dialect, DialectId::OpenAiChat | DialectId::Gemini);
+    if hears && generation.is_some_and(may_hold_audio) {
+        return Ok(());
+    }
+    let name = eff.model_id.as_str();
+    let message = match (eff.provider.transcriptions(name), generation) {
+        (Some(t), Some(_)) if hears && t.dialect == eff.dialect => {
+            format!("The model `{name}` only transcribes; send it audio.")
+        }
+        (None, Some(_)) => format!("The model `{name}` only transcribes; send it audio."),
+        (Some(_), _) => format!(
+            "The model `{name}` is a transcription model; send it to `/v1/audio/transcriptions`."
+        ),
+        (None, None) => format!("The model `{name}` cannot count tokens."),
+    };
+    Err(refuse("generation", Some("model"), message))
+}
+
+// A user's part the decoder doesn't know, such as QwenCloud's `input_audio` without `format`, may
+// be audio; the provider judges it.
+fn may_hold_audio(g: &GenerateRequest) -> bool {
+    g.required_capabilities().audio_input
+        || g.messages
+            .iter()
+            .filter(|m| m.role == kaeso_kpp::Role::User)
+            .flat_map(|m| &m.blocks)
+            .any(|b| matches!(b, kaeso_kpp::Block::Unknown(_)))
 }
 
 fn refuse_reranker(eff: &Effective) -> Result<(), Unsupported> {
@@ -942,6 +981,7 @@ fn check_generation(
 ) -> Result<(), Unsupported> {
     let name = eff.model_id.as_str();
     refuse_reranker(eff)?;
+    refuse_transcriber(eff, Some(g))?;
     if eff.is_embeddings() {
         return Err(refuse(
             "generation",

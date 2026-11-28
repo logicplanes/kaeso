@@ -1,6 +1,6 @@
 use crate::common;
 
-use axum::http::StatusCode;
+use axum::http::{Method, StatusCode};
 use common::v1::{Env, call, chat, messages};
 use serde_json::{Value, json};
 
@@ -427,6 +427,12 @@ async fn stop_sequences_small_limits_and_seed_reach_grok_from_other_formats() {
         "Hello! How can I"
     );
     assert_eq!(reply["choices"][0]["finish_reason"], "stop");
+    for count in ["prompt_tokens", "completion_tokens"] {
+        assert!(
+            reply["usage"][count].as_u64().unwrap() > 0,
+            "the reply ended before xAI's usage, so it gets the estimate: {reply}"
+        );
+    }
 
     let mut streamed = messages("grok-4.3", hello);
     streamed["stream"] = json!(true);
@@ -485,4 +491,78 @@ async fn stop_sequences_small_limits_and_seed_reach_grok_from_other_formats() {
         r.text()
     );
     assert!(env.mock.received().is_empty());
+}
+
+#[tokio::test]
+async fn a_crewai_tool_messages_name_is_left_out_for_xais_responses_api() {
+    let env = env().await;
+    let mut body: Value = serde_json::from_str(include_str!(
+        "../../../kaeso-codecs/fixtures/openai_chat/requests/crewai-tool-name.json"
+    ))
+    .unwrap();
+    body["model"] = json!("grok-4.3");
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(body),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.header("kaeso-left-out"), Some("messages[3].name"));
+    let (path, _, sent) = sent(&env).unwrap();
+    assert_eq!(path, "/v1/responses");
+    let output = sent["input"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|i| i["type"] == "function_call_output")
+        .unwrap();
+    assert_eq!(output["call_id"], "call_1");
+    assert!(output.get("name").is_none(), "{output}");
+}
+
+#[tokio::test]
+async fn a_cached_reply_keeps_to_the_stop_sequence_of_its_own_request() {
+    let env = env().await;
+    let r = env
+        .app
+        .call(
+            Method::PATCH,
+            &format!(
+                "/orgs/{}/projects/{}/response-cache",
+                env.owner.org_id, env.project
+            ),
+            Some(json!({ "enabled": true })),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    let hello = "Hello! [mock:fixture=providers/xai/recorded-text-basic-stream]";
+    let mut texts = Vec::new();
+    for (stop, cache) in [(" help", "miss"), (" today", "miss"), (" help", "hit")] {
+        let mut asked = chat("grok-4.3", hello);
+        asked["stop"] = json!([stop]);
+        let r = call(
+            &env,
+            "/v1/chat/completions",
+            Some(&env.key),
+            false,
+            Some(asked),
+        )
+        .await;
+        assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+        assert_eq!(r.header("kaeso-cache"), Some(cache), "{stop}");
+        let reply = r.json();
+        texts.push(reply["choices"][0]["message"]["content"].clone());
+    }
+    assert_eq!(
+        texts,
+        [
+            "Hello! How can I",
+            "Hello! How can I help you",
+            "Hello! How can I"
+        ]
+    );
 }

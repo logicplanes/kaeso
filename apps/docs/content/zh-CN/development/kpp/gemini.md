@@ -51,7 +51,7 @@ Schema `GenerateContentRequest`。
 | `functionDeclarations[].name`、`.description` | `name`、`description` | |
 | `functionDeclarations[].parametersJsonSchema` | `parameters` | 完整的 JSON Schema。外来工具总是得到 `parametersJsonSchema`，因此不会因 OpenAPI 子集而丢失内容。 |
 | `functionDeclarations[].parameters`（OpenAPI `Schema`） | `parameters` | 形式标记 `schema: "parameters"`，使 Gemini 在 `parameters` 中收回它。其他方言收到的是 JSON Schema（[schema](#schema)）。旁边同时有 `parametersJsonSchema` 时 → 字段 `parameters`。 |
-| `functionDeclarations[].response`、`.responseJsonSchema`、`.behavior` | 工具的字段 | |
+| `functionDeclarations[].response`、`.responseJsonSchema`、`.behavior` | 工具的字段 | `response` 和 `responseJsonSchema` 描述应用的函数返回什么：其他方言不会收到它们，并在 `kaeso-left-out` 中注明（[允许列表](cross-format.md#允许列表)）。错误以 `tools[0].functionDeclarations[1]` 的形式指明声明。 |
 | `toolConfig.functionCallingConfig` `mode: AUTO` / `NONE` / `ANY` | `tool_choice` `Auto` / `None` / `Required` | |
 | `mode: ANY` 且 `allowedFunctionNames` 只有一项 | `ToolChoice::Tool(name)` | |
 | `mode: VALIDATED`、带多个名称的 `ANY`，以及其他任何组合 | `ToolChoice::Unknown`（原样） | 跨方言时被拒绝。 |
@@ -112,7 +112,6 @@ Schema `Part`。一个 part 恰好带有 `text`、`inlineData`、`fileData`、`f
 - 不是对象的**参数**会变为对象，与 Anthropic 相同（[工具调用参数](cross-format.md#工具调用参数)）。
 - **图像 URL** 按 URL 的文件扩展名得到 `fileData.mimeType`（`.png`、`.jpg`、`.jpeg`、`.webp`、`.gif`、`.heic`、`.heif`；文档另有 `.pdf`、`.txt`），这是文件输入指南的要求；没有这类扩展名的图像 URL 为 `Unsupported`。文本文档以 Base64 `inlineData` 发送。
 - **音频和视频 URL** 以同样方式得到它，依据音频和视频指南中支持的格式（`.wav`、`.mp3`、`.aiff`、`.aac`、`.ogg`、`.flac`、`.m4a`、`.opus`、`.webm`；`.mp4`、`.mpeg`、`.mpg`、`.mov`、`.avi`、`.flv`、`.webm`、`.wmv`、`.3gp`）。YouTube URL 不带 MIME 类型发送；没有已知扩展名的其他 URL 为 `Unsupported`。Base64 音频和视频以带媒体类型的 `inlineData` 发送。工具结果中的音频和视频为 `Unsupported`。
-- **输出 schema。** OpenAI schema 的 `description` 放在 schema 自身的 `description` 之前，`strict: false` 按严格处理，因为 Gemini 总会强制执行 `responseJsonSchema`；两者都会在 `kaeso-adapted` 中按应用的字段注明。
 - **输出 schema。** OpenAI schema 的 `description` 放在 schema 自身的 `description` 之前，`strict: false` 按严格处理，因为 Gemini 总会强制执行 `responseJsonSchema`；两者都会在 `kaeso-adapted` 中按应用的字段注明。
 - 以 `Unsupported` **拒绝**：Gemini 没有对应 part 的拒答块（与 Anthropic 相同）、文档的标题、上下文或引用、超过五个停止序列（`GenerationConfig.stopSequences`）、`parallel_tool_calls: false`，以及 Gemini 没有对应设置的推理强度或思考模式。
 - **严格工具。** 带 `strict: true` 的函数工具在自动 `tool_choice` 下发送 `mode: VALIDATED`，按 schema 校验调用。

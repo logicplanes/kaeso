@@ -122,6 +122,44 @@ enum Scan {
     Stop(String, String),
 }
 
+#[derive(PartialEq, Eq)]
+enum Output {
+    Fits,
+    Full,
+    Cut,
+}
+
+// The provider's usage can come in the same chunk as the cut; the reply keeps it, not the
+// provider's stop reason.
+fn keep_usage(
+    out: &mut [StreamEvent],
+    usage: Option<Usage>,
+    rest: impl Iterator<Item = StreamEvent>,
+) {
+    let usage = usage.or_else(|| {
+        rest.filter_map(|e| match e {
+            StreamEvent::ResponseDelta(d) => d.usage,
+            _ => None,
+        })
+        .last()
+    });
+    let ending = out.iter_mut().rev().find_map(|e| match e {
+        StreamEvent::ResponseDelta(d) => Some(d),
+        _ => None,
+    });
+    if let (Some(usage), Some(ending)) = (usage, ending) {
+        ending.usage = Some(usage);
+    }
+}
+
+fn counted_text(delta: &mut Delta, visible_only: bool) -> Option<&mut String> {
+    match delta {
+        Delta::Text(s) | Delta::ToolArguments(s) | Delta::Refusal(s) => Some(s),
+        Delta::ReasoningText(s) if !visible_only => Some(s),
+        _ => None,
+    }
+}
+
 impl OutputCap {
     pub fn new(limit: u64) -> OutputCap {
         OutputCap {
@@ -160,60 +198,77 @@ impl OutputCap {
         self.reached
     }
 
+    // Replies differ by where Kaeso ends them, which the provider request no longer says.
+    pub fn cache_key(&self) -> String {
+        format!(
+            "limit={:?};visible={};stop={:?}",
+            self.limit, self.visible_only, self.stop
+        )
+    }
+
     pub fn apply(&mut self, events: Vec<StreamEvent>) -> Vec<StreamEvent> {
         if self.reached {
             return Vec::new();
         }
         let mut out = Vec::with_capacity(events.len());
-        for event in events {
-            match &event {
-                StreamEvent::BlockStart(s) => self.open.push(s.index),
-                StreamEvent::BlockStop(s) => {
-                    self.release(Some(s.index), &mut out);
-                    self.open.retain(|i| *i != s.index);
+        let mut events = events.into_iter();
+        while let Some(event) = events.next() {
+            let usage = match &event {
+                StreamEvent::ResponseDelta(d) => d.usage.clone(),
+                _ => None,
+            };
+            let full = match &event {
+                StreamEvent::BlockStart(s) => {
+                    self.open.push(s.index);
+                    false
                 }
-                StreamEvent::ResponseDelta(d) if d.stop.is_some() => {
-                    self.release(None, &mut out);
-                    self.ended = true;
-                }
+                StreamEvent::BlockStop(s) => self.release(Some(s.index), &mut out),
+                StreamEvent::ResponseDelta(d) if d.stop.is_some() => self.release(None, &mut out),
                 StreamEvent::ResponseStop(_) | StreamEvent::Error(_) => {
-                    self.release(None, &mut out);
-                    self.ended = true;
+                    self.release(None, &mut out)
                 }
+                _ => false,
+            };
+            if full {
+                self.end(StopReason::MaxTokens, &mut out);
+                keep_usage(&mut out, usage, events);
+                break;
+            }
+            match &event {
+                StreamEvent::BlockStop(s) => self.open.retain(|i| *i != s.index),
+                StreamEvent::ResponseDelta(d) if d.stop.is_some() => self.ended = true,
+                StreamEvent::ResponseStop(_) | StreamEvent::Error(_) => self.ended = true,
                 _ => {}
             }
-            let event = match event {
-                StreamEvent::BlockDelta(mut d) if !self.ended && !self.stop.is_empty() => {
-                    let Delta::Text(text) = &d.delta else {
-                        self.push(StreamEvent::BlockDelta(d), &mut out);
-                        if self.over_limit() {
-                            self.end(StopReason::MaxTokens, &mut out);
-                            break;
-                        }
-                        continue;
-                    };
-                    match self.scan(d.index, text) {
-                        Scan::Pass(text) if text.is_empty() => continue,
-                        Scan::Pass(text) => {
-                            d.delta = Delta::Text(text);
-                            StreamEvent::BlockDelta(d)
-                        }
-                        Scan::Stop(text, sequence) => {
-                            if !text.is_empty() {
-                                d.delta = Delta::Text(text);
-                                self.push(StreamEvent::BlockDelta(d), &mut out);
-                            }
-                            self.end(StopReason::StopSequence(sequence), &mut out);
-                            break;
-                        }
+            let StreamEvent::BlockDelta(mut d) = event else {
+                self.push(event, &mut out);
+                continue;
+            };
+            if self.ended {
+                self.push(StreamEvent::BlockDelta(d), &mut out);
+                continue;
+            }
+            if let Delta::Text(text) = &d.delta
+                && !self.stop.is_empty()
+            {
+                match self.scan(d.index, text) {
+                    Scan::Pass(text) if text.is_empty() => continue,
+                    Scan::Pass(text) => d.delta = Delta::Text(text),
+                    Scan::Stop(text, sequence) => {
+                        d.delta = Delta::Text(text);
+                        let reason = match self.output(d, &mut out) {
+                            Output::Cut => StopReason::MaxTokens,
+                            Output::Fits | Output::Full => StopReason::StopSequence(sequence),
+                        };
+                        self.end(reason, &mut out);
+                        keep_usage(&mut out, usage, events);
+                        break;
                     }
                 }
-                other => other,
-            };
-            let output = matches!(event, StreamEvent::BlockDelta(_));
-            self.push(event, &mut out);
-            if output && self.over_limit() {
+            }
+            if self.output(d, &mut out) != Output::Fits {
                 self.end(StopReason::MaxTokens, &mut out);
+                keep_usage(&mut out, usage, events);
                 break;
             }
         }
@@ -223,6 +278,42 @@ impl OutputCap {
     fn push(&mut self, event: StreamEvent, out: &mut Vec<StreamEvent>) {
         self.tally.feed(&event);
         out.push(event);
+    }
+
+    // A delta goes out only as far as the limit reaches, measured as `Tally` measures it.
+    fn output(&mut self, mut d: BlockDelta, out: &mut Vec<StreamEvent>) -> Output {
+        let room = self.room();
+        let visible_only = self.visible_only;
+        let cut = match (room, counted_text(&mut d.delta, visible_only)) {
+            (Some(room), Some(text)) if text.len() > room => {
+                let at = (0..=room).rev().find(|&i| text.is_char_boundary(i));
+                text.truncate(at.unwrap_or(0));
+                true
+            }
+            _ => false,
+        };
+        let empty = counted_text(&mut d.delta, visible_only).is_some_and(|t| t.is_empty());
+        if !empty {
+            self.push(StreamEvent::BlockDelta(d), out);
+        }
+        if cut {
+            Output::Cut
+        } else if self.over_limit() {
+            Output::Full
+        } else {
+            Output::Fits
+        }
+    }
+
+    fn room(&self) -> Option<usize> {
+        let limit = self.limit.filter(|_| !self.ended)?;
+        let used = if self.visible_only {
+            self.tally.bytes.saturating_sub(self.tally.reasoning_bytes)
+        } else {
+            self.tally.bytes
+        };
+        let room = limit.saturating_mul(BYTES_PER_TOKEN).saturating_sub(used);
+        Some(usize::try_from(room).unwrap_or(usize::MAX))
     }
 
     fn over_limit(&self) -> bool {
@@ -249,18 +340,20 @@ impl OutputCap {
     }
 
     // Text that could begin a stop sequence waits for the next delta of its block; it goes out
-    // when the block or the reply ends without the sequence completing.
-    fn release(&mut self, index: Option<u32>, out: &mut Vec<StreamEvent>) {
+    // when the block or the reply ends without the sequence completing. True when it used up
+    // the limit.
+    fn release(&mut self, index: Option<u32>, out: &mut Vec<StreamEvent>) -> bool {
         let (released, kept): (Vec<_>, Vec<_>) = std::mem::take(&mut self.held)
             .into_iter()
             .partition(|(i, _)| index.is_none_or(|index| *i == index));
         self.held = kept;
         for (i, text) in released {
-            self.push(
-                StreamEvent::BlockDelta(BlockDelta::new(i, Delta::Text(text))),
-                out,
-            );
+            let d = BlockDelta::new(i, Delta::Text(text));
+            if self.output(d, out) != Output::Fits {
+                return true;
+            }
         }
+        false
     }
 
     fn scan(&mut self, index: u32, text: &str) -> Scan {
@@ -484,6 +577,7 @@ mod tests {
         let (out, reached) = capped_run(1, events.clone());
         assert!(reached, "the delta that uses up the limit ends the reply");
         assert_eq!(out.len(), 2 + 3);
+        assert_eq!(text_of(&out), "one ");
         let (out, reached) = capped_run(100, events.clone());
         assert!(!reached);
         assert_eq!(out, events);
@@ -576,6 +670,115 @@ mod tests {
             "a `}}` in arguments doesn't stop them"
         );
         assert_eq!(out[out.len() - 3..], ending(StopReason::MaxTokens));
+    }
+
+    #[test]
+    fn a_delta_goes_out_only_as_far_as_the_limit_reaches() {
+        let mut events = texts(&["Water boils at 100 degrees."]);
+        events.extend(ending(StopReason::EndTurn));
+        let (out, reached) = capped_run(1, events);
+        assert!(reached);
+        assert_eq!(text_of(&out), "Wate", "one token is four bytes");
+        assert_eq!(out[out.len() - 3..], ending(StopReason::MaxTokens));
+
+        let mut cap = OutputCap::new(1);
+        let out = cap.apply(texts(&["日本語"]));
+        assert_eq!(text_of(&out), "日", "a character is never split");
+        let mut cap = OutputCap::new(1).of_visible_output();
+        let out = cap.apply(vec![
+            start(0, kaeso_kpp::BlockHeader::Text),
+            delta(
+                0,
+                Delta::ReasoningText("Thinking about it at length.".into()),
+            ),
+            delta(0, Delta::Text("Yes, indeed.".into())),
+        ]);
+        assert_eq!(
+            text_of(&out),
+            "Yes,",
+            "reasoning isn't cut when it doesn't count"
+        );
+    }
+
+    #[test]
+    fn the_limit_ends_a_reply_before_a_later_stop_sequence_and_checks_held_text() {
+        let mut cap = OutputCap::new(1).with_stop_sequences(vec!["END".into()]);
+        let out = cap.apply(texts(&["Water boils END"]));
+        assert_eq!(text_of(&out), "Wate");
+        assert_eq!(out[out.len() - 3..], ending(StopReason::MaxTokens));
+
+        let mut cap = OutputCap::new(3).with_stop_sequences(vec!["ENDOFTEXT".into()]);
+        let mut events = texts(&["abcdefgENDOFTEX"]);
+        events.extend(ending(StopReason::EndTurn));
+        let out = cap.apply(events);
+        assert_eq!(
+            text_of(&out),
+            "abcdefgENDOF",
+            "held text released at the end counts"
+        );
+        assert_eq!(out[out.len() - 3..], ending(StopReason::MaxTokens));
+
+        let mut cap = OutputCap::new(10).with_stop_sequences(vec!["END".into()]);
+        let out = cap.apply(texts(&["Short END"]));
+        assert_eq!(
+            out[out.len() - 3..],
+            ending(StopReason::StopSequence("END".into()))
+        );
+    }
+
+    #[test]
+    fn usage_in_the_chunk_of_the_cut_stays_with_the_reply() {
+        let usage = Usage::new(40, 7);
+        let mut events = texts(&["Hello END more"]);
+        events.push(StreamEvent::BlockStop(BlockStop::new(0)));
+        events.push(StreamEvent::ResponseDelta(ResponseDelta::new(
+            Some(StopReason::EndTurn),
+            Some(usage.clone()),
+        )));
+        events.push(StreamEvent::ResponseStop(ResponseStop::new()));
+        let mut cap = OutputCap::at_stop_sequences(vec!["END".into()]);
+        let out = cap.apply(events.clone());
+        assert_eq!(text_of(&out), "Hello ");
+        assert_eq!(
+            out[out.len() - 2],
+            StreamEvent::ResponseDelta(ResponseDelta::new(
+                Some(StopReason::StopSequence("END".into())),
+                Some(usage.clone())
+            )),
+            "the provider's usage, not its stop reason"
+        );
+
+        let mut cap = OutputCap::new(3).with_stop_sequences(vec!["ENDOFTEXT".into()]);
+        let mut held = texts(&["abcdefgENDOFTEX"]);
+        held.push(StreamEvent::ResponseDelta(ResponseDelta::new(
+            Some(StopReason::EndTurn),
+            Some(usage.clone()),
+        )));
+        let out = cap.apply(held);
+        assert_eq!(
+            out[out.len() - 2],
+            StreamEvent::ResponseDelta(ResponseDelta::new(
+                Some(StopReason::MaxTokens),
+                Some(usage)
+            )),
+            "also when releasing held text at the provider's end uses up the limit"
+        );
+    }
+
+    #[test]
+    fn the_cache_key_names_every_rule_that_ends_a_reply() {
+        let keys = [
+            OutputCap::new(5).cache_key(),
+            OutputCap::new(6).cache_key(),
+            OutputCap::new(5).of_visible_output().cache_key(),
+            OutputCap::at_stop_sequences(vec![" help".into()]).cache_key(),
+            OutputCap::at_stop_sequences(vec![" today".into()]).cache_key(),
+        ];
+        for (i, a) in keys.iter().enumerate() {
+            for b in keys.iter().skip(i + 1) {
+                assert_ne!(a, b);
+            }
+        }
     }
 
     #[test]

@@ -46,6 +46,8 @@ pub const EXTRAS_ALLOWLIST: &[(DialectId, Scope, &str)] = &[
     ),
     (DialectId::OpenAiDecisions, "request", "safety_identifier"),
     (DialectId::OpenAiDecisions, "image", "detail"),
+    (DialectId::Gemini, "tool", "response"),
+    (DialectId::Gemini, "tool", "responseJsonSchema"),
     (DialectId::GeminiDecisions, "image", "resolution"),
     (DialectId::GeminiDecisions, "video", "resolution"),
     (
@@ -330,14 +332,13 @@ pub const NEUTRAL_VALUES: &[(DialectId, &str, &str)] = &[
 
 /// Whether `value` of the request field `key` from `origin` is on [`NEUTRAL_VALUES`].
 pub fn is_neutral_value(origin: DialectId, key: &str, value: &RawJson) -> bool {
-    let Ok(sent) = value.to_value() else {
-        return false;
-    };
-    NEUTRAL_VALUES.iter().any(|(d, k, neutral)| {
-        *d == origin
-            && *k == key
-            && serde_json::from_str::<Value>(neutral).is_ok_and(|n| same_value(&n, &sent))
-    })
+    NEUTRAL_VALUES
+        .iter()
+        .filter(|(d, k, _)| *d == origin && *k == key)
+        .any(|(_, _, neutral)| {
+            let neutral = serde_json::from_str::<Value>(neutral);
+            matches!((neutral, value.to_value()), (Ok(n), Ok(sent)) if same_value(&n, &sent))
+        })
 }
 
 // `0` and `0.0` are different `Value`s; an app may write either.
@@ -629,6 +630,10 @@ pub(crate) fn openai_image_detail(extras: &Extras, target: DialectId) -> Option<
     values.contains(&value.as_str()).then(|| detail.clone())
 }
 
+/// Refuses what `target` can't take from a request as it stands. [`crate::dispatch::check`] first
+/// adapts the request to the target, leaving out [`NEUTRAL_VALUES`] and the other data
+/// [cross-format](https://docs.kaeso.app/development/kpp/cross-format) names, so it accepts some
+/// requests this refuses.
 pub fn check_foreign(req: &Request, target: &Origin) -> Result<(), KppError> {
     match req {
         Request::Generate(r) | Request::CountTokens(r) => check_generate(r, target),
@@ -728,8 +733,13 @@ fn check_generate(r: &GenerateRequest, target: &Origin) -> Result<(), KppError> 
             check_block(b, target, &format!("{path}.blocks[{bi}]"))?;
         }
     }
+    let gemini_paths = crate::gemini::declarations::wire_paths(r);
     for (i, t) in r.tools.iter().enumerate() {
-        let path = format!("tools[{i}]");
+        let path = gemini_paths
+            .get(i)
+            .cloned()
+            .flatten()
+            .unwrap_or_else(|| format!("tools[{i}]"));
         match t {
             ToolDef::Function(f) => check_extras(&f.extras, dialect, &path, "tool")?,
             ToolDef::Unknown(item) => {
@@ -783,16 +793,24 @@ fn check_generate(r: &GenerateRequest, target: &Origin) -> Result<(), KppError> 
 fn check_block(block: &Block, target: &Origin, path: &str) -> Result<(), KppError> {
     let dialect = target.dialect;
     match block {
-        Block::Reasoning(r) => match crate::openai_responses::reasoning_reference(r) {
-            Some(id) if dialect != DialectId::OpenAiResponses => Err(foreign(
+        Block::Reasoning(_) | Block::Text(_)
+            if dialect != DialectId::OpenAiResponses
+                && crate::openai_responses::reference(block).is_some() =>
+        {
+            let id = crate::openai_responses::reference(block).unwrap_or_default();
+            Err(foreign(
                 format!("`item_reference` `{id}`"),
                 &Origin::new(DialectId::OpenAiResponses),
                 dialect,
                 path,
-                "Send the reasoning item itself in `input`, as SDKs do with `store: false`.",
-            )),
-            _ => Ok(()),
-        },
+                if matches!(block, Block::Text(_)) {
+                    "Send the message itself in `input`, as SDKs do with `store: false`."
+                } else {
+                    "Send the reasoning item itself in `input`, as SDKs do with `store: false`."
+                },
+            ))
+        }
+        Block::Reasoning(_) => Ok(()),
         Block::Unknown(item) => {
             if item.origin.is(dialect) {
                 return Ok(());

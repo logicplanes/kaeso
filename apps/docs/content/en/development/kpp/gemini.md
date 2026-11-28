@@ -51,7 +51,7 @@ Schema `GenerateContentRequest`.
 | `functionDeclarations[].name`, `.description` | `name`, `description` | |
 | `functionDeclarations[].parametersJsonSchema` | `parameters` | Full JSON Schema. Foreign tools always get `parametersJsonSchema`, so nothing is lost to the OpenAPI subset. |
 | `functionDeclarations[].parameters` (OpenAPI `Schema`) | `parameters` | form `schema: "parameters"`, so Gemini gets it back in `parameters`. Other dialects get it as JSON Schema ([schemas](#schemas)). With `parametersJsonSchema` beside it → field `parameters`. |
-| `functionDeclarations[].response`, `.responseJsonSchema`, `.behavior` | tool fields | |
+| `functionDeclarations[].response`, `.responseJsonSchema`, `.behavior` | tool fields | `response` and `responseJsonSchema` describe what the app's function returns: other dialects don't get them, and they are named in `kaeso-left-out` ([allowlist](cross-format.md#allowlist)). Errors name a declaration as `tools[0].functionDeclarations[1]`. |
 | `toolConfig.functionCallingConfig` `mode: AUTO` / `NONE` / `ANY` | `tool_choice` `Auto` / `None` / `Required` | |
 | `mode: ANY` with one `allowedFunctionNames` entry | `ToolChoice::Tool(name)` | |
 | `mode: VALIDATED`, `ANY` with several names, any other combination | `ToolChoice::Unknown` (raw) | Refused across dialects. |
@@ -112,7 +112,6 @@ Schema `Part`. A part carries exactly one of `text`, `inlineData`, `fileData`, `
 - **Arguments** that aren't an object become one, as for Anthropic ([tool call arguments](cross-format.md#tool-call-arguments)).
 - **Image URLs** get `fileData.mimeType` from the URL's extension (`.png`, `.jpg`, `.jpeg`, `.webp`, `.gif`, `.heic`, `.heif`; documents also `.pdf`, `.txt`), as the file input guide asks; an image URL without one is `Unsupported`. Text documents are sent as base64 `inlineData`.
 - **Audio and video URLs** get it the same way, from the audio and video guides' supported formats (`.wav`, `.mp3`, `.aiff`, `.aac`, `.ogg`, `.flac`, `.m4a`, `.opus`, `.webm`; `.mp4`, `.mpeg`, `.mpg`, `.mov`, `.avi`, `.flv`, `.webm`, `.wmv`, `.3gp`). A YouTube URL goes without one; another URL without a known extension is `Unsupported`. Base64 audio and video go as `inlineData` with their media type. Audio and video in a tool result are `Unsupported`.
-- **Output schemas.** An OpenAI schema's `description` leads the schema's own `description`, and `strict: false` is served strictly, because Gemini always enforces `responseJsonSchema`; either is named in `kaeso-adapted` by the app's field.
 - **Output schemas.** An OpenAI schema's `description` leads the schema's own `description`, and `strict: false` is served strictly, because Gemini always enforces `responseJsonSchema`; either is named in `kaeso-adapted` by the app's field.
 - **Refused** with `Unsupported`: refusal blocks, which Gemini has no part for (as for Anthropic), a document's title, context or citations, more than five stop sequences (`GenerationConfig.stopSequences`), `parallel_tool_calls: false`, and an effort or thinking mode Gemini has no setting for.
 - **Strict tools.** A function tool with `strict: true` and an automatic `tool_choice` sends `mode: VALIDATED`, which checks calls against their schemas.

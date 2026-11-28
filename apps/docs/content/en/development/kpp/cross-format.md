@@ -8,15 +8,15 @@ An app may speak one API format while the provider speaks another. These are the
 
 | Data from another format | In a request | In a reply |
 | --- | --- | --- |
-| Extras fields | `Unsupported`, unless [allowlisted](#extras) or [neutral](sampling.md#neutral-values) | Left out |
-| Unknown blocks, tools and tool choices | `Unsupported`, except [tool namespaces](#tool-namespaces), [tool search](#tool-search), [hosted web search](#hosted-web-search) and [Codex tool history](#codex-tool-history) | Unknown blocks left out, except web searches |
+| Extras fields | `Unsupported`, unless [allowlisted](#extras), [neutral](sampling.md#neutral-values) or a Chat message's [participant name](openai-chat.md#participant-names) | Left out |
+| Unknown blocks, tools and tool choices | `Unsupported`, except [tool namespaces](#tool-namespaces), [tool search](#tool-search), [hosted web search](hosted-web-search.md) and [Codex tool history](#codex-tool-history) | Unknown blocks left out, except web searches |
 | Citations | `Unsupported` | Left out |
 | Provider file ids | `Unsupported` unless the target provider issued them | — |
 | Readable reasoning | Dropped; the [reasoning blob](reasoning.md#reasoning-blobs) restores it at its origin | Shown in the app's reasoning shape where it has one |
 | Opaque reasoning | Replayed only to the dialect and provider that issued it | Wrapped in a reasoning blob |
 | Cache hints | Dropped where the target caches by itself | — |
-| Audio and video | Sent where the target's format and provider take them, otherwise `Unsupported` ([audio and video](#audio-and-video)) | Left out where the app's format can't carry them |
-| Audio and image output | Asked for where the target writes it, otherwise `Unsupported` ([audio and image replies](#audio-and-image-replies)) | Audio for Chat and Gemini apps, images for Gemini apps; left out elsewhere |
+| Audio and video | Sent where the target's format and provider take them, otherwise `Unsupported` ([audio and video](media.md#audio-and-video)) | Left out where the app's format can't carry them |
+| Audio and image output | Asked for where the target writes it, otherwise `Unsupported` ([audio and image replies](media.md#audio-and-image-replies)) | Audio for Chat and Gemini apps, images for Gemini apps; left out elsewhere |
 | Sampling settings the target lacks | `Unsupported`, except a penalty of 0 ([neutral values](sampling.md#neutral-values)) | — |
 | Stop reasons the app's format lacks | — | The closest one it has |
 | Thinking off for a model that always reasons | The model's lowest effort level, named in `kaeso-adapted` ([models that always reason](reasoning.md#models-that-always-reason)) | — |
@@ -92,6 +92,7 @@ Fixture paths in these tables are relative to `crates/kaeso-codecs/fixtures/`.
 | `model_id` | assistant messages only, from `openai_chat` | The model that wrote a replayed assistant message, which Grok CLI records in its own history. Bookkeeping the model never reads; a logged request body keeps it. It is the one key of `cross::CHAT_ASSISTANT_BOOKKEEPING`, which Chat providers get only with `with_message_bookkeeping()` ([Chat providers](openai-chat-providers.md)); on any other message, a request to another format is refused; Chat providers get it as sent. | Grok CLI sends it on every replayed assistant message; `openai_chat/requests/grok-cli-model-id.json` |
 | `client_metadata` | request, from `openai_responses` | Request metadata: turn and thread ids, W3C trace context and `x-codex-turn-metadata`. It never reaches the model, and a logged request body keeps it. | Codex sends it on every turn; `openai_responses/requests/codex-namespace-tools.json` |
 | `detail` (on `input_image`; Responses keeps `auto` as a form marker) | image, from `openai_responses`, `openai_decisions` | Image resolution hint, as Chat's `image_url.detail`, which it reaches Chat Completions as, except `original`, which Chat doesn't take. `input_file.detail` (PDF rendering) is **not** allowlisted. | `openai_responses/requests/image-base64-file-id.json` |
+| `response`, `responseJsonSchema` | tool, from `gemini` | Describe the value the app's function returns, which the app reads, not the model; the model calls the function without them. Left out and named in `kaeso-left-out` as the app spelled it, such as google-genai's `tools[0].functionDeclarations[0].response_json_schema`. | google-genai declares every Python function it calls automatically with `response_json_schema` (`gemini/requests/sdk-automatic-function-calling.json`), and one built with `from_callable_with_api_option` with `response` (`gemini/requests/sdk-function-response-schema.json`) |
 | `resolution` | image, video, from `gemini_decisions` | Resolution hint, as `detail`; `low` and `high` cross to OpenAI Decisions as `detail` ([decisions](decisions-across-formats.md)). | `gemini_decisions/requests/image.json` |
 | `prompt_cache_key`, `prompt_cache_options`, `safety_identifier` | request, from `openai_decisions` | Hints, typed as `DecideRequest.cache` and `user` ([decisions](decisions-across-formats.md)); the entries cover forms KPP doesn't type. | `openai_decisions/requests/cache.json` |
 | `phase` (on assistant messages: `commentary`, `final_answer`) | message, from `openai_responses` | Marks an assistant message as a preamble or the final answer, so OpenAI can tell them apart when the turn is replayed. The text is the same either way, and other formats have no such mark. | Codex sends GPT-6's messages back with it; a thread that switches to another model carries them; `openai_responses/requests/codex-model-switch.json` |
@@ -168,54 +169,6 @@ Anthropic's inline tools change the tool list in the middle of a conversation: a
 
 Anthropic models get the blocks as sent, together with the `inline-tools-2026-09-15` beta in `anthropic-beta`. Fixture: `anthropic_messages/requests/claude-code-inline-tools.json`.
 
-## Hosted web search
-
-OpenAI Responses names its hosted search tool `web_search`, and earlier `web_search_2025_08_26`, `web_search_preview` and `web_search_preview_2025_03_11`; Kaeso treats all four alike. Going to Anthropic, the tool becomes Anthropic's `web_search_20250305` server tool, named `web_search`:
-
-| Responses | Anthropic |
-| --- | --- |
-| `filters.allowed_domains`, `filters.excluded_domains` (one of them; an empty list counts as none) | `allowed_domains`, `blocked_domains` |
-| `enable_image_understanding`, `enable_image_search` (xAI's) | left out, named in `kaeso-left-out` when `true` |
-| `user_location` (`approximate`, with `city`, `region`, `country`, `timezone`) | `user_location` |
-| `external_web_access: true`, `search_context_size: "medium"` (the default), `search_content_types: ["text"]` | nothing; they describe what Anthropic's search does |
-| `search_content_types` with `image` | left out, named in `kaeso-left-out`; Anthropic's search returns text results only |
-| `external_web_access: false` | the tool is [left out](#tools-left-out) |
-| another `search_context_size`, any other field | `Unsupported` |
-
-Going to SpaceX's Responses API (`WebSearchTool::Xai`), the tool keeps the fields xAI documents for it ([web search](https://docs.x.ai/developers/tools/web-search), read 2026-10-25):
-
-| Responses | SpaceX |
-| --- | --- |
-| `filters.allowed_domains`, `filters.excluded_domains` (at most five each, not both) | as sent |
-| `enable_image_understanding`, `enable_image_search` | as sent |
-| `search_content_types` with `image` | `enable_image_search: true` |
-| `external_web_access: true`, `search_context_size: "medium"`, `search_content_types: ["text"]` | nothing; SpaceX refuses `external_web_access` and always searches live |
-| `external_web_access: false` | the tool is [left out](#tools-left-out) |
-| more than five domains, both lists, `user_location`, another `search_context_size`, any other field | `Unsupported` |
-
-`external_web_access: false` asks OpenAI to read only its cache of pages, which is what Codex sends for its default `web_search = "cached"`. Claude and SpaceX always search live. Searching live would read pages the app asked Kaeso not to fetch, so the search is left out instead. Chat Completions has no hosted search, so the tool is left out there too. OpenAI gets the tool as sent.
-
-Anthropic's web search tool goes the other way: `web_search_20250305`, which Claude Code's `WebSearch` sends, `web_search_20260209` and `web_search_20260318`. A Responses target gets the hosted `web_search` tool, and the limit on searches becomes a field of the request ([web search tool](https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-search-tool)):
-
-| Anthropic | OpenAI | SpaceX |
-| --- | --- | --- |
-| `allowed_domains` | `filters.allowed_domains` | `filters.allowed_domains` |
-| `blocked_domains` | `filters.blocked_domains` | `filters.excluded_domains` |
-| `user_location` (`approximate`, with `city`, `region`, `country`, `timezone`) | `user_location` | `Unsupported` |
-| `max_uses` | `max_tool_calls` | `max_turns` |
-| `allowed_callers` that is `["direct"]` or the version's default | nothing; the hosted search is a direct search | nothing |
-| `response_inclusion` (`web_search_20260318`) | nothing; it only shapes searches run from code execution | nothing |
-| `cache_control` | nothing; Responses caches by itself ([cache hints](#cache-hints)) | nothing |
-| a location that isn't `approximate`, any other field | `Unsupported` | `Unsupported` |
-
-- **Both domain lists** in one tool are `InvalidRequest`, with Claude's own message (`anthropic_messages/errors/web-search-both-domain-lists.json`).
-- **Dynamic filtering.** From `web_search_20260209` on, Claude filters results by running code unless `allowed_callers` is `["direct"]`. A Responses model reads the results directly either way.
-- **Sources.** The request asks for `include: ["web_search_call.action.sources"]`, because OpenAI lists the pages a search found only when asked.
-- **The limit.** OpenAI's `max_tool_calls` also counts opening pages and searching within them, so it is tighter than `max_uses`. The ChatGPT plan route refuses `max_tool_calls`, so the limit is left out there ([ChatGPT plan usage](openai-responses.md#chatgpt-plan-usage)).
-- **SpaceX** ignores `max_tool_calls` and drops `blocked_domains` without an error, so it gets its own names. Its `max_turns` limits rounds of tool calls, and one round may search more than once. Its other limits apply too: at most five domains in a list.
-- **Forcing the search.** A `tool_choice` that forces `web_search` is `Unsupported`; `auto` and `any` let the model decide.
-- **Chat Completions** has no hosted search, so the tool is left out there.
-
 ## Tools left out
 
 These tools are left out of a request instead of refused (`cross::TOOLS_LEFT_OUT`). Each only offers the model something it may use, and an app such as Codex adds it to every request with no switch per model: refusing it would make every model without it unusable from that app. The model answers as it would without the tool. Every tool left out is named in the reply's `kaeso-left-out` header ([response headers](../../api/model-api.md#response-headers)) and in the gateway's log, and a logged request body keeps the app's tools.
@@ -279,48 +232,6 @@ A tool call's arguments are a JSON object in every format. Chat Completions and 
 - **Blank arguments.** A call to a tool without parameters, such as Codex's `get_goal`, has `{}` as its arguments. Claude streams such a call without argument text, so Chat Completions and Responses apps get `"{}"` for it when the block stops, because `arguments` holds the call's arguments as JSON (`ChatCompletionMessageToolCall`, `FunctionToolCall`). Blank `arguments` that an app sends back are read as `{}`; a provider of the app's own format gets them back as they were sent. Fixtures: `anthropic_messages/streams/tools-no-input.sse`, `openai_responses/requests/codex-desktop-blank-arguments.json`.
 - **Other values in the conversation, for Anthropic.** `tool_use.input` must be an object, and Anthropic refuses the whole request when one in its history isn't. A call from another format whose arguments are something else therefore becomes an object: text that is not JSON, such as arguments cut off by an output limit, becomes `{"input": "<the text>"}`, as a [freeform tool's input](#codex-tool-history) does; an array, a number or a boolean becomes `{"input": <the value>}`; and `null` becomes `{}`. The model sees what it wrote and the tool result that followed. Each such call is named in `kaeso-adapted` as `tool call` and its id, such as `tool call call_abc`. Chat Completions and Responses providers get the arguments as sent. An Anthropic app's own `tool_use` with an `input` that is not an object stays `Unsupported`.
 - **Replies.** A reply to an Anthropic app with a tool call whose arguments are not an object is refused, because the app would run the tool with arguments the model never wrote ([Anthropic replies](anthropic-messages.md#replies)).
-
-## Audio and video
-
-`Block::Audio` and `Block::Video` hold a `Source`, a cache hint and extras, as images do. Each format takes them as its documentation says, and refuses the rest before sending:
-
-| Target | Audio | Video |
-| --- | --- | --- |
-| Gemini | `inlineData` or `fileData`, with the media type as sent | `inlineData`, `fileData`, or a YouTube URL without a MIME type |
-| Chat Completions | `input_audio` in user messages, base64 only, in the formats the provider takes: `wav` and `mp3` for OpenAI, any for OpenRouter | `video_url` for providers that document it (OpenRouter, Moonshot); `Unsupported` elsewhere |
-| Anthropic Messages | `Unsupported`: send a transcript as text | MiniMax's `video` block for MiniMax; `Unsupported` elsewhere: send frames as images |
-| Responses | `Unsupported` | `Unsupported` |
-
-A provider file id works only with the provider that issued it ([files](#files)). Gemini's `videoMetadata` (clip and frame rate) and `mediaResolution` stay extras of their part: only Gemini has them, and clipping changes what the model sees, so other formats refuse them. No transcoding happens: a media type the target has no name for, such as `audio/webm` for Chat Completions, is `Unsupported`.
-
-The gateway also refuses audio and video for a model whose catalogue entry doesn't list `audio` or `video` among its inputs, as it does for images and PDFs: `` The model `gpt-4o` does not accept audio. ``
-
-## Audio and image replies
-
-`GenerateRequest::output_modalities` names what the reply should hold (`Text`, `Image`, `Audio`), and `audio_output` the voice and format of audio. An audio reply is a `Block::Audio` with base64 data, its media type and, where the format has one, a `transcript`; streams carry it as `BlockStart(Audio)` and `Audio` deltas of data and transcript text.
-
-| App's format | Asks for | Gets |
-| --- | --- | --- |
-| Chat Completions | `modalities: ["text", "audio"]` with `audio.voice` and `audio.format` | `message.audio` and `delta.audio`, from OpenAI or from a Gemini speech model |
-| Gemini | `responseModalities: ["AUDIO"]` or `["IMAGE"]` with `speechConfig` and `responseFormat` | `inlineData` audio and images, from Gemini or from an OpenAI audio model |
-| Anthropic Messages, Responses | nothing: their formats have no setting for it | text only; audio and images a provider sends unasked are left out |
-
-- **Voices** belong to their provider. A voice crosses only when the target lists it: OpenAI's built-in voices for Chat Completions, Gemini's 30 prebuilt voices for Gemini; anything else is `Unsupported` with the voice in `param`.
-- **Formats** are never transcoded. `wav`, `mp3` and `pcm16` cross between Chat Completions and Gemini (`AUDIO_WAV`, `AUDIO_MP3`, `AUDIO_L16` at 24 kHz); `flac`, `opus` and `aac` reach only OpenAI. Without a format, a Chat Completions target gets `wav`, or `pcm16` for a stream.
-- **Chat's text.** In `["text", "audio"]` the text is the audio's transcript, so Gemini gets `["AUDIO"]`, which its speech models need.
-- **Replay.** OpenAI keeps an audio reply for a while and takes it back as `audio: {id}`. That id works only there, like a file id; another target refuses it unless the audio block carries a transcript, which Chat Completions then sends as text.
-- **Images.** Gemini image models return images as parts. Only Gemini apps get them: Chat Completions and Messages have no image in a reply, and a Responses `image_generation_call` belongs to OpenAI's image tool, so a Gemini image would read as a tool call the app never made. Asking those formats for image output is `Unsupported`.
-- **Catalogue.** The gateway refuses audio output for a model whose catalogue outputs lack `audio`, and image output without `image`: `` The model `gemini-3.5-flash` does not produce audio. `` A speech model that writes no text takes Chat's `["text", "audio"]`.
-
-## Media in tool results
-
-Claude's `tool_result` and Responses' `function_call_output` can hold images and files, such as the screenshot a tool took or the image Claude Code's `Read` and Codex's `view_image` open. A Chat Completions `tool` message holds only text (`ChatCompletionToolMessageParam`), and OpenAI and DeepSeek refuse an image there. So for Chat Completions models, Kaeso moves them:
-
-- **The tool message** keeps the result's text, followed by `The rest of this result is in the next message.`
-- **The user message after the results** starts with `` The rest of the result of tool call `<id>`: `` and the result's images, files and audio, in their order, for each such result. Text the app sent after the results follows them.
-- **The header.** Each result is named in the reply's `kaeso-adapted` header as `tool result` and the call's id, such as `tool result call_abc`.
-
-Anthropic and Responses models get the media in the tool result, as sent, and Gemini models in `functionResponse.parts` ([Gemini API](gemini.md)). Fixtures: `anthropic_messages/requests/tool-result-multi-turn.json`, `openai_responses/requests/function-call-output-array.json`.
 
 ## Usage
 

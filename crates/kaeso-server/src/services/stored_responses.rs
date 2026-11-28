@@ -51,9 +51,9 @@ pub struct Asked<'a> {
     pub provider: &'a ProviderRef,
     pub model: &'a str,
     pub credential: &'a Resolved,
-    /// The request's references to earlier reasoning are put back from reasoning continuity;
-    /// a batch file, sent to the provider as written, can't have them.
-    pub resolves_reasoning: bool,
+    /// The request's references to earlier reasoning and text are put back from reasoning
+    /// continuity; a batch file, sent to the provider as written, can't have them.
+    pub resolves_references: bool,
 }
 
 /// Why a request may not keep or continue a response: a model that can't (an alias moves on to
@@ -93,7 +93,7 @@ pub async fn admit(
         return Ok(None);
     }
     if kaeso_codecs::openai_responses::has_item_reference(g)
-        || (!asked.resolves_reasoning && kaeso_codecs::openai_responses::has_reasoning_reference(g))
+        || (!asked.resolves_references && kaeso_codecs::openai_responses::has_kept_reference(g))
     {
         return Err(Refusal::Final(refused(
             "input",
