@@ -209,7 +209,11 @@ fn an_empty_content_beside_tool_calls_is_no_text_and_comes_back_to_chat_apps() {
         )),
         "{events:?}"
     );
-    assert_sse_eq("tools-stream", &bytes, &encode_stream(&events));
+    assert_sse_eq(
+        "tools-stream",
+        &crate::test_support::chat_usage_in_its_own_chunk(&bytes),
+        &encode_stream(&events),
+    );
 }
 
 #[test]
