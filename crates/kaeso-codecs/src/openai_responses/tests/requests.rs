@@ -326,8 +326,11 @@ fn unknown_items_references_breakpoints_and_phase() {
     assert_eq!(r.messages.len(), 2);
     assert!(matches!(&r.messages[1].blocks[..], [Block::Unknown(i)] if i.origin.is(R)));
     let r = generate("item-reference-breakpoint");
-    assert!(matches!(&r.messages[0].blocks[..], [Block::Unknown(_)]));
-    assert_eq!(r.messages[0].role, Role::User);
+    assert!(
+        matches!(&r.messages[0].blocks[..], [Block::Text(t)] if crate::openai_responses::message_reference(t).is_some()),
+        "a reference to a message stands for it in an assistant turn"
+    );
+    assert_eq!(r.messages[0].role, Role::Assistant);
     let Block::Text(t) = &r.messages[1].blocks[0] else {
         panic!()
     };

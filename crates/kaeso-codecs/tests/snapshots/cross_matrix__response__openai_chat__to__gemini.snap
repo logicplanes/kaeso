@@ -713,9 +713,6 @@ expression: outcomes
         "content": {
           "parts": [
             {
-              "text": ""
-            },
-            {
               "functionCall": {
                 "args": {
                   "city": "Paris"
@@ -769,9 +766,6 @@ expression: outcomes
         "content": {
           "parts": [
             {
-              "text": ""
-            },
-            {
               "functionCall": {
                 "args": {
                   "city": "Paris"
@@ -810,9 +804,6 @@ expression: outcomes
         "content": {
           "parts": [
             {
-              "text": ""
-            },
-            {
               "functionCall": {
                 "args": {
                   "city": "Paris"
@@ -841,9 +832,6 @@ expression: outcomes
       {
         "content": {
           "parts": [
-            {
-              "text": ""
-            },
             {
               "functionCall": {
                 "args": {
@@ -2147,9 +2135,6 @@ expression: outcomes
         "content": {
           "parts": [
             {
-              "text": ""
-            },
-            {
               "functionCall": {
                 "args": {
                   "location": "Paris, France",
@@ -2759,9 +2744,6 @@ expression: outcomes
         "content": {
           "parts": [
             {
-              "text": ""
-            },
-            {
               "functionCall": {
                 "args": {
                   "city": "Lisbon"
@@ -2992,9 +2974,6 @@ expression: outcomes
         "content": {
           "parts": [
             {
-              "text": ""
-            },
-            {
               "functionCall": {
                 "args": {
                   "city": "Paris"
@@ -3151,9 +3130,6 @@ expression: outcomes
       {
         "content": {
           "parts": [
-            {
-              "text": ""
-            },
             {
               "functionCall": {
                 "args": {
@@ -3381,9 +3357,6 @@ expression: outcomes
       {
         "content": {
           "parts": [
-            {
-              "text": ""
-            },
             {
               "functionCall": {
                 "args": {
@@ -3624,9 +3597,6 @@ expression: outcomes
         "content": {
           "parts": [
             {
-              "text": ""
-            },
-            {
               "functionCall": {
                 "args": {
                   "city": "Paris"
@@ -3726,9 +3696,6 @@ expression: outcomes
         "content": {
           "parts": [
             {
-              "text": ""
-            },
-            {
               "functionCall": {
                 "args": {
                   "location": "Paris, France",
@@ -3767,9 +3734,6 @@ expression: outcomes
       {
         "content": {
           "parts": [
-            {
-              "text": ""
-            },
             {
               "functionCall": {
                 "args": {
@@ -3968,9 +3932,6 @@ expression: outcomes
         "content": {
           "parts": [
             {
-              "text": ""
-            },
-            {
               "functionCall": {
                 "args": {
                   "city": "Paris"
@@ -4116,9 +4077,6 @@ expression: outcomes
         "content": {
           "parts": [
             {
-              "text": ""
-            },
-            {
               "functionCall": {
                 "args": {
                   "location": "杭州市"
@@ -4158,9 +4116,6 @@ expression: outcomes
       {
         "content": {
           "parts": [
-            {
-              "text": ""
-            },
             {
               "functionCall": {
                 "args": {
@@ -4671,9 +4626,6 @@ expression: outcomes
       {
         "content": {
           "parts": [
-            {
-              "text": ""
-            },
             {
               "functionCall": {
                 "args": {
@@ -5240,9 +5192,6 @@ expression: outcomes
         "content": {
           "parts": [
             {
-              "text": ""
-            },
-            {
               "functionCall": {
                 "args": {
                   "x": 17,
@@ -5468,9 +5417,6 @@ expression: outcomes
         "content": {
           "parts": [
             {
-              "text": ""
-            },
-            {
               "functionCall": {
                 "args": {
                   "location": "北京"
@@ -5623,9 +5569,6 @@ expression: outcomes
         "content": {
           "parts": [
             {
-              "text": ""
-            },
-            {
               "functionCall": {
                 "args": {
                   "location": "Paris, France",
@@ -5665,9 +5608,6 @@ expression: outcomes
       {
         "content": {
           "parts": [
-            {
-              "text": ""
-            },
             {
               "functionCall": {
                 "args": {

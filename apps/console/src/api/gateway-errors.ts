@@ -957,6 +957,10 @@ const messages = (): Rule[] => [
     t("errors.model.decisionOnly", "The model `{model}` is a decision model; send it to `/v1/decisions` or `/v1/systemone`.", v),
   ),
   rule("errors.model.rerankOnly", (v) => t("errors.model.rerankOnly", "The model `{model}` is a rerank model; send it to `/v1/rerank`.", v)),
+  rule("errors.model.transcriptionOnly", (v) =>
+    t("errors.model.transcriptionOnly", "The model `{model}` is a transcription model; send it to `/v1/audio/transcriptions`.", v),
+  ),
+  rule("errors.model.transcriptionNeedsAudio", (v) => t("errors.model.transcriptionNeedsAudio", "The model `{model}` only transcribes; send it audio.", v)),
   rule("errors.model.generationNoRerank", (v) =>
     t("errors.model.generationNoRerank", "The model `{model}` is a generation model; it cannot rerank documents.", v),
   ),
@@ -1007,6 +1011,33 @@ const messages = (): Rule[] => [
     t(
       "errors.modelApi.unkeptReasoning",
       "Kaeso no longer keeps the reasoning `{id}` points to; send the items themselves in `input`, as SDKs do with `store: false`.",
+      v,
+    ),
+  ),
+  rule("errors.modelApi.unkeptText", (v) =>
+    t(
+      "errors.modelApi.unkeptText",
+      "Kaeso no longer keeps the text `{id}` points to; send the items themselves in `input`, as SDKs do with `store: false`.",
+      v,
+    ),
+  ),
+  rule("errors.modelApi.textNotKept", (v) =>
+    t(
+      "errors.modelApi.textNotKept",
+      "Kaeso keeps the text `{id}` points to only where the project allows responses stored at the provider; send the items themselves in `input`, as SDKs do with `store: false`.",
+      v,
+    ),
+  ),
+  rule("errors.modelApi.itemReference", () =>
+    t(
+      "errors.modelApi.itemReference",
+      "`item_reference` items point to state Kaeso does not keep; send the items themselves in `input`, as SDKs do with `store: false`.",
+    ),
+  ),
+  rule("errors.modelApi.keptTextOnly", (v) =>
+    t(
+      "errors.modelApi.keptTextOnly",
+      "Kaeso keeps only the text before a tool call, not the message `{id}` points to; send the items themselves in `input`, as SDKs do with `store: false`.",
       v,
     ),
   ),

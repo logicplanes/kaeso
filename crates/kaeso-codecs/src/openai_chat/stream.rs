@@ -401,10 +401,6 @@ impl ChatStreamDecoder {
         }
     }
 
-    fn reasons_first(&self) -> bool {
-        self.thinking_parts || !self.reasoning_fields.is_empty()
-    }
-
     fn new_block(&mut self) -> u32 {
         let index = self.next_block;
         self.next_block = self.next_block.saturating_add(1);
@@ -742,14 +738,10 @@ impl ChatStreamDecoder {
             d.extras = self.extras();
             events.push(StreamEvent::BlockDelta(d));
         }
-        // OpenRouter repeats the finish chunk, `content: ""` included, to carry the usage
-        // (`providers/openrouter/streams/recorded-free-stream.sse`); that is no new text block.
+        // An empty piece, such as OpenRouter's repeated finish chunk or DeepSeek's after its tool
+        // calls, opens no text block: other formats get no empty message, Chat apps the piece.
         let text = match text {
-            Some(t)
-                if t.is_empty()
-                    && self.text.is_none()
-                    && (self.reasons_first() || self.finished) =>
-            {
+            Some(t) if t.is_empty() && self.text.is_none() => {
                 form.insert(FORM_EMPTY_TEXT.to_owned(), Value::Bool(true));
                 None
             }

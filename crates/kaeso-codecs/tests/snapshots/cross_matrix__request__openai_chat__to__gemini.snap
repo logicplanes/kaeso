@@ -18,10 +18,139 @@ expression: outcomes
     "param": "audio.voice",
     "unsupported": "voice `marin`"
   },
+  "autogen-user-name": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What's the weather in Paris?"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "parts": [
+            {
+              "functionCall": {
+                "args": {
+                  "city": "Paris"
+                },
+                "id": "call_1",
+                "name": "weather"
+              },
+              "thoughtSignature": "skip_thought_signature_validator"
+            }
+          ],
+          "role": "model"
+        },
+        {
+          "parts": [
+            {
+              "functionResponse": {
+                "id": "call_1",
+                "name": "weather",
+                "response": {
+                  "output": "Sunny in Paris"
+                }
+              }
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "You are a helpful AI assistant. Solve tasks using your tools. Reply with TERMINATE when the task has been completed."
+          }
+        ]
+      }
+    },
+    "path": "/v1beta/models/claude-haiku-5-5:generateContent"
+  },
   "content-array-all-roles": {
     "message": "`refusal block` is not supported by Gemini API. Gemini has no refusal part. Remove the refusal from the conversation history or replace it with text.",
     "param": "messages[1].blocks[0]",
     "unsupported": "refusal block"
+  },
+  "crewai-tool-name": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "\nCurrent Task: What's the weather in Paris?\n\nThis is the expected criteria for your final answer: One sentence.\nyou MUST return the actual complete content as the final answer, not a summary."
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "parts": [
+            {
+              "functionCall": {
+                "args": {
+                  "city": "Paris"
+                },
+                "id": "call_1",
+                "name": "get_weather"
+              },
+              "thoughtSignature": "skip_thought_signature_validator"
+            }
+          ],
+          "role": "model"
+        },
+        {
+          "parts": [
+            {
+              "functionResponse": {
+                "id": "call_1",
+                "name": "get_weather",
+                "response": {
+                  "output": "Sunny in Paris"
+                }
+              }
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "You are Weather reporter. You report weather.\nYour personal goal is: Report the weather"
+          }
+        ]
+      },
+      "toolConfig": {
+        "functionCallingConfig": {
+          "mode": "VALIDATED"
+        }
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "Get the weather for a city.",
+              "name": "get_weather",
+              "parametersJsonSchema": {
+                "additionalProperties": false,
+                "properties": {
+                  "city": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "city"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/claude-haiku-5-5:generateContent"
   },
   "explicit-nulls": {
     "body": {
@@ -4253,9 +4382,83 @@ expression: outcomes
     "unsupported": "tool_choice `any`"
   },
   "providers/mistral/tool-result-named": {
-    "message": "`messages[2].blocks[0].name` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
-    "param": "messages[2].blocks[0]",
-    "unsupported": "messages[2].blocks[0].name"
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is the weather in Lisbon right now?"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "parts": [
+            {
+              "text": ""
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "city": "Lisbon"
+                },
+                "id": "D681PevKs",
+                "name": "get_weather"
+              },
+              "thoughtSignature": "skip_thought_signature_validator"
+            }
+          ],
+          "role": "model"
+        },
+        {
+          "parts": [
+            {
+              "functionResponse": {
+                "id": "D681PevKs",
+                "name": "get_weather",
+                "response": {
+                  "output": "{\"temperature_c\": 21, \"sky\": \"clear\"}"
+                }
+              }
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 100
+      },
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "You are a concise travel assistant."
+          }
+        ]
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "Current weather for a city.",
+              "name": "get_weather",
+              "parametersJsonSchema": {
+                "properties": {
+                  "city": {
+                    "description": "City name, such as Lisbon",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "city"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/mistral-small-latest:generateContent"
   },
   "providers/mistral/user-field": {
     "body": {
@@ -5851,9 +6054,99 @@ expression: outcomes
     "unsupported": "search_mode"
   },
   "providers/qianfan/after-tool-results-doc": {
-    "message": "`messages[2].blocks[0].name` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
-    "param": "messages[2].blocks[0]",
-    "unsupported": "messages[2].blocks[0].name"
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "查一下上海和北京2025-8-21的天气"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "parts": [
+            {
+              "text": ""
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "location": "上海市",
+                  "time": "2025-08-21"
+                },
+                "id": "04fed17840d34b1e99bf3cd6dc94150d",
+                "name": "get_current_weather"
+              },
+              "thoughtSignature": "skip_thought_signature_validator"
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "location": "北京市",
+                  "time": "2025-08-21"
+                },
+                "id": "a37ee51b99a64723bcb7f2f4d8081770",
+                "name": "get_current_weather"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        {
+          "parts": [
+            {
+              "functionResponse": {
+                "id": "04fed17840d34b1e99bf3cd6dc94150d",
+                "name": "get_current_weather",
+                "response": {
+                  "output": "{\"temperature\": \"25\", \"unit\": \"摄氏度\", \"description\": \"上海\"}"
+                }
+              }
+            },
+            {
+              "functionResponse": {
+                "id": "a37ee51b99a64723bcb7f2f4d8081770",
+                "name": "get_current_weather",
+                "response": {
+                  "output": "{\"temperature\": \"20\", \"unit\": \"摄氏度\", \"description\": \"北京\"}"
+                }
+              }
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "toolConfig": {
+        "functionCallingConfig": {
+          "mode": "AUTO"
+        }
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "天气查询工具",
+              "name": "get_current_weather",
+              "parametersJsonSchema": {
+                "properties": {
+                  "location": {
+                    "description": "地理位置，精确到区县级别",
+                    "type": "string"
+                  },
+                  "time": {
+                    "description": "时间，格式为YYYY-MM-DD",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/deepseek-v3.1-250821:generateContent"
   },
   "providers/qianfan/greeting-doc": {
     "body": {
@@ -8056,9 +8349,49 @@ expression: outcomes
     "path": "/v1beta/models/gpt-5.5:streamGenerateContent?alt=sse"
   },
   "system-name-multiturn": {
-    "message": "`system[0].message.name` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
-    "param": "system[0]",
-    "unsupported": "system[0].message.name"
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "How long should I boil an egg for a runny yolk?"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "parts": [
+            {
+              "text": "About 6 minutes from boiling water, then cool it in cold water for a minute."
+            }
+          ],
+          "role": "model"
+        },
+        {
+          "parts": [
+            {
+              "text": "And for a hard-boiled one?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "temperature": 0.7,
+        "thinkingConfig": {
+          "thinkingBudget": 0
+        },
+        "topP": 0.9
+      },
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "You are a friendly cooking assistant. Answer in two sentences or fewer."
+          }
+        ]
+      }
+    },
+    "path": "/v1beta/models/gpt-5.5:generateContent"
   },
   "tool-choice-allowed-tools": {
     "message": "tool_choice `allowed_tools` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Use `auto`, `none`, `required` or a single named tool instead.",

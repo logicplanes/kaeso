@@ -53,6 +53,8 @@ enum Item {
     Call(Block),
     Output(Block),
     Reasoning(Block),
+    /// An `item_reference` to an earlier reply's reasoning or message, in the turn it came from.
+    Reference(Block),
     Raw(Block, Role),
 }
 
@@ -87,8 +89,8 @@ fn decode_item(raw: &RawValue, origin: &Origin) -> Item {
         Some("reasoning") => decode_reasoning(raw, origin)
             .map(|r| Item::Reasoning(Block::Reasoning(r)))
             .unwrap_or_else(raw_item),
-        Some("item_reference") => super::stored::decode_reasoning_reference(raw, origin)
-            .map(|r| Item::Reasoning(Block::Reasoning(r)))
+        Some("item_reference") => super::stored::decode_reference(raw, origin)
+            .map(Item::Reference)
             .unwrap_or_else(raw_item),
         _ => raw_item(),
     }
@@ -246,7 +248,10 @@ pub(super) fn decode_items(items: &[&RawValue], origin: &Origin) -> DecodedInput
                 }
                 *has_msg = true;
             }
-            Item::Call(block) | Item::Reasoning(block) | Item::Output(block) => {
+            Item::Call(block)
+            | Item::Reasoning(block)
+            | Item::Reference(block)
+            | Item::Output(block) => {
                 let role = if matches!(block, Block::ToolResult(_)) {
                     Role::User
                 } else {
@@ -392,13 +397,9 @@ pub(super) fn encode_messages(
                 first_run = false;
             }
             let Some(block) = m.blocks.get(i) else { break };
-            if is_content(block) {
-                let run: Vec<&Block> = m
-                    .blocks
-                    .iter()
-                    .skip(i)
-                    .take_while(|b| is_content(b))
-                    .collect();
+            let content = |b: &Block| is_content(b) && super::stored::reference(b).is_none();
+            if content(block) {
+                let run: Vec<&Block> = m.blocks.iter().skip(i).take_while(|b| content(b)).collect();
                 i += run.len();
                 emit_message(&run, &mut items, first_run, &mut names.media);
                 first_run = false;
@@ -422,8 +423,10 @@ pub(super) fn encode_messages(
                     apply(&result.extras, DIALECT, "", &[], &mut node);
                     items.push(node);
                 }
-                Block::Reasoning(r) if super::stored::reasoning_reference(r).is_some() => {
-                    if let Some(id) = super::stored::reasoning_reference(r) {
+                Block::Reasoning(_) | Block::Text(_)
+                    if super::stored::reference(block).is_some() =>
+                {
+                    if let Some(id) = super::stored::reference(block) {
                         items.push(
                             Node::obj()
                                 .with("type", Node::str("item_reference"))
