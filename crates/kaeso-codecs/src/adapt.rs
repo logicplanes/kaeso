@@ -125,6 +125,7 @@ pub(crate) fn for_target<'a>(
         crate::gemini::schema::for_foreign(&mut draft);
     }
     neutral::left_out(&mut draft, target, ctx);
+    crate::openai_chat::names::left_out(&mut draft, target, ctx);
     inline_tools::for_foreign(&mut draft, target)?;
     top_k_left_out(&mut draft, target, ctx);
     match target {

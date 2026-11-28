@@ -44,7 +44,7 @@ nav: Chat 服务商
 | `greedy_top_p()` | 只要请求带有 `temperature: 0`，无论设置了什么 `top_p`，都发送 `top_p: 1`。 | 在 `temperature: 0` 下，模型总是选择可能性最高的 token，因此 `top_p` 不起作用，应用的值也没有损失；默认 `top_p` 更低的提供商在没有 `top_p: 1` 时会拒绝贪婪采样。 |
 | `refusing(fields)` | 如果请求体会包含其中某个顶层键，或对象字段中以 `parent.child` 写出的键（`web_search_options.user_location`），就拒绝该请求，例如 `` `logit_bias` is not supported by Example Cloud; remove it from the request. `` | extras 是语义字段，因此被拒绝，而不是丢弃。`parallel_tool_calls: true` 是一个例外：它只允许并行调用，而没有该字段的服务商本来就允许，因此会被省略，并在 `kaeso-left-out` 中注明。Codex 在每个请求中都会发送它。取[中性值](sampling.md#中性值)的字段，例如 `store: false` 或值为 `0` 的惩罚参数，也同样被省略并注明；以 `null` 或 `[]` 发送的字段则不会发送。 |
 | `refusing_values(values)` | 如果请求的某个顶层字符串字段取了其中列出的值，就拒绝该请求，例如 `` Example Cloud does not take `service_tier: "priority"`; send one of its own values or leave `service_tier` out. `` | 服务商以自己的取值接受该字段；它不认识的 OpenAI 取值会被误读或丢弃。 |
-| `refusing_in_messages(fields)` | 对 system、user 和 assistant 消息中的键同样处理。不检查 tool 消息。 | 同上。 |
+| `refusing_in_messages(fields)` | 对 system、user 和 assistant 消息中的键同样处理。不检查 tool 消息。 | 同上。`name` 则会被省略，并在 `kaeso-left-out` 中列出（[参与者名称](openai-chat.md#参与者名称)）。 |
 
 Kaeso 读取回复时的设置（`ChatProfile::reply`，即一个 `ReplyProfile`）：
 

@@ -82,6 +82,14 @@ nav: OpenAI Chat
 - 助手的 `function_call` 为 `messages[i].function_call`；
 - `function` 消息为 `` `function` message ``，提示为 `Remove the message, or send the request to a model served through its original format.`
 
+### 参与者名称
+
+消息的 `name` 用于区分同一角色的不同参与者。多智能体框架会设置它：AutoGen 设在 user 消息上，CrewAI 设在 tool 消息上。其他格式都没有这个字段，OpenAI 自己的 Responses API 也没有。
+
+因此，对于其他所有格式，以及配置拒绝 system、user 和 assistant 消息上 `name` 的 Chat 服务商（例如 Groq），Kaeso 会省略它。回复的 `kaeso-left-out` 响应头按应用发送的消息列出它，例如 `messages[1].name`（`openai_chat::names`）。
+
+对于这类 Chat 服务商，tool 消息会保留其 `name`，Mistral 录制的回复表明这是允许的；其他格式则不会收到。其他 Chat 服务商会按原样收到所有名称。以 `null` 发送的 `name` 属于形式标记：凡是省略名称的地方都会省略它，但不会在响应头中列出。 Fixtures：`requests/autogen-user-name.json`、`requests/crewai-tool-name.json`。
+
 ### 内容部分
 
 | 线路 | KPP | 说明 |
@@ -102,7 +110,7 @@ nav: OpenAI Chat
 对于来自其他方言的 KPP，`check()` 会拒绝：
 
 - 文本文档、文档 URL，以及文档的 `title`、`context` 和 `citations`；
-- 图像文件 ID，以及系统消息和助手消息中的图像、文档、音频和视频；工具结果中的图像和文档会移到其后的用户消息中（[工具结果中的媒体](cross-format.md#工具结果中的媒体)）；
+- 图像文件 ID，以及系统消息和助手消息中的图像、文档、音频和视频；工具结果中的图像和文档会移到其后的用户消息中（[工具结果中的媒体](media.md#工具结果中的媒体)）；
 - 不是 base64 的音频、媒体类型没有对应 `input_audio.format` 的音频（`` audio media type `…` ``），以及视频，除非配置接受 `video_url` 部分；
 - 助手消息中除 OpenAI 音频 ID 以外的音频，除非该块带有转写稿，这时转写稿作为消息的文本发送；
 - 图像或其他输出模态、没有声音的音频输出、OpenAI 未列出的声音，以及没有音频输出时的音频设置；

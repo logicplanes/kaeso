@@ -82,6 +82,14 @@ Andere Dialekte lehnen all das mit `Unsupported` ab und nennen die Teile so:
 - das `function_call` eines Assistenten als `messages[i].function_call`;
 - eine `function`-Nachricht als `` `function` message ``, mit dem Hinweis `Remove the message, or send the request to a model served through its original format.`
 
+### Namen von Teilnehmern
+
+Das `name` einer Nachricht unterscheidet Teilnehmer derselben Rolle. Multi-Agent-Frameworks setzen es: AutoGen bei Benutzernachrichten, CrewAI bei Tool-Nachrichten. Kein anderes Format hat das Feld, auch die Responses-API von OpenAI selbst nicht.
+
+Kaeso lässt es daher für jedes andere Format weg und für einen Chat-Anbieter, dessen Profil `name` bei System-, Benutzer- und Assistentennachrichten ablehnt, etwa Groq. Der Header `kaeso-left-out` der Antwort nennt es nach der Nachricht, die die App gesendet hat, etwa `messages[1].name` (`openai_chat::names`).
+
+Bei einem solchen Chat-Anbieter behalten Tool-Nachrichten ihr `name`, wie die aufgezeichnete Antwort von Mistral zeigt; andere Formate erhalten keines. Andere Chat-Anbieter erhalten jeden Namen wie gesendet. Ein als `null` gesendetes `name` ist Form: Es fällt überall weg, wo ein Name wegfällt, ohne Eintrag im Header. Fixtures: `requests/autogen-user-name.json`, `requests/crewai-tool-name.json`.
+
 ### Inhaltsteile
 
 | Wire | KPP | Anmerkungen |
@@ -102,7 +110,7 @@ Andere Dialekte lehnen all das mit `Unsupported` ab und nennen die Teile so:
 Für KPP aus anderen Dialekten lehnt `check()` ab:
 
 - Textdokumente, Dokument-URLs sowie `title`, `context` und `citations` von Dokumenten;
-- Bild-Datei-IDs sowie Bilder, Dokumente, Audio und Video in System- und Assistentennachrichten; solche in Tool-Ergebnissen wandern in die Benutzernachricht danach ([Medien in Tool-Ergebnissen](cross-format.md#medien-in-tool-ergebnissen));
+- Bild-Datei-IDs sowie Bilder, Dokumente, Audio und Video in System- und Assistentennachrichten; solche in Tool-Ergebnissen wandern in die Benutzernachricht danach ([Medien in Tool-Ergebnissen](media.md#medien-in-tool-ergebnissen));
 - Audio, das nicht base64 ist oder dessen Medientyp kein `input_audio.format` hat (`` audio media type `…` ``), und Video, außer das Profil nimmt `video_url`-Teile;
 - Audio in Assistentennachrichten außer OpenAIs Audio-IDs, es sei denn, der Block hat ein Transkript, das als Text der Nachricht gesendet wird;
 - eine Bild- oder andere Ausgabemodalität, Audio ohne Stimme, eine Stimme, die OpenAI nicht nennt, und Audioeinstellungen ohne Audioausgabe;

@@ -33,15 +33,15 @@ KPP, das Kaeso Provider Protocol, hat einen Codec für jedes API-Format: OpenAI 
 
 ## Was erhalten bleibt
 
-- **Unterhaltungen.** Systemanweisungen, Züge von Benutzer und Assistent, Text, Bilder und Dokumente sowie Audio und Video, wo das Ziel sie nimmt ([Audio und Video](../development/kpp/cross-format.md#audio-und-video)). Eine Systemnachricht mitten in einer Anthropic-Unterhaltung erreicht OpenAI als spätere Systemnachricht, und eine mitten in einer OpenAI-Unterhaltung erreicht Anthropic als Text des nächsten Benutzerzugs.
-- **Tools.** Funktions-Tools, Tool-Auswahl, parallele Tool-Aufrufe, Tool-Aufrufe und Tool-Ergebnisse. Bilder und Dateien, die ein Tool zurückgegeben hat, erreichen ein Chat-Completions-Modell in der Benutzernachricht nach den Ergebnissen, weil seine Tool-Nachrichten nur Text enthalten ([Medien in Tool-Ergebnissen](../development/kpp/cross-format.md#medien-in-tool-ergebnissen)).
+- **Unterhaltungen.** Systemanweisungen, Züge von Benutzer und Assistent, Text, Bilder und Dokumente sowie Audio und Video, wo das Ziel sie nimmt ([Audio und Video](../development/kpp/media.md#audio-und-video)). Eine Systemnachricht mitten in einer Anthropic-Unterhaltung erreicht OpenAI als spätere Systemnachricht, und eine mitten in einer OpenAI-Unterhaltung erreicht Anthropic als Text des nächsten Benutzerzugs.
+- **Tools.** Funktions-Tools, Tool-Auswahl, parallele Tool-Aufrufe, Tool-Aufrufe und Tool-Ergebnisse. Bilder und Dateien, die ein Tool zurückgegeben hat, erreichen ein Chat-Completions-Modell in der Benutzernachricht nach den Ergebnissen, weil seine Tool-Nachrichten nur Text enthalten ([Medien in Tool-Ergebnissen](../development/kpp/media.md#medien-in-tool-ergebnissen)).
 - **Tool-Namen und Aufruf-IDs.** Nimmt das Ziel einen Namen oder eine ID nicht an, schreibt Kaeso sie auf feste Weise um und übersetzt sie in der Antwort zurück. Andere Zeichen werden zu `_`, der Name wird passend gekürzt, und ein Hash des Originals wird angehängt. OpenAI nimmt bis zu 64 Buchstaben, Ziffern, `_` und `-` an, Anthropic bis zu 128.
 - **Strukturierte Ausgabe.** JSON-Schemas und der JSON-Modus, den Modelle ohne ihn, etwa Claude, als Satz im System-Prompt bekommen ([strukturierte Ausgabe](../development/kpp/cross-format.md#strukturierte-ausgabe)).
 - **Sampling.** Temperatur, Top P, maximale Token und Stoppsequenzen, wo das Ziel sie hat. Ein Wert behält seine Bedeutung, wird aber so geschrieben, wie das Ziel ihn schreibt. `1` kann also als `1.0` ankommen. Bei einem Modell, das über OpenAI Responses bedient wird, etwa Grok, beendet Kaeso die Antwort selbst an einer Stoppsequenz oder an einem Limit unter 16 Token ([OpenAI Responses im Gateway](../development/kpp/sampling.md#openai-responses-im-gateway)).
 - **Die ID des Endnutzers.** `metadata.user_id` bei Anthropic und `safety_identifier` bei OpenAI. OpenAI nimmt höchstens 128 Zeichen an und bittet um einen Hash der Nutzer-ID, daher erreicht eine längere Anthropic-ID, etwa die von Claude Code, OpenAI als ihr SHA-256-Hash; der Header `kaeso-adapted` der Antwort nennt das.
 - **Reasoning.** Aufwandsstufen und Denk-Budgets werden ineinander umgerechnet ([Reasoning](#reasoning)).
 - **Streams.** Kaeso übersetzt sie Event für Event in das Format der App.
-- **Audioantworten.** Zwischen Chat Completions und Gemini: OpenAIs Audiomodelle antworten Gemini-Apps und Geminis Sprachmodelle Chat-Apps, wenn Stimme und Format auf beiden Seiten existieren ([Audio- und Bildantworten](../development/kpp/cross-format.md#audio--und-bildantworten)).
+- **Audioantworten.** Zwischen Chat Completions und Gemini: OpenAIs Audiomodelle antworten Gemini-Apps und Geminis Sprachmodelle Chat-Apps, wenn Stimme und Format auf beiden Seiten existieren ([Audio- und Bildantworten](../development/kpp/media.md#audio--und-bildantworten)).
 
 ## Was Kaeso ablehnt
 
@@ -108,6 +108,7 @@ Hat das Ziel keinen Platz für sie, lässt Kaeso Hinweise weg, die nicht ändern
 - das Fehler-Flag eines Tool-Ergebnisses, das OpenAI nicht kennt; der Text des Ergebnisses sagt weiterhin, was fehlschlug
 - `seed` für ein Modell, das über OpenAI Responses bedient wird, weil es dort kein Feld dafür gibt
 - Einstellungen mit dem Wert, den die API ohne sie verwendet, etwa `frequency_penalty: 0`, `logprobs: false` oder `store: false`, die Chat-Apps wie NextChat mit jeder Anfrage senden; der Header `kaeso-left-out` der Antwort nennt sie ([neutrale Werte](../development/kpp/sampling.md#neutrale-werte))
+- das `name` einer Chat-Completions-Nachricht, das Teilnehmer derselben Rolle unterscheidet und das kein anderes Format hat; der Header `kaeso-left-out` der Antwort nennt es ([Namen von Teilnehmern](../development/kpp/openai-chat.md#namen-von-teilnehmern))
 
 Anfragen, die in Responses übersetzt werden, tragen `store: false`, sodass OpenAI nichts speichert.
 

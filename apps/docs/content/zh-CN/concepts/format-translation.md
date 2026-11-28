@@ -33,15 +33,15 @@ KPP（Kaeso Provider Protocol）为每种 API 格式都提供一个编解码器�
 
 ## 能够保留的内容
 
-- **对话。** 系统指令、用户和助手轮次、文本、图像和文档，以及目标接受时的音频和视频（[音频和视频](../development/kpp/cross-format.md#音频和视频)）。Anthropic 对话中间的系统消息到达 OpenAI 时，会成为一条位置靠后的系统消息；OpenAI 对话中间的系统消息到达 Anthropic 时，会成为下一个用户轮次的文本。
-- **工具。** 函数工具、工具选择、并行工具调用、工具调用和工具结果。工具返回的图像和文件会出现在结果之后的用户消息中到达 Chat Completions 模型，因为它的工具消息只包含文本（[工具结果中的媒体](../development/kpp/cross-format.md#工具结果中的媒体)）。
+- **对话。** 系统指令、用户和助手轮次、文本、图像和文档，以及目标接受时的音频和视频（[音频和视频](../development/kpp/media.md#音频和视频)）。Anthropic 对话中间的系统消息到达 OpenAI 时，会成为一条位置靠后的系统消息；OpenAI 对话中间的系统消息到达 Anthropic 时，会成为下一个用户轮次的文本。
+- **工具。** 函数工具、工具选择、并行工具调用、工具调用和工具结果。工具返回的图像和文件会出现在结果之后的用户消息中到达 Chat Completions 模型，因为它的工具消息只包含文本（[工具结果中的媒体](../development/kpp/media.md#工具结果中的媒体)）。
 - **工具名称和调用 ID。** 目标不接受某个名称或 ID 时，Kaeso 会以固定方式改写它，并在回复中映射回原值。其他字符变为 `_`，名称被截短以符合长度要求，并附加原值的哈希。OpenAI 接受最多 64 个由字母、数字、`_` 和 `-` 组成的字符，Anthropic 最多 128 个。
 - **结构化输出。** JSON schema，以及 JSON 模式：没有 JSON 模式的模型（例如 Claude）会在系统提示词中收到一句话（[结构化输出](../development/kpp/cross-format.md#结构化输出)）。
 - **采样。** 温度、Top P、最大 Token 数和停止序列，前提是目标支持。值的含义不变，但会按目标的写法写出，因此 `1` 可能以 `1.0` 到达。对于通过 OpenAI Responses 提供的模型（例如 Grok），Kaeso 会在停止序列处或低于 16 个 Token 的上限处自行结束回复（[网关中的 OpenAI Responses](../development/kpp/sampling.md#网关中的-openai-responses)）。
 - **最终用户的 ID。** Anthropic 的 `metadata.user_id` 和 OpenAI 的 `safety_identifier`。OpenAI 最多接受 128 个字符，并要求发送用户 ID 的哈希，因此更长的 Anthropic ID（例如 Claude Code 的 ID）会以 SHA-256 哈希发送给 OpenAI，回复的 `kaeso-adapted` 响应头会注明这一点。
 - **推理。** 推理强度和思考预算会相互转换（[推理](#推理)）。
 - **流。** Kaeso 会把流逐个事件转换为应用的格式。
-- **音频回复。** 在 Chat Completions 和 Gemini 之间：当双方都有对应的声音和格式时，OpenAI 的音频模型可以回答 Gemini 应用，Gemini 的语音模型可以回答 Chat 应用（[音频和图像回复](../development/kpp/cross-format.md#音频和图像回复)）。
+- **音频回复。** 在 Chat Completions 和 Gemini 之间：当双方都有对应的声音和格式时，OpenAI 的音频模型可以回答 Gemini 应用，Gemini 的语音模型可以回答 Chat 应用（[音频和图像回复](../development/kpp/media.md#音频和图像回复)）。
 
 ## Kaeso 拒绝的内容
 
@@ -108,6 +108,7 @@ KPP（Kaeso Provider Protocol）为每种 API 格式都提供一个编解码器�
 - OpenAI 没有的工具结果错误标记；工具结果的文本仍会说明失败的内容
 - 通过 OpenAI Responses 提供的模型的 `seed`，因为那里没有对应字段
 - 取值就是 API 在没有该字段时所用值的设置，例如 `frequency_penalty: 0`、`logprobs: false` 或 `store: false`，NextChat 等聊天应用会在每个请求中发送它们；回复的 `kaeso-left-out` 响应头会列出它们（[中性值](../development/kpp/sampling.md#中性值)）
+- Chat Completions 消息的 `name`，它用于区分同一角色的参与者，其他格式都没有；回复的 `kaeso-left-out` 响应头会列出它（[参与者名称](../development/kpp/openai-chat.md#参与者名称)）
 
 转换为 Responses 的请求带有 `store: false`，因此 OpenAI 不会保存任何内容。
 

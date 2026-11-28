@@ -494,6 +494,36 @@ async fn stop_sequences_small_limits_and_seed_reach_grok_from_other_formats() {
 }
 
 #[tokio::test]
+async fn a_crewai_tool_messages_name_is_left_out_for_xais_responses_api() {
+    let env = env().await;
+    let mut body: Value = serde_json::from_str(include_str!(
+        "../../../kaeso-codecs/fixtures/openai_chat/requests/crewai-tool-name.json"
+    ))
+    .unwrap();
+    body["model"] = json!("grok-4.3");
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(body),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.header("kaeso-left-out"), Some("messages[3].name"));
+    let (path, _, sent) = sent(&env).unwrap();
+    assert_eq!(path, "/v1/responses");
+    let output = sent["input"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|i| i["type"] == "function_call_output")
+        .unwrap();
+    assert_eq!(output["call_id"], "call_1");
+    assert!(output.get("name").is_none(), "{output}");
+}
+
+#[tokio::test]
 async fn a_cached_reply_keeps_to_the_stop_sequence_of_its_own_request() {
     let env = env().await;
     let r = env

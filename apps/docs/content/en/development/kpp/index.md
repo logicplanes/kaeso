@@ -171,7 +171,7 @@ Every KPP field is either semantic or a hint:
 | `sampling.frequency_penalty`, `.presence_penalty` | semantic | OpenAI Chat Completions and Gemini; `Unsupported` elsewhere, except `0`, which asks for nothing and is left out ([neutral values](sampling.md#neutral-values)). |
 | `user` | hint | An end-user id for abuse monitoring; it never changes the output. A provider whose Chat profile has no end-user field gets none, not even a Chat app's `user` sent alongside `safety_identifier` ([provider profiles](openai-chat-providers.md#provider-profiles)). |
 | `stream` | semantic | |
-| `output_modalities`, `audio_output.voice`, `.format` | semantic | Only Chat Completions and Gemini write audio, only Gemini images; voices cross only to a target that lists them, and formats are never transcoded ([audio and image replies](cross-format.md#audio-and-image-replies)). |
+| `output_modalities`, `audio_output.voice`, `.format` | semantic | Only Chat Completions and Gemini write audio, only Gemini images; voices cross only to a target that lists them, and formats are never transcoded ([audio and image replies](media.md#audio-and-image-replies)). |
 | `extras.fields` | semantic | Only written back to the origin dialect; elsewhere `Unsupported` unless on the [extras allowlist](cross-format.md#extras). |
 | `extras.form` | hint | Presentation markers; ignored by other dialects. |
 
@@ -192,8 +192,8 @@ Every KPP field is either semantic or a hint:
 | `Text.cache`, `Image.cache`, `Document.cache`, `Audio.cache`, `Video.cache`, `ToolCall.cache`, `ToolResult.cache` | hint | Dropped for OpenAI, which caches by itself ([cache hints](cross-format.md#cache-hints)). |
 | `Image.source` | semantic | A `FileId` works only with the provider that issued it ([files](cross-format.md#files)). OpenAI Chat Completions takes images only as a URL or base64. |
 | `Document.source` | semantic | Text sources only for Anthropic. OpenAI Chat Completions also refuses URL sources. |
-| `Audio.transcript` | semantic | Sent as the assistant's text where the target can't take the audio itself ([audio and image replies](cross-format.md#audio-and-image-replies)). |
-| `Audio.source`, `Video.source` | semantic | Each target takes what its documentation lists, or refuses it ([audio and video](cross-format.md#audio-and-video)). |
+| `Audio.transcript` | semantic | Sent as the assistant's text where the target can't take the audio itself ([audio and image replies](media.md#audio-and-image-replies)). |
+| `Audio.source`, `Video.source` | semantic | Each target takes what its documentation lists, or refuses it ([audio and video](media.md#audio-and-video)). |
 | `Document.title`, `.context` | semantic | Anthropic only; `Unsupported` for OpenAI. |
 | `Document.citations` | semantic | Anthropic only; `Unsupported` for OpenAI, which cannot cite documents. |
 | `ToolCall.*` | semantic | Ids and names are kept; a target that rejects one, for its characters or its length, gets a deterministic rewrite, reversed on the way back. |
@@ -291,6 +291,7 @@ When a change alters cross-dialect output, review the snapshot diff: run `INSTA_
 - [Crossing formats](cross-format.md): Look up what happens to data that moves from one API format to another, and why.
 - [Reasoning across formats](reasoning.md): Look up how reasoning, its settings and its signatures move between the formats.
 - [Sampling across formats](sampling.md): Look up which sampling settings each format takes, and which values Kaeso leaves out.
+- [Media across formats](media.md): Look up how audio, video and images move between the formats, in requests, replies and tool results.
 - [Decisions across formats](decisions-across-formats.md): Look up how decision requests and answers move between the decision formats.
 - [Anthropic Messages](anthropic-messages.md): Find where every field of the Anthropic Messages format goes in KPP.
 - [Messages providers](anthropic-messages-providers.md): See how the Messages codec adapts to each provider that speaks the format.

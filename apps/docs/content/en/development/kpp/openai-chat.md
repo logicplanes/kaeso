@@ -82,6 +82,14 @@ Other dialects refuse all of it with `Unsupported`, naming the parts as follows:
 - an assistant's `function_call` as `messages[i].function_call`;
 - a `function` message as `` `function` message ``, with the hint `Remove the message, or send the request to a model served through its original format.`
 
+### Participant names
+
+A message's `name` tells apart participants of one role. Multi-agent frameworks set it: AutoGen on user messages, CrewAI on tool messages. No other format has the field, and OpenAI's own Responses API has none either.
+
+So Kaeso leaves it out for every other format, and for a Chat provider whose profile refuses `name` on system, user and assistant messages, such as Groq. The reply's `kaeso-left-out` header names it by the message the app sent, such as `messages[1].name` (`openai_chat::names`).
+
+At such a Chat provider, tool messages keep their `name`, as Mistral's recorded reply shows they may; other formats get none. Other Chat providers get every name as sent. A `name` sent as `null` is form: it's left out wherever a name is, without a header entry. Fixtures: `requests/autogen-user-name.json`, `requests/crewai-tool-name.json`.
+
 ### Content parts
 
 | Wire | KPP | Notes |
@@ -102,7 +110,7 @@ Other dialects refuse all of it with `Unsupported`, naming the parts as follows:
 For KPP from other dialects, `check()` refuses:
 
 - text documents, document URLs, and document `title`, `context` and `citations`;
-- image file ids, and images, documents, audio and video in system and assistant messages; those in tool results move to the user message after them ([media in tool results](cross-format.md#media-in-tool-results));
+- image file ids, and images, documents, audio and video in system and assistant messages; those in tool results move to the user message after them ([media in tool results](media.md#media-in-tool-results));
 - audio that is not base64, or whose media type has no `input_audio.format` (`` audio media type `…` ``), and video, unless the profile takes `video_url` parts;
 - audio in assistant messages other than OpenAI's audio ids, unless the block has a transcript, which is sent as the message's text;
 - an image or other output modality, audio without a voice, a voice OpenAI doesn't list, and audio settings without audio output;
