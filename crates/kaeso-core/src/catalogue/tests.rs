@@ -1714,6 +1714,88 @@ fn duties_fill_what_kpp_cannot_know() {
     assert_eq!(info.created_at, Some(1_760_486_400));
     assert_eq!(info.owned_by.as_deref(), Some("anthropic"));
     assert_eq!(info.max_output_tokens, Some(64_000));
+    assert_eq!(info.context_window, Some(200_000));
+    assert_eq!(
+        info.input_modalities.as_deref(),
+        Some(&["text".to_owned(), "image".to_owned(), "pdf".to_owned()][..])
+    );
+    assert_eq!(
+        info.output_modalities.as_deref(),
+        Some(&["text".to_owned()][..])
+    );
+    let features = info.features.unwrap();
+    assert!(
+        features.contains(&kaeso_kpp::ModelFeature::Tools),
+        "{features:?}"
+    );
+    assert!(
+        features.contains(&kaeso_kpp::ModelFeature::Reasoning),
+        "{features:?}"
+    );
+    let prices = info.prices.unwrap();
+    assert_eq!(
+        (prices.input.as_deref(), prices.output.as_deref()),
+        (Some("1"), Some("5"))
+    );
+    assert_eq!(prices.cache_read.as_deref(), Some("0.1"));
+    let embed = model_info(
+        "text-embedding-3-small",
+        &eff(&entry("openai", "text-embedding-3-small")),
+    );
+    assert_eq!(
+        embed.output_modalities.as_deref(),
+        Some(&["embeddings".to_owned()][..]),
+        "an embeddings model makes no text"
+    );
+    let grok = model_info("grok-4.7", &eff(&entry("xai", "grok-4.7")));
+    assert!(
+        grok.features
+            .unwrap()
+            .contains(&kaeso_kpp::ModelFeature::ReasoningEffort),
+        "grok-4.7 lists effort levels"
+    );
+    // OpenRouter's own list, asked with `?output_modalities=all`, names these outputs so.
+    let recorded: serde_json::Value = serde_json::from_str(
+        &std::fs::read_to_string(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../kaeso-codecs/fixtures/openai_chat/providers/openrouter/models/list-recorded-output-modalities.json"
+        ))
+        .unwrap(),
+    )
+    .unwrap();
+    let theirs: Vec<&str> = recorded["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .flat_map(|m| m["architecture"]["output_modalities"].as_array().unwrap())
+        .filter_map(serde_json::Value::as_str)
+        .collect();
+    for (provider, model, makes) in [
+        ("openai", "text-embedding-3-small", "embeddings"),
+        ("cohere", "rerank-v5.0-fast", "rerank"),
+        ("cloudflare-ai-gateway", "@cf/cloudflare/clef", "decisions"),
+    ] {
+        assert!(theirs.contains(&makes), "{makes} against {theirs:?}");
+        let outputs = model_info(model, &eff(&entry(provider, model)))
+            .output_modalities
+            .unwrap();
+        assert_eq!(outputs, [makes], "{model}");
+    }
+    let mut no_levels = eff(&entry("xai", "grok-4.7"));
+    no_levels.fields.efforts = None;
+    let features = model_info("grok-4.7", &no_levels).features.unwrap();
+    assert!(features.contains(&kaeso_kpp::ModelFeature::Reasoning));
+    assert!(
+        !features.contains(&kaeso_kpp::ModelFeature::ReasoningEffort),
+        "a reasoning model without effort levels lists no `reasoning_effort`"
+    );
+    let mut unknown = haiku.clone();
+    unknown.fields = crate::catalogue::Fields::default();
+    let bare = model_info("m", &unknown);
+    assert_eq!(
+        (bare.features, bare.prices, bare.input_modalities),
+        (None, None, None)
+    );
 }
 
 #[test]

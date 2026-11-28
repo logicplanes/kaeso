@@ -1,6 +1,6 @@
 use kaeso_kpp::{
-    DialectId, GenerateRequest, Modality, ModelInfo, ReasoningEffort, ReasoningMode, Request,
-    ToolChoice,
+    DialectId, GenerateRequest, Modality, ModelFeature, ModelInfo, ModelPrices, ReasoningEffort,
+    ReasoningMode, Request, ToolChoice,
 };
 
 use kaeso_codecs::cross::reasoning_map;
@@ -1207,6 +1207,52 @@ pub fn model_info(id: &str, eff: &Effective) -> ModelInfo {
     info.owned_by = Some(eff.provider.id().to_owned());
     info.context_window = eff.fields.context_limit;
     info.max_output_tokens = eff.fields.output_limit;
+    info.input_modalities
+        .clone_from(&eff.fields.input_modalities);
+    // A model that makes no content says what it makes instead, in OpenRouter's words, as its
+    // list with `?output_modalities=all` writes them.
+    let makes = if eff.is_embeddings() {
+        Some("embeddings")
+    } else if eff.is_rerank() {
+        Some("rerank")
+    } else if eff.decides_only() {
+        Some("decisions")
+    } else {
+        None
+    };
+    info.output_modalities = match makes {
+        Some(m) => Some(vec![m.to_owned()]),
+        None => eff.fields.output_modalities.clone(),
+    };
+    let f = &eff.fields;
+    let efforts = !effort_levels(eff, DialectId::OpenAiChat).is_empty();
+    let features: Vec<ModelFeature> = [
+        (f.tool_call, ModelFeature::Tools),
+        (f.reasoning, ModelFeature::Reasoning),
+        (
+            f.reasoning.filter(|_| efforts),
+            ModelFeature::ReasoningEffort,
+        ),
+        (f.structured_output, ModelFeature::StructuredOutput),
+        (f.temperature, ModelFeature::Temperature),
+    ]
+    .into_iter()
+    .filter_map(|(known, feature)| (known == Some(true)).then_some(feature))
+    .collect();
+    let told = [f.tool_call, f.reasoning, f.structured_output, f.temperature]
+        .iter()
+        .any(Option::is_some);
+    info.features = told.then_some(features);
+    // The base prices requests are costed at, in USD; long-prompt tiers and prices per image,
+    // second or character are not listed.
+    let usd = |p: Option<rust_decimal::Decimal>| p.map(|d| d.normalize().to_string());
+    let mut prices = ModelPrices::default();
+    prices.input = usd(f.input_price);
+    prices.output = usd(f.output_price);
+    prices.cache_read = usd(f.cache_read_price);
+    prices.cache_write = usd(f.cache_write_price);
+    prices.reasoning = usd(f.reasoning_price);
+    info.prices = (!prices.is_empty()).then_some(prices);
     info
 }
 

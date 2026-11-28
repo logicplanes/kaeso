@@ -1935,9 +1935,35 @@ expression: outcomes
     "unsupported": "item_reference content block"
   },
   "json-object-mode": {
-    "message": "`json_object output` is not supported by Anthropic Messages. Anthropic has no JSON mode without a schema. Send a JSON schema (structured outputs) instead.",
-    "param": "text.format",
-    "unsupported": "json_object output"
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Return a JSON object with the keys city and country for the Eiffel Tower.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-4.1",
+      "system": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "text": "Answer with one JSON object and nothing else: no code fence, no text before or after it.",
+          "type": "text"
+        }
+      ],
+      "temperature": 0.0
+    },
+    "path": "/v1/messages"
   },
   "logprobs-no-obfuscation-stream": {
     "message": "`top_logprobs` comes from an OpenAI Responses request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
@@ -3921,6 +3947,11 @@ expression: outcomes
     "message": "`x_future_field` comes from an OpenAI Responses request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
     "param": null,
     "unsupported": "x_future_field"
+  },
+  "vercel-ai-sdk-reasoning-reference": {
+    "message": "`item_reference` `rs_kaeso_00000000000000000000000000000001_0` comes from an OpenAI Responses request and has no equivalent in Anthropic Messages. Send the reasoning item itself in `input`, as SDKs do with `store: false`.",
+    "param": "messages[1].blocks[0]",
+    "unsupported": "`item_reference` `rs_kaeso_00000000000000000000000000000001_0`"
   },
   "web-search": {
     "message": "`include` comes from an OpenAI Responses request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",

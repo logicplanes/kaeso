@@ -146,3 +146,5 @@ Chat Completions 没有推理字段，KPP 也不会凭空创造一个。回复�
 3. 在应用的下一个请求中，解码之后、`check` 和编码之前，`continuity::tool_calls_missing_reasoning` 列出需要查找的工具调用 ID，`continuity::restore_reasoning` 把找到的内容放回助手轮次：轮次中第一个工具调用的推理放在轮次开头，后续调用的推理紧跟在前一个调用之后。推理只会恢复到与其来源回复的工具调用完全相同的应用轮次中（`CarriedReasoning::turn_calls`），因为 Anthropic 把思考绑定到产生它的轮次；把两个回复合并为一个轮次的应用不会得到这些推理。已经含有推理的轮次保持不变。
 
 编码器只把恢复的块回放给它们自己的服务商。对于 Anthropic，回放这些块的请求会让 Anthropic 丢弃对话已改变的块，而不是拒绝请求（[Anthropic Messages](anthropic-messages.md)）。
+
+未发送 `store: false` 的 Responses 应用可以用 `item_reference` 指向某个回复的推理，而不是把推理发回。对于这类应用，网关会保留工具调用之前的每个推理块（`continuity::every_reasoning_for_tool_calls`、`ReasoningCollector::every`），即其回复以推理 item 形式携带的那些块，无论是否签名，因为例如 DeepSeek 需要取回其普通推理。Responses 解码器把指向推理 item 的 `item_reference` 读作代表它的 `Block::Reasoning`（`openai_responses::reasoning_reference`）。`continuity::resolve_reasoning_references` 用该轮次工具调用所保留的推理替换它，省略没有工具调用的轮次中的引用，并给出第一个推理未被保留的引用，网关会拒绝该请求。不保留该请求任何内容的 Responses 服务商只能按 ID 查找推理，因此既没有文本也没有加密内容的已保留推理在那里会满足其引用，但不会被发送。

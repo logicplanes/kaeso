@@ -36,7 +36,7 @@ KPP, das Kaeso Provider Protocol, hat einen Codec für jedes API-Format: OpenAI 
 - **Unterhaltungen.** Systemanweisungen, Züge von Benutzer und Assistent, Text, Bilder und Dokumente sowie Audio und Video, wo das Ziel sie nimmt ([Audio und Video](../development/kpp/cross-format.md#audio-und-video)). Eine Systemnachricht mitten in einer Anthropic-Unterhaltung erreicht OpenAI als spätere Systemnachricht, und eine mitten in einer OpenAI-Unterhaltung erreicht Anthropic als Text des nächsten Benutzerzugs.
 - **Tools.** Funktions-Tools, Tool-Auswahl, parallele Tool-Aufrufe, Tool-Aufrufe und Tool-Ergebnisse. Bilder und Dateien, die ein Tool zurückgegeben hat, erreichen ein Chat-Completions-Modell in der Benutzernachricht nach den Ergebnissen, weil seine Tool-Nachrichten nur Text enthalten ([Medien in Tool-Ergebnissen](../development/kpp/cross-format.md#medien-in-tool-ergebnissen)).
 - **Tool-Namen und Aufruf-IDs.** Nimmt das Ziel einen Namen oder eine ID nicht an, schreibt Kaeso sie auf feste Weise um und übersetzt sie in der Antwort zurück. Andere Zeichen werden zu `_`, der Name wird passend gekürzt, und ein Hash des Originals wird angehängt. OpenAI nimmt bis zu 64 Buchstaben, Ziffern, `_` und `-` an, Anthropic bis zu 128.
-- **Strukturierte Ausgabe.** JSON-Schemas.
+- **Strukturierte Ausgabe.** JSON-Schemas und der JSON-Modus, den Modelle ohne ihn, etwa Claude, als Satz im System-Prompt bekommen ([strukturierte Ausgabe](../development/kpp/cross-format.md#strukturierte-ausgabe)).
 - **Sampling.** Temperatur, Top P, maximale Token und Stoppsequenzen, wo das Ziel sie hat. Ein Wert behält seine Bedeutung, wird aber so geschrieben, wie das Ziel ihn schreibt. `1` kann also als `1.0` ankommen. Bei einem Modell, das über OpenAI Responses bedient wird, etwa Grok, beendet Kaeso die Antwort selbst an einer Stoppsequenz oder an einem Limit unter 16 Token ([OpenAI Responses im Gateway](../development/kpp/sampling.md#openai-responses-im-gateway)).
 - **Die ID des Endnutzers.** `metadata.user_id` bei Anthropic und `safety_identifier` bei OpenAI. OpenAI nimmt höchstens 128 Zeichen an und bittet um einen Hash der Nutzer-ID, daher erreicht eine längere Anthropic-ID, etwa die von Claude Code, OpenAI als ihr SHA-256-Hash; der Header `kaeso-adapted` der Antwort nennt das.
 - **Reasoning.** Aufwandsstufen und Denk-Budgets werden ineinander umgerechnet ([Reasoning](#reasoning)).
@@ -50,7 +50,7 @@ Wechselt eine Anfrage das Format, lehnt Kaeso Folgendes mit einem Fehler ab, der
 ### Anfragen an Anthropic
 
 - `seed`, Frequency- und Presence-Penalties außer 0 und eine Temperatur über 1
-- das Ausgabeformat `json_object` und ein JSON-Schema ohne Schlüssel
+- ein JSON-Schema ohne Schlüssel
 - Verweigerungen im Verlauf
 - Bilder außer JPEG, PNG, GIF und WebP und Dokumente außer PDF und reinem Text
 - Audio, und Video außer für MiniMax
@@ -151,6 +151,12 @@ Die Metrik `kaeso_reasoning_continuity_total` zählt behaltenes, wiederhergestel
 ### Gemini-Apps
 
 Eine Gemini-App erhält kein Reasoning von einem anderen Anbieter, weil ein Thought-Part es nicht tragen kann: `google-genai` liest `thoughtSignature` als Base64. Bedient Claude oder ein OpenAI-Modell über Responses eine Gemini-App, behält das Gateway das Reasoning vor jedem Tool-Aufruf anhand der ID des Aufrufs und fügt es wieder ein, wie bei Chat Completions. Bedient ein Gemini-Modell eine Gemini-App, erreichen seine Thought Signatures die App und kommen so zurück, wie Gemini sie geschrieben hat.
+
+### Responses-Apps, die `store` anlassen
+
+Eine Responses-App, die `store` anlässt, wie das Vercel AI SDK standardmäßig, sendet das Reasoning der Antwort als `item_reference` auf seine ID zurück statt als Item selbst. Kaeso bewahrt keine Antworten auf, deshalb bewahrt das Gateway für eine solche App das Reasoning vor jedem Tool-Aufruf auf, wie für Chat Completions, und setzt es dort ein, wo der Verweis hinzeigt. Ein Verweis in einem Zug ohne Tool-Aufrufe, wo kein Modell das Reasoning zurück braucht, wird weggelassen und in `kaeso-left-out` genannt.
+
+Ist das Reasoning weg, weil es abgelaufen ist, ein anderer Schlüssel den Zug sendet oder die App vorher `store: false` gesendet hat, lehnt Kaeso die Anfrage mit `400` ab und verlangt die Items selbst, wie SDKs sie mit `store: false` senden. Ein Verweis auf etwas anderes als Reasoning bleibt abgelehnt ([gespeicherte Antworten](../console/organizations-and-projects.md#gespeicherte-antworten)).
 
 ### Lesbares Reasoning
 

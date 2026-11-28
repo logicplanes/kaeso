@@ -11,7 +11,7 @@ mod profile;
 pub(crate) mod replay;
 mod request;
 pub(crate) mod response;
-mod stored;
+pub(crate) mod stored;
 pub(crate) mod stream;
 pub(crate) mod wire;
 
@@ -35,7 +35,9 @@ pub const INPUT_TOKENS_PATH: &str = "/v1/responses/input_tokens";
 
 pub use plan::{for_chatgpt_plan, without_store};
 pub use profile::{InputItems, ReasoningReplay, ResponsesProfile, WebSearchTool, XAI_INPUT_ITEMS};
-pub use stored::{StoredState, has_item_reference, stored_state};
+pub use stored::{
+    StoredState, has_item_reference, has_reasoning_reference, reasoning_reference, stored_state,
+};
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 #[non_exhaustive]

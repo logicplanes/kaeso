@@ -1,6 +1,6 @@
 use kaeso_kpp::{
     Block, DecideRequest, DecisionInput, DialectId, Extras, GenerateRequest, HEADER_PREFIX,
-    Instructions, KppError, Message, Opaque, OpaqueKind, Origin, QuestionKind, RawJson,
+    Instructions, KppError, Message, Opaque, OpaqueKind, Origin, OutputSpec, QuestionKind, RawJson,
     ReasoningBlock, ReasoningEffort, Request, Role, Source, ToolChoice, ToolDef,
 };
 use serde_json::Value;
@@ -536,6 +536,9 @@ pub(crate) fn app_field(r: &GenerateRequest, setting: Setting, target: DialectId
     match (setting, app) {
         (Setting::OutputLimit, G) => "generationConfig.maxOutputTokens",
         (Setting::StopSequences, G) => "generationConfig.stopSequences",
+        (Setting::OutputFormat, G) if matches!(r.output, OutputSpec::JsonObject) => {
+            "generationConfig.responseMimeType"
+        }
         (Setting::OutputFormat, G) => "generationConfig.responseJsonSchema",
         (Setting::Reasoning, G) => "generationConfig.thinkingConfig",
         (Setting::ReasoningEffort, G) => "generationConfig.thinkingConfig.thinkingLevel",
@@ -780,7 +783,16 @@ fn check_generate(r: &GenerateRequest, target: &Origin) -> Result<(), KppError> 
 fn check_block(block: &Block, target: &Origin, path: &str) -> Result<(), KppError> {
     let dialect = target.dialect;
     match block {
-        Block::Reasoning(_) => Ok(()),
+        Block::Reasoning(r) => match crate::openai_responses::reasoning_reference(r) {
+            Some(id) if dialect != DialectId::OpenAiResponses => Err(foreign(
+                format!("`item_reference` `{id}`"),
+                &Origin::new(DialectId::OpenAiResponses),
+                dialect,
+                path,
+                "Send the reasoning item itself in `input`, as SDKs do with `store: false`.",
+            )),
+            _ => Ok(()),
+        },
         Block::Unknown(item) => {
             if item.origin.is(dialect) {
                 return Ok(());

@@ -795,6 +795,7 @@
   "errors.keyEndpoint.path": "Der Endpunkt hat einen Pfad, den Kaeso nicht aufruft; nur die Adresse der Ressource angeben.",
   "errors.upstreamModel": "Die Modell-ID beim Anbieter hat 1 bis 256 Zeichen, ohne Leerzeichen.",
   "errors.modelApi.notCached": "Keine gespeicherte Antwort beantwortet diese Anfrage, und `only-if-cached` hält sie vom Anbieter fern.",
+  "errors.modelApi.unkeptReasoning": "Kaeso hält das Reasoning, auf das `{id}` verweist, nicht mehr vor; senden Sie die Einträge selbst in `input`, wie SDKs es mit `store: false` tun.",
   "errors.noRerankAtProvider": "Kaeso ruft bei {provider} keine Rerank-Modelle auf, daher kann `{name}` keine Dokumente neu ordnen.",
   "errors.rerankDocumentText": "Die Rerank-API von Cohere nimmt jedes Dokument nur als Text an; entfernen Sie `{field}` aus `{param}`.",
   "errors.model.rerankOnly": "Das Modell `{model}` ist ein Rerank-Modell; senden Sie es an `/v1/rerank`.",

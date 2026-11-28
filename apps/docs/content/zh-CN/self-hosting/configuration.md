@@ -317,7 +317,7 @@ Webhook 的地址由组织管理员选择，因此网关会像对待 MCP 服务�
 
 | 变量<br>TOML 键 | 类型 | 默认值 | 作用 |
 | --- | --- | --- | --- |
-| `KAESO_CONTINUITY_REASONING_TTL`<br>`continuity.reasoning_ttl` | 文本 | `1h` | 当 OpenAI Chat Completions 应用或 Gemini 应用调用的模型使用另一种格式时，网关保留该模型在工具调用前的推理内容的时间。`0s` 关闭此功能；否则为 1m 到 24h。 |
+| `KAESO_CONTINUITY_REASONING_TTL`<br>`continuity.reasoning_ttl` | 文本 | `1h` | 当 OpenAI Chat Completions 应用或 Gemini 应用调用的模型使用另一种格式时，以及 OpenAI Responses 应用未发送 `store: false` 时，网关保留该模型在工具调用前的推理内容的时间。`0s` 关闭此功能；否则为 1m 到 24h。 |
 
 [格式转换](../concepts/format-translation.md#chat-completions)说明了网关如何保存这段推理。
 

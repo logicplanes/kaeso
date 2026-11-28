@@ -933,7 +933,7 @@ fn count_tokens_skips_output_and_reasoning_refusals() {
     let body: Value = serde_json::from_slice(&enc.body).unwrap();
     assert!(body.get("output_config").is_none(), "{body}");
     assert!(body.get("thinking").is_none(), "{body}");
-    assert_eq!(feature(r), "json_object output");
+    assert_eq!(feature(r), "reasoning effort `minimal`");
     let mut r = chat_request();
     r.messages[0]
         .blocks

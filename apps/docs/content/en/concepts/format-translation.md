@@ -36,7 +36,7 @@ KPP, the Kaeso Provider Protocol, has a codec for each API format: OpenAI Chat C
 - **Conversations.** System instructions, user and assistant turns, text, images and documents, and audio and video where the target takes them ([audio and video](../development/kpp/cross-format.md#audio-and-video)). A system message in the middle of an Anthropic conversation reaches OpenAI as a later system message, and one in the middle of an OpenAI conversation reaches Anthropic as text of the next user turn.
 - **Tools.** Function tools, tool choice, parallel tool calls, tool calls and tool results. Images and files a tool returned reach a Chat Completions model in the user message after the results, because its tool messages hold only text ([media in tool results](../development/kpp/cross-format.md#media-in-tool-results)).
 - **Tool names and call ids.** When the target doesn't accept a name or id, Kaeso rewrites it in a fixed way and maps it back in the reply. Other characters become `_`, the name is cut to fit, and a hash of the original is added. OpenAI accepts up to 64 letters, digits, `_` and `-`, Anthropic up to 128.
-- **Structured output.** JSON schemas.
+- **Structured output.** JSON schemas, and JSON mode, which models without it, such as Claude, get as a sentence in the system prompt ([structured output](../development/kpp/cross-format.md#structured-output)).
 - **Sampling.** Temperature, top P, maximum tokens and stop sequences, where the target has them. A value keeps its meaning but is written as the target writes it, so `1` can arrive as `1.0`. For a model served through OpenAI Responses, such as Grok, Kaeso ends the reply itself at a stop sequence or at a limit below 16 tokens ([OpenAI Responses in the gateway](../development/kpp/sampling.md#openai-responses-in-the-gateway)).
 - **The end user's id.** Anthropic's `metadata.user_id` and OpenAI's `safety_identifier`. OpenAI takes at most 128 characters and asks for a hash of the user's id, so a longer Anthropic id, such as Claude Code's, reaches it as its SHA-256 hash, which the reply's `kaeso-adapted` header names.
 - **Reasoning.** Efforts and thinking budgets convert into each other ([reasoning](#reasoning)).
@@ -50,7 +50,7 @@ When a request crosses formats, Kaeso refuses these with an error that names the
 ### Requests to Anthropic
 
 - `seed`, frequency and presence penalties other than 0, and a temperature above 1
-- the `json_object` output format, and a JSON schema that lists no keys
+- a JSON schema that lists no keys
 - refusals in the history
 - images other than JPEG, PNG, GIF and WebP, and documents other than PDF and plain text
 - audio, and video except for MiniMax
@@ -151,6 +151,12 @@ The metric `kaeso_reasoning_continuity_total` counts reasoning kept, restored, m
 ### Gemini apps
 
 A Gemini app gets no reasoning from another provider, because a thought part can't carry it: `google-genai` reads `thoughtSignature` as base64. When Claude, or an OpenAI model through Responses, serves a Gemini app, the gateway keeps the reasoning before each tool call by the call's id and puts it back, as for Chat Completions. When a Gemini model serves a Gemini app, its thought signatures reach the app and come back as Gemini wrote them.
+
+### Responses apps that keep `store` on
+
+A Responses app that leaves `store` on, as the Vercel AI SDK does by default, sends the reply's reasoning back as an `item_reference` to its id instead of the item itself. Kaeso keeps no responses, so the gateway keeps the reasoning before each tool call for such an app, as for Chat Completions, and puts it where the reference points. A reference in a turn without tool calls, where no model needs the reasoning back, is left out and named in `kaeso-left-out`.
+
+When the reasoning is gone, because it expired, another key sends the turn or the app sent `store: false` before, Kaeso refuses the request with `400` and asks for the items themselves, as SDKs send them with `store: false`. A reference to anything other than reasoning stays refused ([stored responses](../console/organizations-and-projects.md#stored-responses)).
 
 ### Readable reasoning
 
