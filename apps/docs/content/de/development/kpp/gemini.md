@@ -174,7 +174,7 @@ Schema `GenerateContentResponse`.
 | `responseId` | `id` | Fehlt → Form `no_response_id`. |
 | `modelVersion` | `model` | Fehlt → Form `no_model_version`. |
 | `candidates[0].content.parts` | `blocks` | Wie in Anfragen. Bild-Parts werden zu `Block::Image`. |
-| Mehr als ein Candidate | `Unsupported` | |
+| Mehr als ein Candidate | `ProviderError`, da Kaeso jedes `candidateCount` über 1 in der Anfrage abgelehnt hat | |
 | `candidates[0].finishReason` | `stop` | Siehe [Finish-Gründe](#finish-gründe). |
 | Andere Schlüssel von `candidates[0]` (`index`, `finishMessage`, `safetyRatings`, `citationMetadata`, `groundingMetadata`, `urlContextMetadata`, `avgLogprobs`, `logprobsResult`, `tokenCount`) | Felder `candidate.*` | `citationMetadata` indiziert den ganzen Text des Candidates, was KPP-Zitate, die an einen Block gebunden sind, nicht ausdrücken können. |
 | `candidates[0].content.role` | — | Ein anderer oder kein Wert → Form `no_role`. |

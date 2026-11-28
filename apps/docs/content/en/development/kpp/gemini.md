@@ -174,7 +174,7 @@ Schema `GenerateContentResponse`.
 | `responseId` | `id` | Absent → form `no_response_id`. |
 | `modelVersion` | `model` | Absent → form `no_model_version`. |
 | `candidates[0].content.parts` | `blocks` | As in requests. Image parts become `Block::Image`. |
-| More than one candidate | `Unsupported` | |
+| More than one candidate | `ProviderError`, since Kaeso refused any `candidateCount` above 1 in the request | |
 | `candidates[0].finishReason` | `stop` | See [finish reasons](#finish-reasons). |
 | `candidates[0]` other keys (`index`, `finishMessage`, `safetyRatings`, `citationMetadata`, `groundingMetadata`, `urlContextMetadata`, `avgLogprobs`, `logprobsResult`, `tokenCount`) | fields `candidate.*` | `citationMetadata` indexes the candidate's whole text, which KPP citations, bound to one block, can't express. |
 | `candidates[0].content.role` | — | Another value or none → form `no_role`. |

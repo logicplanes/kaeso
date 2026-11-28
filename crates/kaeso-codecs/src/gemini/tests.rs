@@ -11,9 +11,20 @@ const DIR: &str = "gemini";
 const MODEL: &str = "gemini-3.5-flash";
 
 // Requests a real app may send but Kaeso refuses when decoding, so they can't round-trip;
-// `rejected_request_fixtures_name_the_parameter` checks the refusal names the parameter instead.
-const REJECTED_REQUESTS: &[(&str, &str)] =
-    &[("candidate-count-2", "generationConfig.candidateCount")];
+// `rejected_request_fixtures_are_refused_as_listed` checks each refusal instead.
+struct Rejected {
+    name: &'static str,
+    param: &'static str,
+    feature: &'static str,
+    message: &'static str,
+}
+
+const REJECTED_REQUESTS: &[Rejected] = &[Rejected {
+    name: "candidate-count-2",
+    param: "generationConfig.candidateCount",
+    feature: "`generationConfig.candidateCount` above 1",
+    message: "Kaeso returns one candidate per request, so `generationConfig.candidateCount` must be 1 or left out; send several requests for more candidates.",
+}];
 
 fn call_of(folder: &str, name: &str) -> (String, GeminiAction) {
     let meta = sidecar(DIR, folder, name, "meta").unwrap_or(Value::Null);
@@ -72,7 +83,7 @@ fn encode_stream(events: &[StreamEvent]) -> Vec<u8> {
 fn every_request_fixture_round_trips_and_names_its_path() {
     for folder in ["requests", "requests/count_tokens"] {
         for (name, body) in fixtures(DIR, folder, "json") {
-            if folder == "requests" && REJECTED_REQUESTS.iter().any(|(n, _)| *n == name) {
+            if folder == "requests" && REJECTED_REQUESTS.iter().any(|r| r.name == name) {
                 continue;
             }
             let req = decode_fixture(folder, &name, &body);
@@ -94,35 +105,25 @@ fn every_request_fixture_round_trips_and_names_its_path() {
 }
 
 #[test]
-fn rejected_request_fixtures_name_the_parameter() {
-    for (name, param) in REJECTED_REQUESTS {
-        let (model, action) = call_of("requests", name);
+fn rejected_request_fixtures_are_refused_as_listed() {
+    for r in REJECTED_REQUESTS {
+        let (model, action) = call_of("requests", r.name);
         let e = crate::dispatch::decode_gemini_request(
             &model,
             action,
-            &fixture("requests", name),
+            &fixture("requests", r.name),
             &HeaderList::new(),
         )
         .unwrap_err();
         assert_eq!(
             e.unsupported_feature(),
-            Some("`generationConfig.candidateCount` above 1"),
-            "{name}: {e:?}"
+            Some(r.feature),
+            "{}: {e:?}",
+            r.name
         );
-        assert_eq!(e.param.as_deref(), Some(*param), "{name}: {e:?}");
+        assert_eq!(e.param.as_deref(), Some(r.param), "{}: {e:?}", r.name);
+        assert_eq!(e.message, r.message, "{}", r.name);
     }
-    let (model, action) = call_of("requests", "candidate-count-2");
-    let e = crate::dispatch::decode_gemini_request(
-        &model,
-        action,
-        &fixture("requests", "candidate-count-2"),
-        &HeaderList::new(),
-    )
-    .unwrap_err();
-    assert_eq!(
-        e.message,
-        "Kaeso returns one candidate per request, so `generationConfig.candidateCount` must be 1 or left out; send several requests for more candidates."
-    );
 }
 
 #[test]
@@ -810,10 +811,10 @@ fn replies_map_finish_reasons_usage_and_blocked_prompts() {
         &generate_ctx(),
     )
     .unwrap_err();
-    assert_eq!(e.unsupported_feature(), Some("more than one candidate"));
+    assert_eq!(e.kind, ErrorKind::ProviderError);
     assert_eq!(
         e.message,
-        "The provider returned several candidates, but Kaeso reads one; leave `candidateCount` out or set it to 1."
+        "The provider returned several candidates for one request; Kaeso carries one."
     );
     let e = Gemini::decode_response(200, &HeaderList::new(), b"[]", &generate_ctx()).unwrap_err();
     assert_eq!(e.kind, ErrorKind::ProviderError);
@@ -1049,7 +1050,7 @@ fn stream_decoding_reports_errors_and_keeps_frames_it_cannot_read() {
     assert_sse_eq("odd frames", odd, &encode_stream(&events));
     let two = b"data: {\"candidates\": [{}, {}]}\n\n";
     assert!(
-        matches!(decode_stream(two, 0).last(), Some(StreamEvent::Error(e)) if e.unsupported_feature() == Some("more than one candidate") && e.message == "The provider returned several candidates, but Kaeso reads one; leave `candidateCount` out or set it to 1.")
+        matches!(decode_stream(two, 0).last(), Some(StreamEvent::Error(e)) if e.kind == ErrorKind::ProviderError && e.message == "The provider streamed several candidates for one request; Kaeso carries one.")
     );
     let mut dec = Gemini::stream_decoder(&stream_ctx());
     dec.feed(b"data: {\"candidates\": [{\"content\": {\"parts\": [{\"text\": \"Hi\"}]}}]}\n\n");

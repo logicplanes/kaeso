@@ -497,9 +497,8 @@ impl ChatStreamDecoder {
                 }
             }
             Some(_) => {
-                return Err(KppError::unsupported(
-                    "n",
-                    "The provider streamed several choices, but Kaeso carries one; leave `n` out or set it to 1.",
+                return Err(KppError::provider(
+                    "The provider streamed several choices for one request; Kaeso carries one.",
                 ));
             }
         }
@@ -565,9 +564,8 @@ impl ChatStreamDecoder {
             ..
         } = choice;
         if known.index != 0 {
-            return Err(KppError::unsupported(
-                "n",
-                "The provider streamed a choice other than the first; leave `n` out or set it to 1.",
+            return Err(KppError::provider(
+                "The provider streamed a choice other than the first; Kaeso carries one.",
             ));
         }
         nulls_to_verbatim(&mut extra, &mut verbatim);

@@ -14,7 +14,7 @@ The layout and the provenance marks (`doc:`, `sdk:`, `schema:`) are in [Fixtures
 
 ## Fixtures the codec must reject (`Unsupported`)
 
-- `requests/n-2.json` and `responses/n-2.json`: `n > 1`, refused as `Unsupported`.
+- `requests/n-2.json`: `n > 1`, refused as `Unsupported`. `responses/n-2.json`: two choices, which Kaeso can't carry, so a `ProviderError`.
 
 ## Fixtures that only round-trip within this dialect
 

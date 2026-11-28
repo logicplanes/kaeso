@@ -72,9 +72,9 @@ pub(crate) fn decode_response(body: &[u8], ctx: &EgressCtx) -> Result<Reply, Kpp
             ));
         }
         _ => {
-            return Err(KppError::unsupported(
-                "n",
-                "The provider returned several choices, but Kaeso carries one; leave `n` out or set it to 1.",
+            // Kaeso refuses `n` above 1 when it decodes the request, so several choices are the provider's.
+            return Err(KppError::provider(
+                "The provider returned several choices for one request; Kaeso carries one.",
             ));
         }
     };
