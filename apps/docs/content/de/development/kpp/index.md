@@ -291,6 +291,7 @@ Verändert ein Pull Request die Ausgabe über Dialekte hinweg, prüfen Sie den S
 - [Formatwechsel](cross-format.md): Schlagen Sie nach, was mit Daten geschieht, die von einem API-Format in ein anderes wechseln, und warum.
 - [Reasoning über Formate hinweg](reasoning.md): Schlagen Sie nach, wie Reasoning, seine Einstellungen und seine Signaturen zwischen den Formaten wechseln.
 - [Sampling über Formate hinweg](sampling.md): Schlagen Sie nach, welche Sampling-Einstellungen jedes Format annimmt und welche Werte Kaeso weglässt.
+- [Medien über Formate hinweg](media.md): Schlagen Sie nach, wie Audio, Video und Bilder zwischen den Formaten wechseln, in Anfragen, Antworten und Tool-Ergebnissen.
 - [Entscheidungen über Formate hinweg](decisions-across-formats.md): Schlagen Sie nach, wie Entscheidungsanfragen und Antworten zwischen den Entscheidungsformaten wechseln.
 - [Anthropic Messages](anthropic-messages.md): Finden Sie, wohin jedes Feld des Formats Anthropic Messages in KPP gehört.
 - [Messages-Anbieter](anthropic-messages-providers.md): Sehen Sie, wie sich der Messages-Codec an jeden Anbieter anpasst, der das Format spricht.

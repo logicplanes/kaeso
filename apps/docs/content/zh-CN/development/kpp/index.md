@@ -291,6 +291,7 @@ OpenAI Responses 把不同的写法记录为形式覆盖项，只在值未改变
 - [跨格式转换](cross-format.md)：查阅数据从一种 API 格式转到另一种格式时会发生什么，以及原因。
 - [跨格式的推理](reasoning.md)：查阅推理内容、推理设置及其签名如何在各格式之间转换。
 - [跨格式的采样参数](sampling.md)：查阅每种格式接受哪些采样设置，以及 Kaeso 省略哪些值。
+- [跨格式的媒体](media.md)：查阅音频、视频和图像如何在各格式之间转换，包括请求、回复和工具结果中的媒体。
 - [跨格式的决策](decisions-across-formats.md)：查阅决策请求和答案如何在各决策格式之间转换。
 - [Anthropic Messages](anthropic-messages.md)：查找 Anthropic Messages 格式的每个字段在 KPP 中的位置。
 - [Messages 服务商](anthropic-messages-providers.md)：查看 Messages 编解码器如何适配使用该格式的每个服务商。

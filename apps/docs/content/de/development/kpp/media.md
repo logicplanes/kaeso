@@ -5,7 +5,7 @@ description: Wie die Codecs Audio, Video und Bilder zwischen den API-Formaten tr
 order: 3
 ---
 
-Audio, Video und Bilder erreichen ein Modell in jedem API-Format in anderer Form, und manche Formate tragen keines davon. Diese Seite listet, was übergeht, was abgelehnt wird und wie Medien in Tool-Ergebnissen ein Chat-Completions-Modell erreichen. Die übrigen Regeln für den Formatwechsel stehen unter [Formate wechseln](cross-format.md).
+Audio, Video und Bilder erreichen ein Modell in jedem API-Format in anderer Form, und manche Formate tragen keines davon. Diese Seite listet, was übergeht, was abgelehnt wird und wie Medien in Tool-Ergebnissen ein Chat-Completions-Modell erreichen. Die übrigen Regeln für den Formatwechsel stehen unter [Formatwechsel](cross-format.md).
 
 ## Audio und Video
 

@@ -291,6 +291,7 @@ When a change alters cross-dialect output, review the snapshot diff: run `INSTA_
 - [Crossing formats](cross-format.md): Look up what happens to data that moves from one API format to another, and why.
 - [Reasoning across formats](reasoning.md): Look up how reasoning, its settings and its signatures move between the formats.
 - [Sampling across formats](sampling.md): Look up which sampling settings each format takes, and which values Kaeso leaves out.
+- [Media across formats](media.md): Look up how audio, video and images move between the formats, in requests, replies and tool results.
 - [Decisions across formats](decisions-across-formats.md): Look up how decision requests and answers move between the decision formats.
 - [Anthropic Messages](anthropic-messages.md): Find where every field of the Anthropic Messages format goes in KPP.
 - [Messages providers](anthropic-messages-providers.md): See how the Messages codec adapts to each provider that speaks the format.
