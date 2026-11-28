@@ -183,11 +183,6 @@ async fn a_refused_key_reaches_apps_as_the_refused_key_and_what_baseten_lacks_is
     env.mock.clear();
     for (path, anthropic, body) in [
         (
-            "/v1/messages/count_tokens",
-            true,
-            json!({ "model": GLM, "messages": [{ "role": "user", "content": "Hello" }] }),
-        ),
-        (
             "/v1/embeddings",
             false,
             json!({ "model": GLM, "input": "Hello" }),
@@ -201,5 +196,14 @@ async fn a_refused_key_reaches_apps_as_the_refused_key_and_what_baseten_lacks_is
         let r = call(&env, path, Some(&env.key), anthropic, Some(body)).await;
         assert!(r.status.is_client_error(), "{path}: {}", r.text());
     }
+    let r = call(
+        &env,
+        "/v1/messages/count_tokens",
+        Some(&env.key),
+        true,
+        Some(json!({ "model": GLM, "messages": [{ "role": "user", "content": "Hello" }] })),
+    )
+    .await;
+    assert!(r.estimated_count() > 0);
     assert!(env.mock.received().is_empty());
 }

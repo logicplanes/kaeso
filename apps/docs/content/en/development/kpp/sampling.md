@@ -28,10 +28,10 @@ KPP has no `n`: a Chat request with `n` above 1 is refused when it is decoded, w
 The Responses codec refuses stop sequences, `seed` and an output limit below 16 tokens. When the gateway sends a request from another format to a model served through Responses, such as Grok, it serves them instead:
 
 - **Stop sequences.** The request goes without them, and Kaeso ends the reply itself before the first stop sequence in its text. Open blocks stop, and the reply stops as the app's format says: `finish_reason: "stop"`, or `stop_reason: "stop_sequence"` with `stop_sequence` set. Text that could begin a stop sequence waits for the next delta, so a sequence split across deltas still ends the reply. Reasoning and tool arguments never end it. `kaeso-adapted` names the app's field, such as `stop`.
-- **Output limits below 16 tokens.** Kaeso sends 16 and ends the reply at the app's limit, with the format's length reason. For a provider whose limit leaves out reasoning, such as xAI, reasoning doesn't count. `kaeso-adapted` names the app's field, such as `max_tokens`. A Responses app's own limit below 16 is still refused.
+- **Output limits below 16 tokens.** Kaeso sends 16 and ends the reply at the app's limit, about four bytes a token, with the format's length reason, also before a later stop sequence. For a provider whose limit leaves out reasoning, such as xAI, reasoning doesn't count. `kaeso-adapted` names the app's field, such as `max_tokens`. A Responses app's own limit below 16 is still refused.
 - **`seed`.** Left out and named in `kaeso-left-out`: OpenAI treats it as best effort, and Responses has no field for it.
 
-Kaeso reads such a reply as a stream, also when the app asked for none, so the provider stops when Kaeso ends the reply. Kaeso estimates the usage from what it read, as for a [ChatGPT plan's output limit](openai-responses.md#chatgpt-plan-usage).
+Kaeso reads such a reply as a stream, also when the app asked for none, so the provider stops when Kaeso ends the reply. Kaeso estimates the usage from everything it read, also past the cut, as for a [ChatGPT plan's output limit](openai-responses.md#chatgpt-plan-usage), and a reply without streaming carries the estimate. The response cache keeps replies apart that Kaeso ends at different places.
 
 ## Top K
 
@@ -53,7 +53,8 @@ Chat apps such as NextChat send OpenAI's sampling fields on every request, at th
 | `service_tier`, from Chat and from Anthropic | `"auto"` | the same, and Anthropic providers that refuse it |
 | `verbosity` | `"medium"` | the same |
 | `modalities` | `["text"]` | Chat providers that refuse it; other formats write text anyway |
+| `thread`, from Anthropic | `null` | every format, Anthropic Messages too |
 
-Each value is the field's `default` in OpenAI's OpenAPI document and Anthropic's API reference; an empty `logit_bias` or `metadata` means the same as their default, `null`. `service_tier: "default"` isn't neutral: it asks for standard processing where a project's setting could choose another tier. `web_search_options: {}` isn't either: it makes a search model search. A field sent as `null` is form, which other formats never get; a Chat provider that refuses the field doesn't get the `null` either.
+Each value is the field's `default` in OpenAI's OpenAPI document and Anthropic's API reference; an empty `logit_bias` or `metadata` means the same as their default, `null`. `thread: null` is the exception: no provider documents it, and it asks for no message thread, as leaving `thread` out does. `service_tier: "default"` isn't neutral: it asks for standard processing where a project's setting could choose another tier. `web_search_options: {}` isn't either: it makes a search model search. A field sent as `null` or `[]` is form, which other formats never get; a Chat provider that refuses the field doesn't get it either.
 
 Fixtures: `crates/kaeso-codecs/fixtures/openai_chat/requests/nextchat-defaults.json` (NextChat's request), `crates/kaeso-codecs/fixtures/openai_chat/requests/neutral-defaults.json`.

@@ -4,7 +4,7 @@ use base64::Engine as _;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use kaeso_kpp::{
     Block, BlockDelta, BlockHeader, Delta, DialectId, GenerateRequest, KppError, OpaqueKind,
-    ReasoningBlock, Role, StreamEvent,
+    ReasoningBlock, Role, StreamEvent, TextBlock,
 };
 use serde::{Deserialize, Serialize};
 
@@ -74,6 +74,10 @@ pub struct CarriedReasoning {
     pub blocks: Vec<ReasoningBlock>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub turn_calls: Vec<String>,
+    /// The text right before the call, one list of parts per message item, kept for an OpenAI
+    /// Responses app that may point to the message with an `item_reference`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub messages: Vec<Vec<TextBlock>>,
 }
 
 impl CarriedReasoning {
@@ -82,12 +86,19 @@ impl CarriedReasoning {
             tool_call_id: tool_call_id.into(),
             blocks,
             turn_calls: Vec::new(),
+            messages: Vec::new(),
         }
     }
 
     #[must_use]
     pub fn with_turn_calls(mut self, calls: Vec<String>) -> Self {
         self.turn_calls = calls;
+        self
+    }
+
+    #[must_use]
+    pub fn with_messages(mut self, messages: Vec<Vec<TextBlock>>) -> Self {
+        self.messages = messages;
         self
     }
 }
@@ -110,33 +121,86 @@ fn replayable(block: &ReasoningBlock) -> bool {
 /// The reasoning before each tool call that a provider must get back signed, as an OpenAI
 /// Chat Completions or Gemini app can't carry it.
 pub fn reasoning_for_tool_calls(blocks: &[Block]) -> Vec<CarriedReasoning> {
-    carried(blocks, replayable)
+    carried(
+        &blocks.iter().map(part).collect::<Vec<_>>(),
+        replayable,
+        false,
+    )
+}
+
+/// Every reasoning block and the text before each tool call, as an OpenAI Responses reply hands
+/// them to the app as items for the next turn; an app that references them instead of sending
+/// them back gets them from what was kept.
+pub fn items_for_tool_calls(blocks: &[Block]) -> Vec<CarriedReasoning> {
+    carried(&blocks.iter().map(part).collect::<Vec<_>>(), |_| true, true)
 }
 
 /// Every reasoning block before each tool call, as an OpenAI Responses reply hands it to the app
-/// for the next turn; an app that references the reply's reasoning instead of sending it back
-/// gets it from what was kept.
+/// for the next turn. [`items_for_tool_calls`] also keeps the text before each call.
 pub fn every_reasoning_for_tool_calls(blocks: &[Block]) -> Vec<CarriedReasoning> {
-    carried(blocks, |_| true)
+    carried(
+        &blocks.iter().map(part).collect::<Vec<_>>(),
+        |_| true,
+        false,
+    )
 }
 
-fn carried(blocks: &[Block], keep: fn(&ReasoningBlock) -> bool) -> Vec<CarriedReasoning> {
-    let calls: Vec<String> = blocks
+// What of a reply matters to what is kept before its tool calls.
+enum Part<'a> {
+    Reasoning(&'a ReasoningBlock),
+    Text(&'a str),
+    // A refusal shares the message item of the text around it.
+    Refusal,
+    Call(&'a str),
+    Other,
+}
+
+fn part(block: &Block) -> Part<'_> {
+    match block {
+        Block::Reasoning(r) => Part::Reasoning(r),
+        Block::Text(t) => Part::Text(&t.text),
+        Block::Refusal(_) => Part::Refusal,
+        Block::ToolCall(c) => Part::Call(&c.id),
+        _ => Part::Other,
+    }
+}
+
+// The text is kept as the app would send it back: the words only, whatever provider wrote them.
+fn carried(
+    parts: &[Part<'_>],
+    keep: fn(&ReasoningBlock) -> bool,
+    text: bool,
+) -> Vec<CarriedReasoning> {
+    let calls: Vec<String> = parts
         .iter()
-        .filter_map(|b| match b {
-            Block::ToolCall(call) => Some(call.id.clone()),
+        .filter_map(|p| match p {
+            Part::Call(id) => Some((*id).to_owned()),
             _ => None,
         })
         .collect();
     let mut kept = Vec::new();
     let mut run: Vec<ReasoningBlock> = Vec::new();
-    for block in blocks {
-        match block {
-            Block::Reasoning(r) if keep(r) => run.push(r.clone()),
-            Block::ToolCall(call) if !run.is_empty() => {
+    let mut messages: Vec<Vec<TextBlock>> = Vec::new();
+    let mut message: Vec<TextBlock> = Vec::new();
+    for p in parts {
+        match p {
+            Part::Text(t) if text => {
+                message.push(TextBlock::new(*t));
+                continue;
+            }
+            Part::Refusal if text => continue,
+            _ => {}
+        }
+        if !message.is_empty() {
+            messages.push(std::mem::take(&mut message));
+        }
+        match p {
+            Part::Reasoning(r) if keep(r) => run.push((*r).clone()),
+            Part::Call(id) if !run.is_empty() || !messages.is_empty() => {
                 kept.push(
-                    CarriedReasoning::new(call.id.clone(), std::mem::take(&mut run))
-                        .with_turn_calls(calls.clone()),
+                    CarriedReasoning::new(*id, std::mem::take(&mut run))
+                        .with_turn_calls(calls.clone())
+                        .with_messages(std::mem::take(&mut messages)),
                 );
             }
             _ => {}
@@ -155,6 +219,9 @@ pub struct ReasoningCollector {
 enum Started {
     Reasoning(Box<ReasoningBlock>),
     ToolCall(String),
+    Text(String),
+    Refusal,
+    Other,
 }
 
 impl ReasoningCollector {
@@ -162,8 +229,8 @@ impl ReasoningCollector {
         ReasoningCollector::default()
     }
 
-    /// A collector that keeps every reasoning block before a tool call, as
-    /// [`every_reasoning_for_tool_calls`] does.
+    /// A collector that keeps every reasoning block and the text before a tool call, as
+    /// [`items_for_tool_calls`] does.
     pub fn every() -> Self {
         ReasoningCollector {
             order: Vec::new(),
@@ -184,10 +251,15 @@ impl ReasoningCollector {
                 BlockHeader::ToolCall(h) => {
                     self.order.push((s.index, Started::ToolCall(h.id.clone())));
                 }
+                BlockHeader::Text if self.every => {
+                    self.order.push((s.index, Started::Text(String::new())));
+                }
+                BlockHeader::Refusal if self.every => self.order.push((s.index, Started::Refusal)),
+                _ if self.every => self.order.push((s.index, Started::Other)),
                 _ => {}
             },
             StreamEvent::BlockDelta(d) => {
-                let Some(Started::Reasoning(block)) = self
+                let Some(started) = self
                     .order
                     .iter_mut()
                     .rev()
@@ -196,8 +268,14 @@ impl ReasoningCollector {
                 else {
                     return;
                 };
-                if add_reasoning_delta(block, &d.delta, new_reasoning_part(d)).is_err() {
-                    self.order.retain(|(i, _)| *i != d.index);
+                match (started, &d.delta) {
+                    (Started::Text(text), Delta::Text(t)) => text.push_str(t),
+                    (Started::Reasoning(block), delta) => {
+                        if add_reasoning_delta(block, delta, new_reasoning_part(d)).is_err() {
+                            self.order.retain(|(i, _)| *i != d.index);
+                        }
+                    }
+                    _ => {}
                 }
             }
             _ => {}
@@ -205,21 +283,21 @@ impl ReasoningCollector {
     }
 
     pub fn finish(&mut self) -> Vec<CarriedReasoning> {
-        let blocks: Vec<Block> = std::mem::take(&mut self.order)
-            .into_iter()
+        let order = std::mem::take(&mut self.order);
+        let parts: Vec<Part<'_>> = order
+            .iter()
             .map(|(_, started)| match started {
-                Started::Reasoning(r) => Block::Reasoning(*r),
-                Started::ToolCall(id) => Block::ToolCall(kaeso_kpp::ToolCallBlock::new(
-                    id,
-                    "",
-                    kaeso_kpp::RawJson::null(),
-                )),
+                Started::Reasoning(r) => Part::Reasoning(r),
+                Started::ToolCall(id) => Part::Call(id),
+                Started::Text(t) => Part::Text(t),
+                Started::Refusal => Part::Refusal,
+                Started::Other => Part::Other,
             })
             .collect();
         if self.every {
-            every_reasoning_for_tool_calls(&blocks)
+            carried(&parts, |_| true, true)
         } else {
-            reasoning_for_tool_calls(&blocks)
+            carried(&parts, replayable, false)
         }
     }
 }
@@ -259,8 +337,8 @@ pub fn restore_reasoning(req: &mut GenerateRequest, kept: &[CarriedReasoning]) -
     inserted
 }
 
-/// The tool calls of the turns in which an OpenAI Responses app points to earlier reasoning
-/// with an `item_reference` instead of sending it.
+/// The tool calls of the turns in which an OpenAI Responses app points to earlier reasoning or
+/// text with an `item_reference` instead of sending it.
 pub fn referenced_tool_calls(req: &GenerateRequest) -> Vec<String> {
     req.messages
         .iter()
@@ -273,52 +351,159 @@ pub fn referenced_tool_calls(req: &GenerateRequest) -> Vec<String> {
         .collect()
 }
 
-/// What became of a request's `item_reference` items to earlier reasoning.
+/// What became of a request's `item_reference` items to earlier reasoning and text.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 #[non_exhaustive]
 pub struct Resolved {
     /// Reasoning blocks put back from what was kept.
     pub restored: usize,
-    /// References in turns without tool calls, where no provider needs the reasoning back.
+    /// Messages put back from the text kept before tool calls.
+    pub messages: usize,
+    /// Reasoning references in turns without tool calls, where no provider needs it back.
     pub left_out: usize,
-    /// The size of the restored reasoning's text, summaries and opaque data, in bytes.
+    /// The size of the restored reasoning's text, summaries and opaque data and of the
+    /// restored text, in bytes.
     pub restored_bytes: usize,
 }
 
-/// Puts the reasoning kept for each turn's tool calls where an OpenAI Responses app's
-/// `item_reference` points to it, in place of the references, and leaves out references in
-/// turns without tool calls. The error is the id of the first reference in a turn with tool
-/// calls that has nothing kept. For a Responses provider that keeps nothing (`stateless`), kept
-/// reasoning with neither its text nor its encrypted content answers the reference but isn't
-/// sent: the provider could only look it up by id.
+/// An `item_reference` Kaeso has nothing to put in place of.
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum Unresolved {
+    /// Reasoning of a tool turn that isn't kept for the key: it expired, or was never kept.
+    Reasoning(String),
+    /// Text of a tool turn that isn't kept for the key, likewise.
+    Message(String),
+    /// A message outside a tool turn: Kaeso keeps only the text right before tool calls.
+    Conversation(String),
+}
+
+impl Unresolved {
+    /// The id of the `item_reference`.
+    pub fn id(&self) -> &str {
+        match self {
+            Unresolved::Reasoning(id) | Unresolved::Message(id) | Unresolved::Conversation(id) => {
+                id
+            }
+        }
+    }
+}
+
+/// Puts what was kept for each turn's tool calls where an OpenAI Responses app's
+/// `item_reference` points to it, as [`resolve_kept_references`] does. The error is the id of the
+/// first reference it has nothing for.
 pub fn resolve_reasoning_references(
     req: &mut GenerateRequest,
     kept: &[CarriedReasoning],
     stateless: bool,
 ) -> Result<Resolved, String> {
+    resolve(req, kept, stateless, false).map_err(|u| u.id().to_owned())
+}
+
+/// Puts the text kept before each turn's tool calls where an OpenAI Responses app's
+/// `item_reference` to a message points to it. It runs before the request's guardrails, which
+/// then check that text as any other. The error names the first message reference Kaeso has
+/// nothing for.
+pub fn resolve_message_references(
+    req: &mut GenerateRequest,
+    kept: &[CarriedReasoning],
+) -> Result<Resolved, Unresolved> {
+    let by_call = by_call(kept);
+    let mut resolved = Resolved::default();
+    for message in &mut req.messages {
+        let Some(first) = message
+            .blocks
+            .iter()
+            .find_map(message_reference_of)
+            .map(str::to_owned)
+        else {
+            continue;
+        };
+        if !message
+            .blocks
+            .iter()
+            .any(|b| matches!(b, Block::ToolCall(_)))
+        {
+            return Err(Unresolved::Conversation(first));
+        }
+        let (put, bytes) = put_text_back(message, &by_call).map_err(Unresolved::Message)?;
+        resolved.messages += put;
+        resolved.restored_bytes = resolved.restored_bytes.saturating_add(bytes);
+    }
+    Ok(resolved)
+}
+
+/// Puts the reasoning and text kept for each turn's tool calls where an OpenAI Responses app's
+/// `item_reference` points to them, in place of the references, and leaves out references to
+/// reasoning in turns without tool calls. The error names the first reference Kaeso has
+/// nothing for. For a Responses provider that keeps nothing (`stateless`), kept reasoning with
+/// neither its text nor its encrypted content answers the reference but isn't sent: the
+/// provider could only look it up by id.
+pub fn resolve_kept_references(
+    req: &mut GenerateRequest,
+    kept: &[CarriedReasoning],
+    stateless: bool,
+) -> Result<Resolved, Unresolved> {
+    resolve(req, kept, stateless, true)
+}
+
+// Without `text`, references to messages stay where they are, as before Kaeso kept text.
+fn resolve(
+    req: &mut GenerateRequest,
+    kept: &[CarriedReasoning],
+    stateless: bool,
+    text: bool,
+) -> Result<Resolved, Unresolved> {
     let by_call = by_call(kept);
     let mut resolved = Resolved::default();
     let mut emptied = vec![false; req.messages.len()];
     for (message, emptied) in req.messages.iter_mut().zip(&mut emptied) {
-        let Some(first) = references(message).next().map(str::to_owned) else {
+        if references(message).next().is_none() {
             continue;
-        };
-        let asked = references(message).count();
+        }
+        let first_message = message
+            .blocks
+            .iter()
+            .find_map(message_reference_of)
+            .filter(|_| text)
+            .map(str::to_owned);
+        let first_reasoning = message
+            .blocks
+            .iter()
+            .find_map(reasoning_reference_of)
+            .map(str::to_owned);
+        let asked = message
+            .blocks
+            .iter()
+            .filter_map(reasoning_reference_of)
+            .count();
         let calls = message
             .blocks
             .iter()
             .any(|b| matches!(b, Block::ToolCall(_)));
-        if calls {
-            let (put, bytes) = put_back(message, &by_call, stateless);
-            if put < asked {
-                return Err(first);
+        if let Some(first) = first_message {
+            if !calls {
+                return Err(Unresolved::Conversation(first));
             }
-            resolved.restored += put;
+            let (put, bytes) = put_text_back(message, &by_call).map_err(Unresolved::Message)?;
+            resolved.messages += put;
             resolved.restored_bytes = resolved.restored_bytes.saturating_add(bytes);
-        } else {
-            resolved.left_out += asked;
         }
-        message.blocks.retain(|b| reference_of(b).is_none());
+        if let Some(first) = first_reasoning {
+            if calls {
+                let (put, bytes) = put_back(message, &by_call, stateless);
+                if put < asked {
+                    return Err(Unresolved::Reasoning(first));
+                }
+                resolved.restored += put;
+                resolved.restored_bytes = resolved.restored_bytes.saturating_add(bytes);
+            } else {
+                resolved.left_out += asked;
+            }
+        }
+        message
+            .blocks
+            .retain(|b| reference_of(b).is_none() || (!text && message_reference_of(b).is_some()));
         *emptied = message.blocks.is_empty() && message.extras.fields.is_empty();
     }
     let mut emptied = emptied.into_iter();
@@ -348,8 +533,19 @@ fn same_reasoning(a: &ReasoningBlock, b: &ReasoningBlock) -> bool {
 }
 
 fn reference_of(block: &Block) -> Option<&str> {
+    crate::openai_responses::reference(block)
+}
+
+fn reasoning_reference_of(block: &Block) -> Option<&str> {
     match block {
         Block::Reasoning(r) => crate::openai_responses::reasoning_reference(r),
+        _ => None,
+    }
+}
+
+fn message_reference_of(block: &Block) -> Option<&str> {
+    match block {
+        Block::Text(t) => crate::openai_responses::message_reference(t),
         _ => None,
     }
 }
@@ -366,26 +562,154 @@ fn by_call(kept: &[CarriedReasoning]) -> HashMap<&str, &CarriedReasoning> {
     by_call
 }
 
-// The kept reasoning of each tool call goes right before that call, and only into the turn
-// it came from: a client that merged or split turns gets nothing back.
-fn put_back(
-    message: &mut kaeso_kpp::Message,
-    by_call: &HashMap<&str, &CarriedReasoning>,
-    stateless: bool,
-) -> (usize, usize) {
-    let turn: HashSet<&str> = message
+fn turn_calls(message: &kaeso_kpp::Message) -> HashSet<&str> {
+    message
         .blocks
         .iter()
         .filter_map(|b| match b {
             Block::ToolCall(call) => Some(call.id.as_str()),
             _ => None,
         })
+        .collect()
+}
+
+// What is kept goes back only into the turn it came from: a client that merged or split turns
+// gets nothing back.
+fn same_turn(entry: &CarriedReasoning, turn: &HashSet<&str>) -> bool {
+    entry.turn_calls.is_empty()
+        || (entry.turn_calls.len() == turn.len()
+            && entry.turn_calls.iter().all(|c| turn.contains(c.as_str())))
+}
+
+// Each reference to a message takes the next text kept before the turn's calls, in their
+// order, where the reference stands; `None` when there is less kept text than references.
+// The error is the first reference it has nothing for; the message stays as it was then.
+fn put_text_back(
+    message: &mut kaeso_kpp::Message,
+    by_call: &HashMap<&str, &CarriedReasoning>,
+) -> Result<(usize, usize), String> {
+    let calls: Vec<String> = turn_calls(message).into_iter().map(str::to_owned).collect();
+    let turn: HashSet<&str> = calls.iter().map(String::as_str).collect();
+    let (mut put, mut bytes) = (0, 0usize);
+    let mut blocks = Vec::with_capacity(message.blocks.len());
+    let mut stretch: Vec<Block> = Vec::new();
+    for block in message.blocks.iter().cloned() {
+        let call = match &block {
+            Block::ToolCall(call) => Some(call.id.clone()),
+            _ => None,
+        };
+        stretch.push(block);
+        let Some(call) = call else {
+            continue;
+        };
+        // The references before a call stand for the text kept right before that call.
+        let kept = by_call
+            .get(call.as_str())
+            .filter(|entry| same_turn(entry, &turn))
+            .map_or(&[][..], |entry| entry.messages.as_slice());
+        let (p, b) = fill(&mut stretch, kept).ok_or_else(|| first_message_reference(&stretch))?;
+        put += p;
+        bytes = bytes.saturating_add(b);
+        blocks.append(&mut stretch);
+    }
+    if stretch.iter().any(|b| message_reference_of(b).is_some()) {
+        return Err(first_message_reference(&stretch));
+    }
+    blocks.append(&mut stretch);
+    message.blocks = blocks;
+    Ok((put, bytes))
+}
+
+fn first_message_reference(blocks: &[Block]) -> String {
+    blocks
+        .iter()
+        .find_map(message_reference_of)
+        .unwrap_or_default()
+        .to_owned()
+}
+
+// Puts a call's kept text where the references before it stand.
+fn fill(stretch: &mut Vec<Block>, kept: &[Vec<TextBlock>]) -> Option<(usize, usize)> {
+    let asked = stretch
+        .iter()
+        .filter(|b| message_reference_of(b).is_some())
+        .count();
+    if asked == 0 {
+        return Some((0, 0));
+    }
+    // A kept message the app sent itself stands for itself; the references take the others.
+    let mut inline = inline_texts(stretch);
+    let rest: Vec<&Vec<TextBlock>> = kept
+        .iter()
+        .filter(|m| {
+            let text = joined(m);
+            match inline.iter().position(|i| *i == text) {
+                Some(at) => {
+                    inline.remove(at);
+                    false
+                }
+                None => true,
+            }
+        })
         .collect();
-    let same_turn = |entry: &CarriedReasoning| {
-        entry.turn_calls.is_empty()
-            || (entry.turn_calls.len() == turn.len()
-                && entry.turn_calls.iter().all(|c| turn.contains(c.as_str())))
+    // Adjacent message items are kept as one message: one part answers each of their references.
+    let pieces: Vec<Vec<TextBlock>> = if asked == rest.len() {
+        rest.into_iter().cloned().collect()
+    } else if asked == rest.iter().map(|m| m.len()).sum::<usize>() {
+        rest.into_iter()
+            .flatten()
+            .map(|t| vec![t.clone()])
+            .collect()
+    } else {
+        return None;
     };
+    let mut pieces = pieces.into_iter();
+    let (mut put, mut bytes) = (0, 0usize);
+    let mut filled = Vec::with_capacity(stretch.len());
+    for block in stretch.drain(..) {
+        if message_reference_of(&block).is_none() {
+            filled.push(block);
+            continue;
+        }
+        let text = pieces.next()?;
+        put += 1;
+        for t in text {
+            bytes = bytes.saturating_add(t.text.len());
+            filled.push(Block::Text(t));
+        }
+    }
+    *stretch = filled;
+    Some((put, bytes))
+}
+
+fn joined(parts: &[TextBlock]) -> String {
+    parts.iter().map(|t| t.text.as_str()).collect()
+}
+
+// The text of each run of the app's own text blocks in a turn, as a message item carries it.
+fn inline_texts(blocks: &[Block]) -> Vec<String> {
+    let mut texts = Vec::new();
+    let mut run: Option<String> = None;
+    for block in blocks {
+        match block {
+            Block::Text(t) if message_reference_of(block).is_none() => {
+                run.get_or_insert_with(String::new).push_str(&t.text);
+            }
+            _ => texts.extend(run.take()),
+        }
+    }
+    texts.extend(run);
+    texts
+}
+
+// The kept reasoning of each tool call goes right before that call.
+fn put_back(
+    message: &mut kaeso_kpp::Message,
+    by_call: &HashMap<&str, &CarriedReasoning>,
+    stateless: bool,
+) -> (usize, usize) {
+    let turn = turn_calls(message);
+    let same_turn = |entry: &CarriedReasoning| same_turn(entry, &turn);
     let restored: Vec<(String, Vec<ReasoningBlock>)> = message
         .blocks
         .iter()
@@ -764,7 +1088,7 @@ mod tests {
         let blocks = [Block::Reasoning(plain.clone()), call("c1")];
         assert!(reasoning_for_tool_calls(&blocks).is_empty());
         assert_eq!(
-            every_reasoning_for_tool_calls(&blocks),
+            items_for_tool_calls(&blocks),
             [CarriedReasoning::new("c1", vec![plain]).with_turn_calls(vec!["c1".into()])]
         );
     }
@@ -781,7 +1105,7 @@ mod tests {
             Message::new(Role::User, vec![Block::tool_result("c1", vec![], false)]),
         ];
         assert_eq!(referenced_tool_calls(&req), ["c1"]);
-        let resolved = resolve_reasoning_references(&mut req, &kept, false).unwrap();
+        let resolved = resolve_kept_references(&mut req, &kept, false).unwrap();
         assert_eq!((resolved.restored, resolved.left_out), (1, 1));
         assert_eq!(req.messages[1].blocks, [Block::text("Hi.")]);
         assert_eq!(
@@ -795,7 +1119,7 @@ mod tests {
             Message::new(Role::Assistant, vec![reference("rs_x")]),
             Message::user("again"),
         ];
-        let resolved = resolve_reasoning_references(&mut only, &[], false).unwrap();
+        let resolved = resolve_kept_references(&mut only, &[], false).unwrap();
         assert_eq!(resolved.left_out, 1);
         assert_eq!(
             only.messages.len(),
@@ -809,8 +1133,8 @@ mod tests {
             Message::new(Role::Assistant, vec![reference("rs_z"), call("c9")]),
         ];
         assert_eq!(
-            resolve_reasoning_references(&mut unkept, &kept, false),
-            Err("rs_z".to_owned())
+            resolve_kept_references(&mut unkept, &kept, false),
+            Err(Unresolved::Reasoning("rs_z".to_owned()))
         );
     }
 
@@ -825,7 +1149,7 @@ mod tests {
                 vec![Block::Reasoning(signed("a")), reference("rs_b"), call("c1")],
             ),
         ];
-        let resolved = resolve_reasoning_references(&mut req, &kept, false).unwrap();
+        let resolved = resolve_kept_references(&mut req, &kept, false).unwrap();
         assert_eq!(resolved.restored, 1);
         assert_eq!(
             resolved.restored_bytes,
@@ -849,8 +1173,8 @@ mod tests {
         )];
         let one = [CarriedReasoning::new("c1", vec![signed("a")])];
         assert_eq!(
-            resolve_reasoning_references(&mut more, &one, false),
-            Err("rs_1".to_owned())
+            resolve_kept_references(&mut more, &one, false),
+            Err(Unresolved::Reasoning("rs_1".to_owned()))
         );
     }
 
@@ -866,12 +1190,196 @@ mod tests {
             Message::new(Role::Assistant, vec![reference("rs_x")]),
             Message::user("again"),
         ];
-        resolve_reasoning_references(&mut req, &[], false).unwrap();
+        resolve_kept_references(&mut req, &[], false).unwrap();
         assert_eq!(
             req.messages,
             [Message::user("q"), empty, Message::user("again")],
             "the app's own empty message stays"
         );
+    }
+
+    fn message_reference(id: &str) -> Block {
+        let mut t = TextBlock::new("");
+        t.extras = Extras::new(Origin::new(DialectId::OpenAiResponses))
+            .with_form(crate::openai_responses::stored::REFERENCE, id.into());
+        Block::Text(t)
+    }
+
+    fn texts(parts: &[&str]) -> Vec<TextBlock> {
+        parts.iter().map(|t| TextBlock::new(*t)).collect()
+    }
+
+    #[test]
+    fn a_responses_reply_keeps_the_text_before_each_tool_call() {
+        let mut plain = ReasoningBlock::new(DialectId::OpenAiChat);
+        plain.text.push("Paris first.".into());
+        let mut cited = TextBlock::new(" Now.");
+        cited.extras =
+            Extras::new(Origin::new(DialectId::AnthropicMessages)).with_form("x", true.into());
+        let blocks = [
+            Block::Reasoning(plain.clone()),
+            Block::text("I'll check."),
+            Block::Text(cited),
+            call("c1"),
+            Block::text("Then Tokyo."),
+            Block::Reasoning(plain.clone()),
+            Block::text("Right."),
+            call("c2"),
+            Block::text("Done."),
+        ];
+        let turn = vec!["c1".to_owned(), "c2".to_owned()];
+        assert_eq!(
+            items_for_tool_calls(&blocks),
+            [
+                CarriedReasoning::new("c1", vec![plain.clone()])
+                    .with_turn_calls(turn.clone())
+                    .with_messages(vec![texts(&["I'll check.", " Now."])]),
+                CarriedReasoning::new("c2", vec![plain])
+                    .with_turn_calls(turn)
+                    .with_messages(vec![texts(&["Then Tokyo."]), texts(&["Right."])]),
+            ],
+            "the words only, one list per message item, and nothing after the last call"
+        );
+        assert!(
+            reasoning_for_tool_calls(&blocks).is_empty(),
+            "a Chat Completions or Gemini app's turn keeps no text"
+        );
+    }
+
+    #[test]
+    fn the_collector_keeps_streamed_text_before_a_tool_call_for_responses_apps_only() {
+        let events = [
+            StreamEvent::BlockStart(BlockStart::new(0, BlockHeader::Text)),
+            StreamEvent::BlockDelta(BlockDelta::new(0, Delta::Text("I'll ".into()))),
+            StreamEvent::BlockDelta(BlockDelta::new(0, Delta::Text("check.".into()))),
+            StreamEvent::BlockStop(BlockStop::new(0)),
+            StreamEvent::BlockStart(BlockStart::new(
+                1,
+                BlockHeader::ToolCall(ToolCallHeader::new("call_1", "f")),
+            )),
+            StreamEvent::BlockStop(BlockStop::new(1)),
+            StreamEvent::BlockStart(BlockStart::new(2, BlockHeader::Text)),
+            StreamEvent::BlockDelta(BlockDelta::new(2, Delta::Text("Done.".into()))),
+            StreamEvent::BlockStop(BlockStop::new(2)),
+        ];
+        let mut every = ReasoningCollector::every();
+        let mut chat = ReasoningCollector::new();
+        for e in &events {
+            every.observe(e);
+            chat.observe(e);
+        }
+        assert_eq!(
+            every.finish(),
+            [CarriedReasoning::new("call_1", vec![])
+                .with_turn_calls(vec!["call_1".into()])
+                .with_messages(vec![texts(&["I'll check."])])]
+        );
+        assert!(chat.finish().is_empty());
+    }
+
+    #[test]
+    fn references_to_messages_take_the_text_kept_before_their_turns_calls() {
+        let kept = [
+            CarriedReasoning::new("c1", vec![signed("a")])
+                .with_turn_calls(vec!["c1".into()])
+                .with_messages(vec![texts(&["I'll check."])]),
+            CarriedReasoning::new("c2", vec![])
+                .with_turn_calls(vec!["c2".into()])
+                .with_messages(vec![texts(&["Let me look."])]),
+        ];
+        let mut req = GenerateRequest::new("m");
+        req.messages = vec![
+            Message::user("q"),
+            Message::new(
+                Role::Assistant,
+                vec![reference("rs_a"), message_reference("msg_a"), call("c1")],
+            ),
+            Message::new(Role::User, vec![Block::tool_result("c1", vec![], false)]),
+            Message::new(
+                Role::Assistant,
+                vec![message_reference("msg_b"), call("c2")],
+            ),
+            Message::new(Role::User, vec![Block::tool_result("c2", vec![], false)]),
+        ];
+        assert_eq!(referenced_tool_calls(&req), ["c1", "c2"]);
+        let resolved = resolve_kept_references(&mut req, &kept, false).unwrap();
+        assert_eq!((resolved.restored, resolved.messages), (1, 2));
+        assert_eq!(
+            resolved.restored_bytes,
+            size(&signed("a")) + "I'll check.".len() + "Let me look.".len()
+        );
+        assert_eq!(
+            req.messages[1].blocks,
+            [
+                Block::Reasoning(signed("a")),
+                Block::text("I'll check."),
+                call("c1")
+            ]
+        );
+        assert_eq!(
+            req.messages[3].blocks,
+            [Block::text("Let me look."), call("c2")]
+        );
+    }
+
+    #[test]
+    fn a_message_reference_without_kept_text_or_outside_a_tool_turn_is_named() {
+        let kept = [CarriedReasoning::new("c1", vec![])
+            .with_turn_calls(vec!["c1".into(), "c2".into()])
+            .with_messages(vec![texts(&["I'll check."])])];
+        let turn = |blocks: Vec<Block>| {
+            let mut req = GenerateRequest::new("m");
+            req.messages = vec![Message::user("q"), Message::new(Role::Assistant, blocks)];
+            req
+        };
+        let cases = [
+            (
+                vec![message_reference("msg_1"), call("c9")],
+                Unresolved::Message("msg_1".into()),
+            ),
+            (
+                vec![
+                    message_reference("msg_1"),
+                    message_reference("msg_2"),
+                    call("c1"),
+                    call("c2"),
+                ],
+                Unresolved::Message("msg_1".into()),
+            ),
+            (
+                vec![message_reference("msg_1"), call("c1")],
+                Unresolved::Message("msg_1".into()),
+            ),
+            (
+                vec![message_reference("msg_1"), Block::text("More.")],
+                Unresolved::Conversation("msg_1".into()),
+            ),
+        ];
+        for (blocks, want) in cases {
+            let mut req = turn(blocks.clone());
+            assert_eq!(
+                resolve_kept_references(&mut req, &kept, false),
+                Err(want),
+                "{blocks:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn kept_text_round_trips_and_older_entries_still_read() {
+        let entry = CarriedReasoning::new("c1", vec![])
+            .with_turn_calls(vec!["c1".into()])
+            .with_messages(vec![texts(&["I'll check."])]);
+        let json = serde_json::to_string(&entry).unwrap();
+        assert_eq!(
+            serde_json::from_str::<CarriedReasoning>(&json).unwrap(),
+            entry
+        );
+        let older: CarriedReasoning =
+            serde_json::from_str(r#"{"tool_call_id":"c1","blocks":[]}"#).unwrap();
+        assert!(older.messages.is_empty());
+        let reasoning_only = serde_json::to_string(&CarriedReasoning::new("c1", vec![])).unwrap();
+        assert!(!reasoning_only.contains("messages"), "{reasoning_only}");
     }
 
     #[test]
@@ -898,7 +1406,7 @@ mod tests {
                 Message::user("q"),
                 Message::new(Role::Assistant, vec![reference("rs_1"), call("c1")]),
             ];
-            let resolved = resolve_reasoning_references(&mut req, &kept, true).unwrap();
+            let resolved = resolve_kept_references(&mut req, &kept, true).unwrap();
             assert_eq!(resolved.restored, 1, "the reference is answered");
             let want = if sent {
                 vec![Block::Reasoning(block), call("c1")]
@@ -907,5 +1415,163 @@ mod tests {
             };
             assert_eq!(req.messages[1].blocks, want);
         }
+    }
+
+    #[test]
+    fn references_take_the_kept_messages_the_app_did_not_send_itself() {
+        let kept = [CarriedReasoning::new("c1", vec![])
+            .with_turn_calls(vec!["c1".into()])
+            .with_messages(vec![texts(&["First."]), texts(&["Second."])])];
+        let mut req = GenerateRequest::new("m");
+        req.messages = vec![
+            Message::user("q"),
+            Message::new(
+                Role::Assistant,
+                vec![
+                    Block::text("First."),
+                    message_reference("msg_2"),
+                    call("c1"),
+                ],
+            ),
+        ];
+        let resolved = resolve_message_references(&mut req, &kept).unwrap();
+        assert_eq!(resolved.messages, 1);
+        assert_eq!(
+            req.messages[1].blocks,
+            [Block::text("First."), Block::text("Second."), call("c1")]
+        );
+    }
+
+    #[test]
+    fn adjacent_message_items_kept_as_one_answer_a_reference_each() {
+        let kept = [CarriedReasoning::new("c1", vec![])
+            .with_turn_calls(vec!["c1".into()])
+            .with_messages(vec![texts(&["One.", "Two."])])];
+        let mut req = GenerateRequest::new("m");
+        req.messages = vec![Message::new(
+            Role::Assistant,
+            vec![
+                message_reference("msg_1"),
+                message_reference("msg_2"),
+                call("c1"),
+            ],
+        )];
+        resolve_message_references(&mut req, &kept).unwrap();
+        assert_eq!(
+            req.messages[0].blocks,
+            [Block::text("One."), Block::text("Two."), call("c1")]
+        );
+        let mut three = GenerateRequest::new("m");
+        three.messages = vec![Message::new(
+            Role::Assistant,
+            vec![
+                message_reference("msg_1"),
+                message_reference("msg_2"),
+                message_reference("msg_3"),
+                call("c1"),
+            ],
+        )];
+        assert_eq!(
+            resolve_message_references(&mut three, &kept),
+            Err(Unresolved::Message("msg_1".into()))
+        );
+    }
+
+    #[test]
+    fn the_reasoning_only_functions_keep_their_meaning() {
+        let plain = ReasoningBlock::new(DialectId::OpenAiChat);
+        let blocks = vec![
+            Block::Reasoning(plain.clone()),
+            Block::text("I'll check."),
+            call("c1"),
+            Block::text("Then Tokyo."),
+            call("c2"),
+        ];
+        assert_eq!(
+            every_reasoning_for_tool_calls(&blocks),
+            [CarriedReasoning::new("c1", vec![plain])
+                .with_turn_calls(vec!["c1".into(), "c2".into()])],
+            "reasoning only, no text"
+        );
+        let mut req = GenerateRequest::new("m");
+        req.messages = vec![Message::new(
+            Role::Assistant,
+            vec![message_reference("msg_1"), call("c1")],
+        )];
+        resolve_reasoning_references(&mut req, &[], false).unwrap();
+        assert_eq!(
+            req.messages[0].blocks,
+            [message_reference("msg_1"), call("c1")],
+            "a reference to text stays where it is"
+        );
+    }
+
+    #[test]
+    fn references_before_a_call_take_that_calls_text() {
+        let turn = vec!["c1".to_owned(), "c2".to_owned()];
+        let kept = [
+            CarriedReasoning::new("c1", vec![])
+                .with_turn_calls(turn.clone())
+                .with_messages(vec![texts(&["First."])]),
+            CarriedReasoning::new("c2", vec![])
+                .with_turn_calls(turn)
+                .with_messages(vec![texts(&["Second."])]),
+        ];
+        let mut req = GenerateRequest::new("m");
+        req.messages = vec![Message::new(
+            Role::Assistant,
+            vec![message_reference("msg_1"), call("c1"), call("c2")],
+        )];
+        assert_eq!(
+            resolve_message_references(&mut req, &kept)
+                .unwrap()
+                .messages,
+            1
+        );
+        assert_eq!(
+            req.messages[0].blocks,
+            [Block::text("First."), call("c1"), call("c2")]
+        );
+        let mut after = GenerateRequest::new("m");
+        after.messages = vec![Message::new(
+            Role::Assistant,
+            vec![call("c1"), message_reference("msg_2"), call("c2")],
+        )];
+        resolve_message_references(&mut after, &kept).unwrap();
+        assert_eq!(
+            after.messages[0].blocks,
+            [call("c1"), Block::text("Second."), call("c2")]
+        );
+        let mut trailing = GenerateRequest::new("m");
+        trailing.messages = vec![Message::new(
+            Role::Assistant,
+            vec![call("c1"), call("c2"), message_reference("msg_3")],
+        )];
+        assert_eq!(
+            resolve_message_references(&mut trailing, &kept),
+            Err(Unresolved::Message("msg_3".into())),
+            "no text is kept after the last call"
+        );
+    }
+
+    #[test]
+    fn a_reference_without_text_is_named_and_leaves_the_turn_as_it_was() {
+        let turn = vec!["c1".to_owned(), "c2".to_owned()];
+        let kept = [CarriedReasoning::new("c1", vec![])
+            .with_turn_calls(turn)
+            .with_messages(vec![texts(&["First."])])];
+        let sent = vec![
+            message_reference("msg_1"),
+            call("c1"),
+            message_reference("msg_2"),
+            call("c2"),
+        ];
+        let mut req = GenerateRequest::new("m");
+        req.messages = vec![Message::new(Role::Assistant, sent.clone())];
+        assert_eq!(
+            resolve_message_references(&mut req, &kept),
+            Err(Unresolved::Message("msg_2".into()))
+        );
+        assert_eq!(req.messages[0].blocks, sent);
     }
 }

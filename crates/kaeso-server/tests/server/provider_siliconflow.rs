@@ -297,20 +297,23 @@ async fn siliconflow_embeds_speaks_transcribes_and_refuses_what_it_lacks() {
         let r = upload(&env, path, &fields).await;
         assert_eq!(r.status, StatusCode::BAD_REQUEST, "{path}: {}", r.text());
     }
-    for (path, anthropic, body) in [
-        (
-            "/v1/messages/count_tokens",
-            true,
-            json!({ "model": QWEN, "messages": [{ "role": "user", "content": "Hello" }] }),
-        ),
-        (
-            "/v1/images/generations",
-            false,
-            json!({ "model": QWEN, "prompt": "A lighthouse at dusk" }),
-        ),
-    ] {
-        let r = call(&env, path, Some(&env.key), anthropic, Some(body)).await;
-        assert!(r.status.is_client_error(), "{path}: {}", r.text());
-    }
+    let r = call(
+        &env,
+        "/v1/images/generations",
+        Some(&env.key),
+        false,
+        Some(json!({ "model": QWEN, "prompt": "A lighthouse at dusk" })),
+    )
+    .await;
+    assert!(r.status.is_client_error(), "{}", r.text());
+    let r = call(
+        &env,
+        "/v1/messages/count_tokens",
+        Some(&env.key),
+        true,
+        Some(json!({ "model": QWEN, "messages": [{ "role": "user", "content": "Hello" }] })),
+    )
+    .await;
+    assert!(r.estimated_count() > 0);
     assert!(env.mock.received().is_empty());
 }

@@ -245,6 +245,20 @@ impl Answer {
     pub fn header(&self, name: &str) -> Option<&str> {
         self.headers.get(name).and_then(|v| v.to_str().ok())
     }
+    pub fn estimated_count(&self) -> u64 {
+        assert_eq!(self.status, StatusCode::OK, "{}", self.text());
+        assert!(
+            self.header("kaeso-adapted")
+                .is_some_and(|a| a.split(',').any(|x| x.trim() == "count_estimated")),
+            "{:?}",
+            self.headers
+        );
+        let v = self.json();
+        v["input_tokens"]
+            .as_u64()
+            .or_else(|| v["totalTokens"].as_u64())
+            .unwrap_or_else(|| panic!("no count in {v}"))
+    }
 }
 
 pub async fn call(
@@ -358,4 +372,35 @@ pub async fn read_until(body: &mut Body, last: &str) -> String {
         }
     }
     seen
+}
+
+pub async fn stored_responses(env: &Env, on: bool) {
+    let org = format!("/orgs/{}/stored-responses", env.owner.org_id);
+    if on {
+        let r = env
+            .app
+            .call(
+                axum::http::Method::PATCH,
+                &org,
+                Some(json!({ "allowed": true })),
+                Some(&env.owner.cookie),
+            )
+            .await;
+        assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    }
+    let project = format!(
+        "/orgs/{}/projects/{}/stored-responses",
+        env.owner.org_id, env.project
+    );
+    let r = env
+        .app
+        .call(
+            axum::http::Method::PATCH,
+            &project,
+            Some(json!({ "enabled": on })),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    assert_eq!(r.body["effective"], on);
 }

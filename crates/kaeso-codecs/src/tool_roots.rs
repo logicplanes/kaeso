@@ -118,6 +118,7 @@ pub(crate) fn for_target(
     }
     let mut merged = Vec::new();
     let mut untyped = Vec::new();
+    let gemini_paths = crate::gemini::declarations::wire_paths(d.original());
     for (i, tool) in d.get().tools.iter().enumerate() {
         let ToolDef::Function(f) = tool else {
             continue;
@@ -141,7 +142,18 @@ pub(crate) fn for_target(
             }
             continue;
         }
-        let path = namespaces::app_path(d.original(), &f.name).unwrap_or(format!("tools[{i}]"));
+        // A Gemini app wrote its functions in declarations of tools, which KPP lists flat.
+        let gemini_path = || {
+            let at = d
+                .original()
+                .tools
+                .iter()
+                .position(|t| matches!(t, ToolDef::Function(o) if o.name == f.name))?;
+            gemini_paths.get(at).cloned().flatten()
+        };
+        let path = gemini_path()
+            .or_else(|| namespaces::app_path(d.original(), &f.name))
+            .unwrap_or(format!("tools[{i}]"));
         let one = merge(&root).map_err(|fault| fault.refusal(&f.name, provider, &path))?;
         let schema = RawJson::from_serialize(&one.schema)
             .map_err(|e| KppError::invalid_request(e.to_string()).with_param(path.clone()))?;

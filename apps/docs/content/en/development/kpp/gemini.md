@@ -51,13 +51,13 @@ Schema `GenerateContentRequest`.
 | `functionDeclarations[].name`, `.description` | `name`, `description` | |
 | `functionDeclarations[].parametersJsonSchema` | `parameters` | Full JSON Schema. Foreign tools always get `parametersJsonSchema`, so nothing is lost to the OpenAPI subset. |
 | `functionDeclarations[].parameters` (OpenAPI `Schema`) | `parameters` | form `schema: "parameters"`, so Gemini gets it back in `parameters`. Other dialects get it as JSON Schema ([schemas](#schemas)). With `parametersJsonSchema` beside it → field `parameters`. |
-| `functionDeclarations[].response`, `.responseJsonSchema`, `.behavior` | tool fields | |
+| `functionDeclarations[].response`, `.responseJsonSchema`, `.behavior` | tool fields | `response` and `responseJsonSchema` describe what the app's function returns: other dialects don't get them, and they are named in `kaeso-left-out` ([allowlist](cross-format.md#allowlist)). Errors name a declaration as `tools[0].functionDeclarations[1]`. |
 | `toolConfig.functionCallingConfig` `mode: AUTO` / `NONE` / `ANY` | `tool_choice` `Auto` / `None` / `Required` | |
 | `mode: ANY` with one `allowedFunctionNames` entry | `ToolChoice::Tool(name)` | |
 | `mode: VALIDATED`, `ANY` with several names, any other combination | `ToolChoice::Unknown` (raw) | Refused across dialects. |
 | `toolConfig.retrievalConfig`, `.includeServerSideToolInvocations` | fields `toolConfig.*` | |
 | `generationConfig.temperature`, `.topP`, `.topK`, `.maxOutputTokens`, `.stopSequences`, `.seed`, `.presencePenalty`, `.frequencyPenalty` | `sampling.*` | Numbers keep their spelling within the dialect (form `integers`). `topK` is left out for a target without top-k ([top K](sampling.md#top-k)). |
-| `generationConfig.candidateCount` | form `candidate_count` | Above 1 → `Unsupported` when decoded, as Chat's `n` ([sampling](sampling.md)). |
+| `generationConfig.candidateCount` | form `candidate_count` | Above 1 → `Unsupported` when decoded, as Chat's `n` ([sampling](sampling.md)): Kaeso returns one candidate per request, so the app sends several requests for more. |
 | `responseMimeType: application/json` with `responseJsonSchema` | `output = JsonSchema` | |
 | `responseMimeType: application/json` with `responseSchema` | `output = JsonSchema` | form `schema: "responseSchema"`; other dialects get it as JSON Schema ([schemas](#schemas)). |
 | `responseMimeType: application/json` alone | `output = JsonObject` | |
@@ -112,7 +112,6 @@ Schema `Part`. A part carries exactly one of `text`, `inlineData`, `fileData`, `
 - **Arguments** that aren't an object become one, as for Anthropic ([tool call arguments](cross-format.md#tool-call-arguments)).
 - **Image URLs** get `fileData.mimeType` from the URL's extension (`.png`, `.jpg`, `.jpeg`, `.webp`, `.gif`, `.heic`, `.heif`; documents also `.pdf`, `.txt`), as the file input guide asks; an image URL without one is `Unsupported`. Text documents are sent as base64 `inlineData`.
 - **Audio and video URLs** get it the same way, from the audio and video guides' supported formats (`.wav`, `.mp3`, `.aiff`, `.aac`, `.ogg`, `.flac`, `.m4a`, `.opus`, `.webm`; `.mp4`, `.mpeg`, `.mpg`, `.mov`, `.avi`, `.flv`, `.webm`, `.wmv`, `.3gp`). A YouTube URL goes without one; another URL without a known extension is `Unsupported`. Base64 audio and video go as `inlineData` with their media type. Audio and video in a tool result are `Unsupported`.
-- **Output schemas.** An OpenAI schema's `description` leads the schema's own `description`, and `strict: false` is served strictly, because Gemini always enforces `responseJsonSchema`; either is named in `kaeso-adapted` by the app's field.
 - **Output schemas.** An OpenAI schema's `description` leads the schema's own `description`, and `strict: false` is served strictly, because Gemini always enforces `responseJsonSchema`; either is named in `kaeso-adapted` by the app's field.
 - **Refused** with `Unsupported`: refusal blocks, which Gemini has no part for (as for Anthropic), a document's title, context or citations, more than five stop sequences (`GenerationConfig.stopSequences`), `parallel_tool_calls: false`, and an effort or thinking mode Gemini has no setting for.
 - **Strict tools.** A function tool with `strict: true` and an automatic `tool_choice` sends `mode: VALIDATED`, which checks calls against their schemas.
@@ -174,7 +173,7 @@ Schema `GenerateContentResponse`.
 | `responseId` | `id` | Absent → form `no_response_id`. |
 | `modelVersion` | `model` | Absent → form `no_model_version`. |
 | `candidates[0].content.parts` | `blocks` | As in requests. Image parts become `Block::Image`. |
-| More than one candidate | `Unsupported` | |
+| More than one candidate | `ProviderError`, since Kaeso refused any `candidateCount` above 1 in the request | |
 | `candidates[0].finishReason` | `stop` | See [finish reasons](#finish-reasons). |
 | `candidates[0]` other keys (`index`, `finishMessage`, `safetyRatings`, `citationMetadata`, `groundingMetadata`, `urlContextMetadata`, `avgLogprobs`, `logprobsResult`, `tokenCount`) | fields `candidate.*` | `citationMetadata` indexes the candidate's whole text, which KPP citations, bound to one block, can't express. |
 | `candidates[0].content.role` | — | Another value or none → form `no_role`. |

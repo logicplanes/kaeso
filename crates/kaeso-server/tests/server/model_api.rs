@@ -1414,6 +1414,115 @@ async fn nextchats_neutral_penalties_reach_claude_left_out_and_named() {
 }
 
 #[tokio::test]
+async fn message_threads_are_refused_as_anthropic_refuses_one_it_cannot_serve() {
+    let env = env().await;
+    let before = env.mock.received().len();
+    let continued = json!({
+        "model": "claude-haiku-4-5",
+        "max_tokens": 64,
+        "messages": [{ "role": "user", "content": [{ "type": "tool_result", "tool_use_id": "toolu_01", "content": "Sunny 21C" }] }],
+        "thread": { "type": "continue", "previous_message_id": "msg_01" },
+    });
+    let mut bodies = vec![continued];
+    for model in ["claude-haiku-4-5", "gpt-4o"] {
+        let mut created = messages(model, "Weather in Paris? Use the tool.");
+        created["thread"] = json!({ "type": "create" });
+        bodies.push(created);
+    }
+    for body in bodies {
+        let r = call(
+            &env,
+            "/v1/messages",
+            Some(&env.key),
+            true,
+            Some(body.clone()),
+        )
+        .await;
+        assert_eq!(r.status, StatusCode::BAD_REQUEST, "{body}: {}", r.text());
+        let error = &r.json()["error"];
+        assert_eq!(error["type"], "invalid_request_error", "{body}");
+        assert_eq!(
+            error["message"],
+            "Kaeso keeps no message threads; send the whole conversation without `thread`."
+        );
+        assert_eq!(
+            error["details"],
+            json!({ "error_code": "thread_unsupported_request", "unsupported": ["thread"] })
+        );
+    }
+    assert_eq!(
+        env.mock.received().len(),
+        before,
+        "nothing reached a provider"
+    );
+
+    // What a tool runner sends next: the whole conversation without `thread`, which goes
+    // through. `thread: null` asks for no thread.
+    let mut unthreaded = messages("claude-haiku-4-5", "Weather in Paris? Use the tool.");
+    for thread in [None, Some(json!(null))] {
+        if let Some(t) = thread {
+            unthreaded["thread"] = t;
+        }
+        let r = call(
+            &env,
+            "/v1/messages",
+            Some(&env.key),
+            true,
+            Some(unthreaded.clone()),
+        )
+        .await;
+        assert_eq!(r.status, StatusCode::OK, "{unthreaded}: {}", r.text());
+    }
+    assert_eq!(env.mock.received().len(), before + 2);
+
+    // Served in another format, `thread: null` is left out and named.
+    let mut other = messages("gpt-4o", "Hi");
+    other["thread"] = json!(null);
+    let r = call(&env, "/v1/messages", Some(&env.key), true, Some(other)).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.header("kaeso-left-out"), Some("thread"));
+    assert!(env.mock.last().unwrap().json().get("thread").is_none());
+}
+
+#[tokio::test]
+async fn multi_agent_participant_names_reach_claude_left_out_and_named() {
+    let env = env().await;
+    for (fixture, named) in [
+        (
+            include_str!(
+                "../../../kaeso-codecs/fixtures/openai_chat/requests/autogen-user-name.json"
+            ),
+            "messages[1].name",
+        ),
+        (
+            include_str!(
+                "../../../kaeso-codecs/fixtures/openai_chat/requests/crewai-tool-name.json"
+            ),
+            "messages[3].name",
+        ),
+    ] {
+        let mut body: serde_json::Value = serde_json::from_str(fixture).unwrap();
+        body["model"] = json!("claude-haiku-4-5");
+        body["max_tokens"] = json!(200);
+        let r = call(
+            &env,
+            "/v1/chat/completions",
+            Some(&env.key),
+            false,
+            Some(body),
+        )
+        .await;
+        assert_eq!(r.status, StatusCode::OK, "{named}: {}", r.text());
+        assert_eq!(r.header("kaeso-left-out"), Some(named));
+        let sent = env.mock.last().unwrap().json();
+        assert!(!sent.to_string().contains("\"name\":\"user\""), "{sent}");
+        let result = &sent["messages"][2]["content"][0];
+        assert_eq!(result["type"], "tool_result", "{sent}");
+        assert!(result.get("name").is_none(), "{sent}");
+    }
+}
+
+#[tokio::test]
 async fn instructors_json_mode_reaches_claude_as_a_sentence_in_the_system_prompt() {
     let env = env().await;
     let mut body: serde_json::Value = serde_json::from_str(include_str!(

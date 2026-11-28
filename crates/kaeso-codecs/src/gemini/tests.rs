@@ -10,6 +10,22 @@ use crate::test_support::{assert_json_eq, assert_sse_eq, encoded_error, fixtures
 const DIR: &str = "gemini";
 const MODEL: &str = "gemini-3.5-flash";
 
+// Requests a real app may send but Kaeso refuses when decoding, so they can't round-trip;
+// `rejected_request_fixtures_are_refused_as_listed` checks each refusal instead.
+struct Rejected {
+    name: &'static str,
+    param: &'static str,
+    feature: &'static str,
+    message: &'static str,
+}
+
+const REJECTED_REQUESTS: &[Rejected] = &[Rejected {
+    name: "candidate-count-2",
+    param: "generationConfig.candidateCount",
+    feature: "`generationConfig.candidateCount` above 1",
+    message: "Kaeso returns one candidate per request, so `generationConfig.candidateCount` must be 1 or left out; send several requests for more candidates.",
+}];
+
 fn call_of(folder: &str, name: &str) -> (String, GeminiAction) {
     let meta = sidecar(DIR, folder, name, "meta").unwrap_or(Value::Null);
     let model = meta["model"].as_str().unwrap_or(MODEL).to_owned();
@@ -67,6 +83,9 @@ fn encode_stream(events: &[StreamEvent]) -> Vec<u8> {
 fn every_request_fixture_round_trips_and_names_its_path() {
     for folder in ["requests", "requests/count_tokens"] {
         for (name, body) in fixtures(DIR, folder, "json") {
+            if folder == "requests" && REJECTED_REQUESTS.iter().any(|r| r.name == name) {
+                continue;
+            }
             let req = decode_fixture(folder, &name, &body);
             let (model, action) = call_of(folder, &name);
             let mut ctx = EgressCtx::new(&req);
@@ -82,6 +101,28 @@ fn every_request_fixture_round_trips_and_names_its_path() {
             assert_json_eq(&name, &body, &enc.body);
             assert!(ctx.adapted.is_empty(), "{name}: {:?}", ctx.adapted);
         }
+    }
+}
+
+#[test]
+fn rejected_request_fixtures_are_refused_as_listed() {
+    for r in REJECTED_REQUESTS {
+        let (model, action) = call_of("requests", r.name);
+        let e = crate::dispatch::decode_gemini_request(
+            &model,
+            action,
+            &fixture("requests", r.name),
+            &HeaderList::new(),
+        )
+        .unwrap_err();
+        assert_eq!(
+            e.unsupported_feature(),
+            Some(r.feature),
+            "{}: {e:?}",
+            r.name
+        );
+        assert_eq!(e.param.as_deref(), Some(r.param), "{}: {e:?}", r.name);
+        assert_eq!(e.message, r.message, "{}", r.name);
     }
 }
 
@@ -770,7 +811,13 @@ fn replies_map_finish_reasons_usage_and_blocked_prompts() {
         &generate_ctx(),
     )
     .unwrap_err();
-    assert_eq!(e.unsupported_feature(), Some("more than one candidate"));
+    assert_eq!(e.kind, ErrorKind::ProviderError);
+    assert_eq!(
+        e.message,
+        "The provider returned several candidates for one request; Kaeso carries one."
+    );
+    assert_eq!(e.status, Some(502));
+    assert_eq!(e.retry, Some(kaeso_kpp::Retry::Futile));
     let e = Gemini::decode_response(200, &HeaderList::new(), b"[]", &generate_ctx()).unwrap_err();
     assert_eq!(e.kind, ErrorKind::ProviderError);
 }
@@ -1005,7 +1052,7 @@ fn stream_decoding_reports_errors_and_keeps_frames_it_cannot_read() {
     assert_sse_eq("odd frames", odd, &encode_stream(&events));
     let two = b"data: {\"candidates\": [{}, {}]}\n\n";
     assert!(
-        matches!(decode_stream(two, 0).last(), Some(StreamEvent::Error(e)) if e.unsupported_feature() == Some("more than one candidate"))
+        matches!(decode_stream(two, 0).last(), Some(StreamEvent::Error(e)) if e.kind == ErrorKind::ProviderError && e.message == "The provider streamed several candidates for one request; Kaeso carries one.")
     );
     let mut dec = Gemini::stream_decoder(&stream_ctx());
     dec.feed(b"data: {\"candidates\": [{\"content\": {\"parts\": [{\"text\": \"Hi\"}]}}]}\n\n");
@@ -1149,15 +1196,6 @@ fn requests_decode_only_with_their_path() {
     )
     .unwrap_err();
     assert_eq!(e.param.as_deref(), Some("contents"));
-    let two = br#"{"contents": [], "generationConfig": {"candidateCount": 2}}"#;
-    let e = crate::dispatch::decode_gemini_request(
-        "m",
-        GeminiAction::GenerateContent,
-        two,
-        &HeaderList::new(),
-    )
-    .unwrap_err();
-    assert_eq!(e.param.as_deref(), Some("generationConfig.candidateCount"));
     let e = crate::dispatch::decode_gemini_request(
         "m",
         GeminiAction::GenerateContent,

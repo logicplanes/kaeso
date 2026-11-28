@@ -460,8 +460,11 @@ async fn fields_mistral_refuses_are_refused_before_anything_is_sent() {
         })),
     )
     .await;
-    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
-    assert_eq!(r.json()["error"]["param"], "messages[0].name");
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.header("kaeso-left-out"), Some("messages[0].name"));
+    let sent = sent_to_mistral(&env, "/v1/chat/completions", SMALL);
+    assert!(sent["messages"][0].get("name").is_none(), "{sent}");
+    env.mock.clear();
 
     let mut body = chat(SMALL, "Say hello.");
     body["modalities"] = json!(["text", "audio"]);
@@ -660,33 +663,47 @@ async fn embeddings_come_back_as_base64_when_the_app_asks_although_mistral_sends
 }
 
 #[tokio::test]
-async fn token_counts_for_mistral_models_are_refused_in_the_apps_format() {
+async fn token_counts_for_mistral_models_are_kaesos_estimate_in_the_apps_format() {
+    // Mistral has no count endpoint: Kaeso estimates, says so, and sends nothing.
     let env = env().await;
     env.mock.clear();
-    let expected = format!("The model `{SMALL}` cannot count tokens.");
     let r = call(
         &env,
         "/v1/messages/count_tokens",
         Some(&env.key),
         true,
-        Some(json!({ "model": SMALL, "messages": [{ "role": "user", "content": "Hi" }] })),
+        Some(json!({ "model": SMALL, "messages": [{ "role": "user", "content": "Name one planet." }] })),
     )
     .await;
-    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
-    assert_eq!(r.json()["error"]["message"], expected);
+    assert_eq!(
+        r.estimated_count(),
+        5 + 4,
+        "three words, a full stop and one message"
+    );
+    assert_eq!(r.json(), json!({ "input_tokens": 9 }));
+    assert_eq!(r.header("kaeso-provider"), Some("mistral"));
     let r = call(
         &env,
         "/v1/responses/input_tokens",
         Some(&env.key),
         false,
-        Some(json!({ "model": SMALL, "input": "Hi" })),
+        Some(json!({ "model": SMALL, "input": "Name one planet." })),
     )
     .await;
-    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
-    assert_eq!(
-        (&r.json()["error"]["message"], &r.json()["error"]["param"]),
-        (&json!(expected), &json!("model"))
-    );
+    assert_eq!(r.estimated_count(), 9);
+    assert_eq!(r.json()["object"], "response.input_tokens");
+    let r = call(
+        &env,
+        &format!("/v1beta/models/{SMALL}:countTokens"),
+        Some(&env.key),
+        false,
+        Some(
+            json!({ "contents": [{ "role": "user", "parts": [{ "text": "Name one planet." }] }] }),
+        ),
+    )
+    .await;
+    assert_eq!(r.estimated_count(), 9);
+    assert_eq!(r.json()["totalTokens"], 9, "Gemini's own field");
     assert!(env.mock.received().is_empty());
 }
 
@@ -782,4 +799,53 @@ async fn a_chat_apps_neutral_values_mistral_refuses_are_left_out_and_named() {
     .await;
     assert_eq!(r.status, StatusCode::BAD_REQUEST, "{:?}", r.body);
     assert_eq!(r.json()["error"]["param"], "store");
+}
+
+#[tokio::test]
+async fn voxtral_transcribes_at_chat_completions_when_the_request_carries_audio() {
+    const VOXTRAL: &str = "voxtral-small-transcribe-3-0";
+    let env = env().await;
+    let r = env
+        .app
+        .post(
+            &format!("/orgs/{}/projects/{}/models", env.owner.org_id, env.project),
+            json!({ "provider": "mistral", "model_id": VOXTRAL }),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
+    let ask = |content: Value| json!({ "model": VOXTRAL, "messages": [{ "role": "user", "content": content }] });
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(ask(json!("hi"))),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert_eq!(
+        r.json()["error"]["message"],
+        format!(
+            "The model `{VOXTRAL}` is a transcription model; send it to `/v1/audio/transcriptions`."
+        )
+    );
+    assert!(env.mock.received().is_empty(), "nothing reached Mistral");
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(ask(json!([
+            { "type": "text", "text": "What is said?" },
+            { "type": "input_audio", "input_audio": { "data": "UklGRg==", "format": "wav" } },
+        ]))),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let sent = sent_to_mistral(&env, "/v1/chat/completions", VOXTRAL);
+    assert_eq!(
+        sent["messages"][0]["content"][1]["type"], "input_audio",
+        "{sent}"
+    );
 }

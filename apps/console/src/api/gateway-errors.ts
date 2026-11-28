@@ -940,7 +940,9 @@ const messages = (): Rule[] => [
   rule("errors.updates.updaterUnreachable", () => t("errors.updates.updaterUnreachable", "The updater couldn't be reached; nothing was changed.")),
   rule("errors.model.generationOnly", (v) => t("errors.model.generationOnly", "The model `{model}` is a generation model; it cannot create embeddings.", v)),
   rule("errors.model.endpoint", (v) => t("errors.model.endpoint", "The model `{model}` cannot serve this endpoint.", v)),
-  rule("errors.model.noTokenCount", (v) => t("errors.model.noTokenCount", "The model `{model}` cannot count tokens.", v)),
+  rule("errors.model.noTokenCount", (v) =>
+    t("errors.model.noTokenCount", "The model `{model}` cannot count tokens, and Kaeso can't estimate audio or video.", v),
+  ),
   rule("errors.model.embeddingsOnly", (v) => t("errors.model.embeddingsOnly", "The model `{model}` is an embeddings model; it cannot generate text.", v)),
   rule("errors.model.noText", (v) => t("errors.model.noText", "The model `{model}` does not produce text.", v)),
   rule("errors.model.noAudioOutput", (v) => t("errors.model.noAudioOutput", "The model `{model}` does not produce audio.", v)),
@@ -957,6 +959,10 @@ const messages = (): Rule[] => [
     t("errors.model.decisionOnly", "The model `{model}` is a decision model; send it to `/v1/decisions` or `/v1/systemone`.", v),
   ),
   rule("errors.model.rerankOnly", (v) => t("errors.model.rerankOnly", "The model `{model}` is a rerank model; send it to `/v1/rerank`.", v)),
+  rule("errors.model.transcriptionOnly", (v) =>
+    t("errors.model.transcriptionOnly", "The model `{model}` is a transcription model; send it to `/v1/audio/transcriptions`.", v),
+  ),
+  rule("errors.model.transcriptionNeedsAudio", (v) => t("errors.model.transcriptionNeedsAudio", "The model `{model}` only transcribes; send it audio.", v)),
   rule("errors.model.generationNoRerank", (v) =>
     t("errors.model.generationNoRerank", "The model `{model}` is a generation model; it cannot rerank documents.", v),
   ),
@@ -1003,10 +1009,38 @@ const messages = (): Rule[] => [
   rule("errors.modelApi.timeoutHeader", () =>
     t("errors.modelApi.timeoutHeader", "The header `kaeso-timeout` must be a whole number of seconds from 1 to 3600."),
   ),
+  rule("errors.modelApi.noThreads", () => t("errors.modelApi.noThreads", "Kaeso keeps no message threads; send the whole conversation without `thread`.")),
   rule("errors.modelApi.unkeptReasoning", (v) =>
     t(
       "errors.modelApi.unkeptReasoning",
       "Kaeso no longer keeps the reasoning `{id}` points to; send the items themselves in `input`, as SDKs do with `store: false`.",
+      v,
+    ),
+  ),
+  rule("errors.modelApi.unkeptText", (v) =>
+    t(
+      "errors.modelApi.unkeptText",
+      "Kaeso no longer keeps the text `{id}` points to; send the items themselves in `input`, as SDKs do with `store: false`.",
+      v,
+    ),
+  ),
+  rule("errors.modelApi.textNotKept", (v) =>
+    t(
+      "errors.modelApi.textNotKept",
+      "Kaeso keeps the text `{id}` points to only where the project allows responses stored at the provider; send the items themselves in `input`, as SDKs do with `store: false`.",
+      v,
+    ),
+  ),
+  rule("errors.modelApi.itemReference", () =>
+    t(
+      "errors.modelApi.itemReference",
+      "`item_reference` items point to state Kaeso does not keep; send the items themselves in `input`, as SDKs do with `store: false`.",
+    ),
+  ),
+  rule("errors.modelApi.keptTextOnly", (v) =>
+    t(
+      "errors.modelApi.keptTextOnly",
+      "Kaeso keeps only the text before a tool call, not the message `{id}` points to; send the items themselves in `input`, as SDKs do with `store: false`.",
       v,
     ),
   ),

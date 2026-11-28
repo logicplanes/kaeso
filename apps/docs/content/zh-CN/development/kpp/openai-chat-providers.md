@@ -37,15 +37,15 @@ nav: Chat 服务商
 | `stop_list()` | 将单个 `stop` 字符串作为只含一项的列表发送。 | 只改变写法，停止序列不变。把 `stop` 定义为列表的服务商会拒绝字符串。 |
 | `thinking_switch()` | 将请求的思考以 `enable_thinking` 发送：思考关闭或强度为 `none`、`minimal` 时为 `false`，并省略 `reasoning_effort`；其他情况为 `true`。没有强度的预算以 `thinking_budget` 发送，而不是映射成的强度；强度仍以 `reasoning_effort` 发送。Chat 应用自己发送的键保持不变。 | 服务商用自己的键开关思考；在模型默认不思考时，仅有 `reasoning_effort` 不会开启思考。开或关、预算和强度都原样到达服务商。 |
 | `thinking_type()` | 将关闭的思考或强度为 `none`、`minimal` 的请求以 `thinking: {"type": "disabled"}` 发送，并省略 `reasoning_effort`；将开启但没有强度的思考以 `thinking: {"type": "enabled"}` 发送，旁边附上预算映射成的强度。只有强度时仍以 `reasoning_effort` 发送。Chat 应用自己的 `thinking` 按原样发送。 | 服务商的模型默认思考，而它的强度在各模型上含义不同，因此只有它的开关能关闭思考；开或关以及强度都原样到达服务商。 |
-| `forced_tool_without_thinking()` | 当请求的 `tool_choice` 强制使用某个工具（`required` 或指定的函数）时，无论请求要求何种推理，都以 `reasoning_effort: "none"` 发送，并在 `kaeso-adapted` 中注明应用的推理字段。带有 DeepSeek 自己的 `thinking` 字段的请求按原样发送。 | 该服务商会拒绝在模型思考时强制使用工具，而其模型除非被告知不要思考，否则都会思考；这样应用会得到它的工具调用，而不是错误，与 Claude 在预算思考下的处理一样。 |
+| `forced_tool_without_thinking()` | 当请求的 `tool_choice` 强制使用某个工具（`required` 或指定的函数）时，无论请求要求何种推理，都以 `reasoning_effort: "none"` 发送，并在 `kaeso-adapted` 中注明应用的推理字段。带有 DeepSeek 自己的 `thinking` 字段的请求按原样发送；声明了 `deepseek_web_search` 等服务端工具时的 `required` 也按原样发送，因为 DeepSeek 在思考时将其视为 `auto`。 | 该服务商会拒绝在模型思考时强制使用工具，而其模型除非被告知不要思考，否则都会思考；这样应用会得到它的工具调用，而不是错误，与 Claude 在预算思考下的处理一样。 |
 | `json_mode()` | 发给不支持结构化输出的模型的 JSON schema 以 `response_format: {"type": "json_object"}` 发送，并在系统提示词末尾加一句包含该 schema 的话；`kaeso-adapted` 注明应用的字段（[结构化输出](cross-format.md#结构化输出)）。 | 服务商保证输出 JSON，但不保证符合 schema，因此 schema 只是通过指令要求，而非强制。没有此设置时，这类 schema 会被拒绝。 |
 | `with_reasoning_object()` | 把 Chat 应用发送的 OpenRouter `reasoning` 请求对象（`effort`、`max_tokens`、`enabled`、`exclude` 及任何额外键）保留为 `reasoning`，而不是映射为 `reasoning_effort`。 | OpenRouter、Vercel 和 Ollama Cloud 在 Chat Completions 中接受 OpenRouter 的 `reasoning` 对象；OpenAI 和其他 Chat 服务商会拒绝它，因此改为接收 `reasoning_effort`（或各自的思考开关）。 |
 | `leading_system_only()` | 对于其他格式的应用放在第一轮之后的系统消息，把其文本放到下一个用户轮次的开头、排在其工具结果之后，与 Anthropic Messages 相同（[系统消息](cross-format.md#系统消息)）；开头的系统消息仍作为系统提示词。Chat 应用自己的消息按原样发送。 | 文本及其顺序不变，只有角色改变。模型只接受开头系统消息的服务商（例如 Cerebras 上的 Qwen）会拒绝这样的请求，而 Claude Code 和 Codex 会发送此类消息。 |
 | `replay_reasoning_as_read()` | Chat 应用在 assistant 消息上以 `reasoning_content` 或 `reasoning` 发回推理时，如果服务商不读取应用使用的键，且消息没有同时带上那个键，就改用 `reasoning_fields` 中的第一个键发送。 | 文本不变，只有键名改变。Grok CLI 在其 assistant 轮次中发回 xAI 的 `reasoning_content`，而拒绝自己不读取的消息键的服务商（例如 Cerebras）会以 400 回应。 |
 | `greedy_top_p()` | 只要请求带有 `temperature: 0`，无论设置了什么 `top_p`，都发送 `top_p: 1`。 | 在 `temperature: 0` 下，模型总是选择可能性最高的 token，因此 `top_p` 不起作用，应用的值也没有损失；默认 `top_p` 更低的提供商在没有 `top_p: 1` 时会拒绝贪婪采样。 |
-| `refusing(fields)` | 如果请求体会包含其中某个顶层键，或对象字段中以 `parent.child` 写出的键（`web_search_options.user_location`），就拒绝该请求，例如 `` `logit_bias` is not supported by Example Cloud; remove it from the request. `` | extras 是语义字段，因此被拒绝，而不是丢弃。`parallel_tool_calls: true` 是一个例外：它只允许并行调用，而没有该字段的服务商本来就允许，因此会被省略，并在 `kaeso-left-out` 中注明。Codex 在每个请求中都会发送它。取[中性值](sampling.md#中性值)的字段，例如 `store: false` 或值为 `0` 的惩罚参数，也同样被省略并注明；以 `null` 发送的字段则不会发送。 |
+| `refusing(fields)` | 如果请求体会包含其中某个顶层键，或对象字段中以 `parent.child` 写出的键（`web_search_options.user_location`），就拒绝该请求，例如 `` `logit_bias` is not supported by Example Cloud; remove it from the request. `` | extras 是语义字段，因此被拒绝，而不是丢弃。`parallel_tool_calls: true` 是一个例外：它只允许并行调用，而没有该字段的服务商本来就允许，因此会被省略，并在 `kaeso-left-out` 中注明。Codex 在每个请求中都会发送它。取[中性值](sampling.md#中性值)的字段，例如 `store: false` 或值为 `0` 的惩罚参数，也同样被省略并注明；以 `null` 或 `[]` 发送的字段则不会发送。 |
 | `refusing_values(values)` | 如果请求的某个顶层字符串字段取了其中列出的值，就拒绝该请求，例如 `` Example Cloud does not take `service_tier: "priority"`; send one of its own values or leave `service_tier` out. `` | 服务商以自己的取值接受该字段；它不认识的 OpenAI 取值会被误读或丢弃。 |
-| `refusing_in_messages(fields)` | 对 system、user 和 assistant 消息中的键同样处理。不检查 tool 消息。 | 同上。 |
+| `refusing_in_messages(fields)` | 对 system、user 和 assistant 消息中的键同样处理。不检查 tool 消息。 | 同上。`name` 则会被省略，并在 `kaeso-left-out` 中列出（[参与者名称](openai-chat.md#参与者名称)）。 |
 
 Kaeso 读取回复时的设置（`ChatProfile::reply`，即一个 `ReplyProfile`）：
 
@@ -223,4 +223,4 @@ Cohere 自身 Chat API 的字段（`documents`、`citation_options`、`connector
 | 带 `param: ""` 的 401 `invalid_api_key` | `KppError` | 密钥被拒绝；缺少密钥时返回相同的正文（`errors/recorded-invalid-api-key`）。 |
 | `GET /v1/models` | `ModelList` | 需要密钥且不在参考中，因此列表不完整；没有 `GET /v1/models/{model}`（404 `text/plain`）。 |
 
-Upstage 还提供无状态的 Responses API 和 Anthropic Messages 端点，Kaeso 不使用它们：Responses 和 Anthropic 应用通过 Chat Completions 访问 Upstage。它没有 Token 计数，因此 Kaeso 拒绝 Token 计数。它的嵌入使用 OpenAI 的形式（[OpenAI Embeddings](openai-embeddings.md#upstage)）；它的文档解析和 OCR API 不是 OpenAI 格式。
+Upstage 还提供无状态的 Responses API 和 Anthropic Messages 端点，Kaeso 不使用它们：Responses 和 Anthropic 应用通过 Chat Completions 访问 Upstage。它没有 Token 计数，因此 Kaeso 自行估算 Token 计数。它的嵌入使用 OpenAI 的形式（[OpenAI Embeddings](openai-embeddings.md#upstage)）；它的文档解析和 OCR API 不是 OpenAI 格式。
