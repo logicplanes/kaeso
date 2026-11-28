@@ -707,7 +707,7 @@ impl ChatState {
                 self.release_before_error(out);
                 self.inert = true;
                 step.error = Some(
-                    KppError::provider(
+                    crate::codec::several_choices(
                         "The provider streamed several choices for one request; Kaeso carries one.",
                     )
                     .with_origin(self.origin.clone()),
@@ -721,7 +721,7 @@ impl ChatState {
                         self.release_before_error(out);
                         self.inert = true;
                         step.error = Some(
-                            KppError::provider("The provider streamed a choice other than the first; Kaeso carries one.")
+                            crate::codec::several_choices("The provider streamed a choice other than the first; Kaeso carries one.")
                             .with_origin(self.origin.clone()),
                         );
                         return;

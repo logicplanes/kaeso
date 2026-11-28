@@ -262,7 +262,7 @@ impl Decoder {
             && n > 1
         {
             out.push(StreamEvent::Error(
-                KppError::provider(
+                crate::codec::several_choices(
                     "The provider streamed several candidates for one request; Kaeso carries one.",
                 )
                 .with_origin(self.origin.clone()),

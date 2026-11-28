@@ -73,7 +73,7 @@ pub(crate) fn decode_response(body: &[u8], ctx: &EgressCtx) -> Result<Reply, Kpp
         }
         _ => {
             // Kaeso refuses `n` above 1 when it decodes the request, so several choices are the provider's.
-            return Err(KppError::provider(
+            return Err(crate::codec::several_choices(
                 "The provider returned several choices for one request; Kaeso carries one.",
             ));
         }

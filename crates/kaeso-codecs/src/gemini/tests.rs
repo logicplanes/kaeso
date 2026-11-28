@@ -816,6 +816,8 @@ fn replies_map_finish_reasons_usage_and_blocked_prompts() {
         e.message,
         "The provider returned several candidates for one request; Kaeso carries one."
     );
+    assert_eq!(e.status, Some(502));
+    assert_eq!(e.retry, Some(kaeso_kpp::Retry::Futile));
     let e = Gemini::decode_response(200, &HeaderList::new(), b"[]", &generate_ctx()).unwrap_err();
     assert_eq!(e.kind, ErrorKind::ProviderError);
 }

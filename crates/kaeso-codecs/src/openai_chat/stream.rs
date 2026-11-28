@@ -497,7 +497,7 @@ impl ChatStreamDecoder {
                 }
             }
             Some(_) => {
-                return Err(KppError::provider(
+                return Err(crate::codec::several_choices(
                     "The provider streamed several choices for one request; Kaeso carries one.",
                 ));
             }
@@ -564,7 +564,7 @@ impl ChatStreamDecoder {
             ..
         } = choice;
         if known.index != 0 {
-            return Err(KppError::provider(
+            return Err(crate::codec::several_choices(
                 "The provider streamed a choice other than the first; Kaeso carries one.",
             ));
         }

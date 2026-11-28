@@ -392,6 +392,8 @@ fn replies_kaeso_cannot_carry_are_provider_errors() {
         let err = OpenAiChat::decode_response(200, &HeaderList::new(), &body, &ctx).unwrap_err();
         assert_eq!(err.kind, ErrorKind::ProviderError, "{name}: {err:?}");
         assert_eq!(err.message, *message, "{name}");
+        assert_eq!(err.status, Some(502), "{name}");
+        assert_eq!(err.retry, Some(kaeso_kpp::Retry::Futile), "{name}");
     }
 }
 

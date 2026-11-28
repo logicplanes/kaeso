@@ -847,7 +847,12 @@ fn refused_custom_key(err: &KppError, provider: &ProviderRef, keyless: bool) -> 
 
 fn unreadable(err: KppError, provider: &ProviderRef, dialect: DialectId) -> KppError {
     match provider.custom() {
-        Some(c) if err.kind == ErrorKind::ProviderError && err.raw.is_none() => {
+        // A reply the codec read but can't carry, such as several choices, has its own status.
+        Some(c)
+            if err.kind == ErrorKind::ProviderError
+                && err.raw.is_none()
+                && err.status.is_none() =>
+        {
             tracing::info!(provider = %c.id(), %dialect, error = %err.message, "a custom provider answered in a form its dialect cannot read");
             error(
                 ErrorKind::ProviderError,
@@ -1794,6 +1799,10 @@ const LONGEST_RETRY_AFTER: Duration = Duration::from_secs(5);
 // overloaded; never a timeout, which the provider may still be working on and bill. A
 // `Retry-After` of up to 5 seconds replaces the wait; a longer one ends the tries.
 fn retry_wait(f: &Failure) -> Option<Duration> {
+    // An error that says so itself, such as a reply with several choices.
+    if f.err.retry == Some(kaeso_kpp::Retry::Futile) {
+        return None;
+    }
     let short_lived = match f.stage {
         Stage::Upstream => f.dropped,
         Stage::Provider => matches!(f.err.kind, ErrorKind::Overloaded | ErrorKind::ProviderError),
@@ -4382,6 +4391,55 @@ mod tests {
     }
 
     #[test]
+    fn a_custom_providers_reply_with_several_choices_keeps_its_message() {
+        use kaeso_core::providers::{CustomAuth, CustomProvider, Draft};
+        let custom = ProviderRef::Custom(Arc::new(
+            CustomProvider::new(Draft {
+                uuid: uuid::Uuid::now_v7(),
+                id: kaeso_core::provider::ProviderId::parse("several").unwrap(),
+                name: "Several".into(),
+                base_url: "https://api.several.example".into(),
+                auth: CustomAuth::Bearer,
+                generation: DialectId::OpenAiChat,
+                embeddings: None,
+                count_tokens: None,
+                server: None,
+                media: Vec::new(),
+                decisions: None,
+            })
+            .unwrap(),
+        ));
+        let read = |body: &[u8]| {
+            let ctx = kaeso_codecs::EgressCtx::for_kind(
+                kaeso_kpp::RequestKind::Generate,
+                kaeso_kpp::StreamMode::Off,
+            );
+            let err = dispatch::decode_response(
+                DialectId::OpenAiChat,
+                200,
+                &kaeso_codecs::HeaderList::new(),
+                body,
+                &ctx,
+            )
+            .unwrap_err();
+            unreadable(err, &custom, DialectId::OpenAiChat)
+        };
+        let two = br#"{"id":"c","object":"chat.completion","created":1,"model":"m","choices":[
+            {"index":0,"message":{"role":"assistant","content":"a"},"finish_reason":"stop"},
+            {"index":1,"message":{"role":"assistant","content":"b"},"finish_reason":"stop"}]}"#;
+        let err = read(two);
+        assert_eq!(
+            err.message,
+            "The provider returned several choices for one request; Kaeso carries one."
+        );
+        assert_eq!(err.status, Some(502));
+        assert!(
+            read(b"not json").message.ends_with("check its API format."),
+            "a body the format can't read still says so"
+        );
+    }
+
+    #[test]
     fn only_a_dropped_connection_or_a_provider_that_failed_for_a_moment_is_tried_again() {
         let failure = |stage: Stage, kind: ErrorKind, status: u16, dropped: bool| Failure {
             dropped,
@@ -4418,6 +4476,12 @@ mod tests {
             failure(Stage::KeyRefused, ErrorKind::Authentication, 401, false),
             failure(Stage::Limits, ErrorKind::RateLimited, 429, false),
             failure(Stage::Reply, ErrorKind::ProviderError, 502, true),
+            // A reply with several choices, which a second try would only bill again.
+            Failure::new(
+                error(ErrorKind::ProviderError, 502, "several")
+                    .with_retry(kaeso_kpp::Retry::Futile),
+                Stage::Provider,
+            ),
         ] {
             assert_eq!(retry_wait(&f), None, "{:?} {:?}", f.stage, f.err.kind);
         }
