@@ -219,7 +219,7 @@ fn keepalives_in_openai_formats_reach_older_openai_go_readers_as_nothing() {
         // The gateway's keepalive before the first event, after it and before the last, so the
         // in-band ones for the hidden thinking between them still come.
         let (mut wire, mut without) = (enc.keepalive(), Vec::new());
-        let mut gateway = 1;
+        let mut gateway = usize::from(!wire.is_empty());
         for (i, event) in events.iter().enumerate() {
             wire.extend(enc.encode(event).unwrap());
             if i == 0 || i + 2 == events.len() {
@@ -231,15 +231,16 @@ fn keepalives_in_openai_formats_reach_older_openai_go_readers_as_nothing() {
         }
         wire.extend(enc.finish().unwrap());
         without.extend(plain.finish().unwrap());
-        assert!(gateway > 1, "{target}");
+        assert_eq!(gateway, 3, "{target}: every position gets one");
         if target == C {
             assert!(
                 comments(&without) > 0,
                 "Claude's thinking earns in-band keepalives"
             );
-            assert!(
-                comments(&wire) > gateway,
-                "in-band ones between the gateway's"
+            assert_eq!(
+                comments(&wire),
+                gateway + comments(&without),
+                "the in-band ones come between the gateway's"
             );
         }
         let read = openai_go_v1(&wire).unwrap_or_else(|e| panic!("{target}: {e}"));
