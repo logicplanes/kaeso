@@ -187,7 +187,7 @@ console.log(response.text);
 
 与 Google 一样，Kaeso 也在 `/v1` 下提供 Gemini 的路径：`google-genai` 3 及以后的版本默认调用 `/v1`，更早的版本调用 `/v1beta`。`POST /v1/models/{model}:{method}` 始终是 Gemini。请求带有 Gemini 的密钥（`x-goog-api-key` 或 `?key=`）且没有 `Authorization` 请求头时，`GET /v1/models`、`GET /v1/models/{model}` 和 `POST /v1/decisions` 采用 Gemini 格式回答。在 Gemini 路径中，`{model}` 可以是任何[模型名称](#模型名称)，例如 `claude-haiku-4-5`。
 
-`/v1/embeddings`、`:embedContent` 和 `:batchEmbedContents` 只服务嵌入模型，这类模型只有部分[服务商](../concepts/provider-apis.md)提供；嵌入模型也不服务其他端点。混用两者的请求，Kaeso 返回 400。同样，`/v1/decisions`、`/v1/systemone` 和 `/v1beta/decisions` 只服务决策模型，纯决策模型也不服务任何其他端点（[决策 API](decisions.md)）。`/v1/rerank` 只服务重排序模型，重排序模型也不服务任何其他端点（[重排序 API](rerank.md)）。
+`/v1/embeddings`、`:embedContent` 和 `:batchEmbedContents` 只服务嵌入模型，这类模型只有部分[服务商](../concepts/provider-apis.md)提供；嵌入模型也不服务其他端点。混用两者的请求，Kaeso 返回 400。同样，`/v1/decisions`、`/v1/systemone` 和 `/v1beta/decisions` 只服务决策模型，纯决策模型也不服务任何其他端点（[决策 API](decisions.md)）。`/v1/rerank` 只服务重排序模型，重排序模型也不服务任何其他端点（[重排序 API](rerank.md)）。转写模型只服务转写端点：`/v1/audio/transcriptions`、`/v1/audio/translations`，以及 ElevenLabs 的 `/v1/speech-to-text` 及其实时 WebSocket `/v1/speech-to-text/realtime`。当应用和 Kaeso 都使用 Chat Completions 或 Gemini 时，带音频的请求也能到达其中一些模型，限制见[音频 API](audio.md#转写和翻译)。
 
 `/v1` 下的其他路径返回 404，已知路径使用了错误的方法则返回 405。请求带有 `anthropic-version` 请求头时，这两种错误采用 Anthropic 格式；带有 `xi-api-key` 请求头时采用 ElevenLabs 的格式；带有 Gemini 的密钥时采用 Gemini 格式；否则采用 OpenAI 格式。
 
@@ -201,6 +201,27 @@ console.log(response.text);
 | --- | --- | --- | --- |
 | 分页 | 无，一次响应包含所有模型 | `limit`（1 到 1000，默认 20）、`after_id` 或 `before_id` | `pageSize`（默认 50），以及值为上一页 `nextPageToken` 的 `pageToken` |
 | 已弃用的模型 | 不标注 | 按 KPMR 的标注带有 `lifecycle: "deprecated"` | 不标注 |
+| 模型的描述 | `name`、`context_length`、`top_provider.max_completion_tokens`、`architecture`、`supported_parameters` 和 `pricing`，与 OpenRouter 列表的命名相同 | `display_name`、`max_input_tokens`、`max_tokens` | `displayName`、`inputTokenLimit`、`outputTokenLimit` |
+
+在 OpenAI 格式中，每个模型用 [OpenRouter 模型列表](https://openrouter.ai/docs/api-reference/models/get-models)的字段描述自己。聊天应用和编程工具读取这些字段来显示模型名称、确定上下文大小，并区分聊天模型与图像或语音模型：
+
+```json
+{"id": "grok-4.7", "object": "model", "created": 1789948800, "owned_by": "xai", "shutdown_date": null,
+ "name": "Grok 4.7", "context_length": 500000,
+ "architecture": {"modality": "text+image+pdf->text", "input_modalities": ["text", "image", "pdf"], "output_modalities": ["text"]},
+ "pricing": {"prompt": "0.000002", "completion": "0.000006", "input_cache_read": "0.0000005"},
+ "top_provider": {"context_length": 500000, "max_completion_tokens": 500000},
+ "supported_parameters": ["tools", "tool_choice", "reasoning", "reasoning_effort", "response_format", "structured_outputs", "temperature"]}
+```
+
+这些值来自项目的目录（包括覆盖设置）；别名显示其列出时所用模型的值。`pricing` 是 Kaeso 计算请求费用所用的基础价格，单位为每 Token 美元：`prompt`、`completion`、`input_cache_read`、`input_cache_write` 和 `internal_reasoning`。长提示词的价格以及按图像、秒或字符计的价格不会列出。`supported_parameters` 列出目录中该模型接受的请求字段：
+
+- `tools` 和 `tool_choice`；
+- 会推理的模型列出 `reasoning`，有推理强度等级时还列出 `reasoning_effort`；
+- `response_format` 和 `structured_outputs`（按 JSON Schema 输出）；
+- `temperature`。
+
+不生成内容的模型以 OpenRouter 的命名（即其模型列表在 `?output_modalities=all` 时的写法）把它生成的东西列为输出模态：`embeddings`、`rerank` 或 `decisions`。目录中未知的字段会省略。
 
 `GET /v1/models/{model}` 和 `GET /v1beta/models/{model}` 接受任何[模型名称](#模型名称)。模型不在目录中、密钥无权使用或服务商不提供该模型时，返回 404。
 
@@ -245,7 +266,7 @@ Kaeso 读取以 `Content-Encoding: gzip`、`x-gzip` 或 `zstd` 发送的请求�
 
 Gemini 应用则像 `google-genai` 那样调用 `:streamGenerateContent?alt=sse`。Kaeso 只以服务器发送事件的形式流式传输 Gemini 回复，因此不带 `alt=sse` 的流式请求返回 400。
 
-- **保活。** 15 秒内没有输出时，Kaeso 会写入一条 SDK 会忽略的保活消息：OpenAI 格式为 SSE 注释，Anthropic 格式为 `ping` 事件，Gemini 格式为一个空行，因为 `google-genai` 会把其他每一行都当作 JSON 读取。`KAESO_STREAMS_KEEPALIVE_INTERVAL` 可更改间隔或关闭保活（[发往应用的流](../self-hosting/configuration.md#发往应用的流)）。
+- **保活。** 15 秒内没有输出时，Kaeso 会写入一条 SDK 会忽略的保活消息：OpenAI 格式为 SSE 注释行，Anthropic 格式为 `ping` 事件，Gemini 格式为一个空行，因为 `google-genai` 会把其他每一行都当作 JSON 读取。`KAESO_STREAMS_KEEPALIVE_INTERVAL` 可更改间隔或关闭这类保活（[发往应用的流](../self-hosting/configuration.md#发往应用的流)）。服务商流式发送应用格式无法显示的内容时（例如发给 OpenAI Chat 应用的 Claude 思考），不论间隔如何，每累计 1,024 字节 Kaeso 也会写入一条保活消息。
 - **失败。** Kaeso 在服务商首次输出时，或第一个保活信号到期时开始流。服务商的流在此之前失败时，应用会收到带有其状态码（例如 429）的错误，与非流式请求相同。流一旦开始就无法再更改状态码：服务商之后出错，或在回复完成前结束流时，流会以采用应用所用格式的错误事件结束。
 - **断开。** 应用在流的最后一个事件之前断开连接时，Kaeso 会立即停止向服务商发出的请求，并按已用量计费。最后一个事件已到达应用的流视为已完成，即使应用随即断开连接也是如此。
 
@@ -276,8 +297,8 @@ Chat Completions 没有存放模型推理内容的字段，Gemini 格式也没�
 | `kaeso-cost` | 非流式回复的费用，与其请求日志条目将记录的相同：以美元计的金额，命中响应缓存时为 `0`，模型对其产出没有价格时为 `unknown`。仅当密钥所有者在项目中拥有 `costs.view` 时才有；视频任务或图像生成的开始请求没有此头，它们在结束时计费 |
 | `kaeso-provider` | 处理该请求的服务商，例如 `anthropic`；确定模型后即带有，错误响应也包括在内 |
 | `kaeso-model` | 服务商的模型 ID；确定模型后即带有，错误响应也包括在内 |
-| `kaeso-left-out` | Kaeso 因模型没有对应项而省略的内容，按请求中的名称列出，例如 `tools[1], text.verbosity`、只接受默认温度的模型的 `temperature`，若该模型是 Claude（例如 Claude Opus 4.7 及更新版本），还有 `top_p` 和 `top_k`，或系统消息推理强度的 `messages[4].output_config.effort`；格式没有惩罚参数的模型的值为 `0` 的 `frequency_penalty`；对话中的项按类型和 ID 列出，例如 `web_search_call ws_67c9…`。只出现在省略了内容的响应上（[省略的工具](../development/kpp/cross-format.md#省略的工具)、[没有推理强度等级的模型](../development/kpp/reasoning.md#没有推理强度等级的模型)、[中性值](../development/kpp/sampling.md#中性值)） |
-| `kaeso-adapted` | 因模型不接受参数 schema 根部的联合、Kaeso 把参数 schema 合并为一个对象的工具，按它们在请求中的路径列出，例如 `tools[0].tools[3]`。模型会在工具描述中看到各个变体，它的调用原样到达应用。还包括对话中 Kaeso 为只接受对象的模型把参数变为对象的工具调用，以 `tool call` 加调用 ID 列出，例如 `tool call call_abc`。还包括 Kaeso 为 Chat Completions 模型把图像和文件移到下一条用户消息中的工具结果，以 `tool result` 加调用 ID 列出，例如 `tool result call_abc`。还包括 Kaeso 以 SHA-256 哈希发送的 Anthropic 应用的 `metadata.user_id`，因为服务商接受的最终用户 ID 更短，例如 OpenAI 的 128 个字符。还包括来自其他格式的请求中高于模型自身上限、被 Kaeso 降到模型最大值的输出上限，以应用中的字段名列出，例如 `max_tokens`。还包括发往 ChatGPT 套餐的请求的输出上限：该路由拒绝这个字段，因此 Kaeso 在估算的输出达到上限时自行结束回复，并使用该格式对应的停止原因（例如 `max_tokens`），以应用中的字段名列出。还包括对始终推理的模型关闭的思考，改发该模型的最低推理强度等级，以应用中的字段名列出，例如 `thinking`。还包括模型未列出、被改为其所列最近等级的推理强度，以应用中的字段名列出，例如 `output_config.effort`，以及对不支持自适应思考的 Claude 模型使用、被改为带预算的 `enabled` 思考的自适应思考，列为 `thinking`；还包括发给拒绝预算的 Claude Opus 4.7 及更新版本、被改为采用预算对应推理强度的自适应思考的思考预算，列为 `thinking`，Gemini 应用则列为 `generationConfig.thinkingConfig`。还包括 Anthropic 应用系统消息中的 `tool_addition` 和 `tool_removal` 块，Kaeso 把它们的工具变更应用到了其他格式的模型所收到的工具列表上，以块的路径列出，例如 `messages[4].blocks[1]`。还包括参数 schema 中含有 Kaeso 为编译 pattern 的服务商改写过的 `pattern` 的工具，以其路径列出，例如 `tools[2]`。只出现在调整了工具、调用、结果、工具变更、最终用户 ID、输出上限或推理强度的响应上（[始终推理的模型](../development/kpp/reasoning.md#始终推理的模型)、[联合类型的工具 schema](../development/kpp/cross-format.md#联合类型的工具-schema)、[工具调用参数](../development/kpp/cross-format.md#工具调用参数)、[工具结果中的媒体](../development/kpp/cross-format.md#工具结果中的媒体)、[内联工具](../development/kpp/cross-format.md#内联工具)、[服务商配置](../development/kpp/openai-chat-providers.md#服务商配置)） |
+| `kaeso-left-out` | Kaeso 因模型没有对应项而省略的内容，按请求中的名称列出，例如 `tools[1], text.verbosity`、只接受默认温度的模型的 `temperature`，若该模型是 Claude（例如 Claude Opus 4.7 及更新版本），还有 `top_p` 和 `top_k`，或系统消息推理强度的 `messages[4].output_config.effort`；格式没有惩罚参数的模型的值为 `0` 的 `frequency_penalty`；Chat Completions 消息的参与者名称为 `messages[1].name`；通过 OpenAI Responses 提供的模型的 `seed`；没有 top-k 的模型的 `top_k` 或 Gemini 应用的 `generationConfig.topK`；对话中的项按类型和 ID 列出，例如 `web_search_call ws_67c9…`。只出现在省略了内容的响应上（[省略的工具](../development/kpp/cross-format.md#省略的工具)、[没有推理强度等级的模型](../development/kpp/reasoning.md#没有推理强度等级的模型)、[中性值](../development/kpp/sampling.md#中性值)、[top K](../development/kpp/sampling.md#top-k)） |
+| `kaeso-adapted` | 因模型不接受参数 schema 根部的联合、Kaeso 把参数 schema 合并为一个对象的工具，按它们在请求中的路径列出，例如 `tools[0].tools[3]`。模型会在工具描述中看到各个变体，它的调用原样到达应用。还包括对话中 Kaeso 为只接受对象的模型把参数变为对象的工具调用，以 `tool call` 加调用 ID 列出，例如 `tool call call_abc`。还包括 Kaeso 为 Chat Completions 模型把图像和文件移到下一条用户消息中的工具结果，以 `tool result` 加调用 ID 列出，例如 `tool result call_abc`。还包括 Kaeso 以 SHA-256 哈希发送的 Anthropic 应用的 `metadata.user_id`，因为服务商接受的最终用户 ID 更短，例如 OpenAI 的 128 个字符。还包括来自其他格式的请求中高于模型自身上限、被 Kaeso 降到模型最大值的输出上限，以应用中的字段名列出，例如 `max_tokens`。还包括发往 ChatGPT 套餐的请求的输出上限：该路由拒绝这个字段，因此 Kaeso 在估算的输出达到上限时自行结束回复，并使用该格式对应的停止原因（例如 `max_tokens`），以应用中的字段名列出。还包括其他格式发往通过 OpenAI Responses 提供的模型的请求中的停止序列和低于 16 个 Token 的输出上限：Kaeso 在第一个停止序列处或上限处自行结束回复，以应用中的字段名列出，例如 `stop`（[网关中的 OpenAI Responses](../development/kpp/sampling.md#网关中的-openai-responses)）。还包括对始终推理的模型关闭的思考，改发该模型的最低推理强度等级，以应用中的字段名列出，例如 `thinking`。还包括模型未列出、被改为其所列最近等级的推理强度，以应用中的字段名列出，例如 `output_config.effort`，以及对不支持自适应思考的 Claude 模型使用、被改为带预算的 `enabled` 思考的自适应思考，列为 `thinking`；还包括发给拒绝预算的 Claude Opus 4.7 及更新版本、被改为采用预算对应推理强度的自适应思考的思考预算，列为 `thinking`，Gemini 应用则列为 `generationConfig.thinkingConfig`。还包括 Anthropic 应用系统消息中的 `tool_addition` 和 `tool_removal` 块，Kaeso 把它们的工具变更应用到了其他格式的模型所收到的工具列表上，以块的路径列出，例如 `messages[4].blocks[1]`。还包括参数 schema 中含有 Kaeso 为编译 pattern 的服务商改写过的 `pattern` 的工具，以其路径列出，例如 `tools[2]`。还包括发往没有 JSON 模式的格式（例如 Claude）的模型的 JSON 模式，Kaeso 通过系统提示词末尾的一句话来要求 JSON，以应用中的字段名列出，例如 `response_format`。还包括 `count_estimated`：因模型所属服务商无法计数而由 Kaeso 估算的 Token 计数（[Token 计数](../concepts/providers.md)）。还包括 Kaeso 改写为 Claude 所接受子集的输出 schema，或为 Claude 或 Gemini 把描述或 `strict: false` 纳入 schema 的输出 schema，以应用中的字段名列出，例如 `response_format`；以及 Kaeso 为 Claude 改写了 schema 的严格工具，以其路径列出（[来自其他方言的请求](../development/kpp/anthropic-messages.md#来自其他方言的请求)）。只出现在调整了工具、调用、结果、工具变更、最终用户 ID、输出上限、输出格式或推理强度，或估算了计数的响应上（[结构化输出](../development/kpp/cross-format.md#结构化输出)、[始终推理的模型](../development/kpp/reasoning.md#始终推理的模型)、[联合类型的工具 schema](../development/kpp/cross-format.md#联合类型的工具-schema)、[工具调用参数](../development/kpp/cross-format.md#工具调用参数)、[工具结果中的媒体](../development/kpp/media.md#工具结果中的媒体)、[内联工具](../development/kpp/cross-format.md#内联工具)、[服务商配置](../development/kpp/openai-chat-providers.md#服务商配置)） |
 | `kaeso-route` | 请求在别名路由中到达的每个步骤，按顺序以结构化字段列表（[RFC 9651](https://www.rfc-editor.org/rfc/rfc9651)）给出：步骤的路径、以 `provider/model` 表示的 `model`、`status`（提供商返回的状态，或 Kaeso 为自身失败给出的状态：无法连接提供商或提供商拒绝 Kaeso 的密钥时为 502，未及时应答时为 504），以及失败时的耗时 `dur`（毫秒）。响应本身在应用的格式中可能带有不同的状态，例如 Anthropic 的 529 发给 OpenAI 应用时为 503。密钥无权使用的步骤带 `skipped`，不带模型；因刚刚失败而被跳过的步骤带 `skipped` 和它的模型。步骤多次发送请求时，`tries` 给出发送次数，其中包括重试和尝试过的项目在该服务商下的密钥。例如 `"route";model="anthropic/claude-sonnet-5-5";status=529;dur=1204, "route.fallback";model="openai/gpt-5";status=200`。只出现在别名请求的响应中（[别名路由](../concepts/alias-routes.md#应用和日志看到的内容)） |
 | `kaeso-limits` | 每项适用的速率限制和硬性预算还剩多少，采用结构化字段列表：限额的层级、类型和周期，例如 `"key.requests.minute"`，模型自身的限额带 `model`，另有 `limit`、`remaining` 和以秒计的 `reset`（总预算没有）。花费为美元字符串。`remaining` 为本次请求之前的值，只有请求速率已计入本次请求。仅当密钥所有者有权查看项目限额（`limits.view`）时返回，花费还需 `costs.view`；Kaeso 返回的 429 带有拒绝它的限额，`remaining=0`（[限额和预算](../console/limits-and-budgets.md#应用看到的内容)） |
 | `kaeso-cache` | [响应缓存](../console/response-cache.md)应答时为 `hit`，请求发往服务商时为 `miss`，请求无法缓存或应用发送了 `Cache-Control: no-store` 时为 `bypass`。只出现在开启缓存的项目中 |
@@ -292,7 +313,7 @@ Chat Completions 没有存放模型推理内容的字段，Gemini 格式也没�
 
 - **精确匹配源。** 协议、主机和端口都必须一致：`https://app.example.com` 既不放行 `http://app.example.com`，也不放行 `https://www.app.example.com`。Kaeso 会在启动时拒绝 `*`，因为它会让任何网站都能用访问者持有的密钥发送请求。
 - **预检请求。** 来自已列出源、带有 `Origin` 和 `Access-Control-Request-Method` 的 `OPTIONS` 请求无需密钥即返回 204。响应带有值为该源的 `Access-Control-Allow-Origin`、`Access-Control-Allow-Methods: GET, POST, DELETE` 和 `Access-Control-Max-Age: 7200`。`Access-Control-Allow-Headers` 列出所请求的请求头里官方 SDK 会发送的那些：`authorization`、`x-api-key`、`content-type`、`accept`、`user-agent`、`anthropic-version`、`anthropic-beta`、`anthropic-dangerous-direct-browser-access`、`openai-organization`、`openai-project`、`openai-beta`、`idempotency-key`、`x-goog-api-key`、`x-goog-api-client`、`xi-api-key` 和 `x-stainless-…`，以及[响应缓存](#响应缓存)读取的 `cache-control` 、`kaeso-timeout`（[超时](#超时)）、`kaeso-log-content`（[不记录内容](#不记录内容)）、`kaeso-tags`、`traceparent` 和 `tracestate`（[追踪](../self-hosting/monitoring.md#追踪)），另加 `KAESO_CORS_ALLOWED_HEADERS` 中的名称（[配置](../self-hosting/configuration.md#浏览器应用)）。预检请求不是模型请求：不记录日志、不计费，也不计入限额。
-- **响应。** 发往已列出源的每个响应（包括错误响应）都带有值为该源的 `Access-Control-Allow-Origin`，以及 `Access-Control-Expose-Headers: kaeso-request-id, kaeso-upstream-request-id, kaeso-cost, kaeso-provider, kaeso-model, kaeso-left-out, kaeso-adapted, kaeso-route, kaeso-limits, kaeso-cache, kaeso-guardrails, server-timing, age, retry-after, retry-after-ms`，以便应用读取这些响应头。
+- **响应。** 发往已列出源的每个响应（包括错误响应）都带有值为该源的 `Access-Control-Allow-Origin`，以及 `Access-Control-Expose-Headers: kaeso-request-id, kaeso-upstream-request-id, kaeso-cost, kaeso-provider, kaeso-model, kaeso-left-out, kaeso-adapted, kaeso-route, kaeso-limits, kaeso-cache, kaeso-guardrails, server-timing, age, retry-after, retry-after-ms, x-should-retry`，以便应用读取这些响应头。
 - **其他源**得不到 CORS 响应头，因此浏览器会拦截调用，它们的预检请求得到空的 204。`/v1`、`/v1beta` 和 `/v2` 上的每个响应都带有 `Vary: Origin`，以便缓存区分这些响应。
 - **不使用 Cookie。** 由于密钥通过请求头传递，Kaeso 从不发送 `Access-Control-Allow-Credentials`。Platform API、健康检查和指标从不响应跨源请求。
 
@@ -304,5 +325,5 @@ OpenAI 和 Anthropic 的 SDK 都只有在应用传入 `dangerouslyAllowBrowser: 
 ## Kaeso 不做的事
 
 - **重试。** 只有项目或别名步骤要求时，Kaeso 才会在连接中断、返回 5xx 或服务商过载后，且在任何回复到达应用之前，把请求重新发送给模型（[别名路由](../concepts/alias-routes.md#回退)）。否则每个请求只发送一次；SDK 会在错误允许时自行重试。
-- **存储状态。** Kaeso 自己不保存对话。只有在项目允许在服务商处存储回复、且服务商会保留该模型回复时，`store: true` 和 `previous_response_id` 才可用（见[存储的回复](../console/organizations-and-projects.md#存储的回复)）；其他情况下 Kaeso 会拒绝它们，`conversation` 和 `background: true` 则一律拒绝。否则请每次发送完整对话。
+- **存储状态。** Kaeso 自己不保存对话，唯一的例外是模型在工具调用之前写下的内容。对于由另一种格式的模型服务的 Chat Completions 或 Gemini 应用，这是推理内容；对于保持 `store` 开启的 OpenAI Responses 应用，这是推理内容，以及在项目允许在服务商处存储回复时调用之前紧接着的文本。网关把它们保存在 Valkey 中，时长为 `continuity.reasoning_ttl`，默认一小时，用实例的主密钥加密，并且只返还给使用同一 API 密钥的请求。设为 `0s` 即全部关闭；关闭项目设置**允许在服务商处存储回复**后，网关不再保留文本（[格式转换](../concepts/format-translation.md#保持-store-开启的-responses-应用)）。如果防护规则会在回复中恢复被遮盖的值，保留的文本就含有这些服务商从未见过的值。只有在项目允许在服务商处存储回复、且服务商会保留该模型回复时，`store: true` 和 `previous_response_id` 才可用（见[存储的回复](../console/organizations-and-projects.md#存储的回复)）；其他情况下 Kaeso 会拒绝它们，`conversation` 和 `background: true` 则一律拒绝。Anthropic 的消息线程（`thread`）也会被拒绝，使用 Anthropic 对无法提供的线程发送的代码 `thread_unsupported_request`。Anthropic SDK 的工具运行器随后会在不使用线程的情况下继续。否则请每次发送完整对话。
 - **悄然更改。** 无法传递给模型服务商的字段，Kaeso 会拒绝并在错误中指出该字段，绝不会悄悄丢弃。在 Chat Completions、Messages 和 Embeddings 中，名称以 `header:` 开头或包含 `.` 的字段会得到 400，因为 Kaeso 无法传递这样的名称；Responses 则会把这类字段保留在请求正文中。格式之间能传递哪些内容，见[格式转换](../concepts/format-translation.md)。

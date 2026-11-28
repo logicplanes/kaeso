@@ -7,14 +7,14 @@ use axum::http::{HeaderMap, HeaderValue, StatusCode, header};
 use axum::response::Response;
 use bytes::Bytes;
 use futures::StreamExt;
-use kaeso_codecs::continuity::reasoning_for_tool_calls;
+use kaeso_codecs::continuity::Unresolved;
 use kaeso_codecs::gemini::GeminiAction;
 use kaeso_codecs::{EgressCtx, EncodeCtx, HeaderList, dispatch};
 use kaeso_core::catalogue::Entry;
 use kaeso_core::catalogue::resolve::{Access, Alias, ResolveError, Resolved};
 use kaeso_core::catalogue::route::{self, Failure as RouteFailure};
 use kaeso_core::catalogue::{Availability, Effective, capability};
-use kaeso_core::estimate::{self, Tally};
+use kaeso_core::estimate::{self, OutputCap, Tally};
 use kaeso_core::id::{
     ApiKeyId, CatalogueModelId, OrgId, ProjectId, RequestId, ServiceAccountId, UserId,
 };
@@ -710,6 +710,7 @@ pub(super) fn limited(refusal: super::hooks::Refusal) -> KppError {
     if let Some(r) = refusal.retry_after {
         e = e.with_retry_after(r);
     }
+    e.retry = refusal.retry;
     if let Some(p) = refusal.param {
         e = e.with_param(p);
     }
@@ -818,7 +819,8 @@ pub(crate) fn upstream_error_from(e: &UpstreamError, provider: &ProviderRef) -> 
             format!(
                 "The custom provider `{id}` is at an address this install does not allow; ask its operator."
             ),
-        ),
+        )
+        .with_retry(kaeso_kpp::Retry::Futile),
         other => upstream_error(other),
     }
 }
@@ -840,12 +842,17 @@ fn refused_custom_key(err: &KppError, provider: &ProviderRef, keyless: bool) -> 
             "The custom provider `{id}` refused this project's key; ask an organization admin to check it under Providers."
         )
     };
-    Some(error(ErrorKind::ProviderError, 502, message))
+    Some(error(ErrorKind::ProviderError, 502, message).with_retry(kaeso_kpp::Retry::Futile))
 }
 
 fn unreadable(err: KppError, provider: &ProviderRef, dialect: DialectId) -> KppError {
     match provider.custom() {
-        Some(c) if err.kind == ErrorKind::ProviderError && err.raw.is_none() => {
+        // A reply the codec read but can't carry, such as several choices, has its own status.
+        Some(c)
+            if err.kind == ErrorKind::ProviderError
+                && err.raw.is_none()
+                && err.status.is_none() =>
+        {
             tracing::info!(provider = %c.id(), %dialect, error = %err.message, "a custom provider answered in a form its dialect cannot read");
             error(
                 ErrorKind::ProviderError,
@@ -897,7 +904,8 @@ async fn entra_token(
             crate::services::notifications::system::account_signed_out(state, org, id).await;
             Err((
                 Stage::SignedOut(crate::services::credentials::ENTRA_ID),
-                error(ErrorKind::ProviderError, 502, ENTRA_REFUSED),
+                error(ErrorKind::ProviderError, 502, ENTRA_REFUSED)
+                    .with_retry(kaeso_kpp::Retry::Futile),
             ))
         }
         Err(e) => {
@@ -919,7 +927,48 @@ pub(crate) fn refused_key(err: &KppError) -> Option<KppError> {
         ErrorKind::Billing => ACCOUNT_REFUSED,
         _ => return None,
     };
-    Some(error(ErrorKind::ProviderError, 502, message))
+    Some(error(ErrorKind::ProviderError, 502, message).with_retry(kaeso_kpp::Retry::Futile))
+}
+
+// An `item_reference` to reasoning or text Kaeso no longer keeps for this key: kept for
+// `continuity.reasoning_ttl`, or never, for another key or with continuity off. Of the messages,
+// Kaeso keeps only the text right before a tool call.
+fn unkept(unresolved: &Unresolved) -> KppError {
+    let message = match unresolved {
+        Unresolved::Reasoning(id) => format!(
+            "Kaeso no longer keeps the reasoning `{id}` points to; send the items themselves in `input`, as SDKs do with `store: false`."
+        ),
+        Unresolved::Message(id) => format!(
+            "Kaeso no longer keeps the text `{id}` points to; send the items themselves in `input`, as SDKs do with `store: false`."
+        ),
+        Unresolved::Conversation(id) => format!(
+            "Kaeso keeps only the text before a tool call, not the message `{id}` points to; send the items themselves in `input`, as SDKs do with `store: false`."
+        ),
+        _ => "`item_reference` items point to state Kaeso does not keep; send the items themselves in `input`, as SDKs do with `store: false`.".to_owned(),
+    };
+    error(ErrorKind::InvalidRequest, 400, message).with_param("input")
+}
+
+fn text_not_kept(id: &str) -> KppError {
+    error(
+        ErrorKind::InvalidRequest,
+        400,
+        format!(
+            "Kaeso keeps the text `{id}` points to only where the project allows responses stored at the provider; send the items themselves in `input`, as SDKs do with `store: false`."
+        ),
+    )
+    .with_param("input")
+}
+
+// Kaeso keeps no conversations, and a thread at Anthropic under the organization's key could be
+// continued from any of its projects; the SDKs' tool runners go on without one.
+fn no_threads() -> KppError {
+    KppError::unsupported(
+        kaeso_codecs::anthropic_messages::THREAD,
+        "Kaeso keeps no message threads; send the whole conversation without `thread`.",
+    )
+    .with_status(400)
+    .with_param(kaeso_codecs::anthropic_messages::THREAD)
 }
 
 fn redacted(mut err: KppError) -> KppError {
@@ -1040,6 +1089,14 @@ where
             "Kaeso cannot translate this request right now. Try again shortly.",
         )
     })
+}
+
+fn refused(u: capability::Unsupported) -> KppError {
+    let mut e = KppError::unsupported(u.capability, u.message).with_status(400);
+    if let Some(p) = u.param {
+        e = e.with_param(p);
+    }
+    e
 }
 
 // A model the key may not use answers like one that doesn't exist, so a restricted key
@@ -1337,6 +1394,11 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     {
         source.fill(r);
     }
+    if let Request::Generate(g) | Request::CountTokens(g) = &req
+        && kaeso_codecs::anthropic_messages::asks_for_thread(g)
+    {
+        return Err(at(Stage::Request)(no_threads()));
+    }
     req.validate().map_err(at(Stage::Request))?;
     if let Request::Video(r) = &req {
         super::videos::refuse_sora(r).map_err(at(Stage::Request))?;
@@ -1435,6 +1497,29 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
             Stage::ModelAccess(req.model().to_owned()),
         ));
     }
+    // Text a Responses app points to goes back in first, so the guardrails check it as any other.
+    let mut restored_text = 0;
+    if ingress == DialectId::OpenAiResponses
+        && let Request::Generate(g) | Request::CountTokens(g) = &mut req
+        && kaeso_codecs::openai_responses::has_message_reference(g)
+    {
+        let keeps_text =
+            crate::services::response_cache::stores_responses(state, caller.project_id).await;
+        let resolved = if keeps_text {
+            continuity::resolve_messages(state, caller.key_id, g).await
+        } else {
+            kaeso_codecs::continuity::resolve_message_references(g, &[])
+        };
+        restored_text = resolved
+            .map_err(|u| {
+                let e = match &u {
+                    Unresolved::Message(id) if !keeps_text => text_not_kept(id),
+                    _ => unkept(&u),
+                };
+                Failure::new(e, Stage::Request)
+            })?
+            .restored_bytes;
+    }
     let guards = Box::pin(guard_request(
         state,
         rec,
@@ -1458,6 +1543,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         logged,
         timeout,
         guards: guards.as_ref(),
+        restored_text,
     };
     match target {
         Resolved::Model(entry, _) => {
@@ -1613,6 +1699,8 @@ struct Shared<'a> {
     logged: u64,
     timeout: Option<u32>,
     guards: Option<&'a Guards>,
+    // The bytes of text put back for references before the guardrails, which the provider bills.
+    restored_text: usize,
 }
 
 // A project's guardrails and what they are told about the request, for the reply phase.
@@ -1778,6 +1866,10 @@ const LONGEST_RETRY_AFTER: Duration = Duration::from_secs(5);
 // overloaded; never a timeout, which the provider may still be working on and bill. A
 // `Retry-After` of up to 5 seconds replaces the wait; a longer one ends the tries.
 fn retry_wait(f: &Failure) -> Option<Duration> {
+    // An error that says so itself, such as a reply with several choices.
+    if f.err.retry == Some(kaeso_kpp::Retry::Futile) {
+        return None;
+    }
     let short_lived = match f.stage {
         Stage::Upstream => f.dropped,
         Stage::Provider => matches!(f.err.kind, ErrorKind::Overloaded | ErrorKind::ProviderError),
@@ -2190,7 +2282,8 @@ async fn attempt(
                         "Custom providers are turned off on this install, so `{}` cannot be called.",
                         entry.provider
                     ),
-                ),
+                )
+                .with_retry(kaeso_kpp::Retry::Futile),
                 Stage::CustomProvidersOff,
             );
         }
@@ -2199,7 +2292,8 @@ async fn attempt(
                 ErrorKind::ProviderError,
                 500,
                 format!("The provider `{}` is not available.", entry.provider),
-            ),
+            )
+            .with_retry(kaeso_kpp::Retry::Futile),
             Stage::Setup,
         )
     })?;
@@ -2239,13 +2333,8 @@ async fn attempt(
             eff.fields.clone()
         });
     }
-    let mut plan = capability::prepare(&mut req, ingress, &eff).map_err(|u| {
-        let mut e = KppError::unsupported(u.capability, u.message).with_status(400);
-        if let Some(p) = u.param {
-            e = e.with_param(p);
-        }
-        fail(Stage::Capability)(e)
-    })?;
+    let mut plan = capability::prepare(&mut req, ingress, &eff)
+        .map_err(|u| fail(Stage::Capability)(refused(u)))?;
     rec.outcome().egress = Some(plan.dialect);
     if sh.generation && plan.dialect != DialectId::ElevenLabs {
         return Err(fail(Stage::Capability)(super::generations::not_elevenlabs(
@@ -2325,28 +2414,28 @@ async fn attempt(
     )
     .await
     .map_err(|e| match e {
-        CredentialError::Missing { .. } => fail(Stage::MissingCredential(eff.provider.name().to_owned()))(error(ErrorKind::ProviderError, 502, e.to_string())),
+        CredentialError::Missing { .. } => fail(Stage::MissingCredential(eff.provider.name().to_owned()))(error(ErrorKind::ProviderError, 502, e.to_string()).with_retry(kaeso_kpp::Retry::Futile)),
         CredentialError::Crypto(_) => {
             tracing::error!(provider = eff.provider.id(), "a provider credential cannot be decrypted");
-            fail(Stage::Credential)(error(ErrorKind::ProviderError, 500, "Kaeso cannot decrypt the provider credential. The operator must check the configured master keys."))
+            fail(Stage::Credential)(error(ErrorKind::ProviderError, 500, "Kaeso cannot decrypt the provider credential. The operator must check the configured master keys.").with_retry(kaeso_kpp::Retry::Futile))
         }
         CredentialError::Store(err) => {
             tracing::error!(error = %err, "cannot load a provider credential");
             fail(Stage::Credential)(error(ErrorKind::ProviderError, 503, "Kaeso cannot load the provider credential right now. Try again shortly."))
         }
         CredentialError::SignedOut { product } if product == crate::services::credentials::ENTRA_ID => {
-            fail(Stage::SignedOut(product))(error(ErrorKind::ProviderError, 502, ENTRA_REFUSED))
+            fail(Stage::SignedOut(product))(error(ErrorKind::ProviderError, 502, ENTRA_REFUSED).with_retry(kaeso_kpp::Retry::Futile))
         }
         CredentialError::SignedOut { product } => fail(Stage::SignedOut(product))(error(
             ErrorKind::ProviderError,
             502,
             format!("The {product} account of this project's {provider} key is signed out. Ask an organization admin to sign in again under Providers.", provider = eff.provider.name()),
-        )),
+        ).with_retry(kaeso_kpp::Retry::Futile)),
         CredentialError::NoApiAccess { product } => fail(Stage::NoApiAccess(product))(error(
             ErrorKind::ProviderError,
             502,
             format!("The {product} plan of this project's {provider} key has no API access. Ask an organization admin to add an API key under Providers.", provider = eff.provider.name()),
-        )),
+        ).with_retry(kaeso_kpp::Retry::Futile)),
         CredentialError::Unrenewed { product } => fail(Stage::Credential)(error(
             ErrorKind::ProviderError,
             503,
@@ -2369,6 +2458,7 @@ async fn attempt(
             provider: &eff.provider,
             model: &eff.model_id,
             credential: &credential,
+            resolves_references: true,
         },
         &req,
     )
@@ -2413,6 +2503,58 @@ async fn attempt(
         }
         rec.outcome().egress = Some(plan.dialect);
     }
+    if plan.dialect == DialectId::OpenAiResponses
+        && let Request::Generate(g) = &mut req
+    {
+        let fit =
+            kaeso_core::catalogue::capability::fit_responses(g, ingress, &eff, output_cap.take());
+        output_cap = fit.cap;
+        plan.adapted.extend(fit.adapted);
+        plan.left_out.extend(fit.left_out);
+        if output_cap.is_some() {
+            g.stream = StreamMode::on(true);
+        }
+    }
+    // A reply Kaeso ends itself is read as a stream, so the provider stops when Kaeso does.
+    let streams_upstream = chatgpt.is_some() || output_cap.is_some();
+
+    // Whether to keep reasoning follows what the app sent: Kaeso itself may send `store: false`.
+    let keeps_text = ingress == DialectId::OpenAiResponses
+        && crate::services::response_cache::stores_responses(state, caller.project_id).await;
+    let carry = continuity::carry(
+        state,
+        caller.key_id,
+        (ingress, plan.dialect),
+        &app_req,
+        keeps_text,
+    )
+    .filter(|_| kind == RequestKind::Generate);
+    if let Some(c) = carry.filter(|c| !c.every)
+        && let Request::Generate(g) = &mut req
+    {
+        continuity::restore(state, c.key_id, g).await;
+    }
+    // Reasoning put back is input the provider bills, so limits see it before admitting.
+    let mut restored_bytes = sh.restored_text;
+    if ingress == DialectId::OpenAiResponses
+        && let Request::Generate(g) | Request::CountTokens(g) = &mut req
+        && kaeso_codecs::openai_responses::has_kept_reference(g)
+    {
+        // A Responses provider that keeps nothing of this request can't look reasoning up by id.
+        // A count stands for the generation it counts, which the provider would keep alike.
+        let kept_there = keeping.is_some()
+            && kaeso_codecs::openai_responses::stored_state(g).store != Some(false);
+        let stateless = plan.dialect == DialectId::OpenAiResponses && !kept_there;
+        let resolved = continuity::resolve_references(state, caller.key_id, g, stateless)
+            .await
+            .map_err(|u| fail(Stage::Request)(unkept(&u)))?;
+        if resolved.left_out > 0 {
+            plan.left_out.push("item_reference".to_owned());
+        }
+        restored_bytes = restored_bytes.saturating_add(resolved.restored_bytes);
+    }
+    let restored_tokens =
+        kaeso_core::estimate::tokens_of_bytes(u64::try_from(restored_bytes).unwrap_or(u64::MAX));
 
     let admission = Admission {
         request_id: rec.outcome().request_id,
@@ -2424,10 +2566,13 @@ async fn attempt(
         worst: WorstCase::continuing(
             &req,
             request_bytes,
-            keeping.as_ref().map_or(
-                0,
-                crate::services::stored_responses::Keeping::earlier_tokens,
-            ),
+            keeping
+                .as_ref()
+                .map_or(
+                    0,
+                    crate::services::stored_responses::Keeping::earlier_tokens,
+                )
+                .saturating_add(restored_tokens),
             &eff.fields,
             &eff.provider,
         ),
@@ -2457,6 +2602,62 @@ async fn attempt(
         rec.found_limits(&left);
     }
 
+    if plan.estimates_count
+        && let Request::CountTokens(g) = &req
+    {
+        if entry.is_unavailable() {
+            return Err(fail(Stage::Unserved(eff.model_id.clone()))(unserved(&eff)));
+        }
+        if response_cache::directive(headers).only_if_cached {
+            return Err(fail(Stage::NotCached)(not_cached()));
+        }
+        let ectx = egress_ctx(
+            &app_req,
+            &eff.provider,
+            plan.dialect,
+            &eff.model_id,
+            ModelFlags::of(&plan),
+        );
+        let mut generate = g.clone();
+        // Anthropic's format needs an output limit, and OpenAI Responses refuses one below 16.
+        generate.sampling.max_output_tokens.get_or_insert(16);
+        if plan.dialect == DialectId::OpenAiResponses {
+            let fit = kaeso_core::catalogue::capability::fit_responses(
+                &mut generate,
+                ingress,
+                &eff,
+                None,
+            );
+            plan.left_out.extend(fit.left_out);
+        }
+        let dialect = plan.dialect;
+        let tokens = off_thread(request_bytes, move || {
+            let tokens = kaeso_core::estimate::input_tokens(&generate);
+            dispatch::check(dialect, &Request::Generate(generate), &ectx).map(|_| tokens)
+        })
+        .await
+        .and_then(|checked| checked)
+        .map_err(fail(Stage::Capability))?
+        .ok_or_else(|| fail(Stage::Capability)(refused(capability::cannot_estimate(&eff))))?;
+        tracing::info!(
+            adapted = capability::COUNT_ESTIMATED,
+            "answered a token count with Kaeso's estimate; the provider can't count"
+        );
+        let reply = Reply::CountTokens(kaeso_kpp::CountTokensResponse::new(tokens));
+        let out = dispatch::encode_response(
+            ingress,
+            &reply,
+            &EncodeCtx::for_request(Arc::clone(&app_req)),
+        )
+        .map_err(fail(Stage::Reply))?;
+        let mut served = served.clone();
+        served.left_out.clone_from(&plan.left_out);
+        served.adapted.clone_from(&plan.adapted);
+        return answer_with(state, rec, reply, out, None, &served)
+            .await
+            .map_err(fail(Stage::Reply));
+    }
+
     if entry.is_unavailable()
         && !state
             .availability
@@ -2464,15 +2665,6 @@ async fn attempt(
             .await
     {
         return Err(fail(Stage::Unserved(eff.model_id.clone()))(unserved(&eff)));
-    }
-
-    let carry = caller.key_id.filter(|_| {
-        continuity::applies(state, ingress, plan.dialect) && kind == RequestKind::Generate
-    });
-    if let Some(key_id) = carry
-        && let Request::Generate(g) = &mut req
-    {
-        continuity::restore(state, key_id, g).await;
     }
 
     let platform = match crate::services::agent_platform::egress(
@@ -2584,6 +2776,7 @@ async fn attempt(
             not_found_in_request: false,
         }
     };
+    let cut_key = output_cap.as_ref().map(OutputCap::cache_key);
     // A retry or a stored response goes to its provider, which an answer from the cache would
     // skip; a stored one is counted as passing the cache by.
     let cached = if again.is_some() || keeping.is_some() {
@@ -2610,6 +2803,7 @@ async fn attempt(
                 entry: entry.id,
                 model: &eff.model_id,
                 encoded: &encoded,
+                cut: cut_key.as_deref(),
             },
             stream,
         )
@@ -2673,11 +2867,14 @@ async fn attempt(
                 .map(crate::services::provider_accounts::Hosts::api_base)
                 .and_then(Result::ok)
                 .ok_or_else(|| {
-                    fail(Stage::Setup)(error(
-                        ErrorKind::ProviderError,
-                        500,
-                        "No base URL is configured for this provider.",
-                    ))
+                    fail(Stage::Setup)(
+                        error(
+                            ErrorKind::ProviderError,
+                            500,
+                            "No base URL is configured for this provider.",
+                        )
+                        .with_retry(kaeso_kpp::Retry::Futile),
+                    )
                 })?,
         ),
         None => None,
@@ -2689,11 +2886,14 @@ async fn attempt(
         (None, None, None) => match &keyed {
             Some(base) => base,
             None => base_url(state, &eff.provider).ok_or_else(|| {
-                fail(Stage::Setup)(error(
-                    ErrorKind::ProviderError,
-                    500,
-                    "No base URL is configured for this provider.",
-                ))
+                fail(Stage::Setup)(
+                    error(
+                        ErrorKind::ProviderError,
+                        500,
+                        "No base URL is configured for this provider.",
+                    )
+                    .with_retry(kaeso_kpp::Retry::Futile),
+                )
             })?,
         },
     };
@@ -2714,7 +2914,7 @@ async fn attempt(
     let sent_at = Instant::now();
     rec.sent_at = Some(sent_at);
     rec.outcome().overhead = Some(rec.own_time(sent_at));
-    let gathers = chatgpt.is_some() && !stream && kind == RequestKind::Generate;
+    let gathers = streams_upstream && !stream && kind == RequestKind::Generate;
     let deadline = tokio::time::Instant::now() + timeouts.request;
     let late = |_: tokio::time::error::Elapsed| {
         let e = UpstreamError::Timeout("request");
@@ -2756,7 +2956,7 @@ async fn attempt(
         sigv4,
         request: Outgoing::from(encoded),
         stream: match kind {
-            RequestKind::Generate => stream || chatgpt.is_some(),
+            RequestKind::Generate => stream || streams_upstream,
             RequestKind::Image | RequestKind::Transcription => !ectx.stream.is_off(),
             RequestKind::Speech => dispatch::reads_reply_as_stream(plan.dialect, &ectx),
             RequestKind::Decide => false,
@@ -2860,7 +3060,7 @@ async fn attempt(
     };
 
     match resp.body {
-        ResponseBody::Stream(chunks) if success && chatgpt.is_some() && !stream => {
+        ResponseBody::Stream(chunks) if success && streams_upstream && !stream => {
             let decoder =
                 dispatch::stream_decoder(plan.dialect, &ectx).map_err(fail(Stage::Reply))?;
             let max = state.config.body_limits.provider_response.as_usize();
@@ -2886,7 +3086,7 @@ async fn attempt(
                 }
                 stream::Gathered::Broken(err) => fail(Stage::Reply)(err),
             })?;
-            let mut reply = reply;
+            let (mut reply, read) = reply;
             if let Err(e) =
                 Box::pin(guard_reply(state, rec, sh, &started_req, &mut reply, false)).await
             {
@@ -2896,8 +3096,19 @@ async fn attempt(
             if let Some(g) = sh.guards {
                 g.restore(&mut reply);
             }
+            let estimated = !read.has_final_usage();
+            if estimated && let Reply::Generate(r) = &mut reply {
+                r.usage = estimate::complete(&r.usage, &read, None);
+            }
+            record_usage(rec, &reply, counter).await;
+            // A reply Kaeso ended before the provider's usage came answers with the estimate.
+            if estimated
+                && let (Reply::Generate(r), Some(usage)) = (&mut reply, &rec.outcome().usage)
+            {
+                r.usage = usage.clone();
+            }
             let out = dispatch::encode_response(ingress, &reply, &encode_ctx);
-            reply_with(state, rec, reply, out, counter, carry, &served)
+            keep_and_answer(state, rec, reply, out, carry, &served)
                 .await
                 .map_err(fail(Stage::Reply))
         }
@@ -3002,7 +3213,7 @@ async fn attempt(
                 .await;
                 // A stream that ends in an error or breaks off goes to the app as it came, and
                 // the app sees its end as without guardrails.
-                if let Ok(mut reply) = gathered
+                if let Ok((mut reply, _)) = gathered
                     && let Err(e) =
                         Box::pin(guard_reply(state, rec, sh, &started_req, &mut reply, true)).await
                 {
@@ -3059,7 +3270,7 @@ async fn attempt(
                 limits: None,
             };
             let keepalive = state.config.streams.keepalive_interval;
-            let carry = carry.map(|key_id| continuity::StreamCarry::new(state.clone(), key_id));
+            let carry = carry.map(|c| continuity::StreamCarry::new(state.clone(), c));
             let parts = stream::Parts {
                 chunks,
                 mode,
@@ -3175,21 +3386,23 @@ async fn attempt(
                         Probe::Inconclusive(_) | Probe::Failed(_) => {}
                     }
                 }
-                if let Some(refused) =
+                if let Some(mut refused) =
                     refused_custom_key(&err, &eff.provider, credential.is_keyless())
                         .or_else(|| refused_key(&err))
                         .map(|r| {
                             if credential.method == AuthMethod::AzureServicePrincipal {
                                 error(ErrorKind::ProviderError, 502, AZURE_ROLE_REFUSED)
+                                    .with_retry(kaeso_kpp::Retry::Futile)
                             } else {
                                 r
                             }
                         })
                 {
                     // Temporary AWS credentials AWS refused, expired ones included, are fetched
-                    // again for the next request.
+                    // again for the next request, so a retry may pass.
                     if credential.method == kaeso_core::provider::AuthMethod::AwsRole {
                         crate::services::aws_auth::forget(&credential);
+                        refused.retry = None;
                     }
                     let said = redacted(err);
                     tracing::warn!(provider, status, kind = said.kind.as_str(), upstream = %said.message, "the provider refused the project's provider key");
@@ -3394,6 +3607,17 @@ async fn hold(
         .hold(&state.valkey, at, reach, held.clone(), now)
         .await;
     Some((reach, held))
+}
+
+// How long a hold keeps the step from being tried, as `Retry-After` tells an app: whole
+// seconds, rounded up.
+fn held_for(held: &cooldowns::Held, now: OffsetDateTime) -> Option<Duration> {
+    let left = held.until - now;
+    let secs = left.whole_seconds() + i64::from(left.subsec_nanoseconds() > 0);
+    u64::try_from(secs)
+        .ok()
+        .filter(|s| *s > 0)
+        .map(Duration::from_secs)
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -3627,6 +3851,9 @@ async fn route(
             }),
         });
         if let Some((reach, held)) = hold(state, &at, &failure, status).await {
+            if failure.stage == Stage::PlanLimit && failure.err.retry_after.is_none() {
+                failure.err.retry_after = held_for(&held, state.clock.now());
+            }
             held_steps.add(&at, reach, held);
         }
         let falls = i + 1 < plan.len()
@@ -3718,10 +3945,21 @@ async fn reply_with(
     reply: Reply,
     out: Result<Vec<u8>, KppError>,
     counter: InputCounter,
-    carry: Option<uuid::Uuid>,
+    carry: Option<continuity::Carry>,
     served: &Served,
 ) -> Result<Done, KppError> {
     record_usage(rec, &reply, counter).await;
+    keep_and_answer(state, rec, reply, out, carry, served).await
+}
+
+async fn keep_and_answer(
+    state: &AppState,
+    rec: &mut Recording,
+    reply: Reply,
+    out: Result<Vec<u8>, KppError>,
+    carry: Option<continuity::Carry>,
+    served: &Served,
+) -> Result<Done, KppError> {
     let out = out?;
     if let Some(slot) = rec.keep_in_cache.take() {
         let o = rec.outcome();
@@ -3741,13 +3979,13 @@ async fn answer_with(
     rec: &mut Recording,
     reply: Reply,
     out: Vec<u8>,
-    carry: Option<uuid::Uuid>,
+    carry: Option<continuity::Carry>,
     served: &Served,
 ) -> Result<Done, KppError> {
-    if let Some(key_id) = carry
+    if let Some(c) = carry
         && let Reply::Generate(r) = &reply
     {
-        continuity::keep(state, key_id, &reasoning_for_tool_calls(&r.blocks)).await;
+        continuity::keep(state, c.key_id, &c.of_reply(&r.blocks)).await;
     }
     let reply_kind = reply.kind();
     // Speech is audio and a transcript may be plain text or events: the app's codec names the
@@ -3860,7 +4098,7 @@ async fn replay(
     rec: &mut Recording,
     stored: response_cache::Stored,
     encode_ctx: &EncodeCtx,
-    carry: Option<uuid::Uuid>,
+    carry: Option<continuity::Carry>,
     served: &Served,
 ) -> Result<Done, KppError> {
     let age = stored.age(state.clock.now());
@@ -4205,6 +4443,7 @@ mod tests {
             status,
             message: "m".into(),
             retry_after: Some(Duration::from_secs(5)),
+            retry: None,
             param: None,
             left: None,
         };
@@ -4223,6 +4462,13 @@ mod tests {
         );
         assert_eq!(limited(refusal(403)).kind, ErrorKind::PermissionDenied);
         assert_eq!(limited(refusal(429)).kind, ErrorKind::RateLimited);
+        assert_eq!(limited(refusal(429)).retry, None);
+        let used_up = limited(super::super::hooks::Refusal {
+            retry: Some(kaeso_kpp::Retry::AfterReset),
+            ..refusal(429)
+        });
+        assert_eq!(used_up.retry, Some(kaeso_kpp::Retry::AfterReset));
+        assert_eq!(used_up.retry_after, Some(Duration::from_secs(5)));
     }
 
     #[test]
@@ -4290,6 +4536,55 @@ mod tests {
     }
 
     #[test]
+    fn a_custom_providers_reply_with_several_choices_keeps_its_message() {
+        use kaeso_core::providers::{CustomAuth, CustomProvider, Draft};
+        let custom = ProviderRef::Custom(Arc::new(
+            CustomProvider::new(Draft {
+                uuid: uuid::Uuid::now_v7(),
+                id: kaeso_core::provider::ProviderId::parse("several").unwrap(),
+                name: "Several".into(),
+                base_url: "https://api.several.example".into(),
+                auth: CustomAuth::Bearer,
+                generation: DialectId::OpenAiChat,
+                embeddings: None,
+                count_tokens: None,
+                server: None,
+                media: Vec::new(),
+                decisions: None,
+            })
+            .unwrap(),
+        ));
+        let read = |body: &[u8]| {
+            let ctx = kaeso_codecs::EgressCtx::for_kind(
+                kaeso_kpp::RequestKind::Generate,
+                kaeso_kpp::StreamMode::Off,
+            );
+            let err = dispatch::decode_response(
+                DialectId::OpenAiChat,
+                200,
+                &kaeso_codecs::HeaderList::new(),
+                body,
+                &ctx,
+            )
+            .unwrap_err();
+            unreadable(err, &custom, DialectId::OpenAiChat)
+        };
+        let two = br#"{"id":"c","object":"chat.completion","created":1,"model":"m","choices":[
+            {"index":0,"message":{"role":"assistant","content":"a"},"finish_reason":"stop"},
+            {"index":1,"message":{"role":"assistant","content":"b"},"finish_reason":"stop"}]}"#;
+        let err = read(two);
+        assert_eq!(
+            err.message,
+            "The provider returned several choices for one request; Kaeso carries one."
+        );
+        assert_eq!(err.status, Some(502));
+        assert!(
+            read(b"not json").message.ends_with("check its API format."),
+            "a body the format can't read still says so"
+        );
+    }
+
+    #[test]
     fn only_a_dropped_connection_or_a_provider_that_failed_for_a_moment_is_tried_again() {
         let failure = |stage: Stage, kind: ErrorKind, status: u16, dropped: bool| Failure {
             dropped,
@@ -4326,6 +4621,12 @@ mod tests {
             failure(Stage::KeyRefused, ErrorKind::Authentication, 401, false),
             failure(Stage::Limits, ErrorKind::RateLimited, 429, false),
             failure(Stage::Reply, ErrorKind::ProviderError, 502, true),
+            // A reply with several choices, which a second try would only bill again.
+            Failure::new(
+                error(ErrorKind::ProviderError, 502, "several")
+                    .with_retry(kaeso_kpp::Retry::Futile),
+                Stage::Provider,
+            ),
         ] {
             assert_eq!(retry_wait(&f), None, "{:?} {:?}", f.stage, f.err.kind);
         }

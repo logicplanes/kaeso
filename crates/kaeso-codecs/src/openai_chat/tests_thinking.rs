@@ -399,7 +399,9 @@ fn streamed_thinking_is_reasoning_that_ends_before_the_answer_and_reaches_chat_a
             continue;
         }
         let out = encode_stream(DialectId::OpenAiChat, &stream(&bytes));
-        let expected = for_chat_apps(&name).unwrap_or_else(|| bytes.clone());
+        let expected = crate::test_support::chat_usage_in_its_own_chunk(
+            &for_chat_apps(&name).unwrap_or_else(|| bytes.clone()),
+        );
         assert_sse_eq(&name, &expected, &out);
     }
     let bytes = recorded(

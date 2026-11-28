@@ -126,17 +126,14 @@ export function useOverview(scope: Scope, search: PeriodSearch) {
   const providers = useProviders(org);
   const partyName = usePartyName(org, project ?? "");
 
-  const modelName = (key: string) => {
+  const modelName = (key: string, kpmrName?: string | null) => {
     const id = key.split("/").slice(1).join("/");
     if (!id) return t("project.overview.noModel", "No model");
-    return models.data?.find((m) => m.model_id === id && key.startsWith(`${m.provider}/`))?.effective.display_name || id;
+    return models.data?.find((m) => m.model_id === id && key.startsWith(`${m.provider}/`))?.effective.display_name || kpmrName || id;
   };
   const keyName = (id: string) => {
     if (id === "playground") return t("project.overview.playground", "Playground");
-    if (id.startsWith("source:")) {
-      const source = sources.source(id.slice(7));
-      return source ? t("project.analytics.sourceKey", "{name} (source)", { name: source.name }) : t("project.analytics.aSource", "A source");
-    }
+    if (id.startsWith("source:")) return sources.asKey(id.slice(7));
     const key = keys.data?.find((k) => k.id === id);
     return key ? keyLabel(key) : id;
   };

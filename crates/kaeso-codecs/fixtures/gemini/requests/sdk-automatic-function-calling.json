@@ -1,0 +1,43 @@
+{
+  "contents": [
+    {
+      "parts": [
+        {
+          "text": "Weather in Paris? Use the tool, then answer in one sentence."
+        }
+      ],
+      "role": "user"
+    }
+  ],
+  "tools": [
+    {
+      "functionDeclarations": [
+        {
+          "description": "Weather for a city.\n\nArgs:\n  city: The city name.\n  unit: celsius or fahrenheit.",
+          "name": "get_weather",
+          "parameters_json_schema": {
+            "type": "object",
+            "properties": {
+              "city": {
+                "type": "string"
+              },
+              "unit": {
+                "type": "string",
+                "default": "celsius"
+              }
+            },
+            "required": [
+              "city"
+            ]
+          },
+          "response_json_schema": {
+            "type": "string"
+          }
+        }
+      ]
+    }
+  ],
+  "generationConfig": {
+    "maxOutputTokens": 800
+  }
+}

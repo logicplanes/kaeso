@@ -923,6 +923,7 @@ mod tests {
             provider,
             model_id: id.to_owned(),
             fields,
+            transcribes_only: false,
         }
     }
 

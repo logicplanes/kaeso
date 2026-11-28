@@ -1,6 +1,6 @@
 ---
 title: Coding tools
-description: Point Claude Code, Codex and other coding tools at your install.
+description: Point Claude Code, Codex, Gemini CLI and other coding tools at your install.
 order: 3
 ---
 
@@ -34,6 +34,8 @@ With an OpenAI model behind it, Claude Code may send pre-release Anthropic field
 
 Claude Code's `WebSearch` uses the web search of GPT and Grok models. Models served through Chat Completions, such as Mistral, have no web search, so they answer `WebSearch` without searching.
 
+Claude Code prices tokens with its own table of Claude prices, so its `/cost` and `total_cost_usd` are wrong for other models. Where request logs are on, they show the cost Kaeso works out from the model's prices ([request logs](../console/request-logs.md)).
+
 > [!WARNING]
 > Keep the key in your user settings or your shell profile. A project's settings file gets committed, and everyone who can read the repository could use the key.
 
@@ -66,9 +68,37 @@ Models without web search, such as Mistral, get the request without it. Claude a
 > [!NOTE]
 > Kaeso stores no responses between turns. It refuses a request that asks the provider to store or continue a response (`store: true`, `previous_response_id`), with an error that says so, unless the project allows [responses stored at the provider](../console/organizations-and-projects.md#stored-responses).
 
-## Add decision models to OpenCode
+## Set up Gemini CLI
 
-[OpenCode](https://opencode.ai/docs/providers/) calls decision models in the System One format, which Kaeso serves at `/v1/systemone`. Add Kaeso as a provider, and mark each [decision model](../api/decisions.md) with `type: "decision"`:
+Gemini CLI speaks the Gemini API. First tell it to sign in with a key instead of a Google account, in `~/.gemini/settings.json` ([authentication](https://geminicli.com/docs/get-started/authentication)); otherwise a saved Google sign-in wins:
+
+```json
+{ "security": { "auth": { "selectedType": "gemini-api-key" } } }
+```
+
+Then set the base URL without a version, since Gemini CLI adds `/v1beta` itself, and choose the model with `-m`:
+
+```bash
+export GOOGLE_GEMINI_BASE_URL=https://kaeso.example.com
+export GEMINI_API_KEY=sk-kso-…
+gemini -m claude-sonnet-5-5
+```
+
+Gemini CLI sends `topK` with every request. Models without top-k sampling, such as GPT and DeepSeek, get the request without it, and the reply's `kaeso-left-out` header names it.
+
+## Set up Qwen Code
+
+[Qwen Code](https://github.com/QwenLM/qwen-code) speaks OpenAI Chat Completions. Choose OpenAI as its sign-in and the model with `-m`:
+
+```bash
+export OPENAI_BASE_URL=https://kaeso.example.com/v1
+export OPENAI_API_KEY=sk-kso-…
+qwen --auth-type openai -m claude-sonnet-5-5
+```
+
+## Set up OpenCode
+
+[OpenCode](https://opencode.ai/docs/providers/) takes Kaeso as a provider. List chat models with an empty entry. OpenCode calls decision models in the System One format, which Kaeso serves at `/v1/systemone`, so mark each [decision model](../api/decisions.md) with `type: "decision"`:
 
 ```jsonc
 {
@@ -80,6 +110,7 @@ Models without web search, such as Mistral, get the request without it. Claude a
       "package": "@opencode/ai/providers/openai-compatible",
       "settings": { "baseURL": "https://kaeso.example.com/v1" },
       "models": {
+        "claude-sonnet-5-5": {},
         "jev-latest": {
           "type": "decision",
           "compatibility": { "mediaInput": "assets" },
@@ -100,6 +131,16 @@ Any tool that lets you set an OpenAI or Anthropic base URL works the same way:
 | --- | --- | --- |
 | OpenAI Chat Completions or Responses | `https://kaeso.example.com/v1` | The API key or a bearer token |
 | Anthropic Messages | `https://kaeso.example.com` | The API key (`x-api-key`) or a bearer token |
+
+Some tools need more than the base URL:
+
+| Tool | What to set |
+| --- | --- |
+| [Crush](https://github.com/charmbracelet/crush#custom-providers) | A provider with `type: "openai-compat"` and `base_url: "https://kaeso.example.com/v1"`, or `type: "anthropic"` and `https://kaeso.example.com`. Give each model a `context_window` and a `default_max_tokens`. |
+| [Goose](https://goose-docs.ai/docs/getting-started/providers/) | `OPENAI_HOST=https://kaeso.example.com`, without `/v1`: Goose adds `v1/chat/completions` itself. For Anthropic Messages, `ANTHROPIC_HOST` instead. |
+| [Aider](https://aider.chat/docs/llms/openai-compat.html) | `--model openai/<model>` with `OPENAI_API_BASE=https://kaeso.example.com/v1`, or `--model anthropic/<model>` with `ANTHROPIC_API_BASE=https://kaeso.example.com`. Add `--no-show-model-warnings` for models Aider doesn't know. Its token counts are its own estimates. |
+| [Continue](https://docs.continue.dev/customize/model-providers/top-level/openai) | A model with `provider: openai` and `apiBase: https://kaeso.example.com/v1`, or `provider: anthropic` and `apiBase: https://kaeso.example.com/v1/`. |
+| [Open WebUI](https://docs.openwebui.com/reference/env-configuration) | `OPENAI_API_BASE_URL=https://kaeso.example.com/v1` and `OPENAI_API_KEY`. For its document search through Kaeso, `RAG_EMBEDDING_ENGINE=openai`, `RAG_OPENAI_API_BASE_URL=https://kaeso.example.com/v1` (it doesn't take the chat connection's), `RAG_OPENAI_API_KEY`, and an embeddings model of the project in `RAG_EMBEDDING_MODEL`. |
 
 ## Next steps
 

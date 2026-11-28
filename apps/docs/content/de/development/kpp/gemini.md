@@ -50,16 +50,16 @@ Schema `GenerateContentRequest`.
 | `tools[]` mit einem anderen Schlüssel (`googleSearch`, `urlContext`, `codeExecution`, `googleMaps`, `fileSearch`, `computerUse`, `mcpServers`, `googleSearchRetrieval`) oder mit leeren `functionDeclarations` | `ToolDef::Unknown` (roh) | Über Dialekte hinweg abgelehnt. |
 | `functionDeclarations[].name`, `.description` | `name`, `description` | |
 | `functionDeclarations[].parametersJsonSchema` | `parameters` | Volles JSON Schema. Fremde Tools bekommen immer `parametersJsonSchema`, sodass nichts an die OpenAPI-Teilmenge verloren geht. |
-| `functionDeclarations[].parameters` (OpenAPI-`Schema`) | `parameters` | Form `schema: "parameters"`, sodass Gemini es in `parameters` zurückbekommt. Andere Dialekte bekommen es wie geschrieben als JSON Schema; ein Anbieter, der übliche Typnamen verlangt, lehnt großgeschriebene wie `OBJECT` ab. Mit `parametersJsonSchema` daneben → Feld `parameters`. |
-| `functionDeclarations[].response`, `.responseJsonSchema`, `.behavior` | Felder des Tools | |
+| `functionDeclarations[].parameters` (OpenAPI-`Schema`) | `parameters` | Form `schema: "parameters"`, sodass Gemini es in `parameters` zurückbekommt. Andere Dialekte bekommen es als JSON Schema ([Schemas](#schemas)). Mit `parametersJsonSchema` daneben → Feld `parameters`. |
+| `functionDeclarations[].response`, `.responseJsonSchema`, `.behavior` | Felder des Tools | `response` und `responseJsonSchema` beschreiben, was die Funktion der App zurückgibt: Andere Dialekte bekommen sie nicht, und sie werden in `kaeso-left-out` genannt ([Allowlist](cross-format.md#allowlist)). Fehler nennen eine Deklaration als `tools[0].functionDeclarations[1]`. |
 | `toolConfig.functionCallingConfig` `mode: AUTO` / `NONE` / `ANY` | `tool_choice` `Auto` / `None` / `Required` | |
 | `mode: ANY` mit einem Eintrag in `allowedFunctionNames` | `ToolChoice::Tool(name)` | |
 | `mode: VALIDATED`, `ANY` mit mehreren Namen, jede andere Kombination | `ToolChoice::Unknown` (roh) | Über Dialekte hinweg abgelehnt. |
 | `toolConfig.retrievalConfig`, `.includeServerSideToolInvocations` | Felder `toolConfig.*` | |
-| `generationConfig.temperature`, `.topP`, `.topK`, `.maxOutputTokens`, `.stopSequences`, `.seed`, `.presencePenalty`, `.frequencyPenalty` | `sampling.*` | Zahlen behalten ihre Schreibweise im Dialekt (Form `integers`). |
-| `generationConfig.candidateCount` | Form `candidate_count` | Über 1 → `Unsupported` beim Dekodieren, wie `n` bei Chat ([Sampling](sampling.md)). |
+| `generationConfig.temperature`, `.topP`, `.topK`, `.maxOutputTokens`, `.stopSequences`, `.seed`, `.presencePenalty`, `.frequencyPenalty` | `sampling.*` | Zahlen behalten ihre Schreibweise im Dialekt (Form `integers`). `topK` wird für ein Ziel ohne Top-k weggelassen ([Top K](sampling.md#top-k)). |
+| `generationConfig.candidateCount` | Form `candidate_count` | Über 1 → `Unsupported` beim Dekodieren, wie `n` bei Chat ([Sampling](sampling.md)): Kaeso liefert einen Kandidaten pro Anfrage, für mehr sendet die App mehrere Anfragen. |
 | `responseMimeType: application/json` mit `responseJsonSchema` | `output = JsonSchema` | |
-| `responseMimeType: application/json` mit `responseSchema` | `output = JsonSchema` | Form `schema: "responseSchema"`; andere Dialekte bekommen das OpenAPI-Schema wie geschrieben. |
+| `responseMimeType: application/json` mit `responseSchema` | `output = JsonSchema` | Form `schema: "responseSchema"`; andere Dialekte bekommen es als JSON Schema ([Schemas](#schemas)). |
 | `responseMimeType: application/json` allein | `output = JsonObject` | |
 | Jeder andere `responseMimeType` und ein Schema ohne `application/json` | Felder `generationConfig.*` | |
 | `generationConfig.thinkingConfig` | `reasoning` | Siehe [Thinking](#thinking). |
@@ -112,7 +112,8 @@ Schema `Part`. Ein Part trägt genau eines von `text`, `inlineData`, `fileData`,
 - **Argumente**, die kein Objekt sind, werden zu einem, wie bei Anthropic ([Argumente von Tool-Aufrufen](cross-format.md#argumente-von-tool-aufrufen)).
 - **Bild-URLs** bekommen `fileData.mimeType` aus der Dateiendung der URL (`.png`, `.jpg`, `.jpeg`, `.webp`, `.gif`, `.heic`, `.heif`; Dokumente auch `.pdf`, `.txt`), wie es die Anleitung zur Dateieingabe verlangt; eine Bild-URL ohne solche Endung ist `Unsupported`. Textdokumente werden als Base64-`inlineData` gesendet.
 - **Audio- und Video-URLs** bekommen ihn genauso, aus den unterstützten Formaten der Audio- und Video-Leitfäden (`.wav`, `.mp3`, `.aiff`, `.aac`, `.ogg`, `.flac`, `.m4a`, `.opus`, `.webm`; `.mp4`, `.mpeg`, `.mpg`, `.mov`, `.avi`, `.flv`, `.webm`, `.wmv`, `.3gp`). Eine YouTube-URL geht ohne; eine andere URL ohne bekannte Endung ist `Unsupported`. Base64-Audio und -Video gehen als `inlineData` mit ihrem Medientyp. Audio und Video in einem Tool-Ergebnis sind `Unsupported`.
-- **Abgelehnt** mit `Unsupported`: Refusal-Blöcke, für die Gemini keinen Part hat (wie bei Anthropic), Titel, Kontext oder Zitate eines Dokuments, mehr als fünf Stoppsequenzen (`GenerationConfig.stopSequences`), `parallel_tool_calls: false`, ein Ausgabeschema mit Beschreibung oder `strict: false` sowie ein Aufwand oder Thinking-Modus, für den Gemini keine Einstellung hat.
+- **Ausgabeschemas.** Die `description` eines OpenAI-Schemas steht vor der eigenen `description` des Schemas, und `strict: false` wird strikt bedient, weil Gemini `responseJsonSchema` immer durchsetzt; beides wird in `kaeso-adapted` mit dem Feld der App genannt.
+- **Abgelehnt** mit `Unsupported`: Refusal-Blöcke, für die Gemini keinen Part hat (wie bei Anthropic), Titel, Kontext oder Zitate eines Dokuments, mehr als fünf Stoppsequenzen (`GenerationConfig.stopSequences`), `parallel_tool_calls: false` sowie ein Aufwand oder Thinking-Modus, für den Gemini keine Einstellung hat.
 - **Strikte Tools.** Ein Function-Tool mit `strict: true` und automatischem `tool_choice` sendet `mode: VALIDATED`, das Aufrufe gegen ihre Schemas prüft.
 - **Gehostete Websuche** wird [weggelassen](cross-format.md#weggelassene-tools).
 - **Cache-Hinweise** entfallen: Gemini cacht implizit.
@@ -121,9 +122,26 @@ Schema `Part`. Ein Part trägt genau eines von `text`, `inlineData`, `fileData`,
 
 ### Anfragen von google-genai
 
-`google-genai` 2.32.0 schreibt einige Schlüssel in Snake Case, und die API nimmt sie an, weil Proto-JSON den ursprünglichen Namen jedes Felds akzeptiert: `mime_type` und `file_uri` in `inlineData` und `fileData`, `include_thoughts`, `thinking_budget` und `thinking_level` in `thinkingConfig` sowie `parameters_json_schema` und `response_json_schema` in `functionDeclarations`. `gemini::sdk` liest sie unter ihren Namen in Camel Case und setzt die Form `sdk_names`. Eine Anfrage, die an Gemini geht, bekommt sie so zurück, wie die App sie geschrieben hat.
+`google-genai` 2.32.0 schreibt einige Schlüssel in Snake Case, und die API nimmt sie an, weil Proto-JSON den ursprünglichen Namen jedes Felds akzeptiert: `mime_type` und `file_uri` in `inlineData` und `fileData`, `include_thoughts`, `thinking_budget` und `thinking_level` in `thinkingConfig` sowie `parameters_json_schema` und `response_json_schema` in `functionDeclarations`. `gemini::sdk` liest sie unter ihren Namen in Camel Case und setzt die Form `sdk_names`. Eine Anfrage, die an Gemini geht, bekommt sie so zurück, wie die App sie geschrieben hat. In einem `Schema` schreibt google-genai auch `property_ordering`, `any_of` und die Anzahlen in Snake Case; der Decoder behält sie, wie sie geschrieben sind, und die [Übersetzung der Schemas](#schemas) liest beide Schreibweisen.
 
 Das SDK sendet `topK` außerdem als Gleitkommazahl, etwa `20.0`. KPP liest eine ganzzahlige Gleitkommazahl als ganze Zahl, mit Form `top_k_float`, und schreibt sie für Gemini wieder als Gleitkommazahl; ein Bruch ist `InvalidRequest`. Die Fixture `requests/sdk-tools-snake-case.json` stammt von `google-genai` 2.32.0.
+
+### Schemas
+
+Geminis `Schema` in `functionDeclarations[].parameters` und `generationConfig.responseSchema` ist eine Teilmenge von OpenAPI 3.0. Anfragen an andere Dialekte bekommen es als JSON Schema, nach dem `Schema` des Discovery-Dokuments (Revision `20261125`) und `Schema.json_schema` von google-genai 3.6.1. Gemini bekommt es so, wie die App es geschrieben hat.
+
+| `Schema` | JSON Schema |
+|---|---|
+| `type` `STRING`, `NUMBER`, `INTEGER`, `BOOLEAN`, `ARRAY`, `OBJECT`, `NULL`, in beliebiger Schreibweise | Der Name in Kleinbuchstaben; `TYPE_UNSPECIFIED` wird ausgelassen. |
+| `nullable: true` | `null` kommt zum Typ (`["integer", "null"]`), zu den Werten eines Enums oder als Zweig zu einem `anyOf` ohne Typ. Ein Enum hat dann keinen `type`: Anthropic lehnt ein Enum ab, dessen Werte nicht zu jedem Typ einer Liste passen. `nullable: false` wird ausgelassen. |
+| `propertyOrdering` | Die Reihenfolge von `properties`; danach ausgelassen. |
+| `format: enum` | Ausgelassen: `enum` allein begrenzt den Wert. |
+| `enum` eines `INTEGER` oder `NUMBER` | Seine Werte als Zahlen; Gemini schreibt sie als Strings, etwa `["101", "201"]`. |
+| `minItems`, `maxItems`, `minLength`, `maxLength`, `minProperties`, `maxProperties` | Zahlen; das Discovery-Dokument typisiert sie als int64, das Proto-JSON als String schreibt. |
+| `example` | `examples: [<example>]` |
+| Schlüssel von google-genai in Snake Case, etwa `property_ordering`, `any_of` und `max_items` | Camel Case. |
+| `properties`, `items`, `anyOf` | Jedes Schema darin, auf dieselbe Weise übersetzt. |
+| Jeder andere Schlüssel, etwa `description`, `title`, `default`, `pattern`, `minimum` oder ein anderes `format` | Wie geschrieben, an seiner Stelle. |
 
 ### Thinking
 
@@ -155,7 +173,7 @@ Schema `GenerateContentResponse`.
 | `responseId` | `id` | Fehlt → Form `no_response_id`. |
 | `modelVersion` | `model` | Fehlt → Form `no_model_version`. |
 | `candidates[0].content.parts` | `blocks` | Wie in Anfragen. Bild-Parts werden zu `Block::Image`. |
-| Mehr als ein Candidate | `Unsupported` | |
+| Mehr als ein Candidate | `ProviderError`, da Kaeso jedes `candidateCount` über 1 in der Anfrage abgelehnt hat | |
 | `candidates[0].finishReason` | `stop` | Siehe [Finish-Gründe](#finish-gründe). |
 | Andere Schlüssel von `candidates[0]` (`index`, `finishMessage`, `safetyRatings`, `citationMetadata`, `groundingMetadata`, `urlContextMetadata`, `avgLogprobs`, `logprobsResult`, `tokenCount`) | Felder `candidate.*` | `citationMetadata` indiziert den ganzen Text des Candidates, was KPP-Zitate, die an einen Block gebunden sind, nicht ausdrücken können. |
 | `candidates[0].content.role` | — | Ein anderer oder kein Wert → Form `no_role`. |

@@ -1160,9 +1160,8 @@ pub const PROVIDERS: &[Provider] = &[
         videos: &[],
         decisions: &[],
         dialects: &[DialectId::OpenAiChat, DialectId::AnthropicMessages],
-        // The Anthropic-compatible Messages API at `/anthropic/v1/messages`, every model, either auth
-        // header; it ignores `top_k`, `container` and `mcp_servers`, which are refused
-        // (https://api-docs.deepseek.com/guides/anthropic_api, read 2026-11-25).
+        // Ignores `top_k`, `container` and `mcp_servers`, so they are refused, and answers a client
+        // tool's `type: "custom"` with 422 (https://api-docs.deepseek.com/guides/anthropic_api).
         native: &[NativeDialect::of(DialectId::AnthropicMessages).at("/anthropic/v1")],
         refused_key_messages: &[],
         context_window_messages: &[],
@@ -1174,13 +1173,14 @@ pub const PROVIDERS: &[Provider] = &[
             .system_role()
             .reasoning_fields(&["reasoning_content"])
             .tool_schema_root(ToolSchemaRoot::TypedObjectUnions)
-            .tool_patterns(ToolPatterns::Compiled),
+            .tool_patterns(ToolPatterns::Compiled)
+            .forced_tool_without_thinking()
+            .json_mode(),
         responses: ResponsesProfile::compatible("DeepSeek"),
-        messages: MessagesProfile::compatible("DeepSeek").refusing(&[
-            "top_k",
-            "container",
-            "mcp_servers",
-        ]),
+        messages: MessagesProfile::compatible("DeepSeek")
+            .refusing(&["top_k", "container", "mcp_servers"])
+            .without_custom_tool_type()
+            .forced_tool_without_thinking(),
         gemini: GeminiProfile::GOOGLE_AI_STUDIO,
         account: None,
         routes: &[],
@@ -1275,6 +1275,7 @@ pub const PROVIDERS: &[Provider] = &[
         listing: ModelListing::Complete,
         end_user_limit: None,
         chat: ChatProfile::compatible("Together AI")
+            .with_top_k()
             .reasoning_fields(&["reasoning_content", "reasoning"]),
         responses: ResponsesProfile::compatible("Together AI"),
         messages: MessagesProfile::compatible("Together AI"),
@@ -1370,6 +1371,7 @@ pub const PROVIDERS: &[Provider] = &[
         // OpenRouter's audio and video guides: Chat Completions takes "any format string the
         // provider supports" in `input_audio.format`, and videos as `video_url` parts.
         chat: ChatProfile::compatible("OpenRouter")
+            .with_top_k()
             .any_audio_format()
             .with_video_url()
             .with_reasoning_object()
@@ -2140,6 +2142,7 @@ pub const PROVIDERS: &[Provider] = &[
         // Fireworks' chat schema has no `safety_identifier`, only `user`, and takes `video_url`
         // parts for its video models (https://docs.fireworks.ai/guides/video-audio-inputs).
         chat: ChatProfile::compatible("Fireworks AI")
+            .with_top_k()
             .end_user_as_user()
             .with_video_url()
             .reasoning_fields(&["reasoning_content"]),
@@ -2184,6 +2187,7 @@ pub const PROVIDERS: &[Provider] = &[
         // Nebius' OpenAPI document lists no `developer` role and no `safety_identifier`, and
         // takes `video_url` parts (https://api.tokenfactory.nebius.com/openapi.json).
         chat: ChatProfile::compatible("Nebius Token Factory")
+            .with_top_k()
             .system_role()
             .end_user_as_user()
             .with_video_url()
@@ -2232,6 +2236,7 @@ pub const PROVIDERS: &[Provider] = &[
         // undeclared ones; it accepts both penalties without acting on them
         // (https://docs.sambanova.ai/docs/en/features/openai-compatibility).
         chat: ChatProfile::compatible("SambaNova")
+            .with_top_k()
             .without_end_user()
             .without_cache_key()
             .with_video_url()
@@ -2421,6 +2426,7 @@ pub const PROVIDERS: &[Provider] = &[
         // roles `system`, `user`, `assistant` and `tool`; thinking comes as `reasoning_content`
         // (https://docs.baseten.co/inference/model-apis/reasoning).
         chat: ChatProfile::compatible("Baseten")
+            .with_top_k()
             .max_tokens()
             .system_role()
             .end_user_as_user()
@@ -2472,6 +2478,7 @@ pub const PROVIDERS: &[Provider] = &[
         // `thinking_budget` and answer with `reasoning_content`
         // (https://docs.siliconflow.com/en/api-reference/chat-completions/chat-completions).
         chat: ChatProfile::compatible("SiliconFlow")
+            .with_top_k()
             .max_tokens()
             .system_role()
             .without_end_user()
@@ -2780,6 +2787,7 @@ pub const PROVIDERS: &[Provider] = &[
         // and `reasoning_content` on assistant messages, and none of the fields refused here,
         // which it would otherwise drop without a word (https://api.deepinfra.com/openapi.json).
         chat: ChatProfile::compatible("DeepInfra")
+            .with_top_k()
             .max_tokens()
             .system_role()
             .end_user_as_user()
@@ -3007,6 +3015,7 @@ pub const PROVIDERS: &[Provider] = &[
         // leaves out are refused here instead of being dropped without a word
         // (https://docs.novita.ai/api-reference/model-apis-llm-create-chat-completion.md).
         chat: ChatProfile::compatible("Novita AI")
+            .with_top_k()
             .max_tokens()
             .system_role()
             .without_end_user()
@@ -5646,7 +5655,6 @@ mod tests {
                 "providers/mistral/requests/assistant-prefill",
                 "messages[1]",
             ),
-            ("requests/system-name-multiturn", "messages[0].name"),
         ] {
             assert_eq!(
                 sent_with_profile("mistral", request).unwrap_err(),
@@ -5654,6 +5662,15 @@ mod tests {
                 "{request}"
             );
         }
+        let named = sent_with_profile("mistral", "requests/system-name-multiturn").unwrap();
+        assert!(
+            named["messages"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .all(|m| m.get("name").is_none()),
+            "participant names are left out: {named}"
+        );
         let store = sent_with_profile("mistral", "providers/mistral/requests/store-field").unwrap();
         assert!(
             store.get("store").is_none(),

@@ -149,7 +149,7 @@ pub(super) async fn summarize(
         if dialect == DialectId::OpenAiResponses
             && let Request::Generate(g) = &req
         {
-            if has_item_reference(&req) {
+            if has_item_reference(&req) || kaeso_codecs::openai_responses::has_kept_reference(g) {
                 demand.unbounded_input = true;
             }
             if let Some(prev) = kaeso_codecs::openai_responses::stored_state(g)

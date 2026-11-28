@@ -105,6 +105,7 @@ main() {
       echo "CLICKHOUSE_PASSWORD=$(secret)"
       echo "VALKEY_PASSWORD=$(secret)"
       echo "KAESO_MAIL_TRANSPORT=log"
+      echo "KAESO_SEARCH_ENGINES=false"
     } >.env.part
     mv .env.part .env
   fi

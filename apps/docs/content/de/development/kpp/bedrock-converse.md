@@ -17,7 +17,7 @@ Schlagen Sie hier nach, wie eine Generierungsanfrage die Converse-API von Amazon
 - **Nur ausgehend.** Keine App schickt Converse an Kaeso; der Codec dekodiert keine Anfrage und schreibt keine Antwort darin.
 - **Welche Modelle.** KPMR nennt `bedrock_converse` als ausgehenden Dialekt der Chat-Modelle von Bedrock, die weder Chat Completions noch Messages beantworten, etwa Amazon Nova, Meta Llama und Mistral Pixtral. Claude-Modelle, die Messages bedient, bleiben bei Messages.
 - **Schlüssel.** Converse nimmt einen Bedrock-API-Schlüssel als Bearer-Token an, und AWS-Anmeldedaten, mit Signature Version 4 signiert.
-- **Was eine Modellfamilie eigens braucht, wird noch nicht geschrieben.** Reasoning-Einstellungen, `top_k`, JSON-Ausgabeformate und andere Felder, die in `additionalModelRequestFields` gehören, sind `Unsupported` und werden nie verworfen.
+- **Was eine Modellfamilie eigens braucht, wird noch nicht geschrieben.** Reasoning-Einstellungen, ein JSON-Schema als Ausgabeformat und andere Felder, die in `additionalModelRequestFields` gehören, sind `Unsupported` und werden nie verworfen; der JSON-Modus geht als Satz im System-Prompt mit. `top_k`, ein Hinweis, wird weggelassen und in `kaeso-left-out` genannt ([Top K](sampling.md#top-k)).
 
 ## Anfrage
 
@@ -38,7 +38,7 @@ Schlagen Sie hier nach, wie eine Generierungsanfrage die Converse-API von Amazon
 
 Tool-Namen und Aufruf-IDs, die die Muster von Converse ablehnen (Namen `[a-zA-Z0-9_-]`, IDs `[a-zA-Z0-9_.:-]`, höchstens 64 Zeichen), werden beim Senden umgeschrieben und in der Antwort wiederhergestellt.
 
-Mit `Unsupported` abgelehnt: Bilder und Dokumente per Weblink oder Datei-ID, Audio- und Videoblöcke, Dokumentzitate, gehostete Tools, `tool_choice: none`, `parallel_tool_calls: false`, Reasoning-Einstellungen, strukturierte Ausgabe, `top_k`, `seed` und die Penalties, außer einer Penalty von `0`, die weggelassen wird ([neutrale Werte](sampling.md#neutrale-werte)). Reasoning eines anderen Formats wird nicht gesendet.
+Mit `Unsupported` abgelehnt: Bilder und Dokumente per Weblink oder Datei-ID, Audio- und Videoblöcke, Dokumentzitate, gehostete Tools, `tool_choice: none`, `parallel_tool_calls: false`, Reasoning-Einstellungen, ein JSON-Schema als Ausgabeformat, `seed` und die Penalties, außer einer Penalty von `0`, die weggelassen wird ([neutrale Werte](sampling.md#neutrale-werte)). Reasoning eines anderen Formats wird nicht gesendet. Der JSON-Modus geht wie bei Anthropic als Satz am Ende des System-Prompts mit ([strukturierte Ausgabe](cross-format.md#strukturierte-ausgabe)).
 
 ## Antwort
 

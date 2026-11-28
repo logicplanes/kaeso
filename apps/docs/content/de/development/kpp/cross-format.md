@@ -8,15 +8,15 @@ Eine App kann ein API-Format sprechen, während der Anbieter ein anderes spricht
 
 | Daten aus einem anderen Format | In einer Anfrage | In einer Antwort |
 | --- | --- | --- |
-| Extras-Felder | `Unsupported`, außer sie stehen auf der [Allowlist](#extras) oder sind [neutral](sampling.md#neutrale-werte) | Weggelassen |
-| Unbekannte Blöcke, Tools und Tool-Auswahlen | `Unsupported`, außer [Tool-Namespaces](#tool-namespaces), [Tool-Suche](#tool-suche), [gehosteter Websuche](#gehostete-websuche) und dem [Tool-Verlauf von Codex](#tool-verlauf-von-codex) | Unbekannte Blöcke weggelassen, außer Websuchen |
+| Extras-Felder | `Unsupported`, außer sie stehen auf der [Allowlist](#extras), sind [neutral](sampling.md#neutrale-werte) oder der [Name eines Teilnehmers](openai-chat.md#namen-von-teilnehmern) einer Chat-Nachricht | Weggelassen |
+| Unbekannte Blöcke, Tools und Tool-Auswahlen | `Unsupported`, außer [Tool-Namespaces](#tool-namespaces), [Tool-Suche](#tool-suche), [gehosteter Websuche](hosted-web-search.md) und dem [Tool-Verlauf von Codex](#tool-verlauf-von-codex) | Unbekannte Blöcke weggelassen, außer Websuchen |
 | Zitate | `Unsupported` | Weggelassen |
 | Datei-IDs eines Anbieters | `Unsupported`, außer der Zielanbieter hat sie ausgegeben | — |
 | Lesbares Reasoning | Weggelassen; der [Reasoning-Blob](reasoning.md#reasoning-blobs) stellt es beim Ursprung wieder her | In der Reasoning-Form der App gezeigt, wo sie eine hat |
 | Opakes Reasoning | Nur an den Dialekt und Anbieter zurückgespielt, die es ausgegeben haben | In einen Reasoning-Blob verpackt |
 | Cache-Hinweise | Weggelassen, wo das Ziel selbst cacht | — |
-| Audio und Video | Gesendet, wo Format und Anbieter des Ziels sie nehmen, sonst `Unsupported` ([Audio und Video](#audio-und-video)) | Weggelassen, wo das Format der App sie nicht tragen kann |
-| Audio- und Bildausgabe | Verlangt, wo das Ziel sie schreibt, sonst `Unsupported` ([Audio- und Bildantworten](#audio--und-bildantworten)) | Audio für Chat- und Gemini-Apps, Bilder für Gemini-Apps; sonst weggelassen |
+| Audio und Video | Gesendet, wo Format und Anbieter des Ziels sie nehmen, sonst `Unsupported` ([Audio und Video](media.md#audio-und-video)) | Weggelassen, wo das Format der App sie nicht tragen kann |
+| Audio- und Bildausgabe | Verlangt, wo das Ziel sie schreibt, sonst `Unsupported` ([Audio- und Bildantworten](media.md#audio--und-bildantworten)) | Audio für Chat- und Gemini-Apps, Bilder für Gemini-Apps; sonst weggelassen |
 | Sampling-Einstellungen, die das Ziel nicht hat | `Unsupported`, außer eine Penalty von 0 ([neutrale Werte](sampling.md#neutrale-werte)) | — |
 | Stoppgründe, die das Format der App nicht hat | — | Der nächstliegende, den es hat |
 | Abgeschaltetes Thinking für ein Modell, das immer Reasoning nutzt | Die niedrigste Aufwandsstufe des Modells, genannt in `kaeso-adapted` ([Modelle, die immer Reasoning nutzen](reasoning.md#modelle-die-immer-reasoning-nutzen)) | — |
@@ -92,6 +92,7 @@ Die Fixture-Pfade in diesen Tabellen sind relativ zu `crates/kaeso-codecs/fixtur
 | `model_id` | nur Assistenten-Nachrichten, aus `openai_chat` | Das Modell, das eine wiederholte Assistenten-Nachricht geschrieben hat; Grok CLI hält es in seinem eigenen Verlauf fest. Buchführung, die das Modell nie liest; ein protokollierter Anfrage-Body behält sie. Es ist der einzige Schlüssel von `cross::CHAT_ASSISTANT_BOOKKEEPING`, den Chat-Anbieter nur mit `with_message_bookkeeping()` erhalten ([Chat-Anbieter](openai-chat-providers.md)); auf jeder anderen Nachricht wird eine Anfrage an ein anderes Format abgelehnt; Chat-Anbieter erhalten ihn wie gesendet. | Grok CLI sendet es bei jeder wiederholten Assistenten-Nachricht; `openai_chat/requests/grok-cli-model-id.json` |
 | `client_metadata` | request, aus `openai_responses` | Metadaten der Anfrage: Turn- und Thread-IDs, W3C-Trace-Kontext und `x-codex-turn-metadata`. Sie erreichen das Modell nie, und ein protokollierter Anfrage-Body behält sie. | Codex sendet sie bei jedem Zug; `openai_responses/requests/codex-namespace-tools.json` |
 | `detail` (an `input_image`; Responses hält `auto` als Form-Markierung) | image, aus `openai_responses`, `openai_decisions` | Hinweis zur Bildauflösung, wie `image_url.detail` bei Chat, als das er Chat Completions erreicht, außer `original`, das Chat nicht annimmt. `input_file.detail` (PDF-Darstellung) steht **nicht** auf der Allowlist. | `openai_responses/requests/image-base64-file-id.json` |
+| `response`, `responseJsonSchema` | tool, aus `gemini` | Beschreiben den Rückgabewert der Funktion der App, den die App liest, nicht das Modell; das Modell ruft die Funktion ohne sie auf. Weggelassen und in `kaeso-left-out` so genannt, wie die App sie schreibt, etwa google-genais `tools[0].functionDeclarations[0].response_json_schema`. | google-genai deklariert jede Python-Funktion, die es automatisch aufruft, mit `response_json_schema` (`gemini/requests/sdk-automatic-function-calling.json`), und eine mit `from_callable_with_api_option` gebaute mit `response` (`gemini/requests/sdk-function-response-schema.json`) |
 | `resolution` | image, video, aus `gemini_decisions` | Hinweis zur Auflösung, wie `detail`; `low` und `high` wechseln als `detail` zu OpenAI Decisions ([Entscheidungen](decisions-across-formats.md)). | `gemini_decisions/requests/image.json` |
 | `prompt_cache_key`, `prompt_cache_options`, `safety_identifier` | request, aus `openai_decisions` | Hinweise, typisiert als `DecideRequest.cache` und `user` ([Entscheidungen](decisions-across-formats.md)); die Einträge decken Formen ab, die KPP nicht typisiert. | `openai_decisions/requests/cache.json` |
 | `phase` (an Assistentennachrichten: `commentary`, `final_answer`) | message, aus `openai_responses` | Kennzeichnet eine Assistentennachricht als Vorrede oder als endgültige Antwort, damit OpenAI sie beim erneuten Abspielen des Zugs unterscheiden kann. Der Text ist in beiden Fällen derselbe, und andere Formate haben keine solche Kennzeichnung. | Codex sendet die Nachrichten von GPT-6 damit zurück; ein Thread, der zu einem anderen Modell wechselt, trägt sie mit; `openai_responses/requests/codex-model-switch.json` |
@@ -168,54 +169,6 @@ Anthropics Inline-Tools ändern die Tool-Liste mitten im Gespräch: Eine Nachric
 
 Anthropic-Modelle bekommen die Blöcke wie gesendet, zusammen mit der Beta `inline-tools-2026-09-15` in `anthropic-beta`. Fixture: `anthropic_messages/requests/claude-code-inline-tools.json`.
 
-## Gehostete Websuche
-
-OpenAI Responses nennt sein gehostetes Suchtool `web_search`, früher auch `web_search_2025_08_26`, `web_search_preview` und `web_search_preview_2025_03_11`; Kaeso behandelt alle vier gleich. Für Anthropic wird das Tool zu Anthropics Server-Tool `web_search_20250305` mit dem Namen `web_search`:
-
-| Responses | Anthropic |
-| --- | --- |
-| `filters.allowed_domains`, `filters.excluded_domains` (eines davon; eine leere Liste zählt als keine) | `allowed_domains`, `blocked_domains` |
-| `enable_image_understanding`, `enable_image_search` (von xAI) | weggelassen, bei `true` in `kaeso-left-out` genannt |
-| `user_location` (`approximate`, mit `city`, `region`, `country`, `timezone`) | `user_location` |
-| `external_web_access: true`, `search_context_size: "medium"` (der Standard), `search_content_types: ["text"]` | nichts; sie beschreiben, was Anthropics Suche tut |
-| `search_content_types` mit `image` | weggelassen und in `kaeso-left-out` genannt; Anthropics Suche liefert nur Textergebnisse |
-| `external_web_access: false` | das Tool wird [weggelassen](#weggelassene-tools) |
-| eine andere `search_context_size`, jedes andere Feld | `Unsupported` |
-
-Für die Responses-API von SpaceX (`WebSearchTool::Xai`) behält das Tool die Felder, die xAI dafür dokumentiert ([Websuche](https://docs.x.ai/developers/tools/web-search), gelesen am 2026-10-25):
-
-| Responses | SpaceX |
-| --- | --- |
-| `filters.allowed_domains`, `filters.excluded_domains` (je höchstens fünf, nicht beide) | wie gesendet |
-| `enable_image_understanding`, `enable_image_search` | wie gesendet |
-| `search_content_types` mit `image` | `enable_image_search: true` |
-| `external_web_access: true`, `search_context_size: "medium"`, `search_content_types: ["text"]` | nichts; SpaceX lehnt `external_web_access` ab und sucht immer live |
-| `external_web_access: false` | das Tool wird [weggelassen](#weggelassene-tools) |
-| mehr als fünf Domains, beide Listen, `user_location`, eine andere `search_context_size`, jedes andere Feld | `Unsupported` |
-
-`external_web_access: false` bittet OpenAI, nur seinen Cache von Seiten zu lesen. Das sendet Codex bei seinem Standard `web_search = "cached"`. Claude und SpaceX suchen immer live. Eine Live-Suche würde Seiten lesen, die Kaeso laut der App nicht abrufen soll, daher wird die Suche stattdessen weggelassen. Chat Completions hat keine gehostete Suche, daher wird das Tool auch dort weggelassen. OpenAI bekommt das Tool wie gesendet.
-
-Anthropics Websuche-Tool geht den umgekehrten Weg: `web_search_20250305`, das `WebSearch` in Claude Code sendet, `web_search_20260209` und `web_search_20260318`. Ein Responses-Ziel bekommt das gehostete `web_search`-Tool, und die Grenze für Suchen wird zu einem Feld der Anfrage ([Websuche-Tool](https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-search-tool)):
-
-| Anthropic | OpenAI | SpaceX |
-| --- | --- | --- |
-| `allowed_domains` | `filters.allowed_domains` | `filters.allowed_domains` |
-| `blocked_domains` | `filters.blocked_domains` | `filters.excluded_domains` |
-| `user_location` (`approximate`, mit `city`, `region`, `country`, `timezone`) | `user_location` | `Unsupported` |
-| `max_uses` | `max_tool_calls` | `max_turns` |
-| `allowed_callers`, das `["direct"]` oder der Standard der Version ist | nichts; die gehostete Suche ist eine direkte Suche | nichts |
-| `response_inclusion` (`web_search_20260318`) | nichts; es betrifft nur Suchen aus der Codeausführung | nichts |
-| `cache_control` | nichts; Responses cacht selbst ([Cache-Hinweise](#cache-hinweise)) | nichts |
-| ein Standort, der nicht `approximate` ist, jedes andere Feld | `Unsupported` | `Unsupported` |
-
-- **Beide Domainlisten** in einem Tool sind `InvalidRequest`, mit Claudes eigener Meldung (`anthropic_messages/errors/web-search-both-domain-lists.json`).
-- **Dynamisches Filtern.** Ab `web_search_20260209` filtert Claude Ergebnisse mit ausgeführtem Code, außer `allowed_callers` ist `["direct"]`. Ein Responses-Modell liest die Ergebnisse in beiden Fällen direkt.
-- **Quellen.** Die Anfrage fordert `include: ["web_search_call.action.sources"]` an, weil OpenAI die gefundenen Seiten einer Suche nur auf Anfrage auflistet.
-- **Die Grenze.** OpenAIs `max_tool_calls` zählt auch das Öffnen von Seiten und das Suchen in ihnen, ist also enger als `max_uses`. Die Route eines ChatGPT-Abos lehnt `max_tool_calls` ab, daher fällt die Grenze dort weg ([Nutzung eines ChatGPT-Abos](openai-responses.md#nutzung-eines-chatgpt-abos)).
-- **SpaceX** ignoriert `max_tool_calls` und verwirft `blocked_domains` ohne Fehler, daher bekommt es eigene Namen. Sein `max_turns` begrenzt die Runden von Tool-Aufrufen, und eine Runde kann mehr als einmal suchen. Seine übrigen Grenzen gelten auch: höchstens fünf Domains in einer Liste.
-- **Die Suche erzwingen.** Ein `tool_choice`, das `web_search` erzwingt, ist `Unsupported`; mit `auto` und `any` entscheidet das Modell.
-- **Chat Completions** hat keine gehostete Suche, daher wird das Tool dort weggelassen.
-
 ## Weggelassene Tools
 
 Diese Tools werden aus einer Anfrage weggelassen statt abgelehnt (`cross::TOOLS_LEFT_OUT`). Jedes bietet dem Modell nur etwas an, das es nutzen kann, und eine App wie Codex fügt es jeder Anfrage hinzu, ohne Schalter pro Modell: Eine Ablehnung würde jedes Modell ohne das Tool aus dieser App unbrauchbar machen. Das Modell antwortet, wie es ohne das Tool antworten würde. Jedes weggelassene Tool wird im Header `kaeso-left-out` der Antwort ([Antwort-Header](../../api/model-api.md#antwort-header)) und im Log des Gateways genannt, und ein protokollierter Anfrage-Body behält die Tools der App.
@@ -256,7 +209,7 @@ Ein Codex-Thread, der auf einem GPT-Modell begann, enthält Items, die nur OpenA
 | `local_shell_call` | `Block::ToolCall` namens `local_shell`, sein `action`-Objekt als Argumente |
 | `local_shell_call_output` | `Block::ToolResult` für den Aufruf, den seine `id` nennt; Codex sendet stattdessen ein `function_call_output` |
 
-OpenAI bekommt die Items wie gesendet, SpaceX seine `custom_tool_call`- und `custom_tool_call_output`-Items: SpaceX antwortet aus einem solchen Verlauf (`openai_responses/providers/xai/responses/recorded-codex-gpt-history.json`). `local_shell_call` und `local_shell_call_output` bekommt SpaceX wie oben als Tool-Aufrufe und Ergebnisse, weil es stattdessen `shell_call`-Items annimmt. Die Reasoning-Items von GPT fallen für SpaceX weg, weil SpaceX OpenAIs `encrypted_content` nicht entschlüsseln kann und die Anfrage ablehnen würde ([SpaceX](openai-responses.md#spacex)). Ein Item, das nicht die Form oben hat, bleibt ein unbekannter Block und wird wie einer abgelehnt.
+OpenAI bekommt die Items wie gesendet, SpaceX seine `custom_tool_call`- und `custom_tool_call_output`-Items: SpaceX antwortet aus einem solchen Verlauf (`openai_responses/providers/xai/responses/recorded-codex-gpt-history.json`). `local_shell_call` und `local_shell_call_output` bekommt SpaceX wie oben als Tool-Aufrufe und Ergebnisse, weil es stattdessen `shell_call`-Items annimmt. Die Reasoning-Items von GPT fallen für SpaceX weg, weil SpaceX OpenAIs `encrypted_content` nicht entschlüsseln kann und die Anfrage ablehnen würde ([SpaceX](openai-responses-providers.md#spacex)). Ein Item, das nicht die Form oben hat, bleibt ein unbekannter Block und wird wie einer abgelehnt.
 
 ## Agentennachrichten von Codex
 
@@ -268,6 +221,10 @@ Wenn Codex Subagenten startet, schreiben sich die Agenten mit `agent_message`-In
 
 Ein `encrypted_content`, das Chiffretext ist (eine ununterbrochene Base64-Folge), kann nur OpenAI lesen; überall sonst ist es `Unsupported`, ebenso ein Teil anderen Typs. Fixtures: `openai_responses/providers/xai/requests/codex-multi-agent.json` (die erste Anfrage eines Subagenten) und `codex-multi-agent-root.json` (ein späterer Zug des Root-Agenten).
 
+## Strikte Tools
+
+Ein Funktions-Tool aus Chat Completions, Anthropic oder Gemini ist nicht strikt, außer es sagt es, während Responses für ein Tool ohne `strict` den Strict-Modus versucht, der jedes Argument zur Pflicht macht ([Function Calling](https://developers.openai.com/api/docs/guides/function-calling#strict-mode)). Der Responses-Encoder sendet ein Tool aus einem anderen Dialekt ohne `strict` daher mit `strict: false`, sodass das Modell optionale Argumente weglassen kann.
+
 ## Argumente von Tool-Aufrufen
 
 Die Argumente eines Tool-Aufrufs sind in jedem Format ein JSON-Objekt. Chat Completions und Responses übertragen sie als String, sodass ein Aufruf mit Text ankommen kann, der keines ist. Kaeso behandelt solchen Text auf jedem Weg gleich:
@@ -275,48 +232,6 @@ Die Argumente eines Tool-Aufrufs sind in jedem Format ein JSON-Objekt. Chat Comp
 - **Leere Argumente.** Ein Aufruf eines Tools ohne Parameter, etwa `get_goal` von Codex, hat `{}` als Argumente. Claude streamt einen solchen Aufruf ohne Argumenttext, daher bekommen Chat-Completions- und Responses-Apps dafür `"{}"`, wenn der Block endet, denn `arguments` enthält die Argumente des Aufrufs als JSON (`ChatCompletionMessageToolCall`, `FunctionToolCall`). Leere `arguments`, die eine App zurückschickt, werden als `{}` gelesen; ein Anbieter im eigenen Format der App bekommt sie so zurück, wie sie gesendet wurden. Fixtures: `anthropic_messages/streams/tools-no-input.sse`, `openai_responses/requests/codex-desktop-blank-arguments.json`.
 - **Andere Werte im Gespräch, für Anthropic.** `tool_use.input` muss ein Objekt sein, und Anthropic lehnt die ganze Anfrage ab, wenn eines im Verlauf keines ist. Ein Aufruf aus einem anderen Format, dessen Argumente etwas anderes sind, wird deshalb zu einem Objekt: Text, der kein JSON ist, etwa von einem Ausgabelimit abgeschnittene Argumente, wird zu `{"input": "<der Text>"}`, wie die [Eingabe eines Freiform-Tools](#tool-verlauf-von-codex); ein Array, eine Zahl oder ein Wahrheitswert wird zu `{"input": <der Wert>}`; und `null` wird zu `{}`. Das Modell sieht, was es geschrieben hat, und das Tool-Ergebnis danach. Jeder solche Aufruf wird in `kaeso-adapted` als `tool call` mit seiner ID genannt, etwa `tool call call_abc`. Anbieter von Chat Completions und Responses bekommen die Argumente wie gesendet. Ein eigenes `tool_use` einer Anthropic-App mit einem `input`, das kein Objekt ist, bleibt `Unsupported`.
 - **Antworten.** Eine Antwort an eine Anthropic-App mit einem Tool-Aufruf, dessen Argumente kein Objekt sind, wird abgelehnt, weil die App das Tool mit Argumenten ausführen würde, die das Modell nie geschrieben hat ([Antworten bei Anthropic](anthropic-messages.md#antworten)).
-
-## Audio und Video
-
-`Block::Audio` und `Block::Video` halten eine `Source`, einen Cache-Hinweis und Extras, wie Bilder. Jedes Format nimmt sie so, wie seine Dokumentation es beschreibt, und lehnt den Rest vor dem Senden ab:
-
-| Ziel | Audio | Video |
-| --- | --- | --- |
-| Gemini | `inlineData` oder `fileData`, mit dem Medientyp wie gesendet | `inlineData`, `fileData` oder eine YouTube-URL ohne MIME-Typ |
-| Chat Completions | `input_audio` in Benutzernachrichten, nur base64, in den Formaten des Anbieters: `wav` und `mp3` für OpenAI, jedes für OpenRouter | `video_url` für Anbieter, die es dokumentieren (OpenRouter, Moonshot); sonst `Unsupported` |
-| Anthropic Messages | `Unsupported`: Senden Sie ein Transkript als Text | MiniMax' `video`-Block für MiniMax; sonst `Unsupported`: Senden Sie Einzelbilder als Bilder |
-| Responses | `Unsupported` | `Unsupported` |
-
-Eine Datei-ID eines Anbieters funktioniert nur bei dem Anbieter, der sie ausgestellt hat ([Dateien](#dateien)). Geminis `videoMetadata` (Ausschnitt und Bildrate) und `mediaResolution` bleiben Extras ihres Parts: Nur Gemini hat sie, und ein Ausschnitt ändert, was das Modell sieht, darum lehnen andere Formate sie ab. Nichts wird umkodiert: Ein Medientyp, für den das Ziel keinen Namen hat, etwa `audio/webm` für Chat Completions, ist `Unsupported`.
-
-Das Gateway lehnt Audio und Video auch für ein Modell ab, dessen Katalogeintrag `audio` oder `video` nicht unter seinen Eingaben führt, wie bei Bildern und PDFs: `` The model `gpt-4o` does not accept audio. ``
-
-## Audio- und Bildantworten
-
-`GenerateRequest::output_modalities` nennt, was die Antwort enthalten soll (`Text`, `Image`, `Audio`), und `audio_output` Stimme und Format von Audio. Eine Audioantwort ist ein `Block::Audio` mit base64-Daten, seinem Medientyp und, wo das Format eines hat, einem `transcript`; Streams tragen sie als `BlockStart(Audio)` und `Audio`-Deltas mit Daten und Transkripttext.
-
-| Format der App | Verlangt mit | Bekommt |
-| --- | --- | --- |
-| Chat Completions | `modalities: ["text", "audio"]` mit `audio.voice` und `audio.format` | `message.audio` und `delta.audio`, von OpenAI oder von einem Gemini-Sprachmodell |
-| Gemini | `responseModalities: ["AUDIO"]` oder `["IMAGE"]` mit `speechConfig` und `responseFormat` | `inlineData`-Audio und -Bilder, von Gemini oder von einem OpenAI-Audiomodell |
-| Anthropic Messages, Responses | nichts: Ihre Formate haben keine Einstellung dafür | nur Text; Audio und Bilder, die ein Anbieter ungefragt schickt, werden weggelassen |
-
-- **Stimmen** gehören ihrem Anbieter. Eine Stimme geht nur über, wenn das Ziel sie nennt: OpenAIs eingebaute Stimmen für Chat Completions, Geminis 30 vorgefertigte Stimmen für Gemini; alles andere ist `Unsupported` mit der Stimme in `param`.
-- **Formate** werden nie umkodiert. `wav`, `mp3` und `pcm16` gehen zwischen Chat Completions und Gemini über (`AUDIO_WAV`, `AUDIO_MP3`, `AUDIO_L16` bei 24 kHz); `flac`, `opus` und `aac` erreichen nur OpenAI. Ohne Format bekommt ein Chat-Completions-Ziel `wav`, oder `pcm16` für einen Stream.
-- **Der Text von Chat.** In `["text", "audio"]` ist der Text das Transkript des Audios, darum bekommt Gemini `["AUDIO"]`, was seine Sprachmodelle brauchen.
-- **Wiedergabe.** OpenAI bewahrt eine Audioantwort eine Weile auf und nimmt sie als `audio: {id}` zurück. Diese ID funktioniert nur dort, wie eine Datei-ID; ein anderes Ziel lehnt sie ab, es sei denn, der Audioblock trägt ein Transkript, das Chat Completions dann als Text sendet.
-- **Bilder.** Gemini-Bildmodelle liefern Bilder als Parts. Nur Gemini-Apps bekommen sie: Chat Completions und Messages haben kein Bild in einer Antwort, und ein `image_generation_call` von Responses gehört zu OpenAIs Bild-Tool, ein Gemini-Bild läse sich also als Tool-Aufruf, den die App nie gemacht hat. Bildausgabe von diesen Formaten zu verlangen ist `Unsupported`.
-- **Katalog.** Das Gateway lehnt Audioausgabe für ein Modell ab, dessen Katalogausgaben kein `audio` führen, und Bildausgabe ohne `image`: `` The model `gemini-3.5-flash` does not produce audio. `` Ein Sprachmodell, das keinen Text schreibt, nimmt `["text", "audio"]` von Chat an.
-
-## Medien in Tool-Ergebnissen
-
-Claudes `tool_result` und das `function_call_output` von Responses können Bilder und Dateien enthalten, etwa den Screenshot eines Tools oder das Bild, das `Read` von Claude Code oder `view_image` von Codex öffnet. Eine `tool`-Nachricht von Chat Completions enthält nur Text (`ChatCompletionToolMessageParam`), und OpenAI und DeepSeek lehnen dort ein Bild ab. Für Chat-Completions-Modelle verschiebt Kaeso sie daher:
-
-- **Die Tool-Nachricht** behält den Text des Ergebnisses, gefolgt von `The rest of this result is in the next message.`
-- **Die Benutzernachricht nach den Ergebnissen** beginnt für jedes solche Ergebnis mit `` The rest of the result of tool call `<id>`: `` und den Bildern, Dateien und Audioinhalten des Ergebnisses in ihrer Reihenfolge. Text, den die App nach den Ergebnissen gesendet hat, folgt danach.
-- **Der Header.** Jedes Ergebnis wird im Header `kaeso-adapted` der Antwort als `tool result` mit der ID des Aufrufs genannt, etwa `tool result call_abc`.
-
-Anthropic- und Responses-Modelle bekommen die Medien unverändert im Tool-Ergebnis, Gemini-Modelle in `functionResponse.parts` ([Gemini API](gemini.md)). Fixtures: `anthropic_messages/requests/tool-result-multi-turn.json`, `openai_responses/requests/function-call-output-array.json`.
 
 ## Nutzung
 
@@ -337,13 +252,13 @@ Ein Anbieter kann minutenlang streamen, ohne etwas zu erzeugen, das das Format d
 
 | Dialekt | Keepalive-Frame | Warum die SDKs ihn ignorieren |
 | --- | --- | --- |
-| OpenAI Chat Completions und Responses | Der SSE-Kommentar `: keepalive` und eine Leerzeile | Zeilen, die mit einem Doppelpunkt beginnen, sind in der SSE-Spezifikation Kommentare, und die Parser der OpenAI-SDKs überspringen sie |
+| OpenAI Chat Completions und Responses | Die SSE-Kommentarzeile `: keepalive` ohne Leerzeile: Die Leerzeile des nächsten Events beendet sie | Zeilen, die mit einem Doppelpunkt beginnen, sind in der SSE-Spezifikation Kommentare, und SSE-Parser überspringen sie. Eine Leerzeile danach ergäbe ein leeres Event, an dem ältere openai-go-Reader wie v1.8.2 in mods scheitern |
 | Anthropic Messages | `event: ping` mit `data: {"type": "ping"}`, genau wie Anthropic es sendet | Die Anthropic-SDKs überspringen Ping-Events |
 | Gemini API | Zwei Zeilenumbrüche (`\n\n`) | Das Python-, Go- (`google.golang.org/genai`) und JS-SDK (`@google/genai`) überspringen leere, durch `\n\n` getrennte Chunks, während ein Kommentar Python und ein einzelner Umbruch Go bricht |
 
 Frames gelangen auf zwei Wegen auf die Leitung:
 
-- **Im Stream.** Ein Encoder hängt den Frame an das an, was `StreamEncoder::encode` zurückgibt, wenn ein Event aus einem anderen Dialekt keine Bytes erzeugt hat. Ein Taktgeber begrenzt das ohne Uhr. Ein Extra-Event eines anderen Dialekts wie `ping` löst immer einen Frame aus, weil der Anbieter es bereits taktet. Verborgener Text, etwa Thinking, das die App nicht sehen kann, oder gepufferte Tool-Argumente, löst einen Frame pro `kaeso_codecs::HIDDEN_TEXT_PER_KEEPALIVE` Bytes aus, also 1.024. Alles, was der Encoder schreibt, setzt die Zählung zurück. Events aus dem eigenen Dialekt der App lösen nie Frames aus, sodass eine Wiedergabe im selben Dialekt exakt bleibt.
+- **Im Stream.** Ein Encoder hängt den Frame an das an, was `StreamEncoder::encode` zurückgibt, wenn ein Event aus einem anderen Dialekt keine Bytes erzeugt hat. Ein Taktgeber begrenzt das ohne Uhr. Verborgener Text, etwa Thinking, das die App nicht sehen kann, oder gepufferte Tool-Argumente, löst einen Frame aus, sobald sich 1.024 Bytes angesammelt haben (`kaeso_codecs::HIDDEN_TEXT_PER_KEEPALIVE`). Ein größeres Event löst einen Frame aus. Ein Extra-Event eines anderen Dialekts, etwa Anthropics `ping`, zählt mit seiner Größe genauso. Ein eigenes Keepalive des Anbieters hat nur ein paar Dutzend Bytes und löst allein keinen Frame aus; die Stille darum deckt das Intervall des Gateways ab. Alles, was der Encoder schreibt, setzt die Zählung zurück. Events aus dem eigenen Dialekt der App lösen nie Frames aus, sodass eine Wiedergabe im selben Dialekt exakt bleibt.
 - **Vom Gateway gesteuert.** `StreamEncoder::keepalive` liefert den Frame auf Abruf, für Stille beim Anbieter, die der Encoder nicht sehen kann. Das Gateway schreibt ihn, wenn es `KAESO_STREAMS_KEEPALIVE_INTERVAL` lang nichts an die App geschrieben hat, standardmäßig 15 Sekunden.
 
 Das Anfrageprotokoll zählt beide Arten in `stream_progress.keepalives`. Ein eigenes Keepalive des Anbieters, das eine App desselben Dialekts wiedergegeben bekommt, etwa Anthropics `ping`, ist ein Event des Anbieters und wird nicht mitgezählt.
@@ -354,11 +269,12 @@ Der Encoder für OpenAI Chat sendet seinen Rollen-Chunk außerdem, sobald die An
 
 Strukturierte Ausgabe an Anthropic nutzt die nativen Structured Outputs von Anthropic, nie eine Nachbildung über ein erzwungenes Tool.
 
-- Das Ausgabeformat `json_object` hat bei Anthropic keine Entsprechung und ist `Unsupported`.
-- Das Ausgabeformat von Anthropic ist nur ein Schema: Der `name` eines Schemas wird weggelassen, während eine `description` oder `strict: false` `Unsupported` ist.
+- Anthropic hat keinen JSON-Modus, und seine Structured Outputs können kein offenes Objekt ausdrücken, weil jedes Objekt `additionalProperties: false` braucht. Das Ausgabeformat `json_object` geht deshalb als ein Satz am Ende des System-Prompts mit: "Answer with one JSON object and nothing else: no code fence, no text before or after it." `kaeso-adapted` nennt das Feld der App. Wie der JSON-Modus von OpenAI verspricht er kein Schema; anders als dort wird das Modell nicht Token für Token auf JSON festgelegt.
+- Das Ausgabeformat von Anthropic ist nur ein Schema: Der `name` eines Schemas wird weggelassen, seine `description` steht vor der eigenen des Schemas, und `strict: false` wird strikt bedient. Ein Schema aus einem anderen Format wird in die Teilmenge umgeschrieben, die Claude annimmt, wie es die SDKs von Anthropic tun ([Anfragen aus anderen Dialekten](anthropic-messages.md#anfragen-aus-anderen-dialekten)).
 - Schemas, die von Anthropic an OpenAI gehen, bekommen den Namen `response`, weil OpenAI einen verlangt.
-- Gemini bekommt ein Schema als `responseJsonSchema` und `json_object` als `responseMimeType: "application/json"` allein; wie bei Anthropic entfällt der `name` eines Schemas, und eine `description` oder `strict: false` ist `Unsupported`.
-- Amazon Bedrock Converse bekommt noch kein Ausgabeformat: `json_object` und Schemas sind `Unsupported`.
+- Gemini bekommt ein Schema als `responseJsonSchema` und `json_object` als `responseMimeType: "application/json"` allein; wie bei Anthropic entfällt der `name` eines Schemas, seine `description` steht vor der eigenen des Schemas, und `strict: false` wird strikt bedient.
+- Amazon Bedrock Converse bekommt `json_object` ebenso, als Satz im System-Prompt; Schemas sind `Unsupported`.
+- Ein Modell, dessen Katalogeintrag keine strukturierte Ausgabe hat, etwa `deepseek-flash`, kann kein Schema erzwingen. Hat sein Anbieter einen JSON-Modus ([`json_mode()`](openai-chat-providers.md#anbieterprofile)), sendet das Gateway `response_format: {"type": "json_object"}` und einen Satz am Ende des System-Prompts: „Answer with one JSON object that matches this JSON schema, and nothing else: …“, gefolgt von der `description` des Schemas. `kaeso-adapted` nennt das Feld der App. Die Antwort ist JSON, das Schema wird angewiesen, nicht erzwungen, und Kaeso prüft die Antwort nicht dagegen. Die Wurzel des Schemas muss ein Objekt sein, auch über einen lokalen `$ref` oder in jedem Zweig eines `anyOf` oder `oneOf`. Um den Typ der Wurzel zu finden, folgt Kaeso höchstens 256 Referenzen und Zweigen, einer geteilten Definition bei jedem Erreichen; darüber hinaus wird das Schema abgelehnt. Anderswo wird ein solches Schema abgelehnt.
 
 ## Zustandsbehaftete Responses-Funktionen
 

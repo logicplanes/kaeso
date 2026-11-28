@@ -121,6 +121,7 @@ function Nav({ current, onSelect, rail = false }: { current: string; onSelect: (
       </Sidebar.Content>
       <Sidebar.Footer>
         <OrgSwitcher />
+        <Sidebar.Action icon={icons.search} label="Search" shortcut={["mod", "k"]} />
       </Sidebar.Footer>
     </Sidebar>
   );

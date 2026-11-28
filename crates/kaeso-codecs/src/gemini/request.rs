@@ -36,7 +36,7 @@ const FORM_INCLUDE: &str = "include_thoughts";
 const FORM_CANDIDATES: &str = "candidate_count";
 const FORM_STOP: &str = "stop";
 const FORM_MIME: &str = "response_mime_type";
-const FORM_SDK_NAMES: &str = "sdk_names";
+pub(crate) const FORM_SDK_NAMES: &str = "sdk_names";
 const FORM_TOP_K_FLOAT: &str = "top_k_float";
 const JSON_MIME: &str = "application/json";
 /// Gemini takes at most five stop sequences (`GenerationConfig.stopSequences`).
@@ -76,6 +76,10 @@ fn parse<T: serde::de::DeserializeOwned + serde::Serialize>(
             None => err,
         }
     })
+}
+
+pub(crate) fn wrapped_count(r: &GenerateRequest) -> bool {
+    r.extras.form_str(D, FORM_COUNT) == Some("wrapped")
 }
 
 /// Decodes a Gemini request body for `action` on `model`, as the path names them.
@@ -401,10 +405,9 @@ fn decode_generation(
     verbatim_into_form(&mut req.extras, GENERATION_CONFIG, verbatim);
     if let Some(n) = g.candidate_count {
         if n > 1 {
-            return Err(KppError::unsupported_by(
+            return Err(KppError::unsupported(
                 "`generationConfig.candidateCount` above 1",
-                D,
-                "Kaeso returns one candidate per request; send several requests instead.",
+                "Kaeso returns one candidate per request, so `generationConfig.candidateCount` must be 1 or left out; send several requests for more candidates.",
             )
             .with_param("generationConfig.candidateCount"));
         }
@@ -584,25 +587,6 @@ pub(crate) fn check(req: &Request, ctx: &EgressCtx) -> Result<(), KppError> {
             "Gemini can't be told to call one function at a time; remove `parallel_tool_calls`.",
         )
         .with_param("parallel_tool_calls"));
-    }
-    if generate && let OutputSpec::JsonSchema(spec) = &r.output {
-        let param = app_field(r, Setting::OutputFormat, D);
-        if spec.description.is_some() {
-            return Err(KppError::unsupported_by(
-                "output schema description",
-                D,
-                "Gemini structured output takes a schema only. Move the description into the prompt or the schema's own `description`.",
-            )
-            .with_param(param));
-        }
-        if spec.strict == Some(false) {
-            return Err(KppError::unsupported_by(
-                "non-strict output schema",
-                D,
-                "Gemini always enforces the output schema. Set `strict: true` or remove it.",
-            )
-            .with_param(param));
-        }
     }
     if generate && let Some(c) = &r.reasoning {
         if let Some(ReasoningEffort::Other(e)) = &c.effort {

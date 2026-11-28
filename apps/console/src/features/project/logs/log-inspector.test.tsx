@@ -59,6 +59,7 @@ describe("LogInspector", () => {
           overhead_us: 14_000,
           request_upload_us: 40,
           key_id: null,
+          source: "playground",
           has_content: false,
           upstream_request_id: "",
           user_agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15",
@@ -327,6 +328,18 @@ describe("LogInspector", () => {
     const panel = await sheet();
     expect(await within(panel).findByText("Observed, not routed")).toBeInTheDocument();
     expect(panel).toHaveTextContent("A source reported this request");
+    expect(section(panel, "Sent by")).toHaveTextContent("Reported byA source");
+    expect(section(panel, "Sent by")).not.toHaveTextContent("Playground");
+  });
+
+  it("calls a request without a key from the Playground only when it came from there", async () => {
+    signedIn();
+    projectData();
+    logsData({ rows: [logRow({ key_id: null })], entries: [logEntry({ key_id: null })] });
+    await renderApp(projectPath("logs?log=req_0001"));
+    const sentBy = section(await sheet(), "Sent by");
+    expect(sentBy).toHaveTextContent("Key—");
+    expect(sentBy).not.toHaveTextContent("Playground");
   });
 
   it("says a request that cost nothing wasn't billed", async () => {

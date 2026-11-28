@@ -7,8 +7,8 @@ use proptest::prelude::*;
 use serde_json::{Value, json};
 
 use super::OpenAiChat;
-use crate::codec::{Codec, EgressCtx, EncodeCtx};
-use crate::test_support::{assert_sse_eq, fixtures};
+use crate::codec::{Codec, EgressCtx, EncodeCtx, HeaderList};
+use crate::test_support::{assert_sse_eq, chat_usage_in_its_own_chunk, fixtures};
 use crate::testing::sse_items;
 
 const D: &str = "openai_chat";
@@ -68,13 +68,159 @@ fn frames(bytes: &[u8]) -> Vec<Value> {
         .collect()
 }
 
+// OpenAI's shape for `include_usage`: one chunk carries the usage, the last before `[DONE]`,
+// with empty `choices`. Clients such as LangChain add up every chunk's usage.
+// `[DONE]`, where the stream has it, is last: clients stop reading there.
+fn assert_done_last(name: &str, out: &[u8]) {
+    let events: Vec<Value> = frames(out)
+        .into_iter()
+        .filter(|f| !f.as_str().is_some_and(|s| s.starts_with(": ")))
+        .collect();
+    if let Some(done) = events.iter().position(|f| f == "[DONE]") {
+        assert_eq!(
+            done,
+            events.len() - 1,
+            "{name}: {}",
+            String::from_utf8_lossy(out)
+        );
+    }
+}
+
+fn assert_usage_once(name: &str, out: &[u8], total: u64) {
+    assert_done_last(name, out);
+    let chunks: Vec<Value> = frames(out).into_iter().filter(|c| c.is_object()).collect();
+    let with: Vec<&Value> = chunks.iter().filter(|c| !c["usage"].is_null()).collect();
+    let text = String::from_utf8_lossy(out);
+    assert_eq!(with.len(), 1, "{name}: {text}");
+    assert_eq!(Some(with[0]), chunks.last(), "{name}: {text}");
+    assert_eq!(with[0]["choices"], json!([]), "{name}: {text}");
+    assert_eq!(with[0]["usage"]["total_tokens"], total, "{name}: {text}");
+}
+
+#[test]
+fn every_stream_fixture_with_usage_reaches_an_app_that_asked_for_it_once() {
+    let mut checked = 0;
+    for (name, bytes) in fixtures(D, "streams", "sse") {
+        let sent = frames(&bytes);
+        let Some(newest) = sent
+            .iter()
+            .rfind(|c| c.is_object() && !c["usage"].is_null())
+        else {
+            continue;
+        };
+        let events = decode_whole(&bytes);
+        if events.iter().any(|e| matches!(e, StreamEvent::Error(_))) {
+            continue;
+        }
+        let out = encode(&events, true);
+        assert_done_last(&name, &out);
+        let chunks: Vec<Value> = frames(&out).into_iter().filter(Value::is_object).collect();
+        let with: Vec<&Value> = chunks.iter().filter(|c| !c["usage"].is_null()).collect();
+        let text = String::from_utf8_lossy(&out);
+        assert_eq!(with.len(), 1, "{name}: {text}");
+        assert_eq!(Some(with[0]), chunks.last(), "{name}: {text}");
+        assert_eq!(with[0]["choices"], json!([]), "{name}: {text}");
+        assert_eq!(with[0]["usage"], newest["usage"], "{name}");
+        checked += 1;
+    }
+    assert!(checked >= 10, "{checked}");
+}
+
+#[test]
+fn an_empty_finish_reason_on_a_chunk_kept_whole_does_not_let_usage_out_early() {
+    let frame = |data: &str| {
+        StreamEvent::Extra(RawItem::new(
+            DialectId::OpenAiChat,
+            RawJson::from_string(format!("{{\"data\":{data}}}")).unwrap(),
+        ))
+    };
+    let usage = r#"{"id":"c","choices":[],"usage":{"prompt_tokens":4,"completion_tokens":1,"total_tokens":5}}"#;
+    let chunk = |finish: &str| {
+        format!(
+            r#"{{"id":"c","choices":[{{"index":0,"delta":{{"content":"Hi"}},"finish_reason":{finish}}}]}}"#
+        )
+    };
+    let mut start = ResponseStart::new("c", "m");
+    start.extras = kaeso_kpp::Extras::new(DialectId::OpenAiChat);
+    let mut stop = ResponseStop::new();
+    stop.extras = kaeso_kpp::Extras::new(DialectId::OpenAiChat);
+    for (finish, early) in [("\"\"", true), ("\"stop\"", false)] {
+        let ctx = EncodeCtx::new(RequestKind::Generate, StreamMode::on(true));
+        let mut encoder = OpenAiChat::stream_encoder(&ctx);
+        let mut out = encoder
+            .encode(&StreamEvent::ResponseStart(start.clone()))
+            .unwrap();
+        out.extend(encoder.encode(&frame(&chunk(finish))).unwrap());
+        let usage_out = encoder.encode(&frame(usage)).unwrap();
+        assert_eq!(usage_out.is_empty(), early, "finish_reason {finish}");
+        out.extend(usage_out);
+        // The provider's real finish, then the end: the app gets the usage once, last.
+        if early {
+            out.extend(encoder.encode(&frame(&chunk("\"stop\""))).unwrap());
+        }
+        out.extend(
+            encoder
+                .encode(&StreamEvent::ResponseStop(stop.clone()))
+                .unwrap(),
+        );
+        out.extend(encoder.finish().unwrap());
+        assert_usage_once(&format!("finish_reason {finish}"), &out, 5);
+        if early {
+            let chunks: Vec<Value> = frames(&out).into_iter().filter(Value::is_object).collect();
+            let stopped = chunks
+                .iter()
+                .position(|c| c["choices"][0]["finish_reason"] == "stop")
+                .unwrap();
+            assert_eq!(
+                stopped,
+                chunks.len() - 2,
+                "the usage comes after the real finish"
+            );
+        }
+    }
+}
+
 #[test]
 fn every_stream_fixture_round_trips() {
     for (name, bytes) in fixtures(D, "streams", "sse") {
         let events = decode_whole(&bytes);
-        let out = encode(&events, include_usage(&bytes));
-        assert_sse_eq(&name, &bytes, &out);
+        let include_usage = include_usage(&bytes);
+        let out = encode(&events, include_usage);
+        let expected = if include_usage {
+            chat_usage_in_its_own_chunk(&bytes)
+        } else {
+            bytes.clone()
+        };
+        assert_sse_eq(&name, &expected, &out);
     }
+}
+
+#[test]
+fn a_finish_chunk_with_the_usage_is_followed_by_a_usage_chunk_of_its_own() {
+    let moved: Vec<String> = fixtures(D, "streams", "sse")
+        .into_iter()
+        .filter(|(_, bytes)| include_usage(bytes) && chat_usage_in_its_own_chunk(bytes) != *bytes)
+        .map(|(name, _)| name)
+        .collect();
+    for name in [
+        "providers/deepseek/recorded-stream-include-usage",
+        "providers/mistral/recorded-stream-include-usage",
+    ] {
+        assert!(moved.iter().any(|m| m == name), "{name} not in {moved:?}");
+    }
+    let (_, bytes) = fixtures(D, "streams", "sse")
+        .into_iter()
+        .find(|(n, _)| n == "providers/mistral/recorded-stream-include-usage")
+        .unwrap();
+    let out = encode(&decode_whole(&bytes), true);
+    let chunks = frames(&out);
+    let last = &chunks[chunks.len() - 2];
+    assert_eq!(last["choices"], json!([]), "{last}");
+    assert_eq!(last["usage"]["total_tokens"], 35, "{last}");
+    let finish = &chunks[chunks.len() - 3];
+    assert_eq!(finish["choices"][0]["finish_reason"], "stop", "{finish}");
+    assert_eq!(finish["usage"], Value::Null, "{finish}");
+    assert_eq!(chunks[chunks.len() - 1], json!("[DONE]"));
 }
 
 #[test]
@@ -367,7 +513,12 @@ fn comments_and_unknown_fields_survive() {
         panic!()
     };
     assert!(start.extras.fields.contains_key("x_future_field"));
-    assert!(events.iter().any(|e| matches!(e, StreamEvent::BlockDelta(d) if d.extras.fields.contains_key("delta.x_future_delta"))));
+    // The chunk that opens the text block carries its fields on the block's start.
+    assert!(events.iter().any(|e| match e {
+        StreamEvent::BlockStart(s) => s.extras.fields.contains_key("delta.x_future_delta"),
+        StreamEvent::BlockDelta(d) => d.extras.fields.contains_key("delta.x_future_delta"),
+        _ => false,
+    }));
     assert!(events.iter().any(|e| matches!(e, StreamEvent::BlockDelta(d) if d.extras.fields.contains_key("choice.x_future_choice_field"))));
     let events = decode_whole(&fixture("logprobs-sdk-2024"));
     assert!(events.iter().any(|e| matches!(e, StreamEvent::BlockDelta(d) if d.extras.fields.contains_key("choice.logprobs"))));
@@ -426,7 +577,11 @@ fn truncated_and_malformed_streams_end_with_an_error() {
     let StreamEvent::Error(err) = events.last().unwrap() else {
         panic!()
     };
-    assert_eq!(err.unsupported_feature(), Some("n"));
+    assert_eq!(err.kind, ErrorKind::ProviderError);
+    assert_eq!(
+        err.message,
+        "The provider streamed several choices for one request; Kaeso carries one."
+    );
     let mut decoder = OpenAiChat::stream_decoder(&ectx());
     decoder.feed(b"data: {bad\n\n");
     assert!(
@@ -772,7 +927,6 @@ fn an_anthropic_stream_becomes_a_chat_stream() {
                 json!({"role": "assistant", "content": "", "refusal": null}),
                 Value::Null
             ),
-            json!(": keepalive"),
             chunk(json!({"content": "Checking"}), Value::Null),
             chunk(json!({"content": " now."}), Value::Null),
             chunk(tool(0, "toolu_01", "get_weather"), Value::Null),
@@ -1068,7 +1222,11 @@ fn running_usage_is_reported_once_after_the_last_block_stops() {
         ]
     );
     assert_eq!(usage_deltas(&events), [(Some(StopReason::EndTurn), 3)]);
-    assert_sse_eq("replay", sse.as_bytes(), &encode(&events, true));
+    assert_sse_eq(
+        "replay",
+        &chat_usage_in_its_own_chunk(sse.as_bytes()),
+        &encode(&events, true),
+    );
 }
 
 #[test]
@@ -1097,11 +1255,13 @@ fn running_usage_without_a_final_report_goes_out_before_the_stream_stops() {
         .collect();
     assert_eq!(stops, [Some(StopReason::EndTurn), None]);
     assert_eq!(usage_deltas(&events), [(None, 2)]);
-    assert_sse_eq("replay", sse.as_bytes(), &encode(&events, true));
+    let out = encode(&events, true);
+    assert_sse_eq("replay", &chat_usage_in_its_own_chunk(sse.as_bytes()), &out);
+    assert_usage_once("running usage", &out, 7);
 }
 
 #[test]
-fn a_stream_with_running_usage_replays_byte_for_byte() {
+fn running_usage_reaches_the_app_once_unless_it_asked_for_it_on_every_chunk() {
     let bytes = fixture("usage-every-chunk");
     let events = decode_whole(&bytes);
     let last_block_stop = events
@@ -1118,7 +1278,25 @@ fn a_stream_with_running_usage_replays_byte_for_byte() {
         with_usage.iter().all(|i| *i > last_block_stop),
         "{events:?}"
     );
-    assert_sse_eq("usage-every-chunk", &bytes, &encode(&events, true));
+    let out = encode(&events, true);
+    assert_sse_eq(
+        "usage-every-chunk",
+        &chat_usage_in_its_own_chunk(&bytes),
+        &out,
+    );
+    assert_usage_once("usage-every-chunk", &out, 17);
+    // vLLM's `continuous_usage_stats` asks for it on every chunk: the stream replays as sent.
+    let body = br#"{"model":"m","messages":[{"role":"user","content":"Hi"}],"stream":true,
+        "stream_options":{"include_usage":true,"continuous_usage_stats":true}}"#;
+    let req = OpenAiChat::decode_request(RequestKind::Generate, body, &HeaderList::new()).unwrap();
+    let ctx = EncodeCtx::for_request(req).with_created_at(1_700_000_000);
+    let mut encoder = OpenAiChat::stream_encoder(&ctx);
+    let mut asked = Vec::new();
+    for event in &events {
+        asked.extend(encoder.encode(event).unwrap());
+    }
+    asked.extend(encoder.finish().unwrap());
+    assert_sse_eq("continuous_usage_stats", &bytes, &asked);
     let hidden = String::from_utf8(encode(&events, false)).unwrap();
     assert!(!hidden.contains("usage"), "{hidden}");
     assert!(hidden.contains("help?"), "{hidden}");
@@ -1135,7 +1313,10 @@ fn running_usage_on_a_chunk_without_content_is_held_and_hidden_from_apps_that_di
     .concat();
     let events = decode_whole(sse.as_bytes());
     assert_eq!(usage_deltas(&events), [(None, 1)]);
-    assert_sse_eq("replay", sse.as_bytes(), &encode(&events, true));
+    // An app that asked for usage gets it once, after the finish chunk.
+    let out = encode(&events, true);
+    assert_sse_eq("replay", &chat_usage_in_its_own_chunk(sse.as_bytes()), &out);
+    assert_usage_once("early usage chunk", &out, 5);
     let hidden = encode(&events, false);
     let text = String::from_utf8(hidden.clone()).unwrap();
     assert!(!text.contains("usage"), "{text}");
@@ -1343,4 +1524,94 @@ data: [DONE]\n\n";
         "{out}"
     );
     assert_eq!(frames(&out.into_bytes()), frames(split.as_bytes()));
+}
+
+#[test]
+fn a_comment_between_the_finish_and_the_usage_chunk_ends_both_paths_alike() {
+    let stream = concat!(
+        "data: {\"id\":\"c\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"m\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"Hi\"},\"finish_reason\":null}]}\n\n",
+        "data: {\"id\":\"c\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"m\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"stop\"}],\"usage\":{\"prompt_tokens\":5,\"completion_tokens\":2,\"total_tokens\":7}}\n\n",
+        ": keepalive\n\n",
+        "data: {\"id\":\"c\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"m\",\"choices\":[],\"usage\":{\"prompt_tokens\":5,\"completion_tokens\":2,\"total_tokens\":7}}\n\n",
+        "data: [DONE]\n\n",
+    );
+    let out = encode(&decode_whole(stream.as_bytes()), true);
+    let expected = chat_usage_in_its_own_chunk(stream.as_bytes());
+    assert_sse_eq("comment", &expected, &out);
+    let usage: Vec<Value> = frames(&out)
+        .into_iter()
+        .filter(|f| f.get("usage").is_some_and(|u| !u.is_null()))
+        .collect();
+    assert_eq!(usage.len(), 1, "{}", String::from_utf8_lossy(&out));
+    assert_eq!(usage[0]["choices"], json!([]));
+}
+
+#[test]
+fn an_error_after_a_held_finish_chunk_keeps_the_newest_usage_before_it() {
+    let head = "data: {\"id\":\"c\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"m\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"Hi\"},\"finish_reason\":null}]}\n\n";
+    let finish = |total: u64| {
+        format!(
+            "data: {{\"id\":\"c\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"m\",\"choices\":[{{\"index\":0,\"delta\":{{}},\"finish_reason\":\"stop\"}}],\"usage\":{{\"prompt_tokens\":5,\"completion_tokens\":2,\"total_tokens\":{total}}}}}\n\n"
+        )
+    };
+    let failed = |stream: &str| {
+        let mut events = decode_whole(stream.as_bytes());
+        events.retain(|e| !matches!(e, StreamEvent::ResponseStop(_)));
+        events.push(StreamEvent::Error(KppError::provider(
+            "The connection broke.",
+        )));
+        String::from_utf8(encode(&events, true)).unwrap()
+    };
+    let usage_then_error = |out: &str| -> Vec<Value> {
+        frames(out.as_bytes())
+            .into_iter()
+            .filter(|f| f.get("usage").is_some_and(|u| !u.is_null()) || f.get("error").is_some())
+            .collect()
+    };
+
+    let out = failed(&format!("{head}{}: keepalive\n\n", finish(7)));
+    let tail = usage_then_error(&out);
+    assert_eq!(tail.len(), 2, "{out}");
+    assert_eq!(tail[0]["choices"], json!([]), "{out}");
+    assert_eq!(tail[0]["usage"]["total_tokens"], 7, "{out}");
+    assert!(tail[1].get("error").is_some(), "{out}");
+
+    let out = failed(&format!("{head}{}{}", finish(0), finish(7)));
+    let totals: Vec<Value> = usage_then_error(&out)
+        .into_iter()
+        .filter_map(|f| f.get("usage").map(|u| u["total_tokens"].clone()))
+        .collect();
+    assert_eq!(totals, [json!(7)], "{out}");
+}
+
+#[test]
+fn a_recorded_stream_cut_by_an_error_after_its_usage_keeps_the_newest_counts() {
+    let (_, bytes) = fixtures(D, "streams", "sse")
+        .into_iter()
+        .find(|(n, _)| n == "providers/cloudflare-ai-gateway/recorded-stream-include-usage")
+        .unwrap();
+    let mut events = decode_whole(&bytes);
+    events.retain(|e| !matches!(e, StreamEvent::ResponseStop(_)));
+    events.push(StreamEvent::Error(KppError::provider(
+        "The connection broke.",
+    )));
+    let out = encode(&events, true);
+    let finishing: Vec<Value> = frames(&out)
+        .into_iter()
+        .filter(|c| c["choices"][0]["finish_reason"].is_string() || c["choices"] == json!([]))
+        .collect();
+    let last = finishing.last().unwrap();
+    assert_eq!(last["usage"]["total_tokens"], 24, "{last}");
+    let with_usage = finishing.iter().filter(|c| !c["usage"].is_null()).count();
+    assert_eq!(with_usage, 1, "{}", String::from_utf8_lossy(&out));
+    assert!(frames(&out).last().unwrap().get("error").is_some());
+    let mut before_error = frames(&out);
+    before_error.pop();
+    let anywhere: Vec<&Value> = before_error
+        .iter()
+        .filter(|c| !c["usage"].is_null())
+        .collect();
+    assert_eq!(anywhere.len(), 1, "{}", String::from_utf8_lossy(&out));
+    assert_eq!(Some(anywhere[0]), before_error.last());
+    assert_eq!(anywhere[0]["choices"], json!([]));
 }

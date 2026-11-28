@@ -18,10 +18,151 @@ expression: outcomes
     "param": "modalities",
     "unsupported": "audio output"
   },
+  "autogen-user-name": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "What's the weather in Paris?",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "id": "call_1",
+              "input": {
+                "city": "Paris"
+              },
+              "name": "weather",
+              "type": "tool_use"
+            }
+          ],
+          "role": "assistant"
+        },
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "content": [
+                {
+                  "text": "Sunny in Paris",
+                  "type": "text"
+                }
+              ],
+              "tool_use_id": "call_1",
+              "type": "tool_result"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "claude-haiku-5-5",
+      "system": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "text": "You are a helpful AI assistant. Solve tasks using your tools. Reply with TERMINATE when the task has been completed.",
+          "type": "text"
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
   "content-array-all-roles": {
     "message": "`refusal block` is not supported by Anthropic Messages. Anthropic has no refusal content block. Remove the refusal from the conversation history or replace it with text.",
     "param": "messages[1].blocks[0]",
     "unsupported": "refusal block"
+  },
+  "crewai-tool-name": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "\nCurrent Task: What's the weather in Paris?\n\nThis is the expected criteria for your final answer: One sentence.\nyou MUST return the actual complete content as the final answer, not a summary.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "id": "call_1",
+              "input": {
+                "city": "Paris"
+              },
+              "name": "get_weather",
+              "type": "tool_use"
+            }
+          ],
+          "role": "assistant"
+        },
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "content": [
+                {
+                  "text": "Sunny in Paris",
+                  "type": "text"
+                }
+              ],
+              "tool_use_id": "call_1",
+              "type": "tool_result"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "claude-haiku-5-5",
+      "system": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "text": "You are Weather reporter. You report weather.\nYour personal goal is: Report the weather",
+          "type": "text"
+        }
+      ],
+      "tool_choice": {
+        "type": "auto"
+      },
+      "tools": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "description": "Get the weather for a city.",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "city": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "city"
+            ],
+            "type": "object"
+          },
+          "name": "get_weather",
+          "strict": true
+        }
+      ]
+    },
+    "path": "/v1/messages"
   },
   "explicit-nulls": {
     "body": {
@@ -436,20 +577,185 @@ expression: outcomes
     "param": "messages[0].blocks[0]",
     "unsupported": "audio block"
   },
+  "instructor-json-mode": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Tokyo",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "claude-haiku-5-5",
+      "system": [
+        {
+          "text": "\n            As a genius expert, your task is to understand the content and provide\n            the parsed objects in json that match the following json_schema:\n\n\n            {\n  \"properties\": {\n    \"name\": {\n      \"title\": \"Name\",\n      \"type\": \"string\"\n    },\n    \"country\": {\n      \"title\": \"Country\",\n      \"type\": \"string\"\n    }\n  },\n  \"required\": [\n    \"name\",\n    \"country\"\n  ],\n  \"title\": \"City\",\n  \"type\": \"object\"\n}\n\n            Make sure to return an instance of the JSON, not the schema itself\n",
+          "type": "text"
+        },
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "text": "Answer with one JSON object and nothing else: no code fence, no text before or after it.",
+          "type": "text"
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
   "json-object": {
-    "message": "`json_object output` is not supported by Anthropic Messages. Anthropic has no JSON mode without a schema. Send a JSON schema (structured outputs) instead.",
-    "param": "response_format",
-    "unsupported": "json_object output"
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "What is the capital of France?",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-4.1-mini",
+      "system": [
+        {
+          "text": "Reply in JSON with the keys \"answer\" and \"confidence\".",
+          "type": "text"
+        },
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "text": "Answer with one JSON object and nothing else: no code fence, no text before or after it.",
+          "type": "text"
+        }
+      ]
+    },
+    "path": "/v1/messages"
   },
   "json-schema": {
-    "message": "`output schema description` is not supported by Anthropic Messages. Anthropic structured outputs take a schema only. Move the description into the prompt or the schema's own `description`.",
-    "param": "response_format",
-    "unsupported": "output schema description"
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Alice and Bob are going to a science fair on 2026-10-16.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-5.4-mini",
+      "output_config": {
+        "effort": "low",
+        "format": {
+          "schema": {
+            "additionalProperties": false,
+            "description": "A calendar event",
+            "properties": {
+              "date": {
+                "description": "ISO 8601 date",
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "participants": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            },
+            "required": [
+              "name",
+              "date",
+              "participants"
+            ],
+            "type": "object"
+          },
+          "type": "json_schema"
+        }
+      },
+      "system": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "text": "Extract the event information.",
+          "type": "text"
+        }
+      ],
+      "thinking": {
+        "type": "adaptive"
+      }
+    },
+    "path": "/v1/messages"
   },
   "legacy-functions": {
     "message": "`functions` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
     "param": null,
     "unsupported": "functions"
+  },
+  "llm-schema": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Tokyo",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "claude-haiku-5-5",
+      "output_config": {
+        "format": {
+          "schema": {
+            "additionalProperties": false,
+            "properties": {
+              "country": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "country"
+            ],
+            "type": "object"
+          },
+          "type": "json_schema"
+        }
+      },
+      "stream": true
+    },
+    "path": "/v1/messages"
   },
   "logit-bias": {
     "message": "`logit_bias` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
@@ -585,6 +891,78 @@ expression: outcomes
       "top_p": 1.0
     },
     "path": "/v1/messages"
+  },
+  "openai-python-parse-constraints": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Describe Tokyo.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "claude-haiku-5-5",
+      "output_config": {
+        "format": {
+          "schema": {
+            "additionalProperties": false,
+            "properties": {
+              "country": {
+                "description": "ISO country name",
+                "title": "Country",
+                "type": "string"
+              },
+              "name": {
+                "title": "Name",
+                "type": "string"
+              },
+              "population": {
+                "description": "{minimum: 0}",
+                "title": "Population",
+                "type": "integer"
+              },
+              "rating": {
+                "description": "{maximum: 5, minimum: 1}",
+                "title": "Rating",
+                "type": "number"
+              },
+              "tags": {
+                "description": "{maxItems: 3}",
+                "items": {
+                  "type": "string"
+                },
+                "title": "Tags",
+                "type": "array"
+              }
+            },
+            "required": [
+              "name",
+              "country",
+              "population",
+              "rating",
+              "tags"
+            ],
+            "title": "City",
+            "type": "object"
+          },
+          "type": "json_schema"
+        }
+      }
+    },
+    "path": "/v1/messages"
+  },
+  "openai-python-parse-dict": {
+    "message": "`properties.totals`, an object without keys, is not supported by Anthropic Messages. Claude returns only the keys a schema lists; list them in `properties`, or send key and value pairs as a list of objects.",
+    "param": "response_format",
+    "unsupported": "`properties.totals`, an object without keys,"
   },
   "openrouter-reasoning": {
     "body": {
@@ -1952,9 +2330,41 @@ expression: outcomes
     "path": "/v1/messages"
   },
   "providers/cerebras/stream-json-object": {
-    "message": "`json_object output` is not supported by Anthropic Messages. Anthropic has no JSON mode without a schema. Send a JSON schema (structured outputs) instead.",
-    "param": "response_format",
-    "unsupported": "json_object output"
+    "body": {
+      "max_tokens": 300,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Give a JSON object with one key, a, set to 1.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-oss-120b",
+      "output_config": {
+        "effort": "low"
+      },
+      "stream": true,
+      "system": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "text": "Answer with one JSON object and nothing else: no code fence, no text before or after it.",
+          "type": "text"
+        }
+      ],
+      "thinking": {
+        "type": "adaptive"
+      }
+    },
+    "path": "/v1/messages"
   },
   "providers/cerebras/stream-reasoning": {
     "body": {
@@ -2335,9 +2745,69 @@ expression: outcomes
     "path": "/v1/messages"
   },
   "providers/cerebras/tools-with-response-format": {
-    "message": "`json_object output` is not supported by Anthropic Messages. Anthropic has no JSON mode without a schema. Send a JSON schema (structured outputs) instead.",
-    "param": "response_format",
-    "unsupported": "json_object output"
+    "body": {
+      "max_tokens": 300,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "What's the weather in Paris right now?",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-oss-120b",
+      "output_config": {
+        "effort": "low"
+      },
+      "system": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "text": "Answer with one JSON object and nothing else: no code fence, no text before or after it.",
+          "type": "text"
+        }
+      ],
+      "thinking": {
+        "type": "adaptive"
+      },
+      "tools": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "description": "Get the current weather for a city.",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "city": {
+                "description": "City name, such as Paris",
+                "type": "string"
+              },
+              "unit": {
+                "enum": [
+                  "celsius",
+                  "fahrenheit"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "city"
+            ],
+            "type": "object"
+          },
+          "name": "get_weather"
+        }
+      ]
+    },
+    "path": "/v1/messages"
   },
   "providers/cerebras/unknown-model": {
     "body": {
@@ -4758,9 +5228,83 @@ expression: outcomes
     "unsupported": "tool_choice `any`"
   },
   "providers/mistral/tool-result-named": {
-    "message": "`messages[2].blocks[0].name` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
-    "param": "messages[2].blocks[0]",
-    "unsupported": "messages[2].blocks[0].name"
+    "body": {
+      "max_tokens": 100,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "What is the weather in Lisbon right now?",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "id": "D681PevKs",
+              "input": {
+                "city": "Lisbon"
+              },
+              "name": "get_weather",
+              "type": "tool_use"
+            }
+          ],
+          "role": "assistant"
+        },
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "content": [
+                {
+                  "text": "{\"temperature_c\": 21, \"sky\": \"clear\"}",
+                  "type": "text"
+                }
+              ],
+              "tool_use_id": "D681PevKs",
+              "type": "tool_result"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "mistral-small-latest",
+      "system": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "text": "You are a concise travel assistant.",
+          "type": "text"
+        }
+      ],
+      "tools": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "description": "Current weather for a city.",
+          "input_schema": {
+            "properties": {
+              "city": {
+                "description": "City name, such as Lisbon",
+                "type": "string"
+              }
+            },
+            "required": [
+              "city"
+            ],
+            "type": "object"
+          },
+          "name": "get_weather"
+        }
+      ]
+    },
+    "path": "/v1/messages"
   },
   "providers/mistral/user-field": {
     "body": {
@@ -6564,9 +7108,98 @@ expression: outcomes
     "unsupported": "search_mode"
   },
   "providers/qianfan/after-tool-results-doc": {
-    "message": "`messages[2].blocks[0].name` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
-    "param": "messages[2].blocks[0]",
-    "unsupported": "messages[2].blocks[0].name"
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "查一下上海和北京2025-8-21的天气",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "id": "04fed17840d34b1e99bf3cd6dc94150d",
+              "input": {
+                "location": "上海市",
+                "time": "2025-08-21"
+              },
+              "name": "get_current_weather",
+              "type": "tool_use"
+            },
+            {
+              "id": "a37ee51b99a64723bcb7f2f4d8081770",
+              "input": {
+                "location": "北京市",
+                "time": "2025-08-21"
+              },
+              "name": "get_current_weather",
+              "type": "tool_use"
+            }
+          ],
+          "role": "assistant"
+        },
+        {
+          "content": [
+            {
+              "content": [
+                {
+                  "text": "{\"temperature\": \"25\", \"unit\": \"摄氏度\", \"description\": \"上海\"}",
+                  "type": "text"
+                }
+              ],
+              "tool_use_id": "04fed17840d34b1e99bf3cd6dc94150d",
+              "type": "tool_result"
+            },
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "content": [
+                {
+                  "text": "{\"temperature\": \"20\", \"unit\": \"摄氏度\", \"description\": \"北京\"}",
+                  "type": "text"
+                }
+              ],
+              "tool_use_id": "a37ee51b99a64723bcb7f2f4d8081770",
+              "type": "tool_result"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "deepseek-v3.1-250821",
+      "tool_choice": {
+        "type": "auto"
+      },
+      "tools": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "description": "天气查询工具",
+          "input_schema": {
+            "properties": {
+              "location": {
+                "description": "地理位置，精确到区县级别",
+                "type": "string"
+              },
+              "time": {
+                "description": "时间，格式为YYYY-MM-DD",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "name": "get_current_weather"
+        }
+      ]
+    },
+    "path": "/v1/messages"
   },
   "providers/qianfan/greeting-doc": {
     "body": {
@@ -7439,6 +8072,7 @@ expression: outcomes
       "output_config": {
         "format": {
           "schema": {
+            "additionalProperties": false,
             "properties": {
               "age": {
                 "description": "年龄",
@@ -9144,9 +9778,54 @@ expression: outcomes
     "path": "/v1/messages"
   },
   "system-name-multiturn": {
-    "message": "`system[0].message.name` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
-    "param": "system[0]",
-    "unsupported": "system[0].message.name"
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "How long should I boil an egg for a runny yolk?",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "text": "About 6 minutes from boiling water, then cool it in cold water for a minute.",
+              "type": "text"
+            }
+          ],
+          "role": "assistant"
+        },
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "And for a hard-boiled one?",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-5.5",
+      "system": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "text": "You are a friendly cooking assistant. Answer in two sentences or fewer.",
+          "type": "text"
+        }
+      ],
+      "temperature": 0.7,
+      "top_p": 0.9
+    },
+    "path": "/v1/messages"
   },
   "tool-choice-allowed-tools": {
     "message": "tool_choice `allowed_tools` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Use `auto`, `none`, `required` or a single named tool instead.",
@@ -9579,6 +10258,94 @@ expression: outcomes
           "strict": true
         }
       ]
+    },
+    "path": "/v1/messages"
+  },
+  "typebox-intersect": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Tokyo",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "claude-haiku-5-5",
+      "output_config": {
+        "format": {
+          "schema": {
+            "additionalProperties": false,
+            "properties": {
+              "country": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "country"
+            ],
+            "type": "object"
+          },
+          "type": "json_schema"
+        }
+      }
+    },
+    "path": "/v1/messages"
+  },
+  "typebox-intersect-nested": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Tokyo",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "claude-haiku-5-5",
+      "output_config": {
+        "format": {
+          "schema": {
+            "additionalProperties": false,
+            "properties": {
+              "country": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "population": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "name",
+              "country",
+              "population"
+            ],
+            "type": "object"
+          },
+          "type": "json_schema"
+        }
+      }
     },
     "path": "/v1/messages"
   },

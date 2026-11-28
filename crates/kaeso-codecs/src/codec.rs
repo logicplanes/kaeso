@@ -13,8 +13,8 @@ use crate::openai_videos::VideosProfile;
 use crate::system_one::SystemOneProfile;
 use indexmap::IndexMap;
 use kaeso_kpp::{
-    AudioFormat, DialectId, KppError, ModelInfo, ModelList, ModelsQuery, Origin, Reply, Request,
-    RequestKind, Source, StreamEvent, StreamMode, TranscriptFormat, VideoJob,
+    AudioFormat, DialectId, ErrorKind, KppError, ModelInfo, ModelList, ModelsQuery, Origin, Reply,
+    Request, RequestKind, Retry, Source, StreamEvent, StreamMode, TranscriptFormat, VideoJob,
 };
 
 pub trait Codec: sealed::Sealed {
@@ -666,6 +666,61 @@ pub fn parse_retry_after(headers: &HeaderList) -> Option<std::time::Duration> {
         std::time::Duration::try_from_secs_f64(value / scale).ok()
     };
     parse("retry-after-ms", 1000.0).or_else(|| parse("retry-after", 1.0))
+}
+
+/// A reply with several choices or candidates. Kaeso refuses a request that asks for them, so
+/// they are the provider's fault: a gateway error, which a second try would only bill again.
+pub(crate) fn several_choices(message: &str) -> KppError {
+    KppError::provider(message)
+        .with_status(502)
+        .with_retry(Retry::Futile)
+}
+
+/// The header the OpenAI and Anthropic SDKs read before their own retry rules: `false` stops
+/// them retrying an error, `true` makes them retry it. Anthropic sends it on its own errors.
+pub const SHOULD_RETRY_HEADER: &str = "x-should-retry";
+
+// The OpenAI and Anthropic SDKs wait as long as `Retry-After` says only up to a minute
+// (`_calculate_retry_timeout` in openai-python and anthropic-sdk-python); a longer wait is past
+// any retry a client makes on its own.
+const LONGEST_CLIENT_WAIT: std::time::Duration = std::time::Duration::from_secs(60);
+
+/// Whether an app may send the same request again, as `x-should-retry` says it, for an error
+/// encoded with `status`: what the error states, else `false` for a wait longer than a client
+/// retries within and for kinds a second try can't change. Rate limits, overloads, timeouts
+/// and server errors, and errors sent as 408 or 409, which clients retry by their status, get
+/// none.
+pub fn should_retry(err: &KppError, status: u16) -> Option<bool> {
+    match err.retry {
+        Some(Retry::Helps) => return Some(true),
+        Some(Retry::Futile | Retry::AfterReset) => return Some(false),
+        _ => {}
+    }
+    if err
+        .retry_after
+        .is_some_and(|wait| wait > LONGEST_CLIENT_WAIT)
+    {
+        return Some(false);
+    }
+    match err.kind {
+        ErrorKind::RateLimited
+        | ErrorKind::Overloaded
+        | ErrorKind::Timeout
+        | ErrorKind::ProviderError => None,
+        _ if matches!(status, 408 | 409) => None,
+        _ => Some(false),
+    }
+}
+
+pub(crate) fn push_should_retry(encoded: &mut EncodedError, err: &KppError) {
+    if encoded.headers.get(SHOULD_RETRY_HEADER).is_some() {
+        return;
+    }
+    if let Some(retry) = should_retry(err, encoded.status) {
+        encoded
+            .headers
+            .push(SHOULD_RETRY_HEADER, if retry { "true" } else { "false" });
+    }
 }
 
 pub(crate) fn push_retry_headers(

@@ -57,7 +57,9 @@ A request costs what the project's catalogue says the model costs. Without a cat
 
 When a record names no provider, Kaeso looks for the model at the provider the kind of source usually calls, then at the model's maker, or at the one provider that sells it. A provider the client names only from how it is set up, such as Gemini CLI's sign-in or the provider Codex is configured with, counts the same way: a model it doesn't sell, as when the client talks to a gateway, is its maker's.
 
-A model named with an effort level at its end, such as `gemini-3.8-flash-low`, is logged as the model without it, with `low` as its reasoning effort, when the catalogue or KPMR knows that model and not the whole name. A source that sends no timing, such as Antigravity, leaves its requests without a duration: the request log shows a dash, and latency figures leave them out.
+A model named with a setting at its end is logged as the model without it. That needs the catalogue or KPMR to know the model at that setting and no provider to list the whole name. An effort level the model lists, such as `low` in `gemini-3.8-flash-low`, becomes the request's reasoning effort; `thinking`, as in `claude-opus-4-6-thinking`, needs a model that reasons. Usage by model names a whole name logged earlier after its model and setting, such as **Gemini 4 Carbon (high)** for `gemini-4-carbon-high`.
+
+A source that sends no timing, such as Antigravity, leaves its requests without a duration: the request log shows a dash, and latency figures leave them out.
 
 ## Duplicates and refusals
 

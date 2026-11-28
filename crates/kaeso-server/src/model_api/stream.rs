@@ -756,14 +756,27 @@ fn first_of(events: &[StreamEvent]) -> Seen {
     Seen::Nothing
 }
 
+// A reply Kaeso ends itself is billed for the output the provider wrote, also past the cut;
+// whether the provider's usage came is read from the reply, which `OutputCap` keeps it on.
+fn count_read(tally: &mut Tally, events: &[StreamEvent]) {
+    for event in events.iter().filter(|e| is_output(e)) {
+        tally.feed(event);
+    }
+}
+
+fn is_output(event: &StreamEvent) -> bool {
+    matches!(event, StreamEvent::BlockDelta(_))
+}
+
 pub(super) async fn gather(
     mut chunks: kaeso_upstream::ByteStream,
     mut decoder: Box<dyn StreamDecoder>,
     dialect: DialectId,
     max: usize,
     mut cap: Option<OutputCap>,
-) -> Result<Reply, Gathered> {
+) -> Result<(Reply, Tally), Gathered> {
     let mut asm = Assembler::new(dialect);
+    let mut tally = Tally::new();
     let mut read = 0usize;
     loop {
         let (events, last) = match chunks.next().await {
@@ -777,12 +790,16 @@ pub(super) async fn gather(
             Some(Err(e)) => return Err(Gathered::Transport(e)),
             None => (decoder.finish(), true),
         };
+        count_read(&mut tally, &events);
         let (events, capped) = match cap.as_mut() {
             Some(c) => (c.apply(events), c.reached()),
             None => (events, false),
         };
         for event in &events {
             asm.feed(event);
+            if !is_output(event) {
+                tally.feed(event);
+            }
         }
         if last || capped {
             break;
@@ -794,7 +811,7 @@ pub(super) async fn gather(
         return Err(Gathered::Provider(err));
     }
     match assembled.response {
-        Some(response) if assembled.complete => Ok(Reply::Generate(response)),
+        Some(response) if assembled.complete => Ok((Reply::Generate(response), tally)),
         _ => Err(Gathered::Broken(
             KppError::provider("The provider's stream ended before the reply was complete.")
                 .with_status(502),
@@ -1196,7 +1213,10 @@ impl Pump {
             return false;
         };
         let events = match self.output_cap.as_mut() {
-            Some(c) => c.apply(events),
+            Some(c) => {
+                count_read(&mut self.tally, &events);
+                c.apply(events)
+            }
             None => events,
         };
         let events = match self.restoring.as_mut() {
@@ -1206,7 +1226,9 @@ impl Pump {
         let mut stop = false;
         for event in &events {
             asm.feed(event);
-            self.tally.feed(event);
+            if self.output_cap.is_none() || !is_output(event) {
+                self.tally.feed(event);
+            }
             streamed.feed(event);
             if let Some(c) = self.carry.as_mut() {
                 c.observe(event);
@@ -1420,6 +1442,13 @@ impl Pump {
             self.done = true;
             return Some(PendingOut { bytes: out, ends });
         }
+        // Kept before the app gets the stream's end, after which its next step may come at once.
+        if ends
+            && self.broken.is_none()
+            && let Some(c) = self.carry.take()
+        {
+            c.keep().await;
+        }
         if !out.is_empty() {
             if !self.app.reply(out).await {
                 self.gone = cut_off(
@@ -1564,13 +1593,18 @@ impl Pump {
                 // the logged reply and the usage estimate still count it.
                 let held = self.processing.time(|| decoder.flush());
                 let held = match self.output_cap.as_mut() {
-                    Some(c) => c.apply(held),
+                    Some(c) => {
+                        count_read(&mut self.tally, &held);
+                        c.apply(held)
+                    }
                     None => held,
                 };
                 self.app.progress.count(&held);
                 for event in &held {
                     asm.feed(event);
-                    self.tally.feed(event);
+                    if self.output_cap.is_none() || !is_output(event) {
+                        self.tally.feed(event);
+                    }
                     streamed.feed(event);
                 }
                 std::mem::replace(asm, Assembler::without_blocks(self.counter.dialect)).finish()
@@ -1805,6 +1839,12 @@ impl Pump {
     ) {
         let ended = self.app.arrived.elapsed();
         let (estimate, reported) = self.record_outcome(assembled);
+        // A stream that ended without a stop still keeps what it had, before the app gets the end.
+        if let Some(c) = self.carry.take()
+            && self.broken.is_none()
+        {
+            c.keep().await;
+        }
         let count = estimate && reported.total_input_tokens() == 0;
         if count {
             if let Some(tail) = to_app.take()
@@ -1829,11 +1869,6 @@ impl Pump {
             o.usage = Some(estimate::complete(&reported, &self.tally, input));
             o.usage_estimated = true;
             count_estimate(reason, o.provider.unwrap_or_default());
-        }
-        if let Some(c) = self.carry
-            && self.broken.is_none()
-        {
-            c.keep().await;
         }
         if let (Some(b), Some(aborted)) = (&self.broken, &self.aborted) {
             match self.first.take() {

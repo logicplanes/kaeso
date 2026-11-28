@@ -259,6 +259,10 @@ pub(crate) fn only_items(
 ) -> Result<(), KppError> {
     let mut refused = None;
     let mut convert = false;
+    // The gateway resolves references to reasoning and text before sending; a codec caller may not.
+    if !allowed.contains(&"item_reference") && super::has_kept_reference(d.get()) {
+        refused = Some("item_reference".to_owned());
+    }
     for item in d
         .get()
         .messages

@@ -125,11 +125,46 @@ async fn a_model_sent_as_chat_completions_keeps_the_translation() {
 async fn what_deepseek_ignores_is_refused_before_anything_is_sent() {
     let env = env_with("deepseek", &[("deepseek-flash", json!({}))]).await;
     let mut body = messages("deepseek-flash", "Hello there.");
-    body["top_k"] = json!(5);
+    body["container"] = json!("container_011");
     let r = call(&env, "/v1/messages", Some(&env.key), true, Some(body)).await;
     assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
-    assert!(r.text().contains("top_k"), "{}", r.text());
+    assert!(r.text().contains("container"), "{}", r.text());
     assert!(env.mock.last().is_none());
+}
+
+#[tokio::test]
+async fn an_anthropic_apps_custom_tools_reach_deepseek_without_their_type() {
+    let env = env_with("deepseek", &[("deepseek-flash", json!({}))]).await;
+    let mut body = messages("deepseek-flash", "Weather in Paris?");
+    body["tools"] = json!([{
+        "type": "custom", "name": "get_weather",
+        "input_schema": {"type": "object", "properties": {"city": {"type": "string"}}}
+    }]);
+    let r = call(&env, "/v1/messages", Some(&env.key), true, Some(body)).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.header("kaeso-left-out"), None);
+    let sent = env.mock.last().unwrap();
+    assert_eq!(sent.path, "/anthropic/v1/messages");
+    assert_eq!(
+        sent.json()["tools"],
+        json!([{
+            "name": "get_weather",
+            "input_schema": {"type": "object", "properties": {"city": {"type": "string"}}}
+        }])
+    );
+}
+
+#[tokio::test]
+async fn top_k_deepseek_ignores_is_left_out_and_named() {
+    let env = env_with("deepseek", &[("deepseek-flash", json!({}))]).await;
+    let mut body = messages("deepseek-flash", "Hello there.");
+    body["top_k"] = json!(5);
+    let r = call(&env, "/v1/messages", Some(&env.key), true, Some(body)).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.header("kaeso-left-out"), Some("top_k"));
+    let sent = env.mock.last().unwrap();
+    assert_eq!(sent.path, "/anthropic/v1/messages");
+    assert!(sent.json().get("top_k").is_none(), "{}", sent.json());
 }
 
 #[tokio::test]

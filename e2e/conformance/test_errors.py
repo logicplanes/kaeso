@@ -38,6 +38,54 @@ OPENAI_STATUS = {
 }
 
 
+# Kinds a second try of the same request can't change. Errors sent as 408 or 409 keep the SDKs'
+# own rule for those statuses.
+LASTING = {
+    "invalid_request", "context_too_long", "unsupported", "content_filtered", "authentication",
+    "billing", "permission_denied", "not_found", "request_too_large",
+}
+
+
+def _counting_client(sdk):
+    sent = []
+    return sdk.DefaultHttpxClient(event_hooks={"request": [sent.append]}), sent
+
+
+def _sent_once(info, want, sent):
+    if info.value.status_code in (408, 409):
+        assert info.value.response.headers.get("x-should-retry") is None, want
+        return
+    assert info.value.response.headers.get("x-should-retry") == "false", want
+    assert len(sent) == 1, want
+
+
+def test_anthropic_sdk_sends_a_lasting_error_once(base_url, scenario):
+    want = expected(base_url, scenario)
+    if want["error_kind"] not in LASTING:
+        pytest.skip("a retry may pass")
+    http, sent = _counting_client(anthropic)
+    c = anthropic.Anthropic(base_url=base_url, api_key="test", http_client=http)
+    with pytest.raises(anthropic.APIStatusError) as info:
+        c.messages.create(model=f"{scenario['source']}:{scenario['name']}", max_tokens=8, messages=MESSAGES)
+    _sent_once(info, want, sent)
+
+
+@pytest.mark.parametrize("endpoint", ["chat", "responses"])
+def test_openai_sdk_sends_a_lasting_error_once(base_url, scenario, endpoint):
+    want = expected(base_url, scenario)
+    if want["error_kind"] not in LASTING:
+        pytest.skip("a retry may pass")
+    http, sent = _counting_client(openai)
+    c = openai.OpenAI(base_url=base_url + "/v1", api_key="test", http_client=http)
+    model = f"{scenario['source']}:{scenario['name']}"
+    with pytest.raises(openai.APIStatusError) as info:
+        if endpoint == "chat":
+            c.chat.completions.create(model=model, messages=MESSAGES)
+        else:
+            c.responses.create(model=model, input="hi")
+    _sent_once(info, want, sent)
+
+
 def test_anthropic_endpoint(base_url, scenario):
     want = expected(base_url, scenario)
     c = anthropic.Anthropic(base_url=base_url, api_key="test", max_retries=0)

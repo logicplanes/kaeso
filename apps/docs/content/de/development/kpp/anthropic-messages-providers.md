@@ -13,10 +13,12 @@ Jeder Anbieter in `PROVIDERS` nennt in seinem Feld `messages` ein `kaeso_codecs:
 
 | Einstellung | Was der Encoder tut | Warum das erlaubt ist |
 |---|---|---|
-| `refusing(fields)` | Lehnt eine Anfrage ab, die eines dieser Felder setzt, mit ihren Namen bei Anthropic: `top_k`, `stop_sequences` (so benannt, wie die App es geschrieben hat, etwa `stop` einer Chat-App) oder ein Feld einer Anthropic-App auf oberster Ebene, etwa `container`: `` `top_k` is not supported by Example Cloud; remove it from the request. `` Ein Feld, das beim Wechsel des Formats ausgelassen werden darf, etwa Claude Codes `context_management`, das nur Thinking löscht ([Extras](cross-format.md#extras)), wird stattdessen ausgelassen und in `kaeso-left-out` genannt; jeder andere Wert davon wird mit dem Hinweis für Claude Code abgelehnt. | Diese Felder sind semantisch, und ein Anbieter, der sie annimmt, ohne etwas damit zu tun, würde sie stillschweigend verwerfen. |
+| `refusing(fields)` | Lehnt eine Anfrage ab, die eines dieser Felder setzt, mit ihren Namen bei Anthropic: `stop_sequences` (so benannt, wie die App es geschrieben hat, etwa `stop` einer Chat-App) oder ein Feld einer Anthropic-App auf oberster Ebene, etwa `container`: `` `container` is not supported by Example Cloud; remove it from the request. `` `top_k`, ein Hinweis, wird ausgelassen und in `kaeso-left-out` so genannt, wie die App es geschrieben hat ([Top K](sampling.md#top-k)). Ein Feld, das beim Wechsel des Formats ausgelassen werden darf, etwa Claude Codes `context_management`, das nur Thinking löscht ([Extras](cross-format.md#extras)), wird stattdessen ausgelassen und in `kaeso-left-out` genannt; jeder andere Wert davon wird mit dem Hinweis für Claude Code abgelehnt. | Diese Felder sind semantisch, und ein Anbieter, der sie annimmt, ohne etwas damit zu tun, würde sie stillschweigend verwerfen. |
 | `sampling_fixed_at(values)` | Lehnt eine `temperature` oder ein `top_p` ab, das vom Wert abweicht, mit dem der Anbieter immer sampelt (`FixedValue`, in Tausendsteln); dieser Wert selbst geht so, wie er geschrieben ist. | Der Anbieter ignoriert das Feld, daher wird nur sein eigener Wert eingehalten. |
 | `auto_tool_choice_only()` | Lehnt ein `tool_choice` außer `auto` ab, aus jedem Format. | Der Anbieter würde Tools selbst wählen, gleich worum die App gebeten hat. |
 | `with_video(media_types)` | Sendet `Block::Video` als `video`-Block; eine base64-Quelle eines anderen Medientyps ist `Unsupported` (`` video media type `…` ``), ebenso eine Datei-ID oder Textquelle. | Nur ein Anbieter, der den Block dokumentiert, bekommt ihn. |
+| `forced_tool_without_thinking()` | Sendet eine Anfrage, deren `tool_choice` ein Tool erzwingt (`any` oder ein benanntes Tool), mit `thinking: {"type": "disabled"}` und nennt das Reasoning-Feld der App in `kaeso-adapted`; eine Aufwandsstufe `none` aus einem anderen Format geht ebenso. `any` mit einem Server-Tool wie `deepseek_web_search` geht wie geschrieben, weil DeepSeek es beim Denken als `auto` nimmt. | Der Anbieter lehnt ein erzwungenes Tool ab, während ein Modell denkt, und seine Modelle denken, solange man es ihnen nicht abstellt. |
+| `without_custom_tool_type()` | Sendet die Tools einer App ohne `type: "custom"`, das der Decoder als Form behält. | `custom` ist, was ein Tool ohne `type` ohnehin ist; ein Anbieter, der `type` nur als Server-Tool liest, lehnt es ab. |
 | `raw_predict()` | Sendet eine Generierung an `{base_path}/{model}:rawPredict` (`:streamRawPredict`, wenn sie streamt) ohne `model` und eine Token-Zählung an `{base_path}/count-tokens:rawPredict` mit `model`; beide Bodys bekommen `anthropic_version` `vertex-2023-10-16`, außer die App hat eine eigene gesendet. Fehler in Googles Form werden als Gemini-Fehler gelesen. | So bietet Googles Plattform Claude an ([Claude verwenden](https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/partner-models/claude/use-claude), [Token zählen](https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/partner-models/claude/count-tokens), Anthropics SDK). Gemini Enterprise Agent Platform nutzt es und lehnt `mcp_servers` und `container` ab, die [Anthropic](https://platform.claude.com/docs/en/build-with-claude/claude-models-on-google-cloud/google-managed) dort als nicht verfügbar führt. |
 
 Ablehnungen geschehen, während die Anfrage für das Ziel angepasst wird, vor dem Kodieren; daher wird nichts gesendet, und die Ablehnung erreicht die App in ihrem eigenen Format.
@@ -49,8 +51,8 @@ Die Messages-API von QwenCloud beantwortet Fehler mit dem Body von DashScope, `{
 | Anbieter | Einstellungen | Quellen |
 |---|---|---|
 | Amazon Bedrock (`amazon-bedrock`) | lehnt `mcp_servers` und `container` ab | Anthropics Seite [Claude on Amazon Bedrock](https://platform.claude.com/docs/en/build-with-claude/claude-on-amazon-bedrock-legacy) zu bedrock-runtime, gelesen am 2026-11-14, die den MCP-Connector und Agent Skills als nicht unterstützt nennt |
-| DeepSeek (`deepseek`) | lehnt `top_k`, `container` und `mcp_servers` ab | DeepSeeks Seite [Anthropic API](https://api-docs.deepseek.com/guides/anthropic_api), gelesen am 2026-11-25, die die drei als ignoriert führt |
-| MiniMax (`minimax`) | lehnt `top_k`, `stop_sequences`, `mcp_servers`, `container` und `context_management` ab; `sampling_fixed_at([("temperature", 1), ("top_p", 0.95)])`; `auto_tool_choice_only()`; `with_video(MINIMAX_VIDEO_MEDIA_TYPES)` (MP4, AVI, MOV, MKV, aus `MediaSource`) | MiniMax' Seite zur [Anthropic-API-Kompatibilität](https://platform.minimax.io/docs/api-reference/text-anthropic-api), gelesen am 2026-11-08, deren Tabelle `temperature`, `top_p`, `top_k`, `stop_sequences`, `mcp_servers`, `context_management` und `container` als ignoriert führt, sagt, dass MiniMax immer eine `temperature` von 1 und ein `top_p` von 0.95 verwendet, und für `tool_choice` nur `auto` unterstützt |
+| DeepSeek (`deepseek`) | lehnt `container` und `mcp_servers` ab, lässt `top_k` aus; `without_custom_tool_type()`, `forced_tool_without_thinking()` | DeepSeeks Seite [Anthropic API](https://api-docs.deepseek.com/guides/anthropic_api), gelesen am 2026-11-27, die die drei als ignoriert führt und sagt, dass `type: "custom"` an einem Client-Tool 422 ergibt |
+| MiniMax (`minimax`) | lehnt `stop_sequences`, `mcp_servers`, `container` und `context_management` ab, lässt `top_k` aus; `sampling_fixed_at([("temperature", 1), ("top_p", 0.95)])`; `auto_tool_choice_only()`; `with_video(MINIMAX_VIDEO_MEDIA_TYPES)` (MP4, AVI, MOV, MKV, aus `MediaSource`) | MiniMax' Seite zur [Anthropic-API-Kompatibilität](https://platform.minimax.io/docs/api-reference/text-anthropic-api), gelesen am 2026-11-08, deren Tabelle `temperature`, `top_p`, `top_k`, `stop_sequences`, `mcp_servers`, `context_management` und `container` als ignoriert führt, sagt, dass MiniMax immer eine `temperature` von 1 und ein `top_p` von 0.95 verwendet, und für `tool_choice` nur `auto` unterstützt |
 | Ollama Cloud (`ollama-cloud`) | `auto_tool_choice_only()` | Ollamas Seite zur [Anthropic-Kompatibilität](https://docs.ollama.com/api/anthropic-compatibility.md), gelesen am 2026-11-25, die `tool_choice` als nicht unterstützt führt |
 
 ## Amazon Bedrock
@@ -61,7 +63,7 @@ Quellen: die [Messages-Anleitung](https://docs.aws.amazon.com/bedrock/latest/use
 |---|---|---|
 | Messages unter `/anthropic/v1/messages` auf `bedrock-runtime.{region}.amazonaws.com` | `EgressCtx::api_root` | `/anthropic/v1` tritt an die Stelle von `/v1`; der Schlüssel geht als `x-api-key`, `model` bleibt im Body, und `anthropic-version` ist `2023-06-01`, wie AWS' `curl`-Beispiel sie sendet. |
 | ein abgelehnter Schlüssel als 403 `permission_error` | `KppError` | `PermissionDenied` aus dem Typ; das Gateway liest Bedrocks Meldungen zu einem fehlerhaften, einem unsignierten und einem unbekannten Schlüssel als abgelehnten Schlüssel (`errors/recorded-*-key*`). |
-| `POST /v1/messages/count_tokens` | — | bedrock-runtime zählt Tokens nur unter `/model/{modelId}/count-tokens` im eigenen Format, und die Zählung in Anthropics Form gibt es nur auf bedrock-mantle ([Token zählen](https://docs.aws.amazon.com/bedrock/latest/userguide/count-tokens.html)); daher lehnt Kaeso Token-Zählungen ab. |
+| `POST /v1/messages/count_tokens` | — | bedrock-runtime zählt Tokens nur unter `/model/{modelId}/count-tokens` im eigenen Format, und die Zählung in Anthropics Form gibt es nur auf bedrock-mantle ([Token zählen](https://docs.aws.amazon.com/bedrock/latest/userguide/count-tokens.html)); daher schätzt Kaeso Token-Zählungen selbst. |
 | Streams | Anthropics SSE | AWS beschreibt den Stream dieses Pfads nicht weiter, als dass Anthropics SDK damit funktioniert. |
 
 ## Vercel
@@ -73,7 +75,7 @@ Quellen: Vercels Seiten zur [Anthropic Messages API](https://vercel.com/docs/ai-
 | `provider_metadata` in der Antwort | Extras | Anthropic-Apps erhalten es unverändert zurück. |
 | `thinking`-Blöcke ohne `signature` | `Block::Reasoning` | Anthropic-Apps erhalten sie so, wie Vercel sie gesendet hat. |
 | Fehler in OpenAIs Hülle | `KppError` | Siehe [Fehler](anthropic-messages.md#fehler). |
-| `POST /v1/messages/count_tokens` | — | Vercel zählt nur für Claude-Modelle genau und schätzt den Rest, daher lehnt Kaeso Token-Zählungen für jedes Vercel-Modell ab. |
+| `POST /v1/messages/count_tokens` | — | Vercel zählt nur für Claude-Modelle genau und schätzt den Rest, daher schätzt Kaeso Token-Zählungen für jedes Vercel-Modell selbst. |
 
 ## Z.ai
 
@@ -83,7 +85,7 @@ Quellen: Z.ais Seiten zu den [Fehlercodes](https://docs.z.ai/api-reference/api-c
 |---|---|---|
 | Z.ais numerischer Code als `error.type`, in OpenAIs Hülle (`errors/recorded-invalid-api-key`) | Art des `KppError` | Z.ai beantwortet manche Codes mit einem Status, der in Anthropics Tabelle etwas anderes bedeutet, etwa 429 für ein leeres Guthaben. Der Code gewinnt: `1113`, `1309` und `1314` → `Billing`; `1211` → `NotFound`; `1220`, `1311` und `1315` → `PermissionDenied`; `1261` → `ContextTooLong`; `1301` → `ContentFiltered`; `1305` → `Overloaded`; `1000`, `1001`, `1003` und `1005` → `Authentication`. Andere Codes folgen dem Status. |
 | `{"code", "msg", "success": false}`, auch mit HTTP 200 (`errors/list-invalid-api-key`) | `KppError` | Z.ais Plattform-Hülle, die einen Pfad, den Z.ai nicht bedient, darunter `GET /v1/models`, beantwortet, bevor der Schlüssel geprüft wird. `decode_models` und `decode_model` lesen sie unabhängig vom Status als Fehler, sodass eine Modellprüfung mit einem falschen Schlüssel den abgelehnten Schlüssel meldet. |
-| `POST /v1/messages/count_tokens` | — | Nicht dokumentiert; Kaeso lehnt Token-Zählungen für Z.ai-Modelle ab, bevor etwas gesendet wird. |
+| `POST /v1/messages/count_tokens` | — | Nicht dokumentiert; Kaeso schätzt Token-Zählungen für Z.ai-Modelle selbst, ohne etwas zu senden. |
 ## MiniMax
 
 Quellen: MiniMax' Seite zur [Anthropic-API-Kompatibilität](https://platform.minimax.io/docs/api-reference/text-anthropic-api) und sein [OpenAPI-Dokument](https://platform.minimax.io/docs/api-reference/text/api/openapi-chat-anthropic.json), gelesen am 2026-11-08, die Beispiele aus diesem Dokument in `fixtures/anthropic_messages/providers/minimax/` und ein live mit einem erfundenen Schlüssel aufgezeichneter Fehler. Messages ist MiniMax' `generation`-Dialekt, unter `https://api.minimax.io/anthropic`, für `MiniMax-M3` und `MiniMax-M3.1-Flash`.
@@ -95,7 +97,7 @@ Quellen: MiniMax' Seite zur [Anthropic-API-Kompatibilität](https://platform.min
 | `service_tier` in `message_start` | Extras | `streams/image-url-stream`. |
 | `video`-Inhaltsblöcke (Anfrage), base64 oder URL, auch `mm_file://` | `Block::Video` | MiniMax' eigener Block (`requests/video-url`); nur MiniMax' Profil sendet ihn, Anthropic lehnt ihn ab, und Gemini bekommt ihn als `inlineData` oder `fileData`-URL. |
 | `thinking.type` `adaptive` und `output_config.effort` (Anfrage) | `reasoning` | MiniMax dokumentiert nur `adaptive` und `disabled`; `MiniMax-M3.1-Flash` lehnt `disabled` mit 400 ab, das die App erreicht. |
-| `POST /v1/messages/count_tokens` | — | MiniMax' dokumentierte Antwort legt die Zahlen unter `usage` statt auf die oberste Ebene, daher lehnt Kaeso Token-Zählungen für MiniMax-Modelle ab, bevor etwas gesendet wird. |
+| `POST /v1/messages/count_tokens` | — | MiniMax' dokumentierte Antwort legt die Zahlen unter `usage` statt auf die oberste Ebene, daher schätzt Kaeso Token-Zählungen für MiniMax-Modelle selbst, ohne etwas zu senden. |
 | `GET /v1/models`, `GET /v1/models/{model_id}` | `ModelList`, `ModelInfo` | Anthropics Form (`models/list-documented`, `models/retrieve-documented`); ein falscher Schlüssel erhält 401, daher erkennt **Verfügbarkeit prüfen** ihn. |
 | Fehler | `KppError` | Anthropics Form mit einer eigenen `request_id` von MiniMax (`errors/recorded-invalid-api-key`). |
 
@@ -109,7 +111,7 @@ Quellen: Fireworks' Referenz [Create a Message](https://docs.fireworks.ai/api-re
 | `message_start` mit Usage null, die Zahlen im einen `message_delta` | `Usage` | Wie die Kompatibilitätsseite beschreibt; `cache_creation_input_tokens` ist immer 0. |
 | `document`-Blöcke, `image`-Blöcke mit einer Datei-Quelle, Server-Tools, ein erzwungenes `tool_choice` oder ein Prefill bei aktivem Thinking | gesendet | Fireworks antwortet mit 400, das die App erreicht. |
 | Fehler in Anthropics Hülle mit einer `request_id` (`errors/recorded-invalid-api-key`) | `KppError` | Ein unbekanntes Modell oder ein unbekannter Pfad erhält stattdessen Fireworks' eigenen Body `{"error": {"code": …}}`, der wie OpenAIs gelesen wird. |
-| `POST /v1/messages/count_tokens` | — | Fireworks antwortet mit 404, daher lehnt Kaeso Token-Zählungen ab, bevor etwas gesendet wird. |
+| `POST /v1/messages/count_tokens` | — | Fireworks antwortet mit 404, daher schätzt Kaeso Token-Zählungen selbst, ohne etwas zu senden. |
 
 ## SambaNova
 

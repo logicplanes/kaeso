@@ -47,7 +47,7 @@ Kaeso picks the format it detects. When you change it, choose the format your se
 | A server or proxy with Anthropic's `POST /v1/messages` | Anthropic Messages |
 
 - **Also serves embeddings:** on when the server answers `POST /v1/embeddings` in OpenAI's format. Its embeddings models then serve `/v1/embeddings`.
-- **Counts tokens:** only Responses and Messages have an endpoint for token counts, `/v1/responses/input_tokens` and `/v1/messages/count_tokens`. Keep it on only when your server answers it. Otherwise Kaeso answers count requests for its models with 400: "The model `…` cannot count tokens."
+- **Counts tokens:** only Responses and Messages have an endpoint for token counts, `/v1/responses/input_tokens` and `/v1/messages/count_tokens`. Keep it on only when your server answers it. Otherwise Kaeso answers count requests for its models with its own estimate ([token counts](../concepts/providers.md)).
 
 For **Other server or proxy**, Kaeso speaks the plain format. It knows how each built-in provider differs from its format, such as fields Mistral refuses, but it can't know that of your server. A field your server doesn't take comes back as your server's own error. For the software Kaeso knows, it adapts requests as it does for a built-in provider ([server software](#server-software)). A field the format can't carry is refused as for any provider ([what Kaeso refuses](../concepts/format-translation.md#what-kaeso-refuses)).
 
@@ -197,6 +197,29 @@ console.log(completion.choices[0].message.content);
 ```
 
 The reply's `kaeso-provider` header, the request logs and usage name the provider by its id. The install's metrics count all custom providers as `custom`.
+
+### Add an embeddings model
+
+A provider that **Also serves embeddings** answers `/v1/embeddings` with its embeddings models. Add one like any other model and set its **Outputs** to **Embeddings** and **Sends as** to **OpenAI Embeddings**. It needs its inputs, its context and its input price, and no output limit; set the output price to `0`. Through the [Platform API](../api/platform-api.md), the same model is:
+
+```bash
+curl -s "https://kaeso.example.com/platform/v1/orgs/$ORG/projects/$PROJECT/models" \
+  -H "Authorization: Bearer $KAESO_PLATFORM_KEY" \
+  -H "content-type: application/json" \
+  -d '{
+    "provider": "research-vllm",
+    "model_id": "bge-m3",
+    "custom": true,
+    "overrides": {
+      "input_modalities": ["text"],
+      "output_modalities": ["embedding"],
+      "context_limit": 8192,
+      "input_price": "0",
+      "output_price": "0",
+      "egress_dialect": "openai_embeddings"
+    }
+  }'
+```
 
 ## Addresses Kaeso reaches
 

@@ -2310,6 +2310,108 @@ async fn usage_stats_answer_with_a_summary_and_the_data_the_view_draws() {
 }
 
 #[tokio::test]
+async fn usage_by_key_names_a_reporting_source_on_any_page_only_for_an_agent_that_may_see_sources()
+{
+    use kaeso_server::services::observed::{self, Batch, ObservedRequest};
+    let (_s, app, owner) = setup().await;
+    let project = common::first_project(&app, &owner).await;
+    app.state
+        .clickhouse
+        .as_ref()
+        .unwrap()
+        .migrate(&app.state.pg)
+        .await
+        .unwrap();
+    let made = app
+        .post(
+            &format!("/orgs/{}/projects/{project}/sources", owner.org_id),
+            json!({ "kind": "claude_code", "name": "Claude Code" }),
+            Some(&owner.cookie),
+        )
+        .await;
+    assert_eq!(made.status, StatusCode::CREATED, "{:?}", made.body);
+    let id = made.body["source"]["id"].as_str().unwrap().to_owned();
+    // Sources list newest first, 100 to a page, so the one that reports is on the second page.
+    for n in 0..100 {
+        let r = app
+            .post(
+                &format!("/orgs/{}/projects/{project}/sources", owner.org_id),
+                json!({ "kind": "claude_code", "name": format!("Filler {n}") }),
+                Some(&owner.cookie),
+            )
+            .await;
+        assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
+    }
+    let source =
+        kaeso_store::pg::sources::get(&app.state.pg, common::uuid(&project), common::uuid(&id))
+            .await
+            .unwrap()
+            .unwrap();
+    let request = ObservedRequest {
+        external_id: "req_a".into(),
+        model: "claude-haiku-4-5".into(),
+        provider: Some("anthropic".into()),
+        status: 200,
+        ..ObservedRequest::default()
+    };
+    observed::record(
+        &app.state,
+        &source,
+        Batch {
+            requests: vec![request],
+            ..Batch::default()
+        },
+    )
+    .await
+    .unwrap();
+    app.state.in_flight.settled().await;
+    kaeso_server::services::usage::flush(&app.state)
+        .await
+        .unwrap();
+    kaeso_server::services::logs::flush_all(&app.state, std::time::Duration::from_secs(10)).await;
+
+    let by_key = json!({ "group_by": "key", "org": owner.org_id, "project": project });
+    let mut rights = vec![
+        "project.view",
+        "models.view",
+        "limits.view",
+        "usage.view",
+        "costs.view",
+    ];
+    let blind = sign_in(&app, &owner.cookie, builder(&owner.org_id)).await;
+    let r = tool(&app, &blind.access, "show_usage_stats", by_key.clone()).await;
+    let row = &r["structuredContent"]["groups"][0];
+    assert_eq!(row["key"], format!("source:{id}"), "{r:?}");
+    assert_eq!(
+        (&row["label"], &row["source"]),
+        (&json!("A source"), &Value::Null)
+    );
+
+    rights.push("sources.view");
+    let seeing = sign_in(
+        &app,
+        &owner.cookie,
+        grant(
+            &owner.org_id,
+            &[
+                "org.view",
+                "members.view",
+                "usage.org.view",
+                "costs.org.view",
+            ],
+            &rights,
+        ),
+    )
+    .await;
+    let r = tool(&app, &seeing.access, "show_usage_stats", by_key).await;
+    let row = &r["structuredContent"]["groups"][0];
+    assert_eq!(row["label"], "Claude Code (source)", "{r:?}");
+    assert_eq!(row["source"], "Claude Code");
+    let text = r["content"][0]["text"].as_str().unwrap();
+    assert!(text.contains("Claude Code (source)"), "{text}");
+}
+
+#[tokio::test]
 async fn usage_stats_keep_to_the_agents_rights() {
     let (_s, app, owner) = setup().await;
     let none = sign_in(

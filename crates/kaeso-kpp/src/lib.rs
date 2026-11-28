@@ -78,13 +78,13 @@ pub use decision::{
     ScoreAnswer,
 };
 pub use dialect::{DialectId, Origin, UnknownDialect};
-pub use error::{ErrorKind, KppError};
+pub use error::{ErrorKind, KppError, Retry};
 pub use extras::{Extras, HEADER_PREFIX};
 pub use image::{
     GeneratedImage, ImageBackground, ImageDelivery, ImageEvent, ImageFormat, ImageInput,
     ImageOperation, ImageQuality, ImageRequest, ImageResponse, ImageSettings, ImageSize,
 };
-pub use models::{ModelInfo, ModelLifecycle, ModelList, ModelsQuery};
+pub use models::{ModelFeature, ModelInfo, ModelLifecycle, ModelList, ModelPrices, ModelsQuery};
 pub use raw::RawJson;
 pub use request::{
     AudioFormat, AudioOutput, EmbedEncoding, EmbedInput, EmbedRequest, FunctionTool,

@@ -50,16 +50,16 @@ Schema `GenerateContentRequest`.
 | `tools[]` with any other key (`googleSearch`, `urlContext`, `codeExecution`, `googleMaps`, `fileSearch`, `computerUse`, `mcpServers`, `googleSearchRetrieval`), or with empty `functionDeclarations` | `ToolDef::Unknown` (raw) | Refused across dialects. |
 | `functionDeclarations[].name`, `.description` | `name`, `description` | |
 | `functionDeclarations[].parametersJsonSchema` | `parameters` | Full JSON Schema. Foreign tools always get `parametersJsonSchema`, so nothing is lost to the OpenAPI subset. |
-| `functionDeclarations[].parameters` (OpenAPI `Schema`) | `parameters` | form `schema: "parameters"`, so Gemini gets it back in `parameters`. Other dialects get it as a JSON Schema as written; a provider that needs standard type names refuses uppercase ones such as `OBJECT`. With `parametersJsonSchema` beside it → field `parameters`. |
-| `functionDeclarations[].response`, `.responseJsonSchema`, `.behavior` | tool fields | |
+| `functionDeclarations[].parameters` (OpenAPI `Schema`) | `parameters` | form `schema: "parameters"`, so Gemini gets it back in `parameters`. Other dialects get it as JSON Schema ([schemas](#schemas)). With `parametersJsonSchema` beside it → field `parameters`. |
+| `functionDeclarations[].response`, `.responseJsonSchema`, `.behavior` | tool fields | `response` and `responseJsonSchema` describe what the app's function returns: other dialects don't get them, and they are named in `kaeso-left-out` ([allowlist](cross-format.md#allowlist)). Errors name a declaration as `tools[0].functionDeclarations[1]`. |
 | `toolConfig.functionCallingConfig` `mode: AUTO` / `NONE` / `ANY` | `tool_choice` `Auto` / `None` / `Required` | |
 | `mode: ANY` with one `allowedFunctionNames` entry | `ToolChoice::Tool(name)` | |
 | `mode: VALIDATED`, `ANY` with several names, any other combination | `ToolChoice::Unknown` (raw) | Refused across dialects. |
 | `toolConfig.retrievalConfig`, `.includeServerSideToolInvocations` | fields `toolConfig.*` | |
-| `generationConfig.temperature`, `.topP`, `.topK`, `.maxOutputTokens`, `.stopSequences`, `.seed`, `.presencePenalty`, `.frequencyPenalty` | `sampling.*` | Numbers keep their spelling within the dialect (form `integers`). |
-| `generationConfig.candidateCount` | form `candidate_count` | Above 1 → `Unsupported` when decoded, as Chat's `n` ([sampling](sampling.md)). |
+| `generationConfig.temperature`, `.topP`, `.topK`, `.maxOutputTokens`, `.stopSequences`, `.seed`, `.presencePenalty`, `.frequencyPenalty` | `sampling.*` | Numbers keep their spelling within the dialect (form `integers`). `topK` is left out for a target without top-k ([top K](sampling.md#top-k)). |
+| `generationConfig.candidateCount` | form `candidate_count` | Above 1 → `Unsupported` when decoded, as Chat's `n` ([sampling](sampling.md)): Kaeso returns one candidate per request, so the app sends several requests for more. |
 | `responseMimeType: application/json` with `responseJsonSchema` | `output = JsonSchema` | |
-| `responseMimeType: application/json` with `responseSchema` | `output = JsonSchema` | form `schema: "responseSchema"`; other dialects get the OpenAPI schema as written. |
+| `responseMimeType: application/json` with `responseSchema` | `output = JsonSchema` | form `schema: "responseSchema"`; other dialects get it as JSON Schema ([schemas](#schemas)). |
 | `responseMimeType: application/json` alone | `output = JsonObject` | |
 | Any other `responseMimeType`, and a schema without `application/json` | fields `generationConfig.*` | |
 | `generationConfig.thinkingConfig` | `reasoning` | See [thinking](#thinking). |
@@ -112,7 +112,8 @@ Schema `Part`. A part carries exactly one of `text`, `inlineData`, `fileData`, `
 - **Arguments** that aren't an object become one, as for Anthropic ([tool call arguments](cross-format.md#tool-call-arguments)).
 - **Image URLs** get `fileData.mimeType` from the URL's extension (`.png`, `.jpg`, `.jpeg`, `.webp`, `.gif`, `.heic`, `.heif`; documents also `.pdf`, `.txt`), as the file input guide asks; an image URL without one is `Unsupported`. Text documents are sent as base64 `inlineData`.
 - **Audio and video URLs** get it the same way, from the audio and video guides' supported formats (`.wav`, `.mp3`, `.aiff`, `.aac`, `.ogg`, `.flac`, `.m4a`, `.opus`, `.webm`; `.mp4`, `.mpeg`, `.mpg`, `.mov`, `.avi`, `.flv`, `.webm`, `.wmv`, `.3gp`). A YouTube URL goes without one; another URL without a known extension is `Unsupported`. Base64 audio and video go as `inlineData` with their media type. Audio and video in a tool result are `Unsupported`.
-- **Refused** with `Unsupported`: refusal blocks, which Gemini has no part for (as for Anthropic), a document's title, context or citations, more than five stop sequences (`GenerationConfig.stopSequences`), `parallel_tool_calls: false`, an output schema with a description or `strict: false`, and an effort or thinking mode Gemini has no setting for.
+- **Output schemas.** An OpenAI schema's `description` leads the schema's own `description`, and `strict: false` is served strictly, because Gemini always enforces `responseJsonSchema`; either is named in `kaeso-adapted` by the app's field.
+- **Refused** with `Unsupported`: refusal blocks, which Gemini has no part for (as for Anthropic), a document's title, context or citations, more than five stop sequences (`GenerationConfig.stopSequences`), `parallel_tool_calls: false`, and an effort or thinking mode Gemini has no setting for.
 - **Strict tools.** A function tool with `strict: true` and an automatic `tool_choice` sends `mode: VALIDATED`, which checks calls against their schemas.
 - **Hosted web search** is [left out](cross-format.md#tools-left-out).
 - **Cache hints** are dropped: Gemini caches implicitly.
@@ -121,9 +122,26 @@ Schema `Part`. A part carries exactly one of `text`, `inlineData`, `fileData`, `
 
 ### Requests from google-genai
 
-`google-genai` 2.32.0 spells some keys in snake case, and the API takes them because proto JSON accepts every field's original name: `mime_type` and `file_uri` in `inlineData` and `fileData`, `include_thoughts`, `thinking_budget` and `thinking_level` in `thinkingConfig`, and `parameters_json_schema` and `response_json_schema` in `functionDeclarations`. `gemini::sdk` reads them under their camel-case names and sets the form marker `sdk_names`. A request that goes to Gemini gets them back as the app spelled them.
+`google-genai` 2.32.0 spells some keys in snake case, and the API takes them because proto JSON accepts every field's original name: `mime_type` and `file_uri` in `inlineData` and `fileData`, `include_thoughts`, `thinking_budget` and `thinking_level` in `thinkingConfig`, and `parameters_json_schema` and `response_json_schema` in `functionDeclarations`. `gemini::sdk` reads them under their camel-case names and sets the form marker `sdk_names`. A request that goes to Gemini gets them back as the app spelled them. Inside a `Schema`, google-genai writes `property_ordering`, `any_of` and the counts in snake case too; the decoder keeps them as written, and the [schema translation](#schemas) reads both spellings.
 
 The SDK also sends `topK` as a float, such as `20.0`. KPP reads a whole float as a whole number, with form `top_k_float`, and writes it back as a float for Gemini; a fraction is `InvalidRequest`. The fixture `requests/sdk-tools-snake-case.json` comes from `google-genai` 2.32.0.
+
+### Schemas
+
+Gemini's `Schema`, in `functionDeclarations[].parameters` and `generationConfig.responseSchema`, is a subset of OpenAPI 3.0. Requests to other dialects get it as JSON Schema, by the discovery document's `Schema` (revision `20261125`) and google-genai 3.6.1's `Schema.json_schema`. Gemini gets it as the app wrote it.
+
+| `Schema` | JSON Schema |
+|---|---|
+| `type` `STRING`, `NUMBER`, `INTEGER`, `BOOLEAN`, `ARRAY`, `OBJECT`, `NULL`, in any case | The name in lower case; `TYPE_UNSPECIFIED` is left out. |
+| `nullable: true` | `null` joins the type (`["integer", "null"]`), an enum's values, or an `anyOf` without a type as a branch. An enum then has no `type`: Anthropic refuses an enum whose values don't match every type of a list. `nullable: false` is left out. |
+| `propertyOrdering` | The order of `properties`; then left out. |
+| `format: enum` | Left out: `enum` alone limits the value. |
+| `enum` of an `INTEGER` or `NUMBER` | Its values as numbers; Gemini writes them as strings, such as `["101", "201"]`. |
+| `minItems`, `maxItems`, `minLength`, `maxLength`, `minProperties`, `maxProperties` | Numbers; the discovery document types them as int64, which proto JSON writes as strings. |
+| `example` | `examples: [<example>]` |
+| google-genai's snake-case keys, such as `property_ordering`, `any_of` and `max_items` | Camel case. |
+| `properties`, `items`, `anyOf` | Each schema in them, translated the same way. |
+| Any other key, such as `description`, `title`, `default`, `pattern`, `minimum` or another `format` | As written, in its place. |
 
 ### Thinking
 
@@ -155,7 +173,7 @@ Schema `GenerateContentResponse`.
 | `responseId` | `id` | Absent → form `no_response_id`. |
 | `modelVersion` | `model` | Absent → form `no_model_version`. |
 | `candidates[0].content.parts` | `blocks` | As in requests. Image parts become `Block::Image`. |
-| More than one candidate | `Unsupported` | |
+| More than one candidate | `ProviderError`, since Kaeso refused any `candidateCount` above 1 in the request | |
 | `candidates[0].finishReason` | `stop` | See [finish reasons](#finish-reasons). |
 | `candidates[0]` other keys (`index`, `finishMessage`, `safetyRatings`, `citationMetadata`, `groundingMetadata`, `urlContextMetadata`, `avgLogprobs`, `logprobsResult`, `tokenCount`) | fields `candidate.*` | `citationMetadata` indexes the candidate's whole text, which KPP citations, bound to one block, can't express. |
 | `candidates[0].content.role` | — | Another value or none → form `no_role`. |

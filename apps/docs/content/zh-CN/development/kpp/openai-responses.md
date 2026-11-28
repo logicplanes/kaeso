@@ -51,8 +51,8 @@ order: 7
 | `instructions` | `system[0]` 文本块，类型化 | 来自其他方言时，单个文本块变为 `instructions`；多个文本块变为一个开头的 `developer` 消息 item，其中包含 `input_text` 部分。这样保留了块的边界，但不再区分 `instructions` 和系统消息（API 把两者都视为开发者指令）。`null`：形式标记。 |
 | `tools[]` `{type: function, name, description, parameters, strict}`（`FunctionTool`） | `ToolDef::Function` 类型化（`parameters` 为原始 JSON） | 其他键（`defer_loading`、`allowed_callers`、`output_schema` 等）是该工具的 extras。来自其他方言的工具上的缓存提示会被丢弃（参见[缓存提示](cross-format.md#缓存提示)）。来自其他方言、不符合 `^[a-zA-Z0-9_-]{1,64}$` 的名称会以确定的方式改写（其他字符变为 `_`，再追加 `_` 和 16 位十六进制的 FNV-1a 哈希，总长不超过 64 个字符），记录在 `EgressCtx::tool_names` 中，并在解码时映射回原值。 |
 | `tools[]` `namespace` | `ToolDef::Unknown` | 仅限同一方言；对于不支持命名空间的目标，其中的工具变为函数工具（参见[工具命名空间](cross-format.md#工具命名空间)）。 |
-| `tools[]` `web_search`、`web_search_2025_08_26`、`web_search_preview`、`web_search_preview_2025_03_11` | `ToolDef::Unknown` | 仅限同一方言；发往 Anthropic 时变为 Anthropic 的网页搜索工具；发往 SpaceX 时变为 xAI 的网页搜索工具；发往 Chat Completions 时，以及只要求缓存搜索时省略（参见[托管网页搜索](cross-format.md#托管网页搜索)）。 |
-| `max_tool_calls` 和 `include` `"web_search_call.action.sources"`（请求，来自 Anthropic） | 为 Anthropic 的 `web_search_20250305` 写入 | `max_uses` 变为 `max_tool_calls`，并请求来源，使结果能到达应用（[托管网页搜索](cross-format.md#托管网页搜索)）。SpaceX 改为收到 `max_turns`。 |
+| `tools[]` `web_search`、`web_search_2025_08_26`、`web_search_preview`、`web_search_preview_2025_03_11` | `ToolDef::Unknown` | 仅限同一方言；发往 Anthropic 时变为 Anthropic 的网页搜索工具；发往 SpaceX 时变为 xAI 的网页搜索工具；发往 Chat Completions 时，以及只要求缓存搜索时省略（参见[托管网页搜索](hosted-web-search.md)）。 |
+| `max_tool_calls` 和 `include` `"web_search_call.action.sources"`（请求，来自 Anthropic） | 为 Anthropic 的 `web_search_20250305` 写入 | `max_uses` 变为 `max_tool_calls`，并请求来源，使结果能到达应用（[托管网页搜索](hosted-web-search.md)）。SpaceX 改为收到 `max_turns`。 |
 | `tools[]` 其他类型（`file_search`、`mcp`、`custom` 等） | `ToolDef::Unknown` | 仅限同一方言。 |
 | `tool_choice` `"auto"` / `"none"` / `"required"` | `ToolChoice::Auto` / `None` / `Required` 类型化 | |
 | `tool_choice` `{type: function, name}` | `ToolChoice::Tool(name)` 类型化 | 带有其他键时：`ToolChoice::Unknown`。 |
@@ -94,7 +94,7 @@ order: 7
 
 对于来自任何方言的请求，`check()` 还会拒绝：
 
-- `sampling.top_k`、`seed`、`frequency_penalty`、`presence_penalty` 和停止序列，Responses API 没有这些参数（参见[采样参数](sampling.md)）；值为 `0` 的惩罚参数会被省略（[中性值](sampling.md#中性值)）；
+- `seed`、`frequency_penalty`、`presence_penalty` 和停止序列，Responses API 没有这些参数（参见[采样参数](sampling.md)）；值为 `0` 的惩罚参数会被省略（[中性值](sampling.md#中性值)）；
 - 未知的推理模式，以其线路值命名；
 - 文本文档、文档的 `title`/`context`/`citations`，以及文本形式的图像来源；
 - 音频块和视频块，因为 `InputContent` 只有 `input_text`、`input_image` 和 `input_file`（`audio block`、`video block`）；OpenRouter 的 `input_audio` 和 `input_video` 部分不属于 OpenAI，保持为 `Block::Unknown`；
@@ -118,7 +118,8 @@ order: 7
 | `reasoning`（`ReasoningItem`） | 当前助手消息中的 `Block::Reasoning`（来源 `openai_responses`） | Kaeso 生成的 ID（`rs_kaeso_…`）不会保留（形式标记 `kaeso_id`）；这类 item 如果没有 `encrypted_content`，根本不会发给服务商，因为它既没有 `id`，也没有 OpenAI 能用的内容。`id` → 不透明的 `OpenAiReasoningItemId`，`encrypted_content` → 不透明的 `OpenAiEncryptedReasoning`，`summary[].text` → `summary`，`content[].text` → `text`；`status` 和各部分的 `type`：形式标记；未知键：extras。只回放给同一服务商的 `openai_responses`（参见[推理](reasoning.md)）。如果 item 的 `encrypted_content` 是一个推理数据块（`kpp:reasoning:v1:…`，即 Kaeso 交给应用的其他方言的推理，参见[推理数据块](reasoning.md#推理数据块)），无论 item 其余部分写了什么，都会解码为其中的原始块，连同来源（例如 Claude 的签名思考）。在 Kaeso 以 `store: false` 发送的请求中（来自其他方言的请求，参见 [Responses 的存储与 ID](cross-format.md#responses-的存储与-id)），没有加密内容的推理不会发送，因为 OpenAI 无法解析该 item ID。 |
 | `custom_tool_call`、`custom_tool_call_output`、`local_shell_call`、`local_shell_call_output` | 同下；发往 Anthropic 和 Chat Completions 时变为工具调用和结果（参见 [Codex 工具历史](cross-format.md#codex-工具历史)） | |
 | `agent_message`（Codex 智能体之间的消息） | 同下；除 OpenAI 外的所有提供商收到一条消息（[Codex 智能体消息](cross-format.md#codex-智能体消息)） | |
-| `item_reference` 及所有其他 item 类型（服务端工具的调用与输出、`compaction`、未来的类型） | 一条只含一个 `Block::Unknown` 的消息，形式标记 `raw_item` | 以 `_call` 结尾的类型以及 `mcp_list_tools`、`mcp_approval_request` 的角色为 `Assistant`；其余为 `User`。角色只对 KPP 校验有意义，因为这些 item 永远不会发往其他方言。仅限同一方言；SpaceX 只接受其列出的类型，其他类型由 Kaeso 在发送前拒绝（[SpaceX](#spacex)）。 |
+| 指向推理 item（`rs_…`）或消息（`msg_…`）的 `item_reference`，无其他字段 | 在其后调用所在轮次中代表它的 `Block::Reasoning` 或空的 `Block::Text`，形式标记 `item_reference`（[由网关保存的推理](reasoning.md#由网关保存的推理)） | 按原样写回；其他方言拒绝。 |
+| 其他 `item_reference` 及所有其他 item 类型（服务端工具的调用与输出、`compaction`、未来的类型） | 一条只含一个 `Block::Unknown` 的消息，形式标记 `raw_item` | 以 `_call` 结尾的类型以及 `mcp_list_tools`、`mcp_approval_request` 的角色为 `Assistant`；其余为 `User`。角色只对 KPP 校验有意义，因为这些 item 永远不会发往其他方言。仅限同一方言；SpaceX 只接受其列出的类型，其他类型由 Kaeso 在发送前拒绝（[SpaceX](openai-responses-providers.md#spacex)）。 |
 | 无法按其类型解析的 item（例如 `call_id: null` 的 `function_call_output`） | `Block::Unknown`（同上） | 无损保留；由服务商判断。 |
 
 分组：连续的 `function_call` 和 `reasoning` item 并入当前助手消息，连续的 `function_call_output` item 并入当前用户消息。消息 item 并入同一角色、尚未包含消息 item 的消息；system 和 developer item 从不并入已有消息。
@@ -165,7 +166,7 @@ order: 7
 - 没有对应项的停止原因（`StopSequence`、`Refusal`、`PauseTurn`、`Other`）报告为 `completed`。这会丢失信息：Anthropic 的 `pause_turn` 要求应用继续，而 Responses 应用无从得知。回复为 `incomplete` 时，消息 item 也是 `incomplete`。
 - 其他方言的推理变为一个 ID 为 `rs_kaeso_…` 的推理 item（参见[推理数据块](reasoning.md#推理数据块)）。其推理文本作为一个 `summary_text`，后接其摘要，`encrypted_content` 则是原始块的推理数据块。无论应用是否在 `include` 中请求，推理数据块都会发送。Kaeso 不存储任何内容，而各 SDK 的 agent 循环会把输出 item 原样发回。
 - 本方言无法呈现的回复数据会被省略（参见[回复](cross-format.md#回复)）：外来的 `Unknown` 块、外来的引用和 extras、图像、文档和工具结果。
-- Anthropic 的网页搜索变为 `web_search_call` 项（参见[托管网页搜索](cross-format.md#托管网页搜索)），对展开后的命名空间工具的调用会恢复其 `namespace`（参见[工具命名空间](cross-format.md#工具命名空间)）。
+- Anthropic 的网页搜索变为 `web_search_call` 项（参见[搜索的回复](cross-format.md#省略的工具)），对展开后的命名空间工具的调用会恢复其 `namespace`（参见[工具命名空间](cross-format.md#工具命名空间)）。
 - 消息 item、函数调用 item 和网页搜索 item 的 ID 为 `msg_kaeso_…`、`fc_kaeso_…` 和 `ws_kaeso_…`。请求解码时会识别这些由 Kaeso 生成的 ID，绝不会把它们发给服务商。
 
 ## 输入 Token 计数：`TokenCountsResource`
@@ -234,7 +235,7 @@ order: 7
 
 其他方言的推理块变为 ID 为 `rs_kaeso_…` 的推理 item（参见[推理数据块](reasoning.md#推理数据块)）。推理文本作为摘要 0 的 `reasoning_summary_text` 流式输出，各摘要保留其索引。`output_item.done` 在 `encrypted_content` 中携带整个块的推理数据块。
 
-其他方言发送、而本方言无法呈现的内容，例如 Anthropic 的 `ping` 这类额外事件或外来的未知块，会换来按节奏发送的 SSE 注释：`: keepalive`（参见[保活消息](cross-format.md#保活消息)）。编码器为每个额外事件写一条，每 1,024 字节隐藏文本写一条。`StreamEncoder::keepalive` 为网关提供同样的帧。流没有结束标记。
+其他方言发送、而本方言无法呈现的内容，例如 Anthropic 的 `ping` 这类额外事件或外来的未知块，会换来按节奏发送的 SSE 注释：`: keepalive`（参见[保活消息](cross-format.md#保活消息)）。隐藏文本和额外事件累计满 1,024 字节写一条。`StreamEncoder::keepalive` 为网关提供同样的帧。流没有结束标记。
 
 ## 未单独列出的规范属性
 
@@ -306,7 +307,7 @@ order: 7
 | `PermissionDenied` | 403 | `request_forbidden` | `null` |
 | `NotFound` | 404 | `invalid_request_error` | `null` |
 | `RequestTooLarge` | 413 | `invalid_request_error` | `null` |
-| `RateLimited` | 429 | `rate_limit_error` | `rate_limit_exceeded` |
+| `RateLimited` | 429 | `rate_limit_error`；带 `retry: after_reset` 时为 `insufficient_quota` | `rate_limit_exceeded`；`insufficient_quota` |
 | `Billing` | 429 | `insufficient_quota` | `insufficient_quota` |
 | `Overloaded` | 503 | `service_unavailable_error` | `server_is_overloaded` |
 | `Timeout` | 504 | `server_error` | `timeout` |
@@ -345,7 +346,7 @@ order: 7
 `openai_responses::for_chatgpt_plan` 会为通过 Sign in with ChatGPT 提供 ChatGPT 套餐的 Responses 路由改写 `GenerateRequest`（[预览版限制](https://developers.openai.com/siwc/token-sharing-open-source/preview-limitations)）。网关会对属于 ChatGPT 账户的服务商密钥调用它。
 
 - 它会省略 `background`、`conversation`、`max_output_tokens`、`max_tool_calls`、`metadata`、`moderation`、`multi_agent`、`prompt`、`prompt_cache_retention`、`safety_identifier`、`temperature`、`top_logprobs`、`top_p`、`truncation`、`user` 和 `previous_response_id`。这涉及类型化字段、extras 字段，以及形式标记 `set`、`unset` 和 `canon` 中显式的默认值和 null。
-- 它会省略 Anthropic 网页搜索工具的 `max_uses`，否则该字段会变为 `max_tool_calls`（[托管网页搜索](cross-format.md#托管网页搜索)）。
+- 它会省略 Anthropic 网页搜索工具的 `max_uses`，否则该字段会变为 `max_tool_calls`（[托管网页搜索](hosted-web-search.md)）。
 - 网关自行在应用的输出上限处结束回复：达到估算的上限时关闭未结束的块，以 `StopReason::MaxTokens` 停止并取消流；`kaeso-adapted` 列出应用的字段。
 - 它会设置 `stream: true` 和 `store: false`。
 - 它会删除形式标记 `input`，因此 `input` 为数组。若某个开头的项角色为 `system`，它还会删除形式标记 `system_items` 和 `instructions`，开头的系统文本成为 `instructions`；Codex 发送的开头 `developer` 项保留其结构和 ID。其他系统消息会失去 `role` 覆盖，并作为 `developer` 消息写出，因为该路由拒绝 `system` 项。
@@ -354,44 +355,4 @@ order: 7
 
 ## 使用此格式的服务商
 
-提供 Responses 的其他服务商（OpenAI 以外）会录制到 `fixtures/openai_responses/providers/<id>/`（[fixture](fixtures.md)）。它们的额外字段遵循上述规则；本节列出每个服务商增加的内容。
-
-`PROVIDERS` 中的每个服务商都在其 `responses` 字段中指定一个 `kaeso_codecs::openai_responses::ResponsesProfile`，网关通过 `EgressCtx::with_responses_profile` 把它交给编码器。默认的 `ResponsesProfile::OPENAI` 按应用写出的样子发送请求。`ResponsesProfile::compatible(name)` 在 `tool_namespaces: false`（参见[工具命名空间](cross-format.md#工具命名空间)）和 `stores_responses: false` 上不同，因为目前只知道 OpenAI 会为 `previous_response_id` 保留回复；自定义服务商使用 `compatible`，因为只有 OpenAI 记载了命名空间。
-
-| 设置 | 编码器的行为 |
-|---|---|
-| `xai_web_search()` | 把托管搜索作为 xAI 的 `web_search` 工具发送（参见[托管网页搜索](cross-format.md#托管网页搜索)）。 |
-| `without_null_reasoning_content()` | 省略应用发回的推理项上显式的 `content: null`。 |
-| `tool_schema_root(root)` | 把服务商不接受的函数工具根部联合合并为一个对象 schema；`ToolSchemaRoot::ObjectUnions` 保留由内联对象组成的联合（[联合类型的工具 schema](cross-format.md#联合类型的工具-schema)）。 |
-| `without_openai_encrypted_reasoning()` | 省略应用发回的、带 OpenAI 的 `encrypted_content` 的推理项。它是一个 Fernet 令牌（[Fernet 规范](https://github.com/fernet/spec/blob/master/Spec.md)），因此以 `gAAAAA` 开头，`fixtures/openai_responses/` 中 OpenAI 的每份录制都是如此。 |
-
-### SpaceX
-
-来源：xAI 的 [Responses 参考](https://docs.x.ai/developers/rest-api-reference/inference/responses)和[与 Chat Completions 的比较](https://docs.x.ai/developers/model-capabilities/text/comparison)（2026-10-19 阅读），以及 `fixtures/openai_responses/providers/xai/` 中的实时录制。Responses 是 SpaceX 的 `generation` 方言。
-
-| SpaceX 字段 | KPP | 说明 |
-|---|---|---|
-| 带 `summary` 的 `reasoning` 项，以及 `grok-4.3` 总会发送的 `encrypted_content` | 与 OpenAI 相同 | 对其他服务商生成的 `encrypted_content`，SpaceX 返回 400 `invalid-argument`（`errors/recorded-reasoning-encrypted.json`，针对 OpenAI 的）。应用的历史不会说明某个项由哪个服务商生成，因此带 OpenAI 的 `encrypted_content` 的项会被省略（`without_openai_encrypted_reasoning()`），例如 Codex 线程从 GPT 切换到 Grok 时。 |
-| `web_search_call` 项、`url_citation` 标注 | 与 OpenAI 相同 | |
-| `namespace` 工具（请求） | 展开为函数工具 | SpaceX 以 422 拒绝它们（`unknown variant namespace`）；它的配置是 `compatible`（参见[工具命名空间](cross-format.md#工具命名空间)）。 |
-| `web_search` 工具（请求） | xAI 的工具（`xai_web_search()`） | SpaceX 拒绝 `external_web_access`（`Argument not supported: external_web_access`），并且总是实时搜索（参见[托管网页搜索](cross-format.md#托管网页搜索)）。 |
-| 根部联合的分支并非都是内联对象、或根部带有 `allOf` 的工具参数（请求） | 一个对象 schema（`tool_schema_root(ToolSchemaRoot::ObjectUnions)`） | SpaceX 会以 `invalid_client_tool_schema` 拒绝它们（[联合类型的工具 schema](cross-format.md#联合类型的工具-schema)）。 |
-| 发回的 `reasoning` 项上的 `content: null`（请求） | 省略（`without_null_reasoning_content()`） | Codex 以这种方式发回之前的推理项。带着这个 `null` 时，SpaceX 无法读取该项的 `encrypted_content`（`Could not decode the compaction blob`）。 |
-| `usage.num_sources_used`、`num_server_side_tools_used`、`server_side_tool_usage_details`、`cost_in_usd_ticks`、`context_details` | 用量的 `raw` | Responses 应用会收到它们；Token 数按上文的类型化字段处理。 |
-| 输入 item 类型（请求） | 仅 `XAI_INPUT_ITEMS`（`xai_input_items()`） | SpaceX 以 422 拒绝其他类型，并列出它接受的类型（`errors/recorded-codex-agent-message.json`）；它也接受该列表遗漏的 `custom_tool_call_output`（`responses/recorded-codex-gpt-history.json`）。Codex 的 `agent_message` 变为一条消息，`local_shell_call` 和 `local_shell_call_output` 变为函数调用及其输出；其他类型在发送前即为 `Unsupported`。 |
-| 没有工具的请求中的 `tool_choice`（请求） | 省略 | SpaceX 拒绝它（`A tool_choice was set on the request but no tools were specified`），Codex 的辅助调用会这样发送（[省略的工具](cross-format.md#省略的工具)）。 |
-| `presence_penalty`（请求） | extras | SpaceX 会忽略它，并回显 `0.0`。 |
-| `max_output_tokens`（请求） | `sampling.max_output_tokens` | SpaceX 只把它用于可见输出，不用于推理 token（Responses 参考），与 [Chat Completions](openai-chat-providers.md#spacex) 相同。 |
-| `{"error": "<message>"}` | `KppError` | 见上方的错误表。 |
-
-### Vercel
-
-来源：Vercel 的 [OpenAI Responses API](https://vercel.com/docs/ai-gateway/sdks-and-apis/responses) 页面（2026-10-29 阅读），以及 `fixtures/openai_responses/providers/vercel/` 中的实时录制。当 Vercel 模型的**发送格式**为 Responses 时，它以 Responses 发送；Vercel 的 `generation` 方言是 Chat Completions。它的配置是 `compatible`。
-
-| Vercel 字段 | KPP | 说明 |
-|---|---|---|
-| `response.reasoning.delta` 和 `response.reasoning.done` 事件 | 与 `response.reasoning_text.delta` 和 `response.reasoning_text.done` 相同 | Vercel 对 OpenAI 推理文本事件的命名，字段相同；Responses 应用原样收到 Vercel 发送的事件，其他方言得到推理内容（`streams/recorded-reasoning-stream`）。 |
-| 带 `content`（`reasoning_text`）、不带 `encrypted_content` 的 `reasoning` 项 | 与 OpenAI 相同 | 请求要求时，OpenAI 的模型会加上 `encrypted_content`（`responses/recorded-gpt-reasoning-encrypted`）。 |
-| 回复中的 `provider_metadata`、`usage.input_tokens_details.cache_write_tokens` | extras、用量的 `raw` | 与 Chat Completions 相同。 |
-| `POST /v1/responses/input_tokens` | — | Vercel 返回 404，Kaeso 在发送任何内容之前就拒绝为 Vercel 模型计数 Token。 |
-| 错误 | `KppError` | OpenAI 的错误结构，带 Vercel 自己的 `type`，与 [Chat Completions](openai-chat-gateways.md#vercel) 相同。 |
+OpenAI 以外提供 Responses 的服务商，以及编解码器如何适配每一个，请参见 [Responses 服务商](openai-responses-providers.md)。

@@ -124,20 +124,19 @@ fn object_schema(schema: &kaeso_kpp::RawJson) -> bool {
 
 fn check_output(r: &GenerateRequest) -> Result<(), KppError> {
     match &r.output {
-        OutputSpec::Text => Ok(()),
-        _ => Err(KppError::unsupported_by(
+        OutputSpec::JsonSchema(_) => Err(KppError::unsupported_by(
             "structured output",
             D,
-            "Kaeso doesn't send JSON output formats through Converse yet; describe the format in the prompt.",
+            "Kaeso doesn't send JSON schemas through Converse yet; describe the format in the prompt.",
         )
         .with_param(app_field(r, Setting::OutputFormat, D))),
+        _ => Ok(()),
     }
 }
 
 fn check_sampling(r: &GenerateRequest) -> Result<(), KppError> {
     let s = &r.sampling;
     let unsupported = [
-        ("top_k", s.top_k.is_some()),
         ("seed", s.seed.is_some()),
         ("frequency_penalty", s.frequency_penalty.is_some()),
         ("presence_penalty", s.presence_penalty.is_some()),

@@ -86,12 +86,14 @@ pub(super) fn account_error(account: Option<AccountSignIn>, err: KppError) -> Kp
 pub(super) fn plan_limit(account: Option<AccountSignIn>, err: &KppError) -> Option<KppError> {
     match account.and_then(|a| a.usage_url.map(|url| (a.product, url))) {
         Some((product, url)) if err.kind == ErrorKind::Billing => {
+            // A plan's usage limit lasts until the plan resets, hours later; a wait the provider
+            // named still holds the account that long.
             let mut limited = error(
                 ErrorKind::RateLimited,
                 429,
                 format!("Your {product} plan's usage limit is reached. Review it at {url}."),
-            );
-            // A wait the provider named still holds the account that long.
+            )
+            .with_retry(kaeso_kpp::Retry::AfterReset);
             limited.retry_after = err.retry_after;
             Some(limited)
         }
@@ -186,6 +188,19 @@ mod tests {
             err.message.contains("https://usage.example.com"),
             "{}",
             err.message
+        );
+        assert_eq!(
+            (err.retry, err.retry_after),
+            (Some(kaeso_kpp::Retry::AfterReset), None)
+        );
+        let stated = account_error(
+            Some(CHATGPT),
+            KppError::new(ErrorKind::Billing, "usage_limit_reached")
+                .with_retry_after(std::time::Duration::from_secs(7_200)),
+        );
+        assert_eq!(
+            stated.retry_after,
+            Some(std::time::Duration::from_secs(7_200))
         );
     }
 }

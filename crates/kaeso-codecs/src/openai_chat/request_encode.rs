@@ -169,6 +169,9 @@ pub(crate) fn encode_generate(
     if let Some(v) = verbosity::of_responses(req).filter(|_| rules.verbosity) {
         extra.insert("verbosity".to_owned(), v.clone());
     }
+    if let Some(k) = req.sampling.top_k.filter(|_| rules.top_k) {
+        extra.insert("top_k".to_owned(), to_raw(&k)?);
+    }
     if let Some(key) = cross::sibling_cache_key(&req.extras, DIALECT) {
         extra.insert(cross::OPENAI_CACHE_KEY.to_owned(), key.clone());
     }

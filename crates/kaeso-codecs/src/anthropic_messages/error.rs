@@ -58,6 +58,9 @@ const CONTEXT_TOO_LONG: &str = "prompt is too long";
 // Anthropic answers an empty credit balance with 400 `invalid_request_error`, not the 402
 // `billing_error` its errors page documents (fixtures/anthropic_messages/errors/billing-credit-balance.json).
 const CREDIT_BALANCE: &str = "Your credit balance is too low";
+// Anthropic's 429 for an organization past its monthly spend cap, which lasts until the cap
+// resets (https://platform.claude.com/docs/en/api/rate-limits#reaching-your-spend-cap).
+const SPEND_CAP: &str = "enforced_spend_limit_reached";
 
 fn wire_for_kind(kind: &ErrorKind) -> (u16, &'static str) {
     match kind {
@@ -128,6 +131,13 @@ fn decode_body(body: &[u8], status: Option<u16>) -> KppError {
                 e.known.error.message.clone()
             };
             let mut err = KppError::new(kind, message).with_origin(origin);
+            let code = raw
+                .as_ref()
+                .and_then(|v| v.pointer("/error/details/error_code"))
+                .and_then(Value::as_str);
+            if code == Some(SPEND_CAP) {
+                err.retry = Some(kaeso_kpp::Retry::AfterReset);
+            }
             err.raw = raw;
             err
         }
@@ -266,6 +276,17 @@ fn own_body(err: &KppError) -> Option<&serde_json::Map<String, Value>> {
     }
 }
 
+// Anthropic's code for a thread it can't serve, on which the SDKs' tool runners go on without one
+// (https://platform.claude.com/docs/en/build-with-claude/message-threads).
+fn details(err: &KppError) -> Option<Value> {
+    (err.unsupported_feature() == Some(super::THREAD)).then(|| {
+        serde_json::json!({
+            "error_code": "thread_unsupported_request",
+            "unsupported": [super::THREAD],
+        })
+    })
+}
+
 fn error_object(err: &KppError) -> ErrorObjectW {
     let (_, ty) = wire_for_kind(&err.kind);
     let message =
@@ -277,6 +298,7 @@ fn error_object(err: &KppError) -> ErrorObjectW {
     ErrorObjectW {
         ty: ty.into(),
         message,
+        details: details(err),
     }
 }
 

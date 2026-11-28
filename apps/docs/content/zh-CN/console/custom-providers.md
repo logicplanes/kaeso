@@ -47,7 +47,7 @@ Kaeso 会选择它检测到的格式。如需修改，请选择您的服务器�
 | 提供 Anthropic `POST /v1/messages` 的服务器或代理 | Anthropic Messages |
 
 - **同时提供嵌入：**当服务器以 OpenAI 的格式响应 `POST /v1/embeddings` 时开启。它的嵌入模型随后为 `/v1/embeddings` 提供服务。
-- **支持 Token 计数：**只有 Responses 和 Messages 提供 Token 计数端点，即 `/v1/responses/input_tokens` 和 `/v1/messages/count_tokens`。仅当您的服务器能响应该端点时才保持开启。否则 Kaeso 会对其模型的计数请求返回 400：“The model `…` cannot count tokens.”
+- **支持 Token 计数：**只有 Responses 和 Messages 提供 Token 计数端点，即 `/v1/responses/input_tokens` 和 `/v1/messages/count_tokens`。仅当您的服务器能响应该端点时才保持开启。否则 Kaeso 会以自己的估算回答其模型的计数请求（[Token 计数](../concepts/providers.md)）。
 
 对于**其他服务器或代理**，Kaeso 使用原样的格式通信。它知道每个内置服务商与其格式的差异，例如 Mistral 拒绝哪些字段，但无法得知您的服务器的差异。您的服务器不接受的字段，会以您的服务器自己的错误返回。对于 Kaeso 了解的软件，它会像对内置服务商一样调整请求（[服务器软件](#服务器软件)）。格式无法承载的字段，Kaeso 会像对任何服务商一样拒绝（[Kaeso 拒绝的内容](../concepts/format-translation.md#kaeso-拒绝的内容)）。
 
@@ -197,6 +197,29 @@ console.log(completion.choices[0].message.content);
 ```
 
 回复的 `kaeso-provider` 响应头、请求日志和用量都以 ID 标识该服务商。实例的指标将所有自定义服务商统计为 `custom`。
+
+### 添加嵌入模型
+
+**同时提供嵌入**的服务商用它的嵌入模型响应 `/v1/embeddings`。像添加其他模型一样添加一个，并把它的**输出**设为**嵌入**、**发送格式**设为 **OpenAI Embeddings**。它需要输入、上下文和输入价格，不需要输出上限；把输出价格设为 `0`。通过 [Platform API](../api/platform-api.md)，同一个模型是这样的：
+
+```bash
+curl -s "https://kaeso.example.com/platform/v1/orgs/$ORG/projects/$PROJECT/models" \
+  -H "Authorization: Bearer $KAESO_PLATFORM_KEY" \
+  -H "content-type: application/json" \
+  -d '{
+    "provider": "research-vllm",
+    "model_id": "bge-m3",
+    "custom": true,
+    "overrides": {
+      "input_modalities": ["text"],
+      "output_modalities": ["embedding"],
+      "context_limit": 8192,
+      "input_price": "0",
+      "output_price": "0",
+      "egress_dialect": "openai_embeddings"
+    }
+  }'
+```
 
 ## Kaeso 可访问的地址
 

@@ -60,6 +60,10 @@ def test_one_command_installs_kaeso_and_prints_the_setup_link(installed):
     assert settings["KAESO_PUBLIC_URL"] == url
     assert settings["KAESO_SMTP_FROM"] == '"Kaeso <kaeso@localhost>"'
     assert settings["KAESO_MAIL_TRANSPORT"] == "log"
+    assert settings["KAESO_SEARCH_ENGINES"] == "false", "the line to change is in .env from the start"
+    assert httpx.get(f"{url}/robots.txt", timeout=10).text == "User-agent: *\nDisallow: /\n"
+    for path in ["/sign-in", "/platform/v1/auth/methods"]:
+        assert httpx.get(f"{url}{path}", timeout=10).headers["x-robots-tag"] == "noindex, nofollow", path
     passwords = [settings[name] for name in ("POSTGRES_PASSWORD", "POSTGRES_SUPERUSER_PASSWORD", "CLICKHOUSE_PASSWORD", "VALKEY_PASSWORD")]
     assert all(re.fullmatch(r"[0-9a-f]{48}", password) for password in passwords)
     assert len(set(passwords)) == 4

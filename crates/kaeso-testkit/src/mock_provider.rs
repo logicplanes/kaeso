@@ -1705,8 +1705,16 @@ fn is_unserved(path: &str, body: &[u8]) -> bool {
                 .get("model")?
                 .as_str()
                 .map(str::to_owned)
-        });
+        })
+        .or_else(|| form_field(body, "model"));
     named.is_some_and(|m| m.starts_with(UNSERVED_PREFIX))
+}
+
+fn form_field(body: &[u8], name: &str) -> Option<String> {
+    let text = String::from_utf8_lossy(body);
+    let start = format!("name=\"{name}\"\r\n\r\n");
+    let (_, rest) = text.split_once(start.as_str())?;
+    Some(rest.split("\r\n").next()?.to_owned())
 }
 
 fn counting_fixture(dir: &Path, named: Option<&str>, default: &str) -> PathBuf {

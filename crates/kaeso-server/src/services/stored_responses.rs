@@ -51,6 +51,9 @@ pub struct Asked<'a> {
     pub provider: &'a ProviderRef,
     pub model: &'a str,
     pub credential: &'a Resolved,
+    /// The request's references to earlier reasoning and text are put back from reasoning
+    /// continuity; a batch file, sent to the provider as written, can't have them.
+    pub resolves_references: bool,
 }
 
 /// Why a request may not keep or continue a response: a model that can't (an alias moves on to
@@ -89,10 +92,12 @@ pub async fn admit(
     if asked.ingress != DialectId::OpenAiResponses {
         return Ok(None);
     }
-    if kaeso_codecs::openai_responses::has_item_reference(g) {
+    if kaeso_codecs::openai_responses::has_item_reference(g)
+        || (!asked.resolves_references && kaeso_codecs::openai_responses::has_kept_reference(g))
+    {
         return Err(Refusal::Final(refused(
             "input",
-            "`item_reference` items point to provider-stored state Kaeso cannot check for this project; send the items themselves in `input` instead.".to_owned(),
+            "`item_reference` items point to state Kaeso does not keep; send the items themselves in `input`, as SDKs do with `store: false`.".to_owned(),
         )));
     }
     let wanted: StoredState = kaeso_codecs::openai_responses::stored_state(g);

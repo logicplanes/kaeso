@@ -57,7 +57,9 @@ Eine Anfrage kostet, was der Katalog des Projekts für das Modell angibt. Ohne K
 
 Nennt ein Datensatz keinen Anbieter, sucht Kaeso das Modell beim Anbieter, den diese Art von Quelle üblicherweise aufruft, dann beim Hersteller des Modells oder bei dem einen Anbieter, der es verkauft. Ein Anbieter, den der Client nur aus seiner Einrichtung kennt, etwa aus der Anmeldung von Gemini CLI oder dem Anbieter, mit dem Codex eingerichtet ist, zählt genauso: Ein Modell, das er nicht verkauft, etwa wenn der Client mit einem Gateway spricht, gehört seinem Hersteller.
 
-Ein Modell, dessen Name auf eine Effort-Stufe endet, etwa `gemini-3.8-flash-low`, wird als das Modell ohne sie protokolliert, mit `low` als Reasoning-Aufwand, wenn der Katalog oder KPMR dieses Modell kennt und nicht den ganzen Namen. Eine Quelle, die keine Zeiten sendet, etwa Antigravity, lässt ihre Anfragen ohne Dauer: Das Anfrageprotokoll zeigt einen Strich, und Latenzwerte lassen sie aus.
+Ein Modell, dessen Name auf eine Einstellung endet, wird als das Modell ohne sie protokolliert. Dazu muss der Katalog oder KPMR das Modell mit dieser Einstellung kennen, und kein Anbieter darf den ganzen Namen führen. Eine Effort-Stufe, die das Modell nennt, etwa `low` in `gemini-3.8-flash-low`, wird zum Reasoning-Aufwand der Anfrage; `thinking`, wie in `claude-opus-4-6-thinking`, braucht ein Modell, das schlussfolgert. Nutzung nach Modell benennt einen früher protokollierten ganzen Namen nach seinem Modell und seiner Einstellung, etwa **Gemini 4 Carbon (high)** für `gemini-4-carbon-high`.
+
+Eine Quelle, die keine Zeiten sendet, etwa Antigravity, lässt ihre Anfragen ohne Dauer: Das Anfrageprotokoll zeigt einen Strich, und Latenzwerte lassen sie aus.
 
 ## Duplikate und Ablehnungen
 

@@ -3,6 +3,8 @@ metrics_listen = "127.0.0.1:9100"
 public_url = "https://kaeso.example.com"
 trusted_proxies = "127.0.0.0/8,::1/128"
 shutdown_grace = "30s"
+# The console's server reads only the variable: set KAESO_SEARCH_ENGINES for the gateway and the console instead.
+search_engines = false
 
 [server]
 header_read_timeout = "30s"

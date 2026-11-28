@@ -275,7 +275,7 @@ function CostSplitCell({ o }: { o: Overview }) {
   const priced = [...(q?.data ?? [])].filter((r) => Number(r.converted_cost ?? 0) > 0).sort((a, b) => Number(b.converted_cost) - Number(a.converted_cost));
   const top = priced.slice(0, 4).map((r) => ({
     id: r.key,
-    label: o.project ? o.modelName(r.key) : (o.projectOf(r.key)?.name ?? r.key),
+    label: o.project ? o.modelName(r.key, r.name) : (o.projectOf(r.key)?.name ?? r.key),
     value: Number(r.converted_cost),
   }));
   const rest = priced.slice(4).reduce((a, r) => a + Number(r.converted_cost), 0);

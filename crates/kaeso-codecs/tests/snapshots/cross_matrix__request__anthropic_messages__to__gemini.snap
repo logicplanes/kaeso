@@ -673,6 +673,45 @@ expression: outcomes
     "param": "messages[0].blocks[1]",
     "unsupported": "file id"
   },
+  "litellm-custom-tool": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Weather in Paris?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 200
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "Get the weather for a city.",
+              "name": "get_weather",
+              "parametersJsonSchema": {
+                "properties": {
+                  "city": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "city"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/deepseek-flash:generateContent"
+  },
   "max-tokens": {
     "body": {
       "contents": [
@@ -2608,6 +2647,24 @@ expression: outcomes
           ]
         }
       ]
+    },
+    "path": "/v1beta/models/claude-sonnet-4-6:generateContent"
+  },
+  "thread-null": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is the capital of France?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 256
+      }
     },
     "path": "/v1beta/models/claude-sonnet-4-6:generateContent"
   },
