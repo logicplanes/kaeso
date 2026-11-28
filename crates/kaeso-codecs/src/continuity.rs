@@ -426,7 +426,7 @@ pub fn resolve_message_references(
         {
             return Err(Unresolved::Conversation(first));
         }
-        let (put, bytes) = put_text_back(message, &by_call).ok_or(Unresolved::Message(first))?;
+        let (put, bytes) = put_text_back(message, &by_call).map_err(Unresolved::Message)?;
         resolved.messages += put;
         resolved.restored_bytes = resolved.restored_bytes.saturating_add(bytes);
     }
@@ -485,8 +485,7 @@ fn resolve(
             if !calls {
                 return Err(Unresolved::Conversation(first));
             }
-            let (put, bytes) =
-                put_text_back(message, &by_call).ok_or(Unresolved::Message(first))?;
+            let (put, bytes) = put_text_back(message, &by_call).map_err(Unresolved::Message)?;
             resolved.messages += put;
             resolved.restored_bytes = resolved.restored_bytes.saturating_add(bytes);
         }
@@ -584,16 +583,17 @@ fn same_turn(entry: &CarriedReasoning, turn: &HashSet<&str>) -> bool {
 
 // Each reference to a message takes the next text kept before the turn's calls, in their
 // order, where the reference stands; `None` when there is less kept text than references.
+// The error is the first reference it has nothing for; the message stays as it was then.
 fn put_text_back(
     message: &mut kaeso_kpp::Message,
     by_call: &HashMap<&str, &CarriedReasoning>,
-) -> Option<(usize, usize)> {
+) -> Result<(usize, usize), String> {
     let calls: Vec<String> = turn_calls(message).into_iter().map(str::to_owned).collect();
     let turn: HashSet<&str> = calls.iter().map(String::as_str).collect();
     let (mut put, mut bytes) = (0, 0usize);
     let mut blocks = Vec::with_capacity(message.blocks.len());
     let mut stretch: Vec<Block> = Vec::new();
-    for block in std::mem::take(&mut message.blocks) {
+    for block in message.blocks.iter().cloned() {
         let call = match &block {
             Block::ToolCall(call) => Some(call.id.clone()),
             _ => None,
@@ -607,17 +607,25 @@ fn put_text_back(
             .get(call.as_str())
             .filter(|entry| same_turn(entry, &turn))
             .map_or(&[][..], |entry| entry.messages.as_slice());
-        let (p, b) = fill(&mut stretch, kept)?;
+        let (p, b) = fill(&mut stretch, kept).ok_or_else(|| first_message_reference(&stretch))?;
         put += p;
         bytes = bytes.saturating_add(b);
         blocks.append(&mut stretch);
     }
     if stretch.iter().any(|b| message_reference_of(b).is_some()) {
-        return None;
+        return Err(first_message_reference(&stretch));
     }
     blocks.append(&mut stretch);
     message.blocks = blocks;
-    Some((put, bytes))
+    Ok((put, bytes))
+}
+
+fn first_message_reference(blocks: &[Block]) -> String {
+    blocks
+        .iter()
+        .find_map(message_reference_of)
+        .unwrap_or_default()
+        .to_owned()
 }
 
 // Puts a call's kept text where the references before it stand.
@@ -1544,5 +1552,26 @@ mod tests {
             Err(Unresolved::Message("msg_3".into())),
             "no text is kept after the last call"
         );
+    }
+
+    #[test]
+    fn a_reference_without_text_is_named_and_leaves_the_turn_as_it_was() {
+        let turn = vec!["c1".to_owned(), "c2".to_owned()];
+        let kept = [CarriedReasoning::new("c1", vec![])
+            .with_turn_calls(turn)
+            .with_messages(vec![texts(&["First."])])];
+        let sent = vec![
+            message_reference("msg_1"),
+            call("c1"),
+            message_reference("msg_2"),
+            call("c2"),
+        ];
+        let mut req = GenerateRequest::new("m");
+        req.messages = vec![Message::new(Role::Assistant, sent.clone())];
+        assert_eq!(
+            resolve_message_references(&mut req, &kept),
+            Err(Unresolved::Message("msg_2".into()))
+        );
+        assert_eq!(req.messages[0].blocks, sent);
     }
 }
