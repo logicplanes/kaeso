@@ -279,3 +279,16 @@ impl Codec for OpenAiChat {
         crate::openai_models::list_request_in(DIALECT, query, ctx)
     }
 }
+
+/// Whether a Chat app asked for the running usage on every chunk, as vLLM's
+/// `stream_options.continuous_usage_stats` does; without it only the last chunk carries usage.
+pub(crate) fn asks_running_usage(req: Option<&kaeso_kpp::Request>) -> bool {
+    matches!(
+        req,
+        Some(kaeso_kpp::Request::Generate(g)) if g.extras.is_from(DIALECT)
+            && g.extras
+                .fields
+                .get("stream_options.continuous_usage_stats")
+                .is_some_and(|v| v.get() == "true")
+    )
+}

@@ -212,7 +212,7 @@ KPP 字段遵循[用量](cross-format.md#用量)中的约定。
 | `choices[0].delta.tool_calls[]`，已知的 `index` | `BlockDelta(ToolArguments)` | 重复或后到的 `id`、`type` 或 `name`：形式标记 `tc`，名称映射回原值，因此 Chat 应用在每个 chunk 中都得到它定义的名称。调用已有 `id` 时出现另一个非空 `id`，表示复用该索引的新调用：先前的块结束，新的 `BlockStart` 开始，带形式标记 `tc.index`。 |
 | `choices[0].finish_reason` | 对每个打开的块发出 `BlockStop`，然后是 `ResponseDelta { stop }` | 映射与回复中相同。`""` 不是结束原因，按 `null` 处理：形式标记 `chunk.cv`。结束 chunk 中的 `content: ""` 不会打开文本块（见 `delta.content`）。 |
 | `usage`（`choices: []` 的 chunk） | `ResponseDelta { usage }` | 用量按[用量](#用量completionusage)处理，保留原始对象。`choices` 为空或缺失：形式标记 `chunk.ch`。 |
-| `finish_reason` 之前的 chunk 上的 `usage` | 暂存，形式标记 `chunk.u` | 运行中的用量：基于 vLLM 的提供商在 `stream_options.continuous_usage_stats` 下会在每个 chunk 上发送。KPP 只在最后一个块结束后报告用量，因此解码器保留最新的一份。结束 chunk 或其后的 chunk 上的用量会取代它；否则解码器在 `ResponseStop` 之前把它作为单独的 `ResponseDelta { usage }` 发出，即在 `[DONE]` 时，或者在流于结束 chunk 之后没有 `[DONE]` 就结束时。此时结束 chunk 自身的 `ResponseDelta` 只带停止原因。形式标记 `chunk.u` 保存每个 chunk 的对象，因此请求了用量的 Chat 应用会原样收到每个 chunk；未请求用量的应用收不到用量，只含用量的 chunk 也不会发给它。fixture 是 `fixtures/openai_chat/streams/usage-every-chunk.sse`。 |
+| `finish_reason` 之前的 chunk 上的 `usage` | 暂存，形式标记 `chunk.u` | 运行中的用量：基于 vLLM 的提供商在 `stream_options.continuous_usage_stats` 下会在每个 chunk 上发送，StepFun 和 Cloudflare 未经请求也会发送。KPP 只在最后一个块结束后报告用量，因此解码器保留最新的一份。结束 chunk 或其后的 chunk 上的用量会取代它；否则解码器在 `ResponseStop` 之前把它作为单独的 `ResponseDelta { usage }` 发出，即在 `[DONE]` 时，或者在流于结束 chunk 之后没有 `[DONE]` 就结束时。此时结束 chunk 自身的 `ResponseDelta` 只带停止原因。形式标记 `chunk.u` 保存每个 chunk 的对象。请求了用量的 Chat 应用收到的这些 chunk 带 `usage: null`，最新的用量放在最后一个单独的 chunk 中（见下文）；若应用请求了 `stream_options.continuous_usage_stats`，则原样收到每个 chunk。未请求用量的应用收不到用量，只含用量的 chunk 也不会发给它。fixture 是 `fixtures/openai_chat/streams/usage-every-chunk.sse`。 |
 | `usage: null`、`logprobs: null`、`finish_reason: null`、`content: null`、`refusal: null` | 形式标记 `chunk.kv`、`cv`、`dv` | |
 | `choices[0].logprobs`、选项中的未知键 | 该 chunk 第一个事件上的 extras `choice.<key>` | |
 | `delta.audio` | 一次 `BlockStart(Audio)`（其 `id` 在开始事件的 extras 中），然后是 `BlockDelta(Audio { data, transcript })` | `expires_at` 和其他键：delta 的 extras。来自其他方言：先发送 `{"id": "audio_<回复 ID>"}`，然后每个片段一个 chunk。 |
@@ -245,7 +245,7 @@ Anthropic 和 Responses 在块开始时就要给出两者，因此解码器按�
 
 只有应用请求了用量时才会写入用量（`EncodeCtx::stream` 带 `include_usage`）。此时每个 chunk 都有 `usage: null`，最后一个 `choices: []` 的 chunk 携带用量。来自其他方言时，这是最新的用量；后面的报告没有输入计数时，输入计数取自 `ResponseStart`。
 
-像 DeepSeek 和 Mistral 那样把用量放在结束 chunk 上的 Chat 服务商，其自身的流也得到同样的形式：该 chunk 以 `usage: null` 发送，用量则放在 `[DONE]` 之前一个单独的 `choices: []` chunk 中。结束 chunk 会等待下一个 chunk，因此服务商自己的 `choices: []` 用量 chunk 以及更早 chunk 上的累计用量都按原样发送。`passthrough::for_stream`（不解码即转发同一方言的流）也这样处理，此类 fixture 的往返测试预期的就是这种形式（`test_support::chat_usage_in_its_own_chunk`）。
+Chat 服务商自身的流也得到同样的形式，不论服务商把用量放在哪里：DeepSeek 和 Mistral 放在结束 chunk 上，Groq 放在结束 chunk 上并另发一个单独的 chunk，Cloudflare 放在每个 chunk 上。带用量的选项 chunk 以 `usage: null` 发送，没有 `usage` 键的 chunk 保持原样。最新的用量放在 `[DONE]` 之前一个单独的 `choices: []` chunk 中；若服务商自己发送了 `choices: []` 用量 chunk，则把它按原样放在那里，在结束 chunk 之前到达的也同样等到最后。这样，像 LangChain 那样把每个 chunk 的用量相加的客户端只会计算一次。用 vLLM 的 `stream_options.continuous_usage_stats` 请求每个 chunk 都带用量的应用，会按原样收到这些 chunk。`passthrough::for_stream`（不解码即转发同一方言的流）也这样处理，此类 fixture 的往返测试预期的就是这种形式（`test_support::chat_usage_in_its_own_chunk`）。
 
 ## 错误（`ErrorResponse`）
 
