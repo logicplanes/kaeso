@@ -309,7 +309,7 @@ Webhook 的地址由组织管理员选择，因此网关会像对待 MCP 服务�
 
 | 变量<br>TOML 键 | 类型 | 默认值 | 作用 |
 | --- | --- | --- | --- |
-| `KAESO_STREAMS_KEEPALIVE_INTERVAL`<br>`streams.keepalive_interval` | 文本 | `15s` | 流在这段时间内没有输出时，写入一条保活消息，让代理保持连接（[长时间的流](domains-and-tls.md#长时间的流)）。`0s` 关闭保活；否则为 1s 到 300s。 |
+| `KAESO_STREAMS_KEEPALIVE_INTERVAL`<br>`streams.keepalive_interval` | 文本 | `15s` | 流在这段时间内没有输出时，写入一条保活消息，让代理保持连接（[长时间的流](domains-and-tls.md#长时间的流)）。`0s` 关闭这类保活；代替应用格式无法显示的内容而写入的保活仍会发送（[流式传输](../api/model-api.md#流式传输)）。否则为 1s 到 300s。 |
 | `KAESO_STREAMS_MAX_DURATION`<br>`streams.max_duration` | 文本 | `0s` | 流式回复最长可运行的时间，超时后网关以错误事件结束它。`0s` 表示不限制。 |
 | `KAESO_STREAMS_MAX_BYTES`<br>`streams.max_bytes` | 文本 | `0` | 流式回复最多可写给应用的字节数，例如 `64MiB`，超出后网关以错误事件结束它。`0` 表示不限制。 |
 

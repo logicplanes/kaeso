@@ -235,7 +235,7 @@ order: 7
 
 其他方言的推理块变为 ID 为 `rs_kaeso_…` 的推理 item（参见[推理数据块](reasoning.md#推理数据块)）。推理文本作为摘要 0 的 `reasoning_summary_text` 流式输出，各摘要保留其索引。`output_item.done` 在 `encrypted_content` 中携带整个块的推理数据块。
 
-其他方言发送、而本方言无法呈现的内容，例如 Anthropic 的 `ping` 这类额外事件或外来的未知块，会换来按节奏发送的 SSE 注释：`: keepalive`（参见[保活消息](cross-format.md#保活消息)）。编码器为每个额外事件写一条，每 1,024 字节隐藏文本写一条。`StreamEncoder::keepalive` 为网关提供同样的帧。流没有结束标记。
+其他方言发送、而本方言无法呈现的内容，例如 Anthropic 的 `ping` 这类额外事件或外来的未知块，会换来按节奏发送的 SSE 注释：`: keepalive`（参见[保活消息](cross-format.md#保活消息)）。隐藏文本和额外事件累计满 1,024 字节写一条。`StreamEncoder::keepalive` 为网关提供同样的帧。流没有结束标记。
 
 ## 未单独列出的规范属性
 

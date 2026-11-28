@@ -73,10 +73,12 @@ async fn keepalives_flow_while_the_provider_is_quiet_and_leave_the_stream_intact
     for (path, keepalive, quiet, loud) in futures::future::join_all(runs).await {
         assert_eq!(quiet.status, 200, "{path}: {}", quiet.text());
         assert!(!keepalive.is_empty(), "{path}");
+        // An OpenAI keepalive is a comment line that the next event's blank line ends.
         let split = |text: &str| -> (usize, String) {
-            let frames: Vec<&str> = text.split_inclusive("\n\n").collect();
-            let n = frames.iter().filter(|f| **f == keepalive).count();
-            (n, frames.into_iter().filter(|f| *f != keepalive).collect())
+            (
+                text.matches(&keepalive).count(),
+                text.replace(&keepalive, ""),
+            )
         };
         let (quiet_n, quiet_rest) = split(&quiet.text());
         let (loud_n, loud_rest) = split(&loud.text());
@@ -101,7 +103,10 @@ async fn events_the_apps_format_leaves_out_do_not_count_as_writes() {
         .iter()
         .position(|f| f.contains("\"content\":\"") && !f.contains("\"content\":\"\""))
         .unwrap();
-    let before = frames[..answer].iter().filter(|f| **f == keepalive).count();
+    let before: usize = frames[..=answer]
+        .iter()
+        .map(|f| f.matches(&keepalive).count())
+        .sum();
     assert!(before >= 2, "{text}");
     assert!(text.trim_end().ends_with("data: [DONE]"), "{text}");
     let id = r.header("kaeso-request-id").unwrap().to_owned();
@@ -1067,10 +1072,7 @@ async fn the_request_log_counts_the_keepalives_written_in_place_of_hidden_events
     assert_eq!(r.status, 200, "{}", r.text());
     let text = r.text();
     let keepalive = keepalive_of(DialectId::OpenAiChat);
-    let written = text
-        .split_inclusive("\n\n")
-        .filter(|f| *f == keepalive)
-        .count();
+    let written = text.matches(&keepalive).count();
     assert!(written >= 2, "{text}");
     let id = r.header("kaeso-request-id").unwrap().to_owned();
     let o = outcome(&env, |o| o.request_id.to_string() == id).await;

@@ -235,7 +235,7 @@ Blocks still open at `ResponseStop` are closed first. After `ResponseStop` or `E
 
 Reasoning blocks of other dialects become reasoning items with an `rs_kaeso_…` id ([reasoning blobs](reasoning.md#reasoning-blobs)). The reasoning text streams as `reasoning_summary_text` of summary 0, and summaries keep their index. `output_item.done` carries the reasoning blob of the whole block in `encrypted_content`.
 
-What another dialect sends that this dialect can't show, such as extra events like Anthropic `ping` or foreign unknown blocks, earns paced SSE comments: `: keepalive` ([keepalives](cross-format.md#keepalives)). The encoder writes one per extra event, and one per 1,024 bytes of hidden text. `StreamEncoder::keepalive` gives the gateway the same frame. There is no end-of-stream sentinel.
+What another dialect sends that this dialect can't show, such as extra events like Anthropic `ping` or foreign unknown blocks, earns paced SSE comments: `: keepalive` ([keepalives](cross-format.md#keepalives)). The encoder writes one once 1,024 bytes of hidden text and extra events have built up. `StreamEncoder::keepalive` gives the gateway the same frame. There is no end-of-stream sentinel.
 
 ## Spec properties without a row above
 
