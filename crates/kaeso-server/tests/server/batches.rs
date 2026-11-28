@@ -667,6 +667,15 @@ async fn a_file_is_refused_by_the_line_that_breaks_the_rules() {
         .as_str()
         .unwrap()
         .to_owned();
+    let whisper = env
+        .app
+        .post(
+            &format!("{base}/models"),
+            json!({ "provider": "openai", "model_id": "whisper-1" }),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(whisper.status, StatusCode::CREATED, "{:?}", whisper.body);
     let chat = |id: &str, model: &str| line(id, "/v1/chat/completions", model, "Hi");
     for (key, lines, message) in [
         (
@@ -701,6 +710,11 @@ async fn a_file_is_refused_by_the_line_that_breaks_the_rules() {
             &env.key,
             vec![line("a", "/v1/embeddings", "gpt-4o", "Hi")],
             "Line 1 of the file: `gpt-4o` isn't served in this endpoint's format; Kaeso doesn't translate batches yet.",
+        ),
+        (
+            &env.key,
+            vec![chat("a", "whisper-1")],
+            "Line 1 of the file: The model `whisper-1` is a transcription model; send it to `/v1/audio/transcriptions`.",
         ),
         (
             &env.key,

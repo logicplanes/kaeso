@@ -645,6 +645,39 @@ expression: outcomes
     "param": "messages[0].blocks[1]",
     "unsupported": "file id"
   },
+  "litellm-custom-tool": {
+    "body": {
+      "max_completion_tokens": 200,
+      "messages": [
+        {
+          "content": "Weather in Paris?",
+          "role": "user"
+        }
+      ],
+      "model": "deepseek-flash",
+      "tools": [
+        {
+          "function": {
+            "description": "Get the weather for a city.",
+            "name": "get_weather",
+            "parameters": {
+              "properties": {
+                "city": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "city"
+              ],
+              "type": "object"
+            }
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/chat/completions"
+  },
   "max-tokens": {
     "body": {
       "max_completion_tokens": 10,
@@ -929,39 +962,6 @@ expression: outcomes
       "stream_options": {
         "include_usage": true
       }
-    },
-    "path": "/v1/chat/completions"
-  },
-  "providers/deepseek/litellm-custom-tool": {
-    "body": {
-      "max_completion_tokens": 200,
-      "messages": [
-        {
-          "content": "Weather in Paris?",
-          "role": "user"
-        }
-      ],
-      "model": "deepseek-flash",
-      "tools": [
-        {
-          "function": {
-            "description": "Get the weather for a city.",
-            "name": "get_weather",
-            "parameters": {
-              "properties": {
-                "city": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "city"
-              ],
-              "type": "object"
-            }
-          },
-          "type": "function"
-        }
-      ]
     },
     "path": "/v1/chat/completions"
   },

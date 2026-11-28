@@ -33,15 +33,15 @@ KPP（Kaeso Provider Protocol）为每种 API 格式都提供一个编解码器�
 
 ## 能够保留的内容
 
-- **对话。** 系统指令、用户和助手轮次、文本、图像和文档，以及目标接受时的音频和视频（[音频和视频](../development/kpp/cross-format.md#音频和视频)）。Anthropic 对话中间的系统消息到达 OpenAI 时，会成为一条位置靠后的系统消息；OpenAI 对话中间的系统消息到达 Anthropic 时，会成为下一个用户轮次的文本。
-- **工具。** 函数工具、工具选择、并行工具调用、工具调用和工具结果。工具返回的图像和文件会出现在结果之后的用户消息中到达 Chat Completions 模型，因为它的工具消息只包含文本（[工具结果中的媒体](../development/kpp/cross-format.md#工具结果中的媒体)）。
+- **对话。** 系统指令、用户和助手轮次、文本、图像和文档，以及目标接受时的音频和视频（[音频和视频](../development/kpp/media.md#音频和视频)）。Anthropic 对话中间的系统消息到达 OpenAI 时，会成为一条位置靠后的系统消息；OpenAI 对话中间的系统消息到达 Anthropic 时，会成为下一个用户轮次的文本。
+- **工具。** 函数工具、工具选择、并行工具调用、工具调用和工具结果。工具返回的图像和文件会出现在结果之后的用户消息中到达 Chat Completions 模型，因为它的工具消息只包含文本（[工具结果中的媒体](../development/kpp/media.md#工具结果中的媒体)）。
 - **工具名称和调用 ID。** 目标不接受某个名称或 ID 时，Kaeso 会以固定方式改写它，并在回复中映射回原值。其他字符变为 `_`，名称被截短以符合长度要求，并附加原值的哈希。OpenAI 接受最多 64 个由字母、数字、`_` 和 `-` 组成的字符，Anthropic 最多 128 个。
 - **结构化输出。** JSON schema，以及 JSON 模式：没有 JSON 模式的模型（例如 Claude）会在系统提示词中收到一句话（[结构化输出](../development/kpp/cross-format.md#结构化输出)）。
 - **采样。** 温度、Top P、最大 Token 数和停止序列，前提是目标支持。值的含义不变，但会按目标的写法写出，因此 `1` 可能以 `1.0` 到达。对于通过 OpenAI Responses 提供的模型（例如 Grok），Kaeso 会在停止序列处或低于 16 个 Token 的上限处自行结束回复（[网关中的 OpenAI Responses](../development/kpp/sampling.md#网关中的-openai-responses)）。
 - **最终用户的 ID。** Anthropic 的 `metadata.user_id` 和 OpenAI 的 `safety_identifier`。OpenAI 最多接受 128 个字符，并要求发送用户 ID 的哈希，因此更长的 Anthropic ID（例如 Claude Code 的 ID）会以 SHA-256 哈希发送给 OpenAI，回复的 `kaeso-adapted` 响应头会注明这一点。
 - **推理。** 推理强度和思考预算会相互转换（[推理](#推理)）。
 - **流。** Kaeso 会把流逐个事件转换为应用的格式。
-- **音频回复。** 在 Chat Completions 和 Gemini 之间：当双方都有对应的声音和格式时，OpenAI 的音频模型可以回答 Gemini 应用，Gemini 的语音模型可以回答 Chat 应用（[音频和图像回复](../development/kpp/cross-format.md#音频和图像回复)）。
+- **音频回复。** 在 Chat Completions 和 Gemini 之间：当双方都有对应的声音和格式时，OpenAI 的音频模型可以回答 Gemini 应用，Gemini 的语音模型可以回答 Chat 应用（[音频和图像回复](../development/kpp/media.md#音频和图像回复)）。
 
 ## Kaeso 拒绝的内容
 
@@ -87,7 +87,7 @@ KPP（Kaeso Provider Protocol）为每种 API 格式都提供一个编解码器�
 
 ### Token 计数
 
-`/v1/messages/count_tokens`、`/v1/responses/input_tokens` 和 Gemini 的 `:countTokens` 会向模型的服务商请求计数。如果服务商没有计数 Token 的端点，Kaeso 会以 400 拒绝请求，并在消息中说明该模型无法计数 Token。Kaeso 不会估算计数，因为估算值永远无法与服务商自己的结果一致。
+`/v1/messages/count_tokens`、`/v1/responses/input_tokens` 和 Gemini 的 `:countTokens` 会向模型的服务商请求计数。如果服务商没有计数 Token 的端点，Kaeso 会按模型接收请求的方式检查请求，然后不发送任何内容，以应用的格式返回自己的估算。由于估算值永远无法与服务商自己的计数完全一致，响应带有 `kaeso-adapted: count_estimated`。估算如何计算文本、工具、图片和文档，见 [Token 计数](providers.md)。Kaeso 不读取音频和视频的时长，因此无法估算：这类请求返回 400。
 
 ## 提示词缓存
 
@@ -108,6 +108,7 @@ KPP（Kaeso Provider Protocol）为每种 API 格式都提供一个编解码器�
 - OpenAI 没有的工具结果错误标记；工具结果的文本仍会说明失败的内容
 - 通过 OpenAI Responses 提供的模型的 `seed`，因为那里没有对应字段
 - 取值就是 API 在没有该字段时所用值的设置，例如 `frequency_penalty: 0`、`logprobs: false` 或 `store: false`，NextChat 等聊天应用会在每个请求中发送它们；回复的 `kaeso-left-out` 响应头会列出它们（[中性值](../development/kpp/sampling.md#中性值)）
+- Chat Completions 消息的 `name`，它用于区分同一角色的参与者，其他格式都没有；回复的 `kaeso-left-out` 响应头会列出它（[参与者名称](../development/kpp/openai-chat.md#参与者名称)）
 
 转换为 Responses 的请求带有 `store: false`，因此 OpenAI 不会保存任何内容。
 
@@ -142,7 +143,7 @@ Kaeso 这样转换推理设置：
 
 Chat Completions 没有推理字段。当 Claude，或经由 Responses 的 OpenAI 模型，为 Chat Completions 应用提供服务时，网关会保存每次工具调用之前的推理。应用发送工具结果时，网关会把这段推理放回，让模型在工具循环中保持思路。
 
-- 网关把它保存在 Valkey 中，时长为 `KAESO_CONTINUITY_REASONING_TTL`，默认 1 小时，设为 `0s` 即关闭。它用主密钥加密，只有发出该请求的 API 密钥才能读取，并且从不记入日志。
+- 网关把它保存在 Valkey 中，时长为 `KAESO_CONTINUITY_REASONING_TTL`，默认 1 小时，设为 `0s` 即关闭。它用主密钥加密，只返还给使用发出该请求的 API 密钥的请求，并且从不记入日志。
 - 最后一次工具调用之后的推理不会保存，失败的流中的推理也不会保存。
 - 推理已不存在时（已过期、由其他密钥发送该轮次，或无法连接 Valkey），请求会在没有它的情况下继续。
 
@@ -154,9 +155,9 @@ Gemini 应用收不到其他服务商的推理，因为思考 part 无法承载�
 
 ### 保持 `store` 开启的 Responses 应用
 
-保持 `store` 开启的 Responses 应用（Vercel AI SDK 默认如此）会把回复中的推理作为指向其 ID 的 `item_reference` 发回，而不是发回 item 本身。Kaeso 不保留回复，因此网关会像对 Chat Completions 一样，为这类应用保留每次工具调用之前的推理，并把它放回引用所指的位置。没有工具调用的轮次中的引用会被省略并在 `kaeso-left-out` 中注明，因为没有模型需要取回那里的推理。
+保持 `store` 开启的 Responses 应用（Vercel AI SDK 默认如此）会把回复中的推理和消息作为指向其 ID 的 `item_reference` 发回。Kaeso 不保留回复，因此网关会为这类应用保留工具循环会回指的内容。这包括每次工具调用之前的推理（与 Chat Completions 相同），以及模型在调用之前紧接着写下的文本，例如“我来查一下巴黎的天气。”两者都会被放回引用所指的位置。没有工具调用的轮次中指向推理的引用会被省略并在 `kaeso-left-out` 中注明，因为没有模型需要取回那里的推理。
 
-当推理已不在时（已过期、由另一个密钥发送该轮次，或应用此前发送了 `store: false`），Kaeso 会以 `400` 拒绝请求，并要求直接发送这些 item，就像 SDK 在 `store: false` 时那样。指向推理以外内容的引用仍会被拒绝（[存储的回复](../console/organizations-and-projects.md#存储的回复)）。
+两者都用主密钥加密保留，只返还给使用同一 API 密钥的请求，保留时间为 `continuity.reasoning_ttl`，默认一小时（[推理连续性](../self-hosting/configuration.md#推理连续性)）。只有在项目允许在服务商处存储回复时才会保留文本；设为 `0s` 即两者都关闭，Chat Completions 和 Gemini 应用的推理连续性也随之关闭。如果防护规则会在回复中恢复被遮盖的值，保留的文本就含有这些值。Kaeso 不保留其他文本：指向工具轮次之外消息的引用（例如聊天中较早的回答）会以 `400` 被拒绝。推理或文本已不在时（已过期、由另一个密钥发送该轮次，或应用此前发送了 `store: false`），引用同样会被拒绝。拒绝信息会要求直接发送这些 item，就像 SDK 在 `store: false` 时那样。指向其他内容的引用仍会被拒绝（[存储的回复](../console/organizations-and-projects.md#存储的回复)）。
 
 ### 可读的推理
 

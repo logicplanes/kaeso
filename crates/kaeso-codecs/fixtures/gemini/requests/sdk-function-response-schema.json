@@ -1,0 +1,37 @@
+{
+  "contents": [
+    {
+      "parts": [
+        {
+          "text": "Weather?"
+        }
+      ],
+      "role": "user"
+    }
+  ],
+  "tools": [
+    {
+      "functionDeclarations": [
+        {
+          "description": "Weather for a city.",
+          "name": "get_weather",
+          "parameters": {
+            "properties": {
+              "city": {
+                "type": "STRING"
+              }
+            },
+            "required": [
+              "city"
+            ],
+            "type": "OBJECT"
+          },
+          "response": {
+            "type": "STRING"
+          }
+        }
+      ]
+    }
+  ],
+  "generationConfig": {}
+}

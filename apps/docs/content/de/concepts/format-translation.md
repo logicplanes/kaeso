@@ -33,15 +33,15 @@ KPP, das Kaeso Provider Protocol, hat einen Codec für jedes API-Format: OpenAI 
 
 ## Was erhalten bleibt
 
-- **Unterhaltungen.** Systemanweisungen, Züge von Benutzer und Assistent, Text, Bilder und Dokumente sowie Audio und Video, wo das Ziel sie nimmt ([Audio und Video](../development/kpp/cross-format.md#audio-und-video)). Eine Systemnachricht mitten in einer Anthropic-Unterhaltung erreicht OpenAI als spätere Systemnachricht, und eine mitten in einer OpenAI-Unterhaltung erreicht Anthropic als Text des nächsten Benutzerzugs.
-- **Tools.** Funktions-Tools, Tool-Auswahl, parallele Tool-Aufrufe, Tool-Aufrufe und Tool-Ergebnisse. Bilder und Dateien, die ein Tool zurückgegeben hat, erreichen ein Chat-Completions-Modell in der Benutzernachricht nach den Ergebnissen, weil seine Tool-Nachrichten nur Text enthalten ([Medien in Tool-Ergebnissen](../development/kpp/cross-format.md#medien-in-tool-ergebnissen)).
+- **Unterhaltungen.** Systemanweisungen, Züge von Benutzer und Assistent, Text, Bilder und Dokumente sowie Audio und Video, wo das Ziel sie nimmt ([Audio und Video](../development/kpp/media.md#audio-und-video)). Eine Systemnachricht mitten in einer Anthropic-Unterhaltung erreicht OpenAI als spätere Systemnachricht, und eine mitten in einer OpenAI-Unterhaltung erreicht Anthropic als Text des nächsten Benutzerzugs.
+- **Tools.** Funktions-Tools, Tool-Auswahl, parallele Tool-Aufrufe, Tool-Aufrufe und Tool-Ergebnisse. Bilder und Dateien, die ein Tool zurückgegeben hat, erreichen ein Chat-Completions-Modell in der Benutzernachricht nach den Ergebnissen, weil seine Tool-Nachrichten nur Text enthalten ([Medien in Tool-Ergebnissen](../development/kpp/media.md#medien-in-tool-ergebnissen)).
 - **Tool-Namen und Aufruf-IDs.** Nimmt das Ziel einen Namen oder eine ID nicht an, schreibt Kaeso sie auf feste Weise um und übersetzt sie in der Antwort zurück. Andere Zeichen werden zu `_`, der Name wird passend gekürzt, und ein Hash des Originals wird angehängt. OpenAI nimmt bis zu 64 Buchstaben, Ziffern, `_` und `-` an, Anthropic bis zu 128.
 - **Strukturierte Ausgabe.** JSON-Schemas und der JSON-Modus, den Modelle ohne ihn, etwa Claude, als Satz im System-Prompt bekommen ([strukturierte Ausgabe](../development/kpp/cross-format.md#strukturierte-ausgabe)).
 - **Sampling.** Temperatur, Top P, maximale Token und Stoppsequenzen, wo das Ziel sie hat. Ein Wert behält seine Bedeutung, wird aber so geschrieben, wie das Ziel ihn schreibt. `1` kann also als `1.0` ankommen. Bei einem Modell, das über OpenAI Responses bedient wird, etwa Grok, beendet Kaeso die Antwort selbst an einer Stoppsequenz oder an einem Limit unter 16 Token ([OpenAI Responses im Gateway](../development/kpp/sampling.md#openai-responses-im-gateway)).
 - **Die ID des Endnutzers.** `metadata.user_id` bei Anthropic und `safety_identifier` bei OpenAI. OpenAI nimmt höchstens 128 Zeichen an und bittet um einen Hash der Nutzer-ID, daher erreicht eine längere Anthropic-ID, etwa die von Claude Code, OpenAI als ihr SHA-256-Hash; der Header `kaeso-adapted` der Antwort nennt das.
 - **Reasoning.** Aufwandsstufen und Denk-Budgets werden ineinander umgerechnet ([Reasoning](#reasoning)).
 - **Streams.** Kaeso übersetzt sie Event für Event in das Format der App.
-- **Audioantworten.** Zwischen Chat Completions und Gemini: OpenAIs Audiomodelle antworten Gemini-Apps und Geminis Sprachmodelle Chat-Apps, wenn Stimme und Format auf beiden Seiten existieren ([Audio- und Bildantworten](../development/kpp/cross-format.md#audio--und-bildantworten)).
+- **Audioantworten.** Zwischen Chat Completions und Gemini: OpenAIs Audiomodelle antworten Gemini-Apps und Geminis Sprachmodelle Chat-Apps, wenn Stimme und Format auf beiden Seiten existieren ([Audio- und Bildantworten](../development/kpp/media.md#audio--und-bildantworten)).
 
 ## Was Kaeso ablehnt
 
@@ -87,7 +87,7 @@ Diese lehnt Kaeso in jedem Format ab, auch wenn das Format gleich bleibt:
 
 ### Token-Zählung
 
-`/v1/messages/count_tokens`, `/v1/responses/input_tokens` und `:countTokens` von Gemini fragen den Anbieter des Modells nach der Zahl. Hat der Anbieter keinen Endpunkt zum Zählen von Token, lehnt Kaeso die Anfrage mit 400 ab, und die Meldung sagt, dass das Modell keine Token zählen kann. Kaeso schätzt die Zahl nicht, denn eine Schätzung trifft nie genau die Zahl des Anbieters.
+`/v1/messages/count_tokens`, `/v1/responses/input_tokens` und `:countTokens` von Gemini fragen den Anbieter des Modells nach der Zahl. Hat der Anbieter keinen Endpunkt zum Zählen von Token, prüft Kaeso die Anfrage so, wie das Modell sie nehmen würde, und antwortet im Format der App mit einer eigenen Schätzung, ohne etwas zu senden. Die Antwort trägt `kaeso-adapted: count_estimated`, denn eine Schätzung trifft nie genau die Zahl des Anbieters. Wie die Schätzung Text, Tools, Bilder und Dokumente zählt, steht unter [Token-Zählung](providers.md). Audio und Video, deren Länge Kaeso nicht liest, lassen sich nicht schätzen: Eine solche Anfrage bekommt 400.
 
 ## Prompt-Caching
 
@@ -108,6 +108,7 @@ Hat das Ziel keinen Platz für sie, lässt Kaeso Hinweise weg, die nicht ändern
 - das Fehler-Flag eines Tool-Ergebnisses, das OpenAI nicht kennt; der Text des Ergebnisses sagt weiterhin, was fehlschlug
 - `seed` für ein Modell, das über OpenAI Responses bedient wird, weil es dort kein Feld dafür gibt
 - Einstellungen mit dem Wert, den die API ohne sie verwendet, etwa `frequency_penalty: 0`, `logprobs: false` oder `store: false`, die Chat-Apps wie NextChat mit jeder Anfrage senden; der Header `kaeso-left-out` der Antwort nennt sie ([neutrale Werte](../development/kpp/sampling.md#neutrale-werte))
+- das `name` einer Chat-Completions-Nachricht, das Teilnehmer derselben Rolle unterscheidet und das kein anderes Format hat; der Header `kaeso-left-out` der Antwort nennt es ([Namen von Teilnehmern](../development/kpp/openai-chat.md#namen-von-teilnehmern))
 
 Anfragen, die in Responses übersetzt werden, tragen `store: false`, sodass OpenAI nichts speichert.
 
@@ -142,7 +143,7 @@ Sendet die App es zurück, stellt KPP das Original für den Anbieter wieder her,
 
 Chat Completions hat kein Feld für Reasoning. Bedient Claude oder ein OpenAI-Modell über Responses eine Chat-Completions-App, behält das Gateway das Reasoning vor jedem Tool-Aufruf. Es fügt dieses Reasoning wieder ein, wenn die App das Tool-Ergebnis sendet, sodass das Modell seinen Gedankengang durch Tool-Schleifen behält.
 
-- Das Gateway hält es für `KAESO_CONTINUITY_REASONING_TTL` in Valkey, standardmäßig 1 Stunde, und `0s` schaltet es ab. Es ist mit dem Hauptschlüssel verschlüsselt, nur mit dem API-Schlüssel lesbar, der die Anfrage gestellt hat, und wird nie protokolliert.
+- Das Gateway hält es für `KAESO_CONTINUITY_REASONING_TTL` in Valkey, standardmäßig 1 Stunde, und `0s` schaltet es ab. Es ist mit dem Hauptschlüssel verschlüsselt, geht nur an Anfragen mit dem API-Schlüssel zurück, der die Anfrage gestellt hat, und wird nie protokolliert.
 - Reasoning nach dem letzten Tool-Aufruf behält es nicht, ebenso wenig Reasoning aus einem fehlgeschlagenen Stream.
 - Ist das Reasoning weg, weil es abgelaufen ist, ein anderer Schlüssel den Zug sendet oder Valkey nicht erreichbar ist, läuft die Anfrage ohne es weiter.
 
@@ -154,9 +155,9 @@ Eine Gemini-App erhält kein Reasoning von einem anderen Anbieter, weil ein Thou
 
 ### Responses-Apps, die `store` anlassen
 
-Eine Responses-App, die `store` anlässt, wie das Vercel AI SDK standardmäßig, sendet das Reasoning der Antwort als `item_reference` auf seine ID zurück statt als Item selbst. Kaeso bewahrt keine Antworten auf, deshalb bewahrt das Gateway für eine solche App das Reasoning vor jedem Tool-Aufruf auf, wie für Chat Completions, und setzt es dort ein, wo der Verweis hinzeigt. Ein Verweis in einem Zug ohne Tool-Aufrufe, wo kein Modell das Reasoning zurück braucht, wird weggelassen und in `kaeso-left-out` genannt.
+Eine Responses-App, die `store` anlässt, wie das Vercel AI SDK standardmäßig, sendet das Reasoning und die Nachrichten der Antwort als `item_reference`-Items auf ihre IDs zurück. Kaeso bewahrt keine Antworten auf, deshalb bewahrt das Gateway für eine solche App auf, worauf eine Tool-Schleife zurückzeigt. Das ist das Reasoning vor jedem Tool-Aufruf, wie für Chat Completions, und der Text, den das Modell direkt vor dem Aufruf schrieb, etwa „Ich sehe mir das Wetter in Paris an.“ Beides setzt es dort ein, wo die Verweise hinzeigen. Ein Verweis auf Reasoning in einem Zug ohne Tool-Aufrufe, wo kein Modell es zurück braucht, wird weggelassen und in `kaeso-left-out` genannt.
 
-Ist das Reasoning weg, weil es abgelaufen ist, ein anderer Schlüssel den Zug sendet oder die App vorher `store: false` gesendet hat, lehnt Kaeso die Anfrage mit `400` ab und verlangt die Items selbst, wie SDKs sie mit `store: false` senden. Ein Verweis auf etwas anderes als Reasoning bleibt abgelehnt ([gespeicherte Antworten](../console/organizations-and-projects.md#gespeicherte-antworten)).
+Beides bewahrt das Gateway mit dem Hauptschlüssel verschlüsselt auf und gibt es nur an Anfragen mit demselben API-Schlüssel zurück, für `continuity.reasoning_ttl`, standardmäßig eine Stunde ([Kontinuität des Reasonings](../self-hosting/configuration.md#kontinuität-des-reasonings)). Den Text bewahrt es nur auf, wo das Projekt beim Anbieter gespeicherte Antworten erlaubt; `0s` schaltet beides ab, auch für Chat-Completions- und Gemini-Apps. Mit einer Guardrail, die maskierte Werte in der Antwort wiederherstellt, enthält der aufbewahrte Text diese Werte. Anderen Text bewahrt Kaeso nicht auf: Einen Verweis auf eine Nachricht außerhalb eines Tool-Zugs, etwa eine frühere Antwort in einem Chat, lehnt es mit `400` ab. Ebenso einen Verweis, dessen Reasoning oder Text weg ist, weil er abgelaufen ist, ein anderer Schlüssel den Zug sendet oder die App vorher `store: false` gesendet hat. Die Ablehnung verlangt die Items selbst, wie SDKs sie mit `store: false` senden. Verweise auf anderes bleiben abgelehnt ([gespeicherte Antworten](../console/organizations-and-projects.md#gespeicherte-antworten)).
 
 ### Lesbares Reasoning
 

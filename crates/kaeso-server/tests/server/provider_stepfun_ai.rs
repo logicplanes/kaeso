@@ -211,7 +211,7 @@ async fn stepfun_counts_no_tokens() {
         Some(json!({ "model": FLASH, "messages": [{ "role": "user", "content": "Hello" }] })),
     )
     .await;
-    assert!(r.status.is_client_error(), "{}", r.text());
+    assert!(r.estimated_count() > 0);
     assert!(env.mock.received().is_empty());
 }
 

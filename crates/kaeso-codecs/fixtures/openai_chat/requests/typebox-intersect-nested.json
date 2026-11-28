@@ -1,0 +1,57 @@
+{
+  "model": "claude-haiku-5-5",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Tokyo"
+    }
+  ],
+  "response_format": {
+    "type": "json_schema",
+    "json_schema": {
+      "name": "city",
+      "schema": {
+        "allOf": [
+          {
+            "type": "object",
+            "allOf": [
+              {
+                "type": "object",
+                "required": [
+                  "name"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "required": [
+                  "country"
+                ],
+                "properties": {
+                  "country": {
+                    "type": "string"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "type": "object",
+            "required": [
+              "population"
+            ],
+            "properties": {
+              "population": {
+                "type": "integer"
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}

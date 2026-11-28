@@ -157,6 +157,17 @@ describe("decisions", () => {
     expect(draftProblem({ ...custom, input_modalities: ["text"] }, true)).toBe("A custom decision model needs its input price.");
     expect(draftProblem({ ...custom, input_modalities: ["text"], input_price: "0.042" }, true)).toBeNull();
   });
+
+  it("asks a custom embeddings model for no output limit", () => {
+    const filled = { input_modalities: ["text"], output_modalities: ["text"], context_limit: "8192", input_price: "0.02", output_price: "0" };
+    const embeddings = { ...draftFrom({}), ...filled, egress_dialect: "openai_embeddings" };
+    expect(draftProblem(embeddings, true)).toBeNull();
+    expect(draftProblem({ ...embeddings, context_limit: "" }, true)).toBe("A custom embeddings model needs its context limit.");
+    expect(draftProblem({ ...embeddings, egress_dialect: "openai_chat" }, true)).toBe("A custom model needs its context and output limits.");
+    expect(draftProblem({ ...embeddings, output_modalities: ["embedding"], egress_dialect: "openai_chat", output_limit: "1" }, true)).toBe(
+      "An embeddings model needs an embeddings format, such as OpenAI Embeddings.",
+    );
+  });
 });
 
 describe("prices in another currency", () => {

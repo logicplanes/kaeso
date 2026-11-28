@@ -234,10 +234,10 @@ pub(super) fn decode_generate(w: Ext<ResponseW>, origin: &Origin) -> Result<Resp
         }
         Some(candidates) => {
             if candidates.len() > 1 {
-                return Err(KppError::unsupported_by(
-                    "more than one candidate",
-                    D,
-                    "Kaeso reads one candidate per reply; leave `candidateCount` out or set it to 1.",
+                // Kaeso refuses `candidateCount` above 1 when it decodes the request, so several
+                // candidates are the provider's.
+                return Err(crate::codec::several_choices(
+                    "The provider returned several candidates for one request; Kaeso carries one.",
                 ));
             }
             if candidates.is_empty() {

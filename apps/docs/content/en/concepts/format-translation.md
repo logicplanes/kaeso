@@ -33,15 +33,15 @@ KPP, the Kaeso Provider Protocol, has a codec for each API format: OpenAI Chat C
 
 ## What carries across
 
-- **Conversations.** System instructions, user and assistant turns, text, images and documents, and audio and video where the target takes them ([audio and video](../development/kpp/cross-format.md#audio-and-video)). A system message in the middle of an Anthropic conversation reaches OpenAI as a later system message, and one in the middle of an OpenAI conversation reaches Anthropic as text of the next user turn.
-- **Tools.** Function tools, tool choice, parallel tool calls, tool calls and tool results. Images and files a tool returned reach a Chat Completions model in the user message after the results, because its tool messages hold only text ([media in tool results](../development/kpp/cross-format.md#media-in-tool-results)).
+- **Conversations.** System instructions, user and assistant turns, text, images and documents, and audio and video where the target takes them ([audio and video](../development/kpp/media.md#audio-and-video)). A system message in the middle of an Anthropic conversation reaches OpenAI as a later system message, and one in the middle of an OpenAI conversation reaches Anthropic as text of the next user turn.
+- **Tools.** Function tools, tool choice, parallel tool calls, tool calls and tool results. Images and files a tool returned reach a Chat Completions model in the user message after the results, because its tool messages hold only text ([media in tool results](../development/kpp/media.md#media-in-tool-results)).
 - **Tool names and call ids.** When the target doesn't accept a name or id, Kaeso rewrites it in a fixed way and maps it back in the reply. Other characters become `_`, the name is cut to fit, and a hash of the original is added. OpenAI accepts up to 64 letters, digits, `_` and `-`, Anthropic up to 128.
 - **Structured output.** JSON schemas, and JSON mode, which models without it, such as Claude, get as a sentence in the system prompt ([structured output](../development/kpp/cross-format.md#structured-output)).
 - **Sampling.** Temperature, top P, maximum tokens and stop sequences, where the target has them. A value keeps its meaning but is written as the target writes it, so `1` can arrive as `1.0`. For a model served through OpenAI Responses, such as Grok, Kaeso ends the reply itself at a stop sequence or at a limit below 16 tokens ([OpenAI Responses in the gateway](../development/kpp/sampling.md#openai-responses-in-the-gateway)).
 - **The end user's id.** Anthropic's `metadata.user_id` and OpenAI's `safety_identifier`. OpenAI takes at most 128 characters and asks for a hash of the user's id, so a longer Anthropic id, such as Claude Code's, reaches it as its SHA-256 hash, which the reply's `kaeso-adapted` header names.
 - **Reasoning.** Efforts and thinking budgets convert into each other ([reasoning](#reasoning)).
 - **Streams.** Kaeso translates them event by event into the app's format.
-- **Audio replies.** Between Chat Completions and Gemini: OpenAI's audio models answer Gemini apps, and Gemini's speech models Chat apps, when the voice and format exist on both sides ([audio and image replies](../development/kpp/cross-format.md#audio-and-image-replies)).
+- **Audio replies.** Between Chat Completions and Gemini: OpenAI's audio models answer Gemini apps, and Gemini's speech models Chat apps, when the voice and format exist on both sides ([audio and image replies](../development/kpp/media.md#audio-and-image-replies)).
 
 ## What Kaeso refuses
 
@@ -87,7 +87,7 @@ Kaeso refuses these in every format, even when the format stays the same:
 
 ### Token counts
 
-`/v1/messages/count_tokens`, `/v1/responses/input_tokens` and Gemini's `:countTokens` ask the model's provider for the count. When the provider has no endpoint for counting tokens, Kaeso refuses the request with 400 and a message that says the model can't count tokens. Kaeso doesn't estimate the count, because an estimate never matches the provider's own.
+`/v1/messages/count_tokens`, `/v1/responses/input_tokens` and Gemini's `:countTokens` ask the model's provider for the count. When the provider has no endpoint for counting tokens, Kaeso checks the request as the model would take it and answers with its own estimate in the app's format, without sending anything. The answer carries `kaeso-adapted: count_estimated`, since an estimate never matches the provider's own count exactly. How the estimate counts text, tools, images and documents is under [token counts](providers.md). Audio and video, whose length Kaeso doesn't read, can't be estimated: such a request gets 400.
 
 ## Prompt caching
 
@@ -108,6 +108,7 @@ When the target has no place for them, Kaeso leaves out hints that don't change 
 - the error flag of a tool result, which OpenAI doesn't have; the result's text still says what failed
 - `seed` for a model served through OpenAI Responses, which has no field for it
 - settings sent at the value the API uses when they are absent, such as `frequency_penalty: 0`, `logprobs: false` or `store: false`, which chat apps such as NextChat send with every request; the reply's `kaeso-left-out` header names them ([neutral values](../development/kpp/sampling.md#neutral-values))
+- the `name` of a Chat Completions message, which tells apart participants of one role and which no other format has; the reply's `kaeso-left-out` header names it ([participant names](../development/kpp/openai-chat.md#participant-names))
 
 Requests translated into Responses carry `store: false`, so OpenAI keeps nothing.
 
@@ -142,7 +143,7 @@ When the app sends it back, KPP restores the original for the provider that wrot
 
 Chat Completions has no field for reasoning. When Claude, or an OpenAI model through Responses, serves a Chat Completions app, the gateway keeps the reasoning that came before each tool call. It puts that reasoning back when the app sends the tool result, so the model keeps its train of thought through tool loops.
 
-- The gateway keeps it in Valkey for `KAESO_CONTINUITY_REASONING_TTL`, 1 hour by default, and `0s` turns it off. It is encrypted under the master key, readable only with the API key that made the request, and never logged.
+- The gateway keeps it in Valkey for `KAESO_CONTINUITY_REASONING_TTL`, 1 hour by default, and `0s` turns it off. It is encrypted under the master key, given back only to requests with the API key that made the request, and never logged.
 - It keeps no reasoning after the last tool call, and none from a stream that failed.
 - When the reasoning is gone, because it expired, another key sends the turn or Valkey is unreachable, the request goes on without it.
 
@@ -154,9 +155,9 @@ A Gemini app gets no reasoning from another provider, because a thought part can
 
 ### Responses apps that keep `store` on
 
-A Responses app that leaves `store` on, as the Vercel AI SDK does by default, sends the reply's reasoning back as an `item_reference` to its id instead of the item itself. Kaeso keeps no responses, so the gateway keeps the reasoning before each tool call for such an app, as for Chat Completions, and puts it where the reference points. A reference in a turn without tool calls, where no model needs the reasoning back, is left out and named in `kaeso-left-out`.
+A Responses app that leaves `store` on, as the Vercel AI SDK does by default, sends the reply's reasoning and messages back as `item_reference` items to their ids. Kaeso keeps no responses, so for such an app the gateway keeps what a tool loop points back to. That is the reasoning before each tool call, as for Chat Completions, and the text the model wrote right before the call, such as "I'll check the weather in Paris." It puts both where the references point. A reference to reasoning in a turn without tool calls, where no model needs it back, is left out and named in `kaeso-left-out`.
 
-When the reasoning is gone, because it expired, another key sends the turn or the app sent `store: false` before, Kaeso refuses the request with `400` and asks for the items themselves, as SDKs send them with `store: false`. A reference to anything other than reasoning stays refused ([stored responses](../console/organizations-and-projects.md#stored-responses)).
+Both are kept encrypted under the master key, given back only to requests with the same API key, for `continuity.reasoning_ttl`, an hour by default ([reasoning continuity](../self-hosting/configuration.md#reasoning-continuity)). The text is kept only where the project allows responses stored at the provider; `0s` turns both off, for Chat Completions and Gemini apps too. With a guardrail that restores masked values in the reply, the kept text holds those values. Kaeso keeps no other text: a reference to a message outside a tool turn, such as an earlier answer in a chat, is refused with `400`. So is a reference whose reasoning or text is gone, because it expired, another key sends the turn or the app sent `store: false` before. The refusal asks for the items themselves, as SDKs send them with `store: false`. References to anything else stay refused ([stored responses](../console/organizations-and-projects.md#stored-responses)).
 
 ### Readable reasoning
 

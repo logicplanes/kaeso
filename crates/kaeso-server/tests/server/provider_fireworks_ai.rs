@@ -359,6 +359,6 @@ async fn fireworks_embeddings_and_refused_token_counts() {
         Some(json!({ "model": KIMI_AS_MESSAGES, "messages": [{ "role": "user", "content": "Hello" }] })),
     )
     .await;
-    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert!(r.estimated_count() > 0);
     assert!(env.mock.received().is_empty());
 }

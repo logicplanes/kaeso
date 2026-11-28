@@ -21,7 +21,7 @@ Sources: AWS's [endpoints](https://docs.aws.amazon.com/bedrock/latest/userguide/
 | `{"Message": …}` with `x-amzn-ErrorType` | `KppError` | The shape bedrock-runtime answers its own operations with; the message is read from `Message`, the kind from the status (`errors/recorded-native-invalid-api-key`). |
 | `GET /openai/v1/models` | — | Not served (404 `UnknownOperationException`), so a model check is inconclusive and sends nothing. |
 
-A model the catalogue names no format for is served only through Bedrock's own InvokeModel and Converse APIs, whose AWS event streams KPP doesn't read, and is refused before sending. Bedrock's Responses route is unused: Responses apps reach it through Chat Completions. Token counts are refused: bedrock-runtime counts them only in its own format, at `/model/{modelId}/count-tokens`.
+A model the catalogue names no format for is served only through Bedrock's own InvokeModel and Converse APIs, whose AWS event streams KPP doesn't read, and is refused before sending. Bedrock's Responses route is unused: Responses apps reach it through Chat Completions. Kaeso estimates token counts itself: bedrock-runtime counts them only in its own format, at `/model/{modelId}/count-tokens`.
 
 ## Baseten
 
@@ -79,7 +79,7 @@ Sources: Azure's v1 OpenAPI document (`azure-v1-v1-generated.json` in [azure-res
 | `{"statusCode": 401, "message": …}` | `KppError` | Azure's answer to an Entra ID token it doesn't accept (`errors/recorded-entra-token`); for a key that signs in with Entra ID, a refused key that names the role the service principal needs. |
 | `GET /openai/v1/models` | `ModelList` | The models a resource may deploy, not its deployments, so a model check only shows whether the key and its endpoint work (`ModelListing::Catalogue`). |
 
-The v1 API serves Responses with OpenAI's request body, plus `content_filters` in replies, which stay in extras; Kaeso sends a model as Responses when its **Sends as** value says so (`fixtures/openai_responses/providers/azure/`). Claude deployments answer only Anthropic's Messages API under `{endpoint}/anthropic`, and images, speech, transcriptions and videos are in the v1 API's preview only, so Kaeso calls none of them yet. Token counts are refused.
+The v1 API serves Responses with OpenAI's request body, plus `content_filters` in replies, which stay in extras; Kaeso sends a model as Responses when its **Sends as** value says so (`fixtures/openai_responses/providers/azure/`). Claude deployments answer only Anthropic's Messages API under `{endpoint}/anthropic`, and images, speech, transcriptions and videos are in the v1 API's preview only, so Kaeso calls none of them yet. Kaeso estimates token counts itself.
 
 ## DeepInfra
 
@@ -98,7 +98,7 @@ Sources: DeepInfra's [OpenAPI document](https://api.deepinfra.com/openapi.json) 
 | a 403 `{"detail": {"error": …}}` for a key without the `inference` scope | `KppError` | `PermissionDenied`, with DeepInfra's message (`errors/missing-scope-doc`). |
 | `GET /v1/models` with `root`, `parent` and DeepInfra's `metadata` | `ModelList` | Answered without a key (`models/list-recorded`), so a model check can't spot a wrong key. There is no `GET /v1/models/{model}`. |
 
-DeepInfra's Responses API stores nothing and isn't used: Responses apps reach DeepInfra through Chat Completions. Its Anthropic-compatible endpoint and token count live under `/anthropic/v1`, outside the `/v1` of the other formats, so Kaeso refuses token counts. Its images, speech, transcriptions and videos in OpenAI's formats aren't used until KPMR lists the models with their prices.
+DeepInfra's Responses API stores nothing and isn't used: Responses apps reach DeepInfra through Chat Completions. Its Anthropic-compatible endpoint and token count live under `/anthropic/v1`, outside the `/v1` of the other formats, so Kaeso estimates token counts itself. Its images, speech, transcriptions and videos in OpenAI's formats aren't used until KPMR lists the models with their prices.
 
 ## Fireworks AI
 
@@ -150,7 +150,7 @@ Sources: Hugging Face's [Inference Providers](https://huggingface.co/docs/infere
 | errors as `{"error": "<message>"}` | `KppError` | The kind follows the status: 401 is a refused key (`errors/recorded-invalid-api-key`). |
 | `GET /v1/models` with `architecture` and a `providers` array of status, context length, pricing and speed | `ModelList` | Answered without a key (`models/list-recorded`), so a model check can't spot a wrong key. |
 
-The router's OpenAI-compatible API is for chat only: `/v1/embeddings`, `/v1/images/generations` and `/v1/audio/*` answer 404. Its Responses API isn't used, as it answers a refused token with 200 and `status: "failed"`. Its Messages endpoint isn't used either: it answers a refused token with `api_error`, which would reach apps as a failed provider instead of a refused key. `/v1/messages/count_tokens` answers without checking the token and isn't documented, so Kaeso refuses token counts.
+The router's OpenAI-compatible API is for chat only: `/v1/embeddings`, `/v1/images/generations` and `/v1/audio/*` answer 404. Its Responses API isn't used, as it answers a refused token with 200 and `status: "failed"`. Its Messages endpoint isn't used either: it answers a refused token with `api_error`, which would reach apps as a failed provider instead of a refused key. `/v1/messages/count_tokens` answers without checking the token and isn't documented, so Kaeso estimates token counts itself.
 
 ## IONOS AI Model Hub
 
@@ -204,7 +204,7 @@ Sources: Novita AI's [chat completion](https://docs.novita.ai/api-reference/mode
 | errors as `{"code", "reason", "message", "metadata"}` | `KppError` | The kind follows the status: 401 `FAILED_TO_AUTH`, 403 `INVALID_API_KEY` or `NOT_ENOUGH_BALANCE`, 404 `MODEL_NOT_FOUND`, 429, 503 (`errors/`). |
 | `GET /v1/models` with prices in 1/10,000 USD, `pricing`, `features` and `endpoints` | `ModelList` | Answered without a key and lists chat models only (`models/list-recorded`); `GET /v1/models/{model}` also answers for embeddings models (`models/retrieve-embedding-recorded`), so a model check finds a model but not a wrong key (`ModelListing::Partial`). |
 
-Novita AI's Anthropic-compatible endpoint lives under `/anthropic`, outside its OpenAI base URL, and `/v1/responses` is undocumented, so Kaeso calls only Chat Completions and refuses token counts. Its `/v1/completions`, `/v1/rerank`, batch API, its image model in OpenAI's Images API and its own task APIs for speech, transcription and video aren't used.
+Novita AI's Anthropic-compatible endpoint lives under `/anthropic`, outside its OpenAI base URL, and `/v1/responses` is undocumented, so Kaeso calls only Chat Completions and estimates token counts itself. Its `/v1/completions`, `/v1/rerank`, batch API, its image model in OpenAI's Images API and its own task APIs for speech, transcription and video aren't used.
 
 ## NVIDIA
 
@@ -362,13 +362,13 @@ Sources: StepFun's [Chat Completions reference](https://platform.stepfun.ai/docs
 | `video_url` parts | `Block::Video` | `with_video_url()`. |
 | `user`, `safety_identifier`, a Responses app's `prompt_cache_key` | left out | The reference has no end-user or cache-key field, and StepFun caches prompts by itself (`without_end_user()`, `without_cache_key()`). |
 | `stream_options` | left out | Every chunk carries the running usage without being asked (`without_stream_options()`, `streams/text-doc`). |
-| `presence_penalty`, `seed`, `logprobs`, `logit_bias`, `parallel_tool_calls`, `prompt_cache_key`, `store` and the other fields the reference leaves out, `name` on messages | refused | Whether StepFun refuses or drops undeclared fields isn't documented, so the profile refuses them before sending; `parallel_tool_calls: true` only allows parallel calls and is left out, as is a [neutral value](sampling.md#neutral-values) such as `store: false`. `tool_choice`, which StepFun's guides send, is sent. |
+| `presence_penalty`, `seed`, `logprobs`, `logit_bias`, `parallel_tool_calls`, `prompt_cache_key`, `store` and the other fields the reference leaves out | refused | Whether StepFun refuses or drops undeclared fields isn't documented, so the profile refuses them before sending; `parallel_tool_calls: true` only allows parallel calls and is left out, as are a [neutral value](sampling.md#neutral-values) such as `store: false` and `name` on messages ([participant names](openai-chat.md#participant-names)). `tool_choice`, which StepFun's guides send, is sent. |
 | `finish_reason: ""` and `role: ""` before the last chunk | none | Read as no value, as for other providers. |
 | a tool call with `finish_reason: "stop"` | `StopReason::EndTurn` | Both documented tool-call replies end this way (`responses/tools-doc`). The Chat mapping reads `stop` as the end of a turn, so an Anthropic app gets the `tool_use` block with `stop_reason: "end_turn"`. |
 | errors as `{"error": {"message", "type"}}` without `code` | `KppError` | The kind follows the status, and StepFun's identifier is in `type`. The China service's 429s `project_credit_limit_exceeded` and `member_project_credit_limit_exceeded` are billing refusals, not rate limits. |
 | `GET /v1/models` | `ModelList` | Needs a key and lists chat and speech models alike (`models/list-doc`), so a model check spots a wrong key. |
 
-StepFun's Anthropic Messages endpoint, its Responses API and its token count (`/v1/token/count`) aren't used: every app reaches StepFun through Chat Completions, and Kaeso refuses token counts. `input_audio` takes a data URL without `format`, for StepFun's audio chat models, which KPMR doesn't list; its speech, transcription and realtime APIs aren't used either.
+StepFun's Anthropic Messages endpoint, its Responses API and its token count (`/v1/token/count`) aren't used: every app reaches StepFun through Chat Completions, and Kaeso estimates token counts itself. `input_audio` takes a data URL without `format`, for StepFun's audio chat models, which KPMR doesn't list; its speech, transcription and realtime APIs aren't used either.
 
 ## Tencent TokenHub
 
@@ -387,7 +387,7 @@ Sources: TokenHub's [API usage](https://cloud.tencent.com/document/product/1823/
 | errors with `message_zh`, a six-digit `code`, `type`, `source`, `request_id` | `KppError` | The kind follows the status; `type` differs between the reference and live answers, and a 429 may carry `code` as a number without `type` (`errors/rate-limit-doc`). The `code` gives the kind where the status says less: `400003` (input beyond the context) `ContextTooLong`, `400004` (unknown model) `NotFound`, `451001` `ContentFiltered`. |
 | `GET /v1/models` with `name` and `status` (`online`, `pre-offline`) | `ModelList` | Needs the key (`models/list-doc`); there is no `GET /v1/models/{model}`. |
 
-TokenHub's Responses and Anthropic Messages endpoints serve only some models and aren't used: Responses and Messages apps reach TokenHub through Chat Completions, and Kaeso refuses token counts, which TokenHub doesn't serve. Its images, videos, speech and the multimodal embeddings use formats of its own.
+TokenHub's Responses and Anthropic Messages endpoints serve only some models and aren't used: Responses and Messages apps reach TokenHub through Chat Completions, and Kaeso estimates token counts, which TokenHub doesn't serve. Its images, videos, speech and the multimodal embeddings use formats of its own.
 
 ## Venice
 
@@ -406,7 +406,7 @@ Sources: Venice's [OpenAPI document](https://docs.venice.ai/swagger.yaml) (versi
 | errors `{"error": "<text>"}` and `{"error", "details", "issues"}` | `KppError` | The kind follows the status, and the text is the message (`errors/recorded-invalid-api-key`, `errors/unknown-model-published`). |
 | `GET /v1/models` | `ModelList` | Lists text models only (`models/list-recorded`), so the listing is partial. |
 
-Venice's Responses API is in beta and isn't used: Responses and Messages apps reach Venice through Chat Completions, and Kaeso refuses token counts, which Venice doesn't serve.
+Venice's Responses API is in beta and isn't used: Responses and Messages apps reach Venice through Chat Completions, and Kaeso estimates token counts, which Venice doesn't serve.
 
 ## Baidu Qianfan
 

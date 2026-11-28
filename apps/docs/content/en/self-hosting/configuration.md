@@ -309,7 +309,7 @@ An organization admin chooses a guardrail's address, so the gateway guards it li
 
 | Variable<br>TOML key | Type | Default | What it does |
 | --- | --- | --- | --- |
-| `KAESO_STREAMS_KEEPALIVE_INTERVAL`<br>`streams.keepalive_interval` | text | `15s` | After this long without output, write a keepalive into an open stream so proxies keep the connection ([long streams](domains-and-tls.md#long-streams)). `0s` turns keepalives off; otherwise 1s to 300s. |
+| `KAESO_STREAMS_KEEPALIVE_INTERVAL`<br>`streams.keepalive_interval` | text | `15s` | After this long without output, write a keepalive into an open stream so proxies keep the connection ([long streams](domains-and-tls.md#long-streams)). `0s` turns these off; keepalives in place of content the app's format can't show still come ([streaming](../api/model-api.md#streaming)). Otherwise 1s to 300s. |
 | `KAESO_STREAMS_MAX_DURATION`<br>`streams.max_duration` | text | `0s` | Longest time a streamed reply may run before the gateway ends it with an error event. `0s` sets no limit. |
 | `KAESO_STREAMS_MAX_BYTES`<br>`streams.max_bytes` | text | `0` | Most bytes, such as `64MiB`, a streamed reply may write to the app before the gateway ends it with an error event. `0` sets no limit. |
 
@@ -317,7 +317,7 @@ An organization admin chooses a guardrail's address, so the gateway guards it li
 
 | Variable<br>TOML key | Type | Default | What it does |
 | --- | --- | --- | --- |
-| `KAESO_CONTINUITY_REASONING_TTL`<br>`continuity.reasoning_ttl` | text | `1h` | How long the gateway keeps a model's reasoning before a tool call for an OpenAI Chat Completions or Gemini app whose model speaks another format, and for an OpenAI Responses app that doesn't send `store: false`. `0s` turns it off; otherwise 1m to 24h. |
+| `KAESO_CONTINUITY_REASONING_TTL`<br>`continuity.reasoning_ttl` | text | `1h` | How long the gateway keeps a model's reasoning before a tool call for an OpenAI Chat Completions or Gemini app whose model speaks another format. For an OpenAI Responses app that doesn't send `store: false`, it keeps the reasoning before a tool call, and the text where the project allows responses stored at the provider. Encrypted under the master key and given back only to requests with the same API key. `0s` turns it off; otherwise 1m to 24h. |
 
 [Format translation](../concepts/format-translation.md#chat-completions) explains how the gateway keeps it.
 

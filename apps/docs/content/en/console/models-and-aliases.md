@@ -35,7 +35,7 @@ A model in the catalogue isn't always one the provider serves to the project's p
 | Unavailable | The provider said it doesn't serve it to this key |
 | Not checked | Nothing has said so yet, or a provider key of the organization changed since |
 
-Choose **Check availability** to ask each model's provider, with the project's provider key. Kaeso marks a model unavailable only when the provider answers "not found" and its model listing confirms the model is missing. When Kaeso can't check a model, the model keeps its availability, and the report says why. For example, the project has no key for that provider, or the provider refused the key, even when only its model listing refused it.
+Choose **Check availability** to ask each model's provider, with the project's provider key. Kaeso marks a model unavailable only when the provider answers "not found" and its model listing confirms the model is missing. A transcription model missing from the listing stays as it was, since some providers, such as SpaceX, list no transcription models. When Kaeso can't check a model, the model keeps its availability, and the report says why. For example, the project has no key for that provider, or the provider refused the key, even when only its model listing refused it.
 
 Requests update availability too. When the provider answers a request with "not found" and its listing confirms it, the model becomes unavailable, and the app gets an [error that says so](../api/errors.md). When a request for an unavailable model succeeds, the model becomes available again. Each answer counts only for the provider key that got it.
 
@@ -51,7 +51,7 @@ A model's sheet shows the **Values in use**, each with where it comes from: KPMR
 | --- | --- |
 | Display name | The name the console shows |
 | Inputs, outputs | Inputs: text, images, PDF, audio and video. Outputs: text, images, audio and embeddings |
-| Context, output limit | The model's token limits |
+| Context, output limit | The model's token limits. A custom embeddings model has no output limit ([custom providers](custom-providers.md#add-an-embeddings-model)) |
 | Input, output, cache read, cache write and one-hour cache write prices | Per million tokens, in the organization's currency or another one chosen under **Currency**, which Kaeso costs in US dollars at the latest ECB rate ([currencies](../concepts/currencies.md#prices)). Usage and budgets use the prices in force when a request is made. The cache write price is the five-minute one. Writes to Anthropic's one-hour cache cost the one-hour cache write price, which KPMR sets where the provider documents one, such as twice the input price for Anthropic's models. Without it, or when you override the input price, they cost twice the input price |
 | Long-context prices | The prices KPMR lists for long prompts, such as **Above 272K: $20.00 / $75.00** for input and output. When a request's prompt, cached tokens included, is longer than that many tokens, all of the request's tokens cost these prices, output included, in usage and budgets alike. A price a tier leaves out is the model's own. Overriding the input, output, cache read or cache write price turns KPMR's long-context prices off, so your price holds for every prompt |
 | Audio input and audio output prices | The prices KPMR lists for audio tokens, such as a transcribe model's audio input. |

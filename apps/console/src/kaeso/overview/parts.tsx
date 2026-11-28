@@ -97,14 +97,21 @@ export function DayContext({ o, context, metric, height }: { o: Overview; contex
 
 export type Ranked = Exclude<Dimension, "member">;
 
-function entityLabel(o: Overview, dim: Ranked, key: string) {
+function entityLabel(o: Overview, dim: Ranked, { key, name: kpmrName }: UsageRow) {
   if (dim === "model") {
     const [provider = "", ...rest] = key.split("/");
     const model = rest.join("/");
     if (!model) return <Text tone="secondary">{o.modelName(key)}</Text>;
-    const name = o.modelName(key);
+    const name = o.modelName(key, kpmrName);
     return (
-      <ModelLabel className="max-w-full" provider={provider} providerName={o.providers.name(provider)} model={model} {...(name !== model ? { name } : {})} />
+      <ModelLabel
+        className="max-w-full"
+        provider={provider}
+        providerName={o.providers.name(provider)}
+        model={model}
+        mark={!!provider}
+        {...(name !== model ? { name } : {})}
+      />
     );
   }
   if (dim === "project") {
@@ -137,7 +144,7 @@ export function rank(o: Overview, dim: Ranked, metric: MetricId, limit: number):
     count: rows.length,
     items: rows.slice(0, limit).map((r) => ({
       id: r.key,
-      label: entityLabel(o, dim, r.key),
+      label: entityLabel(o, dim, r),
       value: m.formatRank(m.rank(r), o.money),
       secondary: metric === "errors" ? formatPercent(r.errors / r.requests) : formatPercent(m.rank(r) / total, 0),
       ...moved(r),

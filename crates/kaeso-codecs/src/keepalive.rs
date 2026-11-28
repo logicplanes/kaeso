@@ -1,6 +1,8 @@
 use kaeso_kpp::{Delta, DialectId, StreamEvent};
 
-pub(crate) const COMMENT_FRAME: &[u8] = b": keepalive\n\n";
+// A comment line without a blank line, which the next event's blank line ends: older openai-go
+// readers fail on an event without data (https://github.com/logicplanes/kaeso/issues/1537).
+pub(crate) const COMMENT_FRAME: &[u8] = b": keepalive\n";
 
 pub(crate) const PING_FRAME: &[u8] = b"event: ping\ndata: {\"type\": \"ping\"}\n\n";
 
@@ -26,8 +28,10 @@ impl Pacer {
         if is_own(event, target) {
             return;
         }
+        // A provider's keepalive, such as Anthropic's `ping`, weighs its size instead of earning a
+        // frame at once, as the docs promise; the gateway's interval covers silence.
         let weight = match event {
-            StreamEvent::Extra(_) => HIDDEN_TEXT_PER_KEEPALIVE,
+            StreamEvent::Extra(item) => item.raw.get().len(),
             StreamEvent::BlockDelta(d) => match &d.delta {
                 Delta::Text(t)
                 | Delta::ToolArguments(t)
@@ -97,10 +101,11 @@ mod tests {
     }
 
     #[test]
-    fn foreign_extra_events_always_earn_a_frame_own_events_never() {
+    fn foreign_extra_events_count_as_hidden_data_by_their_size_own_events_never() {
         let mut p = Pacer::default();
-        assert!(paced(&mut p, &ping(A)));
-        assert!(paced(&mut p, &ping(A)));
+        let size = r#"{"event":"ping","data":{"type":"ping"}}"#.len();
+        let first = (1..=HIDDEN_TEXT_PER_KEEPALIVE).find(|_| paced(&mut p, &ping(A)));
+        assert_eq!(first, Some(HIDDEN_TEXT_PER_KEEPALIVE.div_ceil(size)));
         assert!(!paced(&mut p, &ping(C)));
         let mut own = BlockDelta::new(0, Delta::Text("x".repeat(5000)));
         own.extras = Extras::new(C);

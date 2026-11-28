@@ -350,6 +350,7 @@ Die SDKs von OpenAI und Anthropic und die Coding-Agents, die auf ihnen aufbauen,
 - einem Budget, das bis zu seinem Zurücksetzen aufgebraucht ist, oder einer Anfrage, die mehr kosten könnte, als davon übrig ist;
 - dem Nutzungslimit eines Abos, das bis zum Zurücksetzen des Abos gilt, und der Ausgabengrenze eines Anbieters, etwa der monatlichen von Anthropic;
 - einem Anbieter-Schlüssel, den der Anbieter abgelehnt hat, einem Projekt ohne Anbieter-Schlüssel, einem abgemeldeten Konto und anderen Problemen, die nur ein Organisations-Admin beheben kann, jeweils mit 500 oder 502;
+- einer Antwort des Anbieters mit mehreren Auswahlen oder Kandidaten, die Kaeso weder anfordert noch tragen kann;
 - jedem Fehler, dessen `Retry-After` länger als eine Minute ist, also länger, als die SDKs von selbst warten.
 
 `Retry-After` sagt, wann eine Anfrage wieder durchkommen kann, wo Kaeso es weiß: wann das Fenster eines Ratenlimits frei wird, wann der Zeitraum eines aufgebrauchten Budgets neu beginnt und wie lange Kaeso ein Konto zurückhält, dessen Abo in einer [Alias-Route](../concepts/alias-routes.md#fallbacks) sein Nutzungslimit erreicht hat. Ein Ratenlimit, ein 503 oder 529 und die anderen Fehler eines Anbieters tragen kein `x-should-retry`, damit Clients sie wie gewohnt wiederholen.

@@ -51,13 +51,13 @@ Schema `GenerateContentRequest`.
 | `functionDeclarations[].name`, `.description` | `name`, `description` | |
 | `functionDeclarations[].parametersJsonSchema` | `parameters` | Volles JSON Schema. Fremde Tools bekommen immer `parametersJsonSchema`, sodass nichts an die OpenAPI-Teilmenge verloren geht. |
 | `functionDeclarations[].parameters` (OpenAPI-`Schema`) | `parameters` | Form `schema: "parameters"`, sodass Gemini es in `parameters` zurückbekommt. Andere Dialekte bekommen es als JSON Schema ([Schemas](#schemas)). Mit `parametersJsonSchema` daneben → Feld `parameters`. |
-| `functionDeclarations[].response`, `.responseJsonSchema`, `.behavior` | Felder des Tools | |
+| `functionDeclarations[].response`, `.responseJsonSchema`, `.behavior` | Felder des Tools | `response` und `responseJsonSchema` beschreiben, was die Funktion der App zurückgibt: Andere Dialekte bekommen sie nicht, und sie werden in `kaeso-left-out` genannt ([Allowlist](cross-format.md#allowlist)). Fehler nennen eine Deklaration als `tools[0].functionDeclarations[1]`. |
 | `toolConfig.functionCallingConfig` `mode: AUTO` / `NONE` / `ANY` | `tool_choice` `Auto` / `None` / `Required` | |
 | `mode: ANY` mit einem Eintrag in `allowedFunctionNames` | `ToolChoice::Tool(name)` | |
 | `mode: VALIDATED`, `ANY` mit mehreren Namen, jede andere Kombination | `ToolChoice::Unknown` (roh) | Über Dialekte hinweg abgelehnt. |
 | `toolConfig.retrievalConfig`, `.includeServerSideToolInvocations` | Felder `toolConfig.*` | |
 | `generationConfig.temperature`, `.topP`, `.topK`, `.maxOutputTokens`, `.stopSequences`, `.seed`, `.presencePenalty`, `.frequencyPenalty` | `sampling.*` | Zahlen behalten ihre Schreibweise im Dialekt (Form `integers`). `topK` wird für ein Ziel ohne Top-k weggelassen ([Top K](sampling.md#top-k)). |
-| `generationConfig.candidateCount` | Form `candidate_count` | Über 1 → `Unsupported` beim Dekodieren, wie `n` bei Chat ([Sampling](sampling.md)). |
+| `generationConfig.candidateCount` | Form `candidate_count` | Über 1 → `Unsupported` beim Dekodieren, wie `n` bei Chat ([Sampling](sampling.md)): Kaeso liefert einen Kandidaten pro Anfrage, für mehr sendet die App mehrere Anfragen. |
 | `responseMimeType: application/json` mit `responseJsonSchema` | `output = JsonSchema` | |
 | `responseMimeType: application/json` mit `responseSchema` | `output = JsonSchema` | Form `schema: "responseSchema"`; andere Dialekte bekommen es als JSON Schema ([Schemas](#schemas)). |
 | `responseMimeType: application/json` allein | `output = JsonObject` | |
@@ -112,7 +112,6 @@ Schema `Part`. Ein Part trägt genau eines von `text`, `inlineData`, `fileData`,
 - **Argumente**, die kein Objekt sind, werden zu einem, wie bei Anthropic ([Argumente von Tool-Aufrufen](cross-format.md#argumente-von-tool-aufrufen)).
 - **Bild-URLs** bekommen `fileData.mimeType` aus der Dateiendung der URL (`.png`, `.jpg`, `.jpeg`, `.webp`, `.gif`, `.heic`, `.heif`; Dokumente auch `.pdf`, `.txt`), wie es die Anleitung zur Dateieingabe verlangt; eine Bild-URL ohne solche Endung ist `Unsupported`. Textdokumente werden als Base64-`inlineData` gesendet.
 - **Audio- und Video-URLs** bekommen ihn genauso, aus den unterstützten Formaten der Audio- und Video-Leitfäden (`.wav`, `.mp3`, `.aiff`, `.aac`, `.ogg`, `.flac`, `.m4a`, `.opus`, `.webm`; `.mp4`, `.mpeg`, `.mpg`, `.mov`, `.avi`, `.flv`, `.webm`, `.wmv`, `.3gp`). Eine YouTube-URL geht ohne; eine andere URL ohne bekannte Endung ist `Unsupported`. Base64-Audio und -Video gehen als `inlineData` mit ihrem Medientyp. Audio und Video in einem Tool-Ergebnis sind `Unsupported`.
-- **Ausgabeschemas.** Die `description` eines OpenAI-Schemas steht vor der eigenen `description` des Schemas, und `strict: false` wird strikt bedient, weil Gemini `responseJsonSchema` immer durchsetzt; beides wird in `kaeso-adapted` mit dem Feld der App genannt.
 - **Ausgabeschemas.** Die `description` eines OpenAI-Schemas steht vor der eigenen `description` des Schemas, und `strict: false` wird strikt bedient, weil Gemini `responseJsonSchema` immer durchsetzt; beides wird in `kaeso-adapted` mit dem Feld der App genannt.
 - **Abgelehnt** mit `Unsupported`: Refusal-Blöcke, für die Gemini keinen Part hat (wie bei Anthropic), Titel, Kontext oder Zitate eines Dokuments, mehr als fünf Stoppsequenzen (`GenerationConfig.stopSequences`), `parallel_tool_calls: false` sowie ein Aufwand oder Thinking-Modus, für den Gemini keine Einstellung hat.
 - **Strikte Tools.** Ein Function-Tool mit `strict: true` und automatischem `tool_choice` sendet `mode: VALIDATED`, das Aufrufe gegen ihre Schemas prüft.
@@ -174,7 +173,7 @@ Schema `GenerateContentResponse`.
 | `responseId` | `id` | Fehlt → Form `no_response_id`. |
 | `modelVersion` | `model` | Fehlt → Form `no_model_version`. |
 | `candidates[0].content.parts` | `blocks` | Wie in Anfragen. Bild-Parts werden zu `Block::Image`. |
-| Mehr als ein Candidate | `Unsupported` | |
+| Mehr als ein Candidate | `ProviderError`, da Kaeso jedes `candidateCount` über 1 in der Anfrage abgelehnt hat | |
 | `candidates[0].finishReason` | `stop` | Siehe [Finish-Gründe](#finish-gründe). |
 | Andere Schlüssel von `candidates[0]` (`index`, `finishMessage`, `safetyRatings`, `citationMetadata`, `groundingMetadata`, `urlContextMetadata`, `avgLogprobs`, `logprobsResult`, `tokenCount`) | Felder `candidate.*` | `citationMetadata` indiziert den ganzen Text des Candidates, was KPP-Zitate, die an einen Block gebunden sind, nicht ausdrücken können. |
 | `candidates[0].content.role` | — | Ein anderer oder kein Wert → Form `no_role`. |

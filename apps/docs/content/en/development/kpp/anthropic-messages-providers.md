@@ -17,7 +17,7 @@ Each provider in `PROVIDERS` names a `kaeso_codecs::anthropic_messages::Messages
 | `sampling_fixed_at(values)` | Refuses a `temperature` or `top_p` other than the value the provider always samples at (`FixedValue`, in thousandths); the value itself goes as written. | The provider ignores the field, so only its own value is honoured. |
 | `auto_tool_choice_only()` | Refuses a `tool_choice` other than `auto`, from every format. | The provider would choose tools itself whatever the app asked for. |
 | `with_video(media_types)` | Sends `Block::Video` as a `video` block; a base64 source of another media type is `Unsupported` (`` video media type `…` ``), and a file id or text source too. | Only a provider that documents the block gets it. |
-| `forced_tool_without_thinking()` | Sends a request whose `tool_choice` forces a tool (`any` or a named tool) with `thinking: {"type": "disabled"}`, and names the app's reasoning field in `kaeso-adapted`. | The provider refuses a forced tool while a model thinks, and its models think unless told not to. |
+| `forced_tool_without_thinking()` | Sends a request whose `tool_choice` forces a tool (`any` or a named tool) with `thinking: {"type": "disabled"}`, and names the app's reasoning field in `kaeso-adapted`; an effort of `none` from another format goes the same way. `any` with a server tool such as `deepseek_web_search` is sent as written, since DeepSeek takes it as `auto` while thinking. | The provider refuses a forced tool while a model thinks, and its models think unless told not to. |
 | `without_custom_tool_type()` | Sends an app's tools without `type: "custom"`, which the decoder keeps as form. | `custom` is what a tool without a `type` is; a provider that reads `type` only as a server tool's refuses it. |
 | `raw_predict()` | Sends a generation to `{base_path}/{model}:rawPredict` (`:streamRawPredict` when it streams) without `model`, and a token count to `{base_path}/count-tokens:rawPredict` with it; both bodies get `anthropic_version` `vertex-2023-10-16` unless the app sent its own. Errors in Google's shape are read as Gemini errors. | How Google's platform serves Claude ([use Claude](https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/partner-models/claude/use-claude), [count tokens](https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/partner-models/claude/count-tokens), Anthropic's SDK). Gemini Enterprise Agent Platform uses it and refuses `mcp_servers` and `container`, which [Anthropic lists](https://platform.claude.com/docs/en/build-with-claude/claude-models-on-google-cloud/google-managed) as unavailable there. |
 
@@ -63,7 +63,7 @@ Sources: AWS's [Messages guide](https://docs.aws.amazon.com/bedrock/latest/userg
 |---|---|---|
 | Messages at `/anthropic/v1/messages` on `bedrock-runtime.{region}.amazonaws.com` | `EgressCtx::api_root` | `/anthropic/v1` takes the place of `/v1`; the key goes as `x-api-key`, `model` stays in the body, and `anthropic-version` is `2023-06-01`, as AWS's `curl` example sends them. |
 | a refused key as 403 `permission_error` | `KppError` | `PermissionDenied` from the type; the gateway reads Bedrock's messages for a malformed, an unsigned and an unknown key as a refused key (`errors/recorded-*-key*`). |
-| `POST /v1/messages/count_tokens` | — | bedrock-runtime counts tokens only at `/model/{modelId}/count-tokens`, in its own format, and the Anthropic-shaped count is on bedrock-mantle only ([count tokens](https://docs.aws.amazon.com/bedrock/latest/userguide/count-tokens.html)), so Kaeso refuses token counts. |
+| `POST /v1/messages/count_tokens` | — | bedrock-runtime counts tokens only at `/model/{modelId}/count-tokens`, in its own format, and the Anthropic-shaped count is on bedrock-mantle only ([count tokens](https://docs.aws.amazon.com/bedrock/latest/userguide/count-tokens.html)), so Kaeso estimates token counts itself. |
 | streams | Anthropic's SSE | AWS doesn't describe the route's stream beyond the Anthropic SDK working against it. |
 
 ## Vercel
@@ -75,7 +75,7 @@ Sources: Vercel's [Anthropic Messages API](https://vercel.com/docs/ai-gateway/sd
 | `provider_metadata` on the reply | extras | Anthropic apps get it back unchanged. |
 | `thinking` blocks without `signature` | `Block::Reasoning` | Anthropic apps get them as Vercel sent them. |
 | errors in OpenAI's envelope | `KppError` | See [errors](anthropic-messages.md#errors). |
-| `POST /v1/messages/count_tokens` | — | Vercel counts exactly only for Claude models and estimates the rest, so Kaeso refuses token counts for every Vercel model. |
+| `POST /v1/messages/count_tokens` | — | Vercel counts exactly only for Claude models and estimates the rest, so Kaeso estimates token counts itself for every Vercel model. |
 
 ## Z.ai
 
@@ -85,7 +85,7 @@ Sources: Z.ai's [error codes](https://docs.z.ai/api-reference/api-code), [quick 
 |---|---|---|
 | Z.ai's numeric code as `error.type`, in OpenAI's envelope (`errors/recorded-invalid-api-key`) | `KppError` kind | Z.ai answers some codes with a status that means something else in Anthropic's table, such as 429 for an empty balance. The code wins: `1113`, `1309` and `1314` → `Billing`; `1211` → `NotFound`; `1220`, `1311` and `1315` → `PermissionDenied`; `1261` → `ContextTooLong`; `1301` → `ContentFiltered`; `1305` → `Overloaded`; `1000`, `1001`, `1003` and `1005` → `Authentication`. Other codes follow the status. |
 | `{"code", "msg", "success": false}`, also with HTTP 200 (`errors/list-invalid-api-key`) | `KppError` | Z.ai's platform envelope, which answers a path it doesn't serve, `GET /v1/models` among them, before it checks the key. `decode_models` and `decode_model` read it as an error whatever the status, so a model check with a wrong key reports the refused key. |
-| `POST /v1/messages/count_tokens` | — | Not documented; Kaeso refuses token counts for Z.ai models before sending anything. |
+| `POST /v1/messages/count_tokens` | — | Not documented; Kaeso estimates token counts for Z.ai models without sending anything. |
 ## MiniMax
 
 Sources: MiniMax's [Anthropic API compatibility](https://platform.minimax.io/docs/api-reference/text-anthropic-api) page and its [OpenAPI document](https://platform.minimax.io/docs/api-reference/text/api/openapi-chat-anthropic.json), read 2026-11-08, the examples from that document in `fixtures/anthropic_messages/providers/minimax/`, and one live error recorded with a made-up key. Messages is MiniMax's `generation` dialect, at `https://api.minimax.io/anthropic`, for `MiniMax-M3` and `MiniMax-M3.1-Flash`.
@@ -97,7 +97,7 @@ Sources: MiniMax's [Anthropic API compatibility](https://platform.minimax.io/doc
 | `service_tier` on `message_start` | extras | `streams/image-url-stream`. |
 | `video` content blocks (request), base64 or URL, also `mm_file://` | `Block::Video` | MiniMax's own block (`requests/video-url`); only MiniMax's profile sends it, Anthropic refuses it, and Gemini takes it as `inlineData` or a `fileData` URL. |
 | `thinking.type` `adaptive` and `output_config.effort` (request) | `reasoning` | MiniMax documents only `adaptive` and `disabled`; `MiniMax-M3.1-Flash` refuses `disabled` with 400, which reaches the app. |
-| `POST /v1/messages/count_tokens` | — | MiniMax's documented answer puts the counts under `usage` instead of at the top level, so Kaeso refuses token counts for MiniMax models before sending anything. |
+| `POST /v1/messages/count_tokens` | — | MiniMax's documented answer puts the counts under `usage` instead of at the top level, so Kaeso estimates token counts for MiniMax models without sending anything. |
 | `GET /v1/models`, `GET /v1/models/{model_id}` | `ModelList`, `ModelInfo` | Anthropic's shape (`models/list-documented`, `models/retrieve-documented`); a wrong key gets 401, so **Check availability** spots it. |
 | errors | `KppError` | Anthropic's shape with a `request_id` of MiniMax's own (`errors/recorded-invalid-api-key`). |
 
@@ -111,7 +111,7 @@ Sources: Fireworks' [Create a Message](https://docs.fireworks.ai/api-reference/a
 | `message_start` with zero usage, the counts on the one `message_delta` | `Usage` | As the compatibility page describes; `cache_creation_input_tokens` is always 0. |
 | `document` blocks, `image` blocks with a file source, server tools, a forced `tool_choice` or a prefill while thinking | sent | Fireworks answers 400, which reaches the app. |
 | errors in Anthropic's envelope with a `request_id` (`errors/recorded-invalid-api-key`) | `KppError` | An unknown model or path gets Fireworks' own `{"error": {"code": …}}` body instead, read like OpenAI's. |
-| `POST /v1/messages/count_tokens` | — | Fireworks answers 404, so Kaeso refuses token counts before sending anything. |
+| `POST /v1/messages/count_tokens` | — | Fireworks answers 404, so Kaeso estimates token counts without sending anything. |
 
 ## SambaNova
 

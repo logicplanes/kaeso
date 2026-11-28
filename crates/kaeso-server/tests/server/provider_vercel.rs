@@ -346,7 +346,7 @@ async fn a_refused_vercel_key_is_reported_as_the_providers_refusal() {
 }
 
 #[tokio::test]
-async fn token_counts_for_vercel_models_are_refused_before_anything_is_sent() {
+async fn token_counts_for_vercel_models_are_estimated_before_anything_is_sent() {
     for sends_as in [None, Some("anthropic_messages")] {
         let env = env_sending_as(sends_as).await;
         env.mock.clear();
@@ -361,13 +361,7 @@ async fn token_counts_for_vercel_models_are_refused_before_anything_is_sent() {
             })),
         )
         .await;
-        assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
-        let body = r.json();
-        assert_eq!(body["error"]["type"], "invalid_request_error");
-        assert_eq!(
-            body["error"]["message"],
-            format!("The model `{MODEL}` cannot count tokens.")
-        );
+        assert!(r.estimated_count() > 0);
         let r = call(
             &env,
             "/v1/responses/input_tokens",
@@ -376,11 +370,7 @@ async fn token_counts_for_vercel_models_are_refused_before_anything_is_sent() {
             Some(json!({ "model": MODEL, "input": "Hello" })),
         )
         .await;
-        assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
-        assert_eq!(
-            r.json()["error"]["message"],
-            format!("The model `{MODEL}` cannot count tokens.")
-        );
+        assert!(r.estimated_count() > 0);
         assert!(env.mock.received().is_empty(), "{sends_as:?}");
     }
 }

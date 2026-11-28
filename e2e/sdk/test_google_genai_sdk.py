@@ -153,6 +153,26 @@ def test_geminis_own_schemas_reach_other_formats_as_json_schema(gg: genai.Client
     }
 
 
+def get_weather(location: str, unit: str = "celsius") -> str:
+    """Weather for a place."""
+    return f"Sunny, 21 degrees {unit}"
+
+
+def test_automatic_function_calling_works_on_other_formats(gg: genai.Client, mock):
+    config = types.GenerateContentConfig(
+        tools=[get_weather], automatic_function_calling=types.AutomaticFunctionCallingConfig(maximum_remote_calls=2)
+    )
+    r = gg.models.generate_content(model="claude-haiku-4-5", contents="Weather? [mock:fixture=tools-single]", config=config)
+    first, second = mock.received()[-2:]
+    assert first["body"]["tools"][0]["input_schema"]["properties"]["location"] == {"type": "string"}
+    assert "response_json_schema" not in first["body"]["tools"][0]
+    result = second["body"]["messages"][-1]["content"][0]
+    assert result["type"] == "tool_result" and result["tool_use_id"] == "toolu_01VLLqZ1bfs3WXvVeYqZPtE7"
+    assert "Sunny, 21 degrees fahrenheit" in str(result["content"])
+    assert r.sdk_http_response.headers["kaeso-left-out"] == "tools[0].functionDeclarations[0].response_json_schema"
+    assert len(r.automatic_function_calling_history) == 3
+
+
 def test_tools_reach_other_formats(gg: genai.Client, mock):
     config = types.GenerateContentConfig(tools=[WEATHER])
     r = gg.models.generate_content(model="gpt-4o", contents="Weather? [mock:fixture=tools-function]", config=config)

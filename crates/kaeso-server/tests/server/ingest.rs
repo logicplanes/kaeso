@@ -1044,17 +1044,23 @@ async fn a_model_named_with_its_effort_is_one_model_and_a_request_without_timing
         &env,
         &key,
         json!([
-            { "id": "effort-1", "started_at": at, "provider": "anthropic", "model": "claude-haiku-4-5-high",
+            { "id": "effort-1", "started_at": at, "provider": "anthropic", "model": "claude-opus-4-6-high",
               "usage": { "input_tokens": 100, "output_tokens": 20 } },
             { "id": "effort-2", "started_at": at, "duration_ms": 900, "provider": "anthropic",
-              "model": "claude-haiku-4-5", "reasoning_effort": "Medium",
+              "model": "claude-opus-4-6", "reasoning_effort": "Medium",
               "usage": { "input_tokens": 100, "output_tokens": 20 } },
             { "id": "effort-3", "started_at": at, "duration_ms": 900, "provider": "anthropic",
-              "model": "made-up-model-high", "usage": { "input_tokens": 1, "output_tokens": 1 } }
+              "model": "made-up-model-high", "usage": { "input_tokens": 1, "output_tokens": 1 } },
+            { "id": "effort-4", "started_at": at, "duration_ms": 900, "provider": "anthropic",
+              "model": "claude-opus-4-6-xhigh", "usage": { "input_tokens": 1, "output_tokens": 1 } },
+            { "id": "effort-5", "started_at": at, "duration_ms": 900, "provider": "anthropic",
+              "model": "claude-haiku-4-5-high", "usage": { "input_tokens": 1, "output_tokens": 1 } },
+            { "id": "effort-6", "started_at": at, "duration_ms": 900, "provider": "anthropic",
+              "model": "claude-sonnet-4-6-thinking", "usage": { "input_tokens": 1, "output_tokens": 1 } }
         ]),
     )
     .await;
-    assert_eq!(answer["requests"], 3, "{answer}");
+    assert_eq!(answer["requests"], 6, "{answer}");
     flush(&env).await;
     let rows = logs(&env, "?source=observed").await;
     let by_effort = |e: Option<&str>, model: &str| {
@@ -1063,19 +1069,40 @@ async fn a_model_named_with_its_effort_is_one_model_and_a_request_without_timing
             .unwrap_or_else(|| panic!("{e:?} {model}: {rows:#?}"))
             .clone()
     };
-    let high = by_effort(Some("high"), "claude-haiku-4-5");
-    assert_eq!(high["requested_model"], "claude-haiku-4-5");
+    let high = by_effort(Some("high"), "claude-opus-4-6");
+    assert_eq!(high["requested_model"], "claude-opus-4-6");
     assert_eq!(high["cost_known"], true);
     assert_eq!(high["duration_ms"], Value::Null, "{high}");
     assert_eq!(
-        by_effort(Some("medium"), "claude-haiku-4-5")["duration_ms"],
+        by_effort(Some("medium"), "claude-opus-4-6")["duration_ms"],
         900
     );
+    let thinking = by_effort(None, "claude-sonnet-4-6");
     assert_eq!(
-        by_effort(None, "made-up-model-high")["requested_model"],
-        "made-up-model-high",
-        "a model neither the catalogue nor KPMR knows keeps its whole name"
+        (&thinking["requested_model"], &thinking["cost_known"]),
+        (&json!("claude-sonnet-4-6"), &json!(true)),
+        "thinking on names no level: {thinking}"
     );
+    for (model, why) in [
+        (
+            "made-up-model-high",
+            "neither the catalogue nor KPMR knows the model",
+        ),
+        (
+            "claude-opus-4-6-xhigh",
+            "KPMR lists no such level for the model",
+        ),
+        (
+            "claude-haiku-4-5-high",
+            "KPMR lists no levels for the model",
+        ),
+    ] {
+        assert_eq!(
+            by_effort(None, model)["requested_model"],
+            model,
+            "keeps its whole name: {why}"
+        );
+    }
 
     let timeline = env
         .app
@@ -1091,21 +1118,115 @@ async fn a_model_named_with_its_effort_is_one_model_and_a_request_without_timing
         .await;
     assert_eq!(timeline.status, StatusCode::OK, "{:?}", timeline.body);
     let buckets = timeline.body["data"].as_array().unwrap();
-    let haiku = buckets
+    let opus = buckets
         .iter()
         .find(|b| {
             b["key"]
                 .as_str()
-                .is_some_and(|k| k.ends_with("claude-haiku-4-5"))
+                .is_some_and(|k| k.ends_with("/claude-opus-4-6"))
         })
         .unwrap_or_else(|| panic!("{buckets:#?}"));
     assert_eq!(
-        (
-            haiku["requests"].as_u64(),
-            haiku["duration_max_ms"].as_u64()
-        ),
+        (opus["requests"].as_u64(), opus["duration_max_ms"].as_u64()),
         (Some(2), Some(900)),
-        "the untimed request leaves the latency alone: {haiku}"
+        "the untimed request leaves the latency alone: {opus}"
+    );
+}
+
+#[tokio::test]
+async fn antigravity_models_log_as_the_model_at_their_setting_and_usage_names_them() {
+    let env = env().await;
+    let (_, agy) = source(&env, "antigravity").await;
+    let at = now_text(&env);
+    let steps: Vec<Value> = [
+        "gemini-4-carbon-high",
+        "gemini-3.8-flash-low",
+        "claude-opus-4-6-thinking",
+        "gpt-oss-120b-medium",
+    ]
+    .iter()
+    .enumerate()
+    .map(|(i, model)| {
+        json!({ "step_index": i * 2, "type": "PLANNER_RESPONSE", "created_at": at,
+            "model": model, "input_tokens": 900, "cache_read_tokens": 100, "output_tokens": 30 })
+    })
+    .collect();
+    let (status, _, body) = post(
+        &env,
+        "/ingest/v1/antigravity",
+        Some(&agy),
+        "application/json",
+        false,
+        json!({ "hook": { "conversationId": "c-7" }, "steps": steps })
+            .to_string()
+            .into_bytes(),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{}", String::from_utf8_lossy(&body));
+    flush(&env).await;
+
+    let mut logged: Vec<(String, String, Value, Value)> = logs(&env, "?source=observed")
+        .await
+        .iter()
+        .map(|r| {
+            (
+                r["requested_model"].as_str().unwrap().to_owned(),
+                r["model"].as_str().unwrap().to_owned(),
+                r["reasoning_effort"].clone(),
+                r["cost_known"].clone(),
+            )
+        })
+        .collect();
+    logged.sort_by(|a, b| a.0.cmp(&b.0));
+    let row = |m: &str, e: Value, priced: bool| (m.to_owned(), m.to_owned(), e, json!(priced));
+    assert_eq!(
+        logged,
+        [
+            row("claude-opus-4-6", Value::Null, true),
+            row("gemini-3.8-flash", json!("low"), true),
+            row("gemini-4-carbon", json!("high"), true),
+            // Only resellers list it, so no price is its own, but it is still one model.
+            row("gpt-oss-120b", json!("medium"), false),
+        ]
+    );
+
+    let r = env
+        .app
+        .get(
+            &format!("{}/usage?group_by=model", base(&env)),
+            &env.owner.cookie,
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    let names: Vec<(&str, &str)> = r.body["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|u| {
+            let key = u["key"].as_str().unwrap();
+            (
+                key.rsplit('/').next().unwrap(),
+                u["name"].as_str().unwrap_or(key),
+            )
+        })
+        .collect();
+    for (model, name) in [
+        ("claude-opus-4-6", "Claude Opus 4.6"),
+        ("gemini-3.8-flash", "Gemini 3.8 Flash"),
+        ("gemini-4-carbon", "Gemini 4 Carbon"),
+        ("gpt-oss-120b", "GPT OSS 120B"),
+    ] {
+        assert!(names.contains(&(model, name)), "{model}: {names:?}");
+    }
+    let providers: Vec<&str> = r.body["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter_map(|u| u["key"].as_str()?.split_once('/').map(|(p, _)| p))
+        .collect();
+    assert!(
+        providers.contains(&"anthropic") && providers.contains(&"google"),
+        "Claude is Anthropic's model even from a client set up for Google: {providers:?}"
     );
 }
 
