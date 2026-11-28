@@ -203,15 +203,28 @@ fn a_provider_without_the_custom_tool_type_gets_an_apps_tools_without_it() {
 
 #[test]
 fn a_null_thread_reaches_only_anthropic() {
-    let (body, left_out) = sent(request(json!({ "thread": null }))).unwrap();
-    assert!(body.get("thread").is_none(), "{body}");
-    assert_eq!(left_out, ["thread"]);
-    let (body, left_out) = sent_with(
+    let req = crate::dispatch::decode_request(
         A,
-        request(json!({ "thread": null })),
-        MessagesProfile::ANTHROPIC,
+        RequestKind::Generate,
+        &std::fs::read(
+            crate::test_support::fixtures_dir()
+                .join("anthropic_messages/requests/thread-null.json"),
+        )
+        .unwrap(),
+        &HeaderList::new(),
     )
     .unwrap();
-    assert_eq!(body.get("thread"), Some(&Value::Null), "{body}");
-    assert!(left_out.is_empty());
+    for (provider, profile, kept) in [
+        ("anthropic", MessagesProfile::ANTHROPIC, true),
+        ("my-proxy", MessagesProfile::ANTHROPIC, false),
+        ("deepseek", MessagesProfile::compatible("DeepSeek"), false),
+    ] {
+        let mut ctx = EgressCtx::new(&req)
+            .with_provider(provider)
+            .with_messages_profile(profile);
+        let out = AnthropicMessages::encode_request(&req, &mut ctx).unwrap();
+        let body: Value = serde_json::from_slice(&out.body).unwrap();
+        assert_eq!(body.get("thread").is_some(), kept, "{provider}: {body}");
+        assert_eq!(ctx.left_out.is_empty(), kept, "{provider}");
+    }
 }

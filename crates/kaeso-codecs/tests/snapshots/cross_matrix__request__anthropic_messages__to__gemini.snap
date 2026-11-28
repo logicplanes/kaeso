@@ -2650,6 +2650,24 @@ expression: outcomes
     },
     "path": "/v1beta/models/claude-sonnet-4-6:generateContent"
   },
+  "thread-null": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is the capital of France?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 256
+      }
+    },
+    "path": "/v1beta/models/claude-sonnet-4-6:generateContent"
+  },
   "tool-choice-any-no-parallel": {
     "message": "`parallel_tool_calls: false` is not supported by Gemini API. Gemini can't be told to call one function at a time; remove `parallel_tool_calls`.",
     "param": "parallel_tool_calls",
