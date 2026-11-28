@@ -310,3 +310,77 @@ async fn a_forced_tool_reaches_deepseek_with_thinking_off_from_every_format() {
     assert_eq!(r.header("kaeso-adapted"), Some("thinking"));
     assert_eq!(deepseek.last().unwrap().json()["reasoning_effort"], "none");
 }
+
+#[tokio::test]
+async fn a_json_schema_reaches_deepseek_as_json_mode_with_the_schema_in_the_system_prompt() {
+    let (env, deepseek) = env_with_deepseek().await;
+    let schema = json!({
+        "type": "object",
+        "properties": {"name": {"type": "string"}, "age": {"type": "integer"}},
+        "required": ["name", "age"],
+        "additionalProperties": false
+    });
+    let instructed = format!(
+        "Answer with one JSON object that matches this JSON schema, and nothing else: {schema}"
+    );
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(json!({
+            "model": FLASH,
+            "messages": [
+                { "role": "system", "content": "You name pets." },
+                { "role": "user", "content": "A cat? [mock:fixture=providers/deepseek/recorded-json-object-system]" }
+            ],
+            "response_format": {"type": "json_schema", "json_schema": {"name": "pet", "strict": true, "schema": schema}}
+        })),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.header("kaeso-adapted"), Some("response_format"));
+    let sent = deepseek
+        .last()
+        .expect("the request reached DeepSeek")
+        .json();
+    assert_eq!(sent["response_format"], json!({"type": "json_object"}));
+    let system: Vec<String> = sent["messages"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|m| m["role"] == "system")
+        .flat_map(|m| match &m["content"] {
+            Value::String(t) => vec![t.clone()],
+            parts => parts
+                .as_array()
+                .into_iter()
+                .flatten()
+                .filter_map(|p| p["text"].as_str().map(str::to_owned))
+                .collect(),
+        })
+        .collect();
+    assert_eq!(
+        system,
+        ["You name pets.".to_owned(), instructed.clone()],
+        "{sent}"
+    );
+
+    let r = call(
+        &env,
+        "/v1/responses",
+        Some(&env.key),
+        false,
+        Some(json!({
+            "model": FLASH,
+            "input": "A cat? [mock:fixture=providers/deepseek/recorded-json-object-system]",
+            "text": {"format": {"type": "json_schema", "name": "pet", "schema": schema}}
+        })),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.header("kaeso-adapted"), Some("text.format"));
+    let sent = deepseek.last().unwrap().json();
+    assert_eq!(sent["response_format"], json!({"type": "json_object"}));
+    assert_eq!(sent["messages"][0]["content"], instructed);
+}

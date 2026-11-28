@@ -1176,7 +1176,8 @@ pub const PROVIDERS: &[Provider] = &[
             .reasoning_fields(&["reasoning_content"])
             .tool_schema_root(ToolSchemaRoot::TypedObjectUnions)
             .tool_patterns(ToolPatterns::Compiled)
-            .forced_tool_without_thinking(),
+            .forced_tool_without_thinking()
+            .json_mode(),
         responses: ResponsesProfile::compatible("DeepSeek"),
         messages: MessagesProfile::compatible("DeepSeek")
             .refusing(&["top_k", "container", "mcp_servers"])

@@ -1,6 +1,6 @@
 use kaeso_kpp::{
-    DialectId, GenerateRequest, Modality, ModelFeature, ModelInfo, ModelPrices, ReasoningEffort,
-    ReasoningMode, Request, ToolChoice,
+    Block, DialectId, GenerateRequest, Modality, ModelFeature, ModelInfo, ModelPrices, OutputSpec,
+    ReasoningEffort, ReasoningMode, Request, ToolChoice,
 };
 
 use kaeso_codecs::cross::reasoning_map;
@@ -47,6 +47,7 @@ fn app_param(ingress: DialectId, field: &'static str) -> &'static str {
         ("effort", _) => "reasoning_effort",
         ("format", A) => "output_config.format",
         ("format", R) => "text.format",
+        ("format", G) => "generationConfig.responseJsonSchema",
         ("format", _) => "response_format",
         ("messages", R) => "input",
         ("messages", G) => "contents",
@@ -164,6 +165,7 @@ pub fn prepare(
             adapted.extend(lowest_effort_for_off(g, ingress, eff));
             adapted.extend(fit_end_user(g, ingress, eff));
             adapted.extend(fit_output_limit(g, ingress, eff));
+            adapted.extend(schema_by_instruction(g, ingress, eff));
             check_generation(g, ingress, eff)?;
             let dialect = eff.dialect;
             if dialect == DialectId::AnthropicMessages && g.sampling.max_output_tokens.is_none() {
@@ -883,6 +885,37 @@ pub struct ResponsesFit {
 // while apps in other formats send all three. Kaeso ends the reply itself at the first stop
 // sequence or at the app's limit, as it does for a ChatGPT plan, and leaves out `seed`, which
 // OpenAI only ever honoured on a best-effort basis.
+// A model without structured output can't enforce a schema, but where its provider has a JSON
+// mode (DeepSeek's: https://api-docs.deepseek.com/guides/json_mode) the reply is at least one
+// JSON object, and the schema is followed as instructed. No reply is checked against it.
+fn schema_by_instruction(
+    g: &mut GenerateRequest,
+    ingress: DialectId,
+    eff: &Effective,
+) -> Option<String> {
+    let OutputSpec::JsonSchema(spec) = &g.output else {
+        return None;
+    };
+    if eff.fields.structured_output == Some(true)
+        || eff.dialect != DialectId::OpenAiChat
+        || !eff.provider.chat().request.json_mode
+    {
+        return None;
+    }
+    let purpose = spec
+        .description
+        .as_deref()
+        .map(|d| format!(" It is for: {d}"))
+        .unwrap_or_default();
+    let sentence = format!(
+        "Answer with one JSON object that matches this JSON schema, and nothing else: {}{purpose}",
+        spec.schema.get()
+    );
+    g.output = OutputSpec::JsonObject;
+    g.system.push(Block::text(sentence));
+    Some(app_param(ingress, "format").to_owned())
+}
+
 pub fn fit_responses(
     g: &mut GenerateRequest,
     ingress: DialectId,

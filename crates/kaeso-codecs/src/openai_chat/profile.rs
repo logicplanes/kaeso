@@ -72,6 +72,10 @@ pub struct RequestProfile {
     /// Whether a model of the provider can't think while a tool is forced, as DeepSeek's
     /// models can't; Kaeso then sends such a request with thinking off.
     pub forced_tool_without_thinking: bool,
+    /// Whether the provider has a JSON mode, `response_format: {"type": "json_object"}`, for
+    /// models without structured output, as DeepSeek has; the gateway then serves a JSON schema
+    /// for such a model as JSON mode plus the schema in the system prompt.
+    pub json_mode: bool,
     /// Keys the encoder writes into a provider's own option objects when the request doesn't
     /// set them, such as Venice's `venice_parameters.include_venice_system_prompt: false`.
     pub option_defaults: &'static [OptionDefault],
@@ -169,6 +173,7 @@ impl RequestProfile {
         stream_options: true,
         separate_reasoning: false,
         forced_tool_without_thinking: false,
+        json_mode: false,
         option_defaults: &[],
     };
 }
@@ -418,6 +423,14 @@ impl ChatProfile {
     #[must_use]
     pub const fn forced_tool_without_thinking(mut self) -> Self {
         self.request.forced_tool_without_thinking = true;
+        self
+    }
+
+    /// The provider has a JSON mode for models without structured output
+    /// ([`RequestProfile::json_mode`]).
+    #[must_use]
+    pub const fn json_mode(mut self) -> Self {
+        self.request.json_mode = true;
         self
     }
 

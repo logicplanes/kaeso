@@ -363,6 +363,7 @@ OpenAI Chat 编码器还会在响应一开始就发送它的角色 chunk，而�
 - 从 Anthropic 发往 OpenAI 的 schema 会得到名称 `response`，因为 OpenAI 要求必须有名称。
 - Gemini 以 `responseJsonSchema` 接收 schema，以单独的 `responseMimeType: "application/json"` 接收 `json_object`；与 Anthropic 一样，schema 的 `name` 会被丢弃，其 `description` 放在 schema 自身的描述之前，`strict: false` 按严格处理。
 - Amazon Bedrock Converse 以同样方式接收 `json_object`，即系统提示词中的一句话；schema 为 `Unsupported`。
+- 目录条目不支持结构化输出的模型（例如 `deepseek-flash`）无法强制执行 schema。如果其服务商有 JSON 模式（[`json_mode()`](openai-chat-providers.md#服务商配置)），网关会发送 `response_format: {"type": "json_object"}`，并在系统提示词末尾加一句话：“Answer with one JSON object that matches this JSON schema, and nothing else: …”，后接 schema 的 `description`。`kaeso-adapted` 注明应用的字段。回复是 JSON，schema 只是通过指令要求，而非强制，Kaeso 也不会根据它检查回复。其他情况下这类 schema 会被拒绝。
 
 ## 有状态的 Responses 功能
 

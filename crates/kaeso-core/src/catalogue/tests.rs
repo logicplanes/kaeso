@@ -832,6 +832,52 @@ fn check(g: GenerateRequest, ingress: DialectId, e: &Effective) -> Result<Reques
 }
 
 #[test]
+fn a_schema_for_a_model_without_structured_output_goes_as_json_mode_where_its_provider_has_one() {
+    let deepseek = eff(&entry("deepseek", "deepseek-flash"));
+    let schema = r#"{"type":"object","properties":{"name":{"type":"string"}},"required":["name"]}"#;
+    let mut g = user(vec![Block::text("A cat?")]);
+    let mut spec = JsonSchemaSpec::new(RawJson::from_string(schema.into()).unwrap());
+    spec.description = Some("A pet.".into());
+    g.output = OutputSpec::JsonSchema(spec);
+    for (ingress, field) in [
+        (DialectId::OpenAiChat, "response_format"),
+        (DialectId::OpenAiResponses, "text.format"),
+        (DialectId::Gemini, "generationConfig.responseJsonSchema"),
+    ] {
+        let mut req = Request::Generate(g.clone());
+        let plan = prepare(&mut req, ingress, &deepseek).unwrap();
+        assert_eq!(plan.adapted, [field], "{ingress}");
+        let Request::Generate(sent) = &req else {
+            panic!()
+        };
+        assert_eq!(sent.output, OutputSpec::JsonObject);
+        let Some(Block::Text(t)) = sent.system.last() else {
+            panic!("{:?}", sent.system)
+        };
+        assert_eq!(
+            t.text,
+            format!(
+                "Answer with one JSON object that matches this JSON schema, and nothing else: {schema} It is for: A pet."
+            )
+        );
+    }
+
+    let mut native = entry("deepseek", "deepseek-flash");
+    native.overrides.egress_dialect = Some(DialectId::AnthropicMessages);
+    let err = check(g.clone(), DialectId::OpenAiChat, &eff(&native)).unwrap_err();
+    assert!(
+        err.contains("structured output"),
+        "DeepSeek's Messages API has no JSON mode: {err}"
+    );
+    let gpt35 = eff(&entry("openai", "gpt-3.5-turbo"));
+    let err = check(g, DialectId::OpenAiChat, &gpt35).unwrap_err();
+    assert!(
+        err.contains("structured output"),
+        "no JSON mode in the profile: {err}"
+    );
+}
+
+#[test]
 fn capabilities_are_checked_before_sending() {
     let gpt35 = eff(&entry("openai", "gpt-3.5-turbo"));
     let gpt4o = eff(&entry("openai", "gpt-4o"));
