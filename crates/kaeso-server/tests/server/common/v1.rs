@@ -359,3 +359,34 @@ pub async fn read_until(body: &mut Body, last: &str) -> String {
     }
     seen
 }
+
+pub async fn stored_responses(env: &Env, on: bool) {
+    let org = format!("/orgs/{}/stored-responses", env.owner.org_id);
+    if on {
+        let r = env
+            .app
+            .call(
+                axum::http::Method::PATCH,
+                &org,
+                Some(json!({ "allowed": true })),
+                Some(&env.owner.cookie),
+            )
+            .await;
+        assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    }
+    let project = format!(
+        "/orgs/{}/projects/{}/stored-responses",
+        env.owner.org_id, env.project
+    );
+    let r = env
+        .app
+        .call(
+            axum::http::Method::PATCH,
+            &project,
+            Some(json!({ "enabled": on })),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    assert_eq!(r.body["effective"], on);
+}

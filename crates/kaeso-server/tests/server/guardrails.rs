@@ -1007,3 +1007,57 @@ async fn a_project_admin_sees_the_project_guardrails_but_cannot_change_them() {
         .await;
     assert_eq!(r.status, StatusCode::FORBIDDEN, "{:?}", r.body);
 }
+
+#[tokio::test]
+async fn text_a_responses_app_points_back_to_is_checked_like_any_prompt() {
+    let env = env().await;
+    common::v1::stored_responses(&env, true).await;
+    let words = MockGuardrail::start().await;
+    guard(&env, "Words", &words.url("/check"), json!({})).await;
+    let tools = json!([{ "type": "function", "name": "get_weather", "parameters": { "type": "object", "properties": { "city": { "type": "string" } } } }]);
+    let first = call(
+        &env,
+        "/v1/responses",
+        Some(&env.key),
+        false,
+        Some(json!({
+            "model": "claude-haiku-4-5",
+            "tools": tools,
+            "input": "Weather in Paris? [mock:fixture=tools-single]",
+        })),
+    )
+    .await;
+    assert_eq!(first.status, StatusCode::OK, "{}", first.text());
+    let output = first.json()["output"].as_array().unwrap().clone();
+    let message = output.iter().find(|i| i["type"] == "message").unwrap()["id"].clone();
+    let call_id = output
+        .iter()
+        .find(|i| i["type"] == "function_call")
+        .unwrap()["call_id"]
+        .clone();
+    let second = call(
+        &env,
+        "/v1/responses",
+        Some(&env.key),
+        false,
+        Some(json!({
+            "model": "claude-haiku-4-5",
+            "tools": tools,
+            "input": [
+                { "role": "user", "content": "Weather in Paris?" },
+                { "type": "item_reference", "id": message },
+                { "type": "function_call", "call_id": call_id, "name": "get_weather", "arguments": "{\"city\":\"Paris\"}" },
+                { "type": "function_call_output", "call_id": call_id, "output": "18 °C" },
+            ],
+        })),
+    )
+    .await;
+    assert_eq!(second.status, StatusCode::OK, "{}", second.text());
+    let asked = words.seen().last().unwrap().body.clone();
+    assert!(
+        asked["messages"]
+            .to_string()
+            .contains("I'll check the current weather in San Francisco for you."),
+        "the guardrail saw the text put back: {asked}"
+    );
+}

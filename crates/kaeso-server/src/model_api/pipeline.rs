@@ -7,7 +7,7 @@ use axum::http::{HeaderMap, HeaderValue, StatusCode, header};
 use axum::response::Response;
 use bytes::Bytes;
 use futures::StreamExt;
-use kaeso_codecs::continuity::{every_reasoning_for_tool_calls, reasoning_for_tool_calls};
+use kaeso_codecs::continuity::Unresolved;
 use kaeso_codecs::gemini::GeminiAction;
 use kaeso_codecs::{EgressCtx, EncodeCtx, HeaderList, dispatch};
 use kaeso_core::catalogue::Entry;
@@ -925,14 +925,31 @@ pub(crate) fn refused_key(err: &KppError) -> Option<KppError> {
     Some(error(ErrorKind::ProviderError, 502, message).with_retry(kaeso_kpp::Retry::Futile))
 }
 
-// An `item_reference` to reasoning Kaeso no longer keeps for this key: kept for
-// `continuity.reasoning_ttl`, or never, for another key or with continuity off.
-fn unkept_reasoning(id: &str) -> KppError {
+// An `item_reference` to reasoning or text Kaeso no longer keeps for this key: kept for
+// `continuity.reasoning_ttl`, or never, for another key or with continuity off. Of the messages,
+// Kaeso keeps only the text right before a tool call.
+fn unkept(unresolved: &Unresolved) -> KppError {
+    let message = match unresolved {
+        Unresolved::Reasoning(id) => format!(
+            "Kaeso no longer keeps the reasoning `{id}` points to; send the items themselves in `input`, as SDKs do with `store: false`."
+        ),
+        Unresolved::Message(id) => format!(
+            "Kaeso no longer keeps the text `{id}` points to; send the items themselves in `input`, as SDKs do with `store: false`."
+        ),
+        Unresolved::Conversation(id) => format!(
+            "Kaeso keeps only the text before a tool call, not the message `{id}` points to; send the items themselves in `input`, as SDKs do with `store: false`."
+        ),
+        _ => "`item_reference` items point to state Kaeso does not keep; send the items themselves in `input`, as SDKs do with `store: false`.".to_owned(),
+    };
+    error(ErrorKind::InvalidRequest, 400, message).with_param("input")
+}
+
+fn text_not_kept(id: &str) -> KppError {
     error(
         ErrorKind::InvalidRequest,
         400,
         format!(
-            "Kaeso no longer keeps the reasoning `{id}` points to; send the items themselves in `input`, as SDKs do with `store: false`."
+            "Kaeso keeps the text `{id}` points to only where the project allows responses stored at the provider; send the items themselves in `input`, as SDKs do with `store: false`."
         ),
     )
     .with_param("input")
@@ -1451,6 +1468,29 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
             Stage::ModelAccess(req.model().to_owned()),
         ));
     }
+    // Text a Responses app points to goes back in first, so the guardrails check it as any other.
+    let mut restored_text = 0;
+    if ingress == DialectId::OpenAiResponses
+        && let Request::Generate(g) | Request::CountTokens(g) = &mut req
+        && kaeso_codecs::openai_responses::has_message_reference(g)
+    {
+        let keeps_text =
+            crate::services::response_cache::stores_responses(state, caller.project_id).await;
+        let resolved = if keeps_text {
+            continuity::resolve_messages(state, caller.key_id, g).await
+        } else {
+            kaeso_codecs::continuity::resolve_message_references(g, &[])
+        };
+        restored_text = resolved
+            .map_err(|u| {
+                let e = match &u {
+                    Unresolved::Message(id) if !keeps_text => text_not_kept(id),
+                    _ => unkept(&u),
+                };
+                Failure::new(e, Stage::Request)
+            })?
+            .restored_bytes;
+    }
     let guards = Box::pin(guard_request(
         state,
         rec,
@@ -1474,6 +1514,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         logged,
         timeout,
         guards: guards.as_ref(),
+        restored_text,
     };
     match target {
         Resolved::Model(entry, _) => {
@@ -1629,6 +1670,8 @@ struct Shared<'a> {
     logged: u64,
     timeout: Option<u32>,
     guards: Option<&'a Guards>,
+    // The bytes of text put back for references before the guardrails, which the provider bills.
+    restored_text: usize,
 }
 
 // A project's guardrails and what they are told about the request, for the reply phase.
@@ -2387,7 +2430,7 @@ async fn attempt(
             provider: &eff.provider,
             model: &eff.model_id,
             credential: &credential,
-            resolves_reasoning: true,
+            resolves_references: true,
         },
         &req,
     )
@@ -2448,18 +2491,26 @@ async fn attempt(
     let streams_upstream = chatgpt.is_some() || output_cap.is_some();
 
     // Whether to keep reasoning follows what the app sent: Kaeso itself may send `store: false`.
-    let carry = continuity::carry(state, caller.key_id, ingress, plan.dialect, &app_req)
-        .filter(|_| kind == RequestKind::Generate);
+    let keeps_text = ingress == DialectId::OpenAiResponses
+        && crate::services::response_cache::stores_responses(state, caller.project_id).await;
+    let carry = continuity::carry(
+        state,
+        caller.key_id,
+        (ingress, plan.dialect),
+        &app_req,
+        keeps_text,
+    )
+    .filter(|_| kind == RequestKind::Generate);
     if let Some(c) = carry.filter(|c| !c.every)
         && let Request::Generate(g) = &mut req
     {
         continuity::restore(state, c.key_id, g).await;
     }
     // Reasoning put back is input the provider bills, so limits see it before admitting.
-    let mut restored_tokens = 0;
+    let mut restored_bytes = sh.restored_text;
     if ingress == DialectId::OpenAiResponses
         && let Request::Generate(g) | Request::CountTokens(g) = &mut req
-        && kaeso_codecs::openai_responses::has_reasoning_reference(g)
+        && kaeso_codecs::openai_responses::has_kept_reference(g)
     {
         // A Responses provider that keeps nothing of this request can't look reasoning up by id.
         // A count stands for the generation it counts, which the provider would keep alike.
@@ -2468,14 +2519,14 @@ async fn attempt(
         let stateless = plan.dialect == DialectId::OpenAiResponses && !kept_there;
         let resolved = continuity::resolve_references(state, caller.key_id, g, stateless)
             .await
-            .map_err(|id| fail(Stage::Request)(unkept_reasoning(&id)))?;
+            .map_err(|u| fail(Stage::Request)(unkept(&u)))?;
         if resolved.left_out > 0 {
             plan.left_out.push("item_reference".to_owned());
         }
-        restored_tokens = kaeso_core::estimate::tokens_of_bytes(
-            u64::try_from(resolved.restored_bytes).unwrap_or(u64::MAX),
-        );
+        restored_bytes = restored_bytes.saturating_add(resolved.restored_bytes);
     }
+    let restored_tokens =
+        kaeso_core::estimate::tokens_of_bytes(u64::try_from(restored_bytes).unwrap_or(u64::MAX));
 
     let admission = Admission {
         request_id: rec.outcome().request_id,
@@ -3850,12 +3901,7 @@ async fn answer_with(
     if let Some(c) = carry
         && let Reply::Generate(r) = &reply
     {
-        let kept = if c.every {
-            every_reasoning_for_tool_calls(&r.blocks)
-        } else {
-            reasoning_for_tool_calls(&r.blocks)
-        };
-        continuity::keep(state, c.key_id, &kept).await;
+        continuity::keep(state, c.key_id, &c.of_reply(&r.blocks)).await;
     }
     let reply_kind = reply.kind();
     // Speech is audio and a transcript may be plain text or events: the app's codec names the
