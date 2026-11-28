@@ -42,6 +42,8 @@ Every live recording used a free model (an id ending in `:free`) and is listed w
 | `errors/recorded-invalid-messages.json` | 400 for an empty `messages` array | live |
 | `errors/retrieve-not-found.json` | 404 from `GET /api/v1/models/{model}`, which OpenRouter answers for every model, so Kaeso's model check falls back to the listing | live, `curl` without a key, 2026-10-19 |
 | `models/list-recorded.json` | `GET /api/v1/models`: `data`, `total_count` and `links`, no `object`; each model without `object` and `owned_by`, with OpenRouter's own fields. The first 2 of 471 models and one `:free` model are kept, unchanged | live, `curl` without a key, 2026-10-19 |
+| `models/list-recorded-prices.json` | `GET /api/v1/models`, one model whose `pricing` has `input_cache_read`, `input_cache_write` and `internal_reasoning` next to `prompt` and `completion`, kept unchanged with the list's other fields | live, `curl` without a key, 2026-11-27 |
+| `models/list-recorded-output-modalities.json` | `GET /api/v1/models?output_modalities=all`, which lists models of every output modality: the first model whose only output modality is `embeddings`, `rerank` and `decisions`, kept unchanged with the list's other fields | live, `curl` without a key, 2026-11-27 |
 
 ## What KPP does with OpenRouter's own fields
 

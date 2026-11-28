@@ -300,6 +300,46 @@ async fn token_counting_embeddings_and_listings() {
     assert_eq!(r.json()["owned_by"], "openai");
     let r = call(&env, "/v1/models/gpt-5", Some(&env.key), false, None).await;
     assert_eq!(r.status, StatusCode::NOT_FOUND);
+
+    // OpenAI apps get each model described in OpenRouter's fields, from the catalogue.
+    let r = call(
+        &env,
+        "/v1/models/claude-haiku-4-5",
+        Some(&env.key),
+        false,
+        None,
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let m = r.json();
+    assert_eq!(m["name"], "Claude Haiku 4.5 (latest)");
+    assert_eq!(m["context_length"], 200_000);
+    assert_eq!(
+        m["top_provider"],
+        json!({"context_length": 200_000, "max_completion_tokens": 64_000})
+    );
+    assert_eq!(
+        m["architecture"],
+        json!({"modality": "text+image+pdf->text", "input_modalities": ["text", "image", "pdf"],
+               "output_modalities": ["text"]})
+    );
+    assert_eq!(
+        (&m["pricing"]["prompt"], &m["pricing"]["completion"]),
+        (&json!("0.000001"), &json!("0.000005"))
+    );
+    let params = m["supported_parameters"].as_array().unwrap();
+    for p in ["tools", "reasoning", "structured_outputs", "temperature"] {
+        assert!(params.contains(&json!(p)), "{p}: {params:?}");
+    }
+    let r = call(&env, "/v1/models", Some(&env.key), false, None).await;
+    let listed = r.json()["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|e| e["id"] == "claude-haiku-4-5")
+        .cloned()
+        .unwrap();
+    assert_eq!(listed, m, "the list and the model say the same");
 }
 
 #[tokio::test]
