@@ -401,7 +401,12 @@ fn comments_and_unknown_fields_survive() {
         panic!()
     };
     assert!(start.extras.fields.contains_key("x_future_field"));
-    assert!(events.iter().any(|e| matches!(e, StreamEvent::BlockDelta(d) if d.extras.fields.contains_key("delta.x_future_delta"))));
+    // The chunk that opens the text block carries its fields on the block's start.
+    assert!(events.iter().any(|e| match e {
+        StreamEvent::BlockStart(s) => s.extras.fields.contains_key("delta.x_future_delta"),
+        StreamEvent::BlockDelta(d) => d.extras.fields.contains_key("delta.x_future_delta"),
+        _ => false,
+    }));
     assert!(events.iter().any(|e| matches!(e, StreamEvent::BlockDelta(d) if d.extras.fields.contains_key("choice.x_future_choice_field"))));
     let events = decode_whole(&fixture("logprobs-sdk-2024"));
     assert!(events.iter().any(|e| matches!(e, StreamEvent::BlockDelta(d) if d.extras.fields.contains_key("choice.logprobs"))));
