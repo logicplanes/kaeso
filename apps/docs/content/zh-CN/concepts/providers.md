@@ -98,7 +98,7 @@ flowchart TD
   - 每张图片和每个 PDF 页面计 1,600 个 Token。页面位于压缩对象流中的 PDF 每 50 kB 计一页。
   - 每条消息和每个工具另加 4 个 Token。服务商为工具自行添加的指令不在估算之内，因此带工具的请求在服务商处可能计数更多。
 
-  响应带有 `kaeso-adapted: count_estimated`。Kaeso 不读取音频或视频的时长，因此含有音频或视频的请求返回 400：“The model `…` cannot count tokens, and Kaeso can't estimate audio or video.”
+  响应带有 `kaeso-adapted: count_estimated`。其 `kaeso-left-out` 列出 Kaeso 在翻译前省略的字段，不包括翻译到服务商格式时省略的字段（例如[中性值](../development/kpp/sampling.md#中性值)）。Kaeso 不读取音频或视频的时长，因此含有音频或视频的请求返回 400：“The model `…` cannot count tokens, and Kaeso can't estimate audio or video.”
 - **嵌入。** 只有格式中包含 Embeddings 的服务商才提供嵌入模型，由 `/v1/embeddings` 调用。聊天格式不能调用嵌入模型，聊天模型也不生成嵌入。
 - **重排序。** KPMR 将其类型标为 `reranking` 的重排序模型只服务 `/v1/rerank`，并且只在 Kaeso 调用其重排序 API 的服务商上可用（[重排序 API](../api/rerank.md)）。
 - **图片、音频、视频和音乐。** 只有提供这些功能的服务商才能使用媒体 API，对其他服务商的请求，Kaeso 会在发送之前拒绝。[各服务商的 API](provider-apis.md) 列出了每个服务商支持的内容。

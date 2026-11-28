@@ -1058,6 +1058,14 @@ where
     })
 }
 
+fn refused(u: capability::Unsupported) -> KppError {
+    let mut e = KppError::unsupported(u.capability, u.message).with_status(400);
+    if let Some(p) = u.param {
+        e = e.with_param(p);
+    }
+    e
+}
+
 // A model the key may not use answers like one that doesn't exist, so a restricted key
 // can't list the project's catalogue by trying names.
 fn no_such_model(model: &str) -> KppError {
@@ -2257,13 +2265,8 @@ async fn attempt(
             eff.fields.clone()
         });
     }
-    let mut plan = capability::prepare(&mut req, ingress, &eff).map_err(|u| {
-        let mut e = KppError::unsupported(u.capability, u.message).with_status(400);
-        if let Some(p) = u.param {
-            e = e.with_param(p);
-        }
-        fail(Stage::Capability)(e)
-    })?;
+    let mut plan = capability::prepare(&mut req, ingress, &eff)
+        .map_err(|u| fail(Stage::Capability)(refused(u)))?;
     rec.outcome().egress = Some(plan.dialect);
     if sh.generation && plan.dialect != DialectId::ElevenLabs {
         return Err(fail(Stage::Capability)(super::generations::not_elevenlabs(
@@ -2523,45 +2526,43 @@ async fn attempt(
         rec.found_limits(&left);
     }
 
-    // The model's provider can't count tokens: Kaeso answers with its estimate, named in
-    // `kaeso-adapted`, and sends nothing, after the checks a request that's sent gets.
-    if let Some(tokens) = plan.estimated_count {
+    if plan.estimates_count
+        && let Request::CountTokens(g) = &req
+    {
         if entry.is_unavailable() {
             return Err(fail(Stage::Unserved(eff.model_id.clone()))(unserved(&eff)));
         }
         if response_cache::directive(headers).only_if_cached {
             return Err(fail(Stage::NotCached)(not_cached()));
         }
-        if let Request::CountTokens(g) = &req {
-            let ectx = egress_ctx(
-                &app_req,
-                &eff.provider,
-                plan.dialect,
-                &eff.model_id,
-                ModelFlags::of(&plan),
+        let ectx = egress_ctx(
+            &app_req,
+            &eff.provider,
+            plan.dialect,
+            &eff.model_id,
+            ModelFlags::of(&plan),
+        );
+        let mut generate = g.clone();
+        // Anthropic's format needs an output limit, and OpenAI Responses refuses one below 16.
+        generate.sampling.max_output_tokens.get_or_insert(16);
+        if plan.dialect == DialectId::OpenAiResponses {
+            let fit = kaeso_core::catalogue::capability::fit_responses(
+                &mut generate,
+                ingress,
+                &eff,
+                None,
             );
-            // Checked as the generation it counts would be sent: with an output limit, which
-            // some formats need, and fitted to OpenAI Responses as a generation is.
-            let mut generate = g.clone();
-            generate.sampling.max_output_tokens.get_or_insert(16);
-            // What a generation would leave out, such as `seed`, the count names too.
-            if plan.dialect == DialectId::OpenAiResponses {
-                let fit = kaeso_core::catalogue::capability::fit_responses(
-                    &mut generate,
-                    ingress,
-                    &eff,
-                    None,
-                );
-                plan.left_out.extend(fit.left_out);
-            }
-            let dialect = plan.dialect;
-            off_thread(request_bytes, move || {
-                dispatch::check(dialect, &Request::Generate(generate), &ectx)
-            })
-            .await
-            .and_then(|checked| checked)
-            .map_err(fail(Stage::Capability))?;
+            plan.left_out.extend(fit.left_out);
         }
+        let dialect = plan.dialect;
+        let tokens = off_thread(request_bytes, move || {
+            let tokens = kaeso_core::estimate::input_tokens(&generate);
+            dispatch::check(dialect, &Request::Generate(generate), &ectx).map(|_| tokens)
+        })
+        .await
+        .and_then(|checked| checked)
+        .map_err(fail(Stage::Capability))?
+        .ok_or_else(|| fail(Stage::Capability)(refused(capability::cannot_estimate(&eff))))?;
         tracing::info!(
             adapted = capability::COUNT_ESTIMATED,
             "answered a token count with Kaeso's estimate; the provider can't count"

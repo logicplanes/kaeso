@@ -50,6 +50,30 @@ pub fn input_tokens(g: &GenerateRequest) -> Option<u64> {
     Some(n)
 }
 
+/// Whether [`input_tokens`] estimates the request: it holds no audio or video, nor a part of a
+/// kind it doesn't know. It reads no media, so it costs nothing beside the count.
+pub fn estimable(g: &GenerateRequest) -> bool {
+    g.system
+        .iter()
+        .chain(g.messages.iter().flat_map(|m| &m.blocks))
+        .all(countable)
+}
+
+fn countable(block: &Block) -> bool {
+    match block {
+        Block::Text(_)
+        | Block::Refusal(_)
+        | Block::Image(_)
+        | Block::Document(_)
+        | Block::ToolCall(_)
+        | Block::Reasoning(_)
+        | Block::Unknown(_)
+        | Block::Json(_) => true,
+        Block::ToolResult(r) => r.content.iter().all(countable),
+        _ => false,
+    }
+}
+
 fn blocks_tokens(blocks: &[Block]) -> Option<u64> {
     blocks
         .iter()
@@ -102,11 +126,13 @@ fn text_tokens(text: &str) -> u64 {
     n.saturating_add(word.div_ceil(4))
 }
 
-// A PDF's pages: its page objects (`/Type /Page`) or its page tree's `/Count`, whichever is more.
-// Only a `/Type /Pages` dictionary's `/Count` counts pages; an outline's counts bookmarks.
+// A PDF's pages: its page tree's `/Count`, a reader's own answer, or its page objects
+// (`/Type /Page`) where no tree count is visible, as in packed or broken files. Page objects alone
+// overcount a file saved incrementally, which keeps every revision of a page. Only a `/Type /Pages`
+// dictionary's `/Count` counts pages; an outline's counts bookmarks.
 fn pdf_pages(data: &[u8]) -> u64 {
     let (pages, tree) = page_counts(data);
-    let found = pages.max(tree);
+    let found = if tree > 0 { tree } else { pages };
     if found <= 1 && find(data, b"/ObjStm").is_some() {
         return u64::try_from(data.len().div_ceil(50_000))
             .unwrap_or(u64::MAX)
@@ -937,6 +963,18 @@ mod tests {
             1,
             "a comment or stream that spells page trees or pages counts nothing"
         );
+        assert_eq!(
+            pdf_pages(
+                b"%PDF-1.7\n1 0 obj << /Type /Pages /Kids [2 0 R 3 0 R] /Count 2 >> \
+                  2 0 obj << /Type /Page /Parent 1 0 R >> 3 0 obj << /Type /Page /Parent 1 0 R >> \
+                  %%EOF\n2 0 obj << /Type /Page /Parent 1 0 R /Annots [9 0 R] >> \
+                  3 0 obj << /Type /Page /Parent 1 0 R /Annots [9 0 R] >> %%EOF\n\
+                  2 0 obj << /Type /Page /Parent 1 0 R /Annots [10 0 R] >> \
+                  3 0 obj << /Type /Page /Parent 1 0 R /Annots [10 0 R] >> %%EOF\n"
+            ),
+            2,
+            "incremental saves keep old copies of a page; the page tree counts each once"
+        );
         let mut many = b"%PDF-1.7\n".to_vec();
         for _ in 0..200_000 {
             many.extend_from_slice(b"/Count 1 ");
@@ -962,6 +1000,7 @@ mod tests {
             None,
             "audio has no length Kaeso reads"
         );
+        assert!(!estimable(&audio));
         let mut nested = user(vec![Block::tool_result(
             "call_1",
             vec![Block::audio(Source::Url(
@@ -970,11 +1009,13 @@ mod tests {
             false,
         )]);
         assert_eq!(input_tokens(&nested), None);
+        assert!(!estimable(&nested));
         nested.messages[0].blocks = vec![Block::tool_result(
             "call_1",
             vec![Block::text("12345678")],
             false,
         )];
         assert_eq!(input_tokens(&nested), Some(2 + 4));
+        assert!(estimable(&nested) && estimable(&doc) && estimable(&plain));
     }
 }

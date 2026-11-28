@@ -106,9 +106,22 @@ pub struct Plan {
     pub reasoning: Option<bool>,
     pub left_out: Vec<String>,
     pub adapted: Vec<String>,
-    /// Kaeso's estimate of a count request's input tokens, for a model whose provider can't
-    /// count them: the gateway answers with it and sends nothing.
-    pub estimated_count: Option<u64>,
+    /// The model's provider can't count this request's tokens: the gateway answers with Kaeso's
+    /// estimate ([`crate::estimate::input_tokens`]) and sends nothing.
+    pub estimates_count: bool,
+}
+
+/// The refusal of a token count for a model whose provider can't count, when the request holds
+/// what Kaeso doesn't estimate.
+pub fn cannot_estimate(eff: &Effective) -> Unsupported {
+    refuse(
+        "token counting",
+        Some("model"),
+        format!(
+            "The model `{}` cannot count tokens, and Kaeso can't estimate audio or video.",
+            eff.model_id
+        ),
+    )
 }
 
 pub fn prepare(
@@ -159,7 +172,7 @@ pub fn prepare(
                 reasoning: None,
                 left_out: Vec::new(),
                 adapted: Vec::new(),
-                estimated_count: None,
+                estimates_count: false,
             })
         }
         Request::Generate(g) => {
@@ -187,7 +200,7 @@ pub fn prepare(
                 reasoning: eff.fields.reasoning,
                 left_out,
                 adapted,
-                estimated_count: None,
+                estimates_count: false,
             })
         }
         Request::CountTokens(g) => {
@@ -200,21 +213,11 @@ pub fn prepare(
             adapted.extend(lowest_effort_for_off(g, ingress, eff));
             adapted.extend(fit_end_user(g, ingress, eff));
             check_generation(g, ingress, eff)?;
-            // A provider without a count endpoint gets nothing: the request is checked as the
-            // model would take it, and Kaeso answers with its own estimate.
-            let estimated_count = match counts {
-                Some(_) => None,
-                None => Some(crate::estimate::input_tokens(g).ok_or_else(|| {
-                    refuse(
-                        "token counting",
-                        Some("model"),
-                        format!(
-                            "The model `{name}` cannot count tokens, and Kaeso can't estimate audio or video."
-                        ),
-                    )
-                })?),
-            };
-            if estimated_count.is_some() {
+            let estimates_count = counts.is_none();
+            if estimates_count {
+                if !crate::estimate::estimable(g) {
+                    return Err(cannot_estimate(eff));
+                }
                 adapted.push(COUNT_ESTIMATED.to_owned());
             }
             Ok(Plan {
@@ -224,7 +227,7 @@ pub fn prepare(
                 reasoning: eff.fields.reasoning,
                 left_out,
                 adapted,
-                estimated_count,
+                estimates_count,
             })
         }
         Request::Image(r) => {
@@ -273,7 +276,7 @@ pub fn prepare(
                 reasoning: None,
                 left_out: Vec::new(),
                 adapted: Vec::new(),
-                estimated_count: None,
+                estimates_count: false,
             })
         }
         Request::Speech(r) => {
@@ -571,7 +574,7 @@ fn media_plan(dialect: DialectId) -> Plan {
         reasoning: None,
         left_out: Vec::new(),
         adapted: Vec::new(),
-        estimated_count: None,
+        estimates_count: false,
     }
 }
 

@@ -1591,6 +1591,13 @@ fn rerank_models_rerank_in_their_providers_format_and_nothing_else() {
     );
 }
 
+fn estimate_of(count: &Request) -> Option<u64> {
+    let Request::CountTokens(g) = count else {
+        return None;
+    };
+    crate::estimate::input_tokens(g)
+}
+
 fn eff_of(provider: &str, model: &str) -> Effective {
     eff(&entry(provider, model))
 }
@@ -1692,7 +1699,7 @@ fn duties_fill_what_kpp_cannot_know() {
             reasoning: Some(false),
             left_out: Vec::new(),
             adapted: Vec::new(),
-            estimated_count: None,
+            estimates_count: false,
         }
     );
     let Request::Generate(g) = &req else { panic!() };
@@ -1813,14 +1820,15 @@ fn a_provider_without_token_counting_gets_kaesos_estimate_of_count_requests() {
     ] {
         let mut count = Request::CountTokens(user(vec![Block::text("Hello, world!")]));
         let plan = prepare(&mut count, ingress, &e).unwrap();
-        assert_eq!(plan.estimated_count, Some(10), "{ingress}");
+        assert!(plan.estimates_count, "{ingress}");
+        assert_eq!(estimate_of(&count), Some(10), "{ingress}");
         assert!(
             plan.adapted.iter().any(|a| a == "count_estimated"),
             "{ingress}"
         );
         let mut generate = Request::Generate(user(vec![Block::text("hi")]));
         let plan = prepare(&mut generate, ingress, &e).unwrap();
-        assert_eq!(plan.estimated_count, None);
+        assert!(!plan.estimates_count);
         // The request is checked as the model would take it first.
         let mut audio = Request::CountTokens(user(vec![Block::audio(Source::Url(
             "https://example.com/a.mp3".into(),
@@ -1850,7 +1858,7 @@ fn a_provider_without_token_counting_gets_kaesos_estimate_of_count_requests() {
         &eff(&entry("openai", "gpt-4o")),
     )
     .unwrap();
-    assert_eq!(plan.estimated_count, None, "OpenAI counts itself");
+    assert!(!plan.estimates_count, "OpenAI counts itself");
 }
 
 fn refusal(
@@ -2255,7 +2263,8 @@ fn a_custom_provider_counts_tokens_only_when_it_names_its_generation_dialect() {
     let e = effective(&e, &snapshot(), &org).unwrap();
     let mut count = Request::CountTokens(user(vec![Block::text("hi")]));
     let plan = prepare(&mut count, DialectId::AnthropicMessages, &e).unwrap();
-    assert_eq!(plan.estimated_count, Some(5), "Kaeso estimates instead");
+    assert!(plan.estimates_count, "Kaeso estimates instead");
+    assert_eq!(estimate_of(&count), Some(5));
     assert!(
         Fields {
             egress_dialect: Some(DialectId::OpenAiChat),
@@ -2575,16 +2584,17 @@ fn agent_platform_models_go_in_the_format_of_their_family_and_count_where_it_cou
     );
     let mut count = Request::CountTokens(GenerateRequest::new("meta/llama"));
     let plan = prepare(&mut count, DialectId::AnthropicMessages, &llama).unwrap();
+    assert!(plan.estimates_count);
     assert_eq!(
-        plan.estimated_count,
+        estimate_of(&count),
         Some(0),
         "Kaeso estimates, here an empty request"
     );
     let mut count = Request::CountTokens(GenerateRequest::new("claude-opus-4-5@20251101"));
     let plan = prepare(&mut count, DialectId::AnthropicMessages, &claude).unwrap();
     assert_eq!(
-        (plan.dialect, plan.estimated_count),
-        (DialectId::AnthropicMessages, None)
+        (plan.dialect, plan.estimates_count),
+        (DialectId::AnthropicMessages, false)
     );
     let mut sent_as = entry("gemini-agent-platform", "claude-opus-4-5@20251101");
     sent_as.overrides.egress_dialect = Some(DialectId::OpenAiChat);
