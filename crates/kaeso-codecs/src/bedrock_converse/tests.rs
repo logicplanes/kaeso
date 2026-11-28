@@ -207,7 +207,10 @@ fn what_converse_cant_carry_is_refused_before_sending() {
         (with("seed", json!(1)), "seed"),
         (with("presence_penalty", json!(0.5)), "presence_penalty"),
         (
-            with("response_format", json!({"type": "json_object"})),
+            with(
+                "response_format",
+                json!({"type": "json_schema", "json_schema": {"name": "x", "schema": {"type": "object"}}}),
+            ),
             "structured output",
         ),
         (

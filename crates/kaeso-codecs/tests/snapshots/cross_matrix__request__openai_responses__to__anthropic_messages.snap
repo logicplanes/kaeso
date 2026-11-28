@@ -1935,9 +1935,35 @@ expression: outcomes
     "unsupported": "`item_reference` `msg_0d71a3c94be2f058006acb8b02c1d4819b6e2f0a93c5d7e41b`"
   },
   "json-object-mode": {
-    "message": "`json_object output` is not supported by Anthropic Messages. Anthropic has no JSON mode without a schema. Send a JSON schema (structured outputs) instead.",
-    "param": "text.format",
-    "unsupported": "json_object output"
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Return a JSON object with the keys city and country for the Eiffel Tower.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-4.1",
+      "system": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "text": "Answer with one JSON object and nothing else: no code fence, no text before or after it.",
+          "type": "text"
+        }
+      ],
+      "temperature": 0.0
+    },
+    "path": "/v1/messages"
   },
   "logprobs-no-obfuscation-stream": {
     "message": "`top_logprobs` comes from an OpenAI Responses request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
