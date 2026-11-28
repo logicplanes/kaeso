@@ -73,6 +73,7 @@ pub(crate) struct ChatStreamEncoder {
     usage: Option<Usage>,
     usage_sent: bool,
     usage_chunk: Option<Vec<u8>>,
+    finish_written: bool,
     done: bool,
     pacer: Pacer,
 }
@@ -106,6 +107,7 @@ impl ChatStreamEncoder {
             usage: None,
             usage_sent: false,
             usage_chunk: None,
+            finish_written: false,
             done: false,
             pacer: Pacer::default(),
         }
@@ -376,10 +378,14 @@ impl ChatStreamEncoder {
                 };
                 if self.include_usage {
                     match self.usage_moved(frame).map_err(internal)? {
-                        Some(moved) => crate::sse::write_frame_extra(&mut out, &moved),
-                        None => crate::sse::write_frame_extra(&mut out, frame),
+                        Moved::Keep => {
+                            crate::sse::write_frame_extra(&mut out, frame).map_err(internal)?;
+                        }
+                        Moved::Replaced(moved) => {
+                            crate::sse::write_frame_extra(&mut out, &moved).map_err(internal)?;
+                        }
+                        Moved::Held => {}
                     }
-                    .map_err(internal)?;
                 } else {
                     match without_usage(frame).map_err(internal)? {
                         Unasked::Keep => {
@@ -398,23 +404,36 @@ impl ChatStreamEncoder {
     }
 
     // An own chunk the decoder kept whole gets the same as `write` gives the others: usage on a
-    // chunk with a choice becomes `null` and waits for the end in a chunk of its own.
-    fn usage_moved(&mut self, raw: &RawValue) -> Result<Option<Box<RawValue>>, serde_json::Error> {
+    // chunk with a choice becomes `null` and waits for the end in a chunk of its own, as does a
+    // usage chunk of its own before the choice finishes.
+    fn usage_moved(&mut self, raw: &RawValue) -> Result<Moved, serde_json::Error> {
         let mut frame: Value = serde_json::from_str(raw.get())?;
         let Some(Value::Object(data)) = frame.get_mut("data") else {
-            return Ok(None);
+            return Ok(Moved::Keep);
         };
+        let finishes = data
+            .get("choices")
+            .and_then(|c| c.get(0))
+            .is_some_and(|c| c.get("finish_reason").is_some_and(Value::is_string));
+        let early = !self.finish_written;
+        self.finish_written |= finishes;
         if data.get("usage").is_none_or(Value::is_null) {
-            return Ok(None);
+            return Ok(Moved::Keep);
         }
         self.usage_sent = true;
         match data.get("choices").and_then(Value::as_array) {
             Some(choices) if !choices.is_empty() => {}
+            Some(_) if early && !self.running_usage_asked => {
+                let mut chunk = Vec::new();
+                crate::sse::write_frame_extra(&mut chunk, raw)?;
+                self.usage_chunk = Some(chunk);
+                return Ok(Moved::Held);
+            }
             Some(_) => {
                 self.usage_chunk = None;
-                return Ok(None);
+                return Ok(Moved::Keep);
             }
-            None => return Ok(None),
+            None => return Ok(Moved::Keep),
         }
         let mut alone = data.clone();
         alone.insert("choices".to_owned(), Value::Array(Vec::new()));
@@ -423,10 +442,10 @@ impl ChatStreamEncoder {
         chunk.extend_from_slice(b"\n\n");
         self.usage_chunk = Some(chunk);
         if self.running_usage_asked {
-            return Ok(None);
+            return Ok(Moved::Keep);
         }
         data.insert("usage".to_owned(), Value::Null);
-        serde_json::value::to_raw_value(&frame).map(Some)
+        serde_json::value::to_raw_value(&frame).map(Moved::Replaced)
     }
 
     fn start(&mut self, start: &ResponseStart, own: bool, chunk: &mut Chunk) {
@@ -633,9 +652,17 @@ impl ChatStreamEncoder {
                 obj.insert(Cow::Borrowed("usage"), J::Null);
             }
         }
-        if own && choice_mode == "empty" && chunk.usage.is_some() {
+        // A usage chunk of the provider's own before the choice finishes waits for the end too.
+        let early = own
+            && self.include_usage
+            && choice_mode == "empty"
+            && (chunk.usage.is_some() || running.is_some())
+            && !self.finish_written
+            && !self.running_usage_asked;
+        if own && choice_mode == "empty" && chunk.usage.is_some() && !early {
             self.usage_chunk = None;
         }
+        self.finish_written |= chunk.finish.is_some();
         // A chunk with a choice gets `usage: null` and its usage waits for the end in a chunk of
         // its own, as `passthrough` does it (see there).
         let moves = own
@@ -659,6 +686,12 @@ impl ChatStreamEncoder {
             }
         }
         let framing = form.get(FORM_SSE).filter(|_| own);
+        if early {
+            let mut usage_chunk = Vec::new();
+            write_chunk(&obj, framing, &mut usage_chunk)?;
+            self.usage_chunk = Some(usage_chunk);
+            return Ok(out);
+        }
         if moves && let Some(usage) = chunk.usage.as_ref().or(running) {
             if self.running_usage_asked {
                 write_chunk(&obj, framing, &mut out)?;
@@ -951,6 +984,12 @@ fn add_entry_extras(entry: &mut Entry, extras: &kaeso_kpp::Extras, tc: &Map<Stri
             function.entry(key).or_insert(value);
         }
     }
+}
+
+enum Moved {
+    Keep,
+    Replaced(Box<RawValue>),
+    Held,
 }
 
 enum Unasked {

@@ -869,7 +869,13 @@ impl ChatState {
         // chunk. Such usage waits as a chunk of its own for `[DONE]`, newest first, unless the
         // provider's own usage chunk comes; clients that add usage up then count it once.
         if has_non_null_usage && choices_empty {
-            self.usage_chunk = None;
+            if self.finished || self.running_usage_asked {
+                self.usage_chunk = None;
+            } else {
+                // Usage of its own before the choice finishes waits for the end too.
+                self.usage_chunk = Some(raw.to_vec());
+                return;
+            }
         } else if self.include_usage
             && has_non_null_usage
             && tap.choices.as_ref().is_some_and(|c| !c.is_empty())
@@ -1988,6 +1994,17 @@ mod tests {
         assert_eq!(chunks.len(), 3, "{out}");
         assert_usage_once("comment, own usage chunk", own.as_bytes(), out.as_bytes());
         assert!(out.contains(": keepalive\n\n"), "{out}");
+
+        // A usage chunk of the provider's own before the finish chunk waits for the end.
+        let early = "data: {\"id\":\"c\",\"choices\":[],\"usage\":{\"prompt_tokens\":4,\"completion_tokens\":1,\"total_tokens\":5}}\n\n";
+        let ends = "data: {\"id\":\"c\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"stop\"}]}\n\n";
+        let (_, out, errors) = run(&format!("{head}{early}{ends}data: [DONE]\n\n"));
+        assert!(errors.is_empty(), "{errors:?}");
+        assert_usage_once("early usage chunk", early.as_bytes(), out.as_bytes());
+        assert!(
+            out.ends_with(&format!("{ends}{early}data: [DONE]\n\n")),
+            "{out}"
+        );
 
         // A comment, then an error: the usage the comment moved out of the chunk comes first.
         let (_, out, errors) = run(&format!(

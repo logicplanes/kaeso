@@ -1233,7 +1233,10 @@ fn running_usage_on_a_chunk_without_content_is_held_and_hidden_from_apps_that_di
     .concat();
     let events = decode_whole(sse.as_bytes());
     assert_eq!(usage_deltas(&events), [(None, 1)]);
-    assert_sse_eq("replay", sse.as_bytes(), &encode(&events, true));
+    // An app that asked for usage gets it once, after the finish chunk.
+    let out = encode(&events, true);
+    assert_sse_eq("replay", &chat_usage_in_its_own_chunk(sse.as_bytes()), &out);
+    assert_usage_once("early usage chunk", &out, 5);
     let hidden = encode(&events, false);
     let text = String::from_utf8(hidden.clone()).unwrap();
     assert!(!text.contains("usage"), "{text}");
