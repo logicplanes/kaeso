@@ -216,18 +216,32 @@ fn keepalives_in_openai_formats_reach_older_openai_go_readers_as_nothing() {
         let ctx = EncodeCtx::new(RequestKind::Generate, mode()).with_created_at(1_760_000_000);
         let mut enc = dispatch::stream_encoder(target, &ctx).unwrap();
         let mut plain = dispatch::stream_encoder(target, &ctx).unwrap();
+        // The gateway's keepalive before the first event, after it and before the last, so the
+        // in-band ones for the hidden thinking between them still come.
         let (mut wire, mut without) = (enc.keepalive(), Vec::new());
-        for event in &events {
+        let mut gateway = 1;
+        for (i, event) in events.iter().enumerate() {
             wire.extend(enc.encode(event).unwrap());
-            wire.extend(enc.keepalive());
+            if i == 0 || i + 2 == events.len() {
+                let frame = enc.keepalive();
+                gateway += usize::from(!frame.is_empty());
+                wire.extend(frame);
+            }
             without.extend(plain.encode(event).unwrap());
         }
         wire.extend(enc.finish().unwrap());
         without.extend(plain.finish().unwrap());
-        assert!(
-            comments(&wire) >= events.len(),
-            "{target}: one around every event"
-        );
+        assert!(gateway > 1, "{target}");
+        if target == C {
+            assert!(
+                comments(&without) > 0,
+                "Claude's thinking earns in-band keepalives"
+            );
+            assert!(
+                comments(&wire) > gateway,
+                "in-band ones between the gateway's"
+            );
+        }
         let read = openai_go_v1(&wire).unwrap_or_else(|e| panic!("{target}: {e}"));
         assert_eq!(read, openai_go_v1(&without).unwrap(), "{target}");
     }
