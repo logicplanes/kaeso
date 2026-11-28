@@ -69,7 +69,7 @@ Schema `CreateMessageParams` 和 `CountMessageTokensParams`。
 | `tools[].defer_loading` | 工具的 `extras.fields` | 其他方言：延迟加载的工具会被省略，直到某个 `tool_reference` 加载它（[工具搜索](cross-format.md#工具搜索)）。 |
 | `tools[].eager_input_streaming` | 工具的 `extras.fields` | 其他方言：丢弃，它只决定 Claude 是否在写出参数的同时流式发送它们（[允许列表](cross-format.md#允许列表)）。 |
 | `tools[].allowed_callers`、`.input_examples` | 工具的 `extras.fields` | 其他方言 → `Unsupported`；错误消息会提示 Claude Code 用户设置 `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1`，这样就不会再发送这些 beta 工具字段。 |
-| `tools[]` `{type: web_search_20250305 \| web_search_20260209 \| web_search_20260318, name: web_search}` | `ToolDef::Unknown`（原始） | 发往 OpenAI Responses 时变为托管的 `web_search` 工具，`max_uses` 变为请求的搜索次数上限；发往 Chat Completions 时省略（[托管网页搜索](cross-format.md#托管网页搜索)）。 |
+| `tools[]` `{type: web_search_20250305 \| web_search_20260209 \| web_search_20260318, name: web_search}` | `ToolDef::Unknown`（原始） | 发往 OpenAI Responses 时变为托管的 `web_search` 工具，`max_uses` 变为请求的搜索次数上限；发往 Chat Completions 时省略（[托管网页搜索](hosted-web-search.md)）。 |
 | 任何其他类型的 `tools[]`（服务器工具，例如 `advisor_20260301`） | `ToolDef::Unknown`（原始） | 仅限同一方言。对于其他方言，`Unsupported` 消息会在 `Input tag` 后注明类型（`Input tag 'advisor_20260301' found using 'type' is not a function tool, …`），这是 API 自己的措辞，因此 Claude Code 会去掉 advisor 工具后重试（[网关协议](https://code.claude.com/docs/en/llm-gateway-protocol)，“Automatic retry and error forwarding”）。 |
 | `cache_control`（顶层，自动缓存） | extras `cache_control` | 只是提示字段；KPP 没有请求级别的缓存提示。它在[允许列表](cross-format.md#extras)中，因此发往其他方言时会被丢弃。来自其他方言的请求会改为得到块级断点（[缓存提示](cross-format.md#缓存提示)）。 |
 | `container`、`inference_geo`、`service_tier`、SDK `diagnostics`、`user_profile_id`、`workspace_id`、未知键 | `extras.fields` | |
@@ -98,7 +98,7 @@ Schema `CreateMessageParams` 和 `CountMessageTokensParams`。
 | `tool_result`（`tool_use_id`、`content`、`is_error`、`cache_control`） | `Block::ToolResult` | 字符串形式的 `content` → 形式标记 `content: "string"`；`[]` → `"array"`；`is_error: false` → verbatim。`toolset_name` → extras。嵌套在其他 `tool_result` 中超过 4 层的 `tool_result` 会被拒绝：在请求中为 `InvalidRequest`，在回复或流中为 `ProviderError`。 |
 | `thinking`（`thinking`、`signature`） | `Block::Reasoning { text: [thinking], opaque: [AnthropicThinkingSignature] }` | `thinking: ""`（省略显示）保持为 `[""]`。`signature: ""` 不是不透明数据，而是变为形式标记 `empty_signature`，因此该块永远不会被视为已签名的思考，并以 `""` 写回；缺失的 `signature` 保持缺失。若 `signature` 是推理数据块（`kpp:reasoning:v1:…`，即 Kaeso 交给应用的其他方言的推理，见[推理数据块](reasoning.md#推理数据块)），则解码为其中的原始块，包括来源；此时会忽略 `thinking` 文本。 |
 | `redacted_thinking`（`data`） | `Block::Reasoning { opaque: [AnthropicRedactedThinking] }` | |
-| 名为 `web_search` 的 `server_tool_use` 和 ID 为 `srvtoolu_kaeso_…` 的 `web_search_tool_result` | 为 OpenAI Responses 的 `web_search_call` 项写入 | 回复和流以这种方式携带其他格式的搜索；请求会对任何模型丢弃这些块，并在发往其他格式时丢弃 Claude 自己的 `web_search` 块（[托管网页搜索](cross-format.md#托管网页搜索)）。 |
+| 名为 `web_search` 的 `server_tool_use` 和 ID 为 `srvtoolu_kaeso_…` 的 `web_search_tool_result` | 为 OpenAI Responses 的 `web_search_call` 项写入 | 回复和流以这种方式携带其他格式的搜索；请求会对任何模型丢弃这些块，并在发往其他格式时丢弃 Claude 自己的 `web_search` 块（[托管网页搜索](hosted-web-search.md)）。 |
 | `role: "system"` 消息中的 `tool_addition` 和 `tool_removal`（`tool` 为带 `name` 的 `tool_reference`、带 `definition` 的 `tool_definition`、`mcp_tool_reference` 或 `mcp_toolset_reference`；`cache_control`） | `Block::Unknown`（原始） | 其他方言收到这些块在对话结束时留下的工具列表（[内联工具](cross-format.md#内联工具)）。 |
 | `tool_reference`（`tool_name`、`cache_control`） | `Block::Unknown`（原始） | 位于 `tool_result` 中时，其他方言收到一个包含工具名称的文本块以及被引用的工具（[工具搜索](cross-format.md#工具搜索)）。 |
 | 任何其他类型（`server_tool_use`、`web_search_tool_result`、`web_fetch_tool_result`、`code_execution_tool_result`、`search_result`、`container_upload`、将来的类型） | `Block::Unknown`（原始） | 仅限同一方言。 |
@@ -148,7 +148,7 @@ Schema `CreateMessageParams` 和 `CountMessageTokensParams`。
 | 来自其他方言的 `Request::CountTokens` | 不带 `max_tokens`、采样参数、`metadata` 和 `stream` 的 `/v1/messages/count_tokens` | 它们不改变输入 Token 数，而且该端点会拒绝它们。Anthropic 应用自己的 Token 计数请求按收到时的原样发送。 |
 | `check()` 在生成请求中会拒绝的 `Request::CountTokens` 输出和推理设置（没有列出任何键的 schema、推理强度 `minimal` 等） | 省略，不拒绝 | 只拒绝会改变所计数输入的内容。 |
 | `Request::Embed` | `Unsupported` | |
-| OpenAI Responses 的 `web_search` 工具 | `{type: web_search_20250305, name: web_search}` | 设置了 `allowed_domains` 和 `user_location` 时一并写入；带 `external_web_access: false` 时省略；对话中 Responses 的 `web_search_call` 项会被丢弃（参见[托管网页搜索](cross-format.md#托管网页搜索)）。 |
+| OpenAI Responses 的 `web_search` 工具 | `{type: web_search_20250305, name: web_search}` | 设置了 `allowed_domains` 和 `user_location` 时一并写入；带 `external_web_access: false` 时省略；对话中 Responses 的 `web_search_call` 项会被丢弃（参见[托管网页搜索](hosted-web-search.md)）。 |
 | OpenAI Responses 的 `custom_tool_call`、`local_shell_call` 及其输出 | `tool_use` 和 `tool_result` 块 | [Codex 工具历史](cross-format.md#codex-工具历史)。 |
 | OpenAI Responses 的 `text.verbosity` | 省略 | 没有对应字段；在 `kaeso-left-out` 中注明（参见[条件条目](cross-format.md#条件条目)）。 |
 | OpenAI Responses 的 `namespace` 工具 | 命名空间中的每个工具一个函数工具，名为 `<namespace>__<name>` | [工具命名空间](cross-format.md#工具命名空间)。 |
