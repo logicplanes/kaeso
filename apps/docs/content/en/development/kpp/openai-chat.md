@@ -110,7 +110,7 @@ At such a Chat provider, tool messages keep their `name`, as Mistral's recorded 
 For KPP from other dialects, `check()` refuses:
 
 - text documents, document URLs, and document `title`, `context` and `citations`;
-- image file ids, and images, documents, audio and video in system and assistant messages; those in tool results move to the user message after them ([media in tool results](cross-format.md#media-in-tool-results));
+- image file ids, and images, documents, audio and video in system and assistant messages; those in tool results move to the user message after them ([media in tool results](media.md#media-in-tool-results));
 - audio that is not base64, or whose media type has no `input_audio.format` (`` audio media type `…` ``), and video, unless the profile takes `video_url` parts;
 - audio in assistant messages other than OpenAI's audio ids, unless the block has a transcript, which is sent as the message's text;
 - an image or other output modality, audio without a voice, a voice OpenAI doesn't list, and audio settings without audio output;

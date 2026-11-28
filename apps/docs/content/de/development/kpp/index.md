@@ -171,7 +171,7 @@ Jedes KPP-Feld ist entweder semantisch oder ein Hinweis:
 | `sampling.frequency_penalty`, `.presence_penalty` | semantisch | OpenAI Chat Completions und Gemini; anderswo `Unsupported`, außer `0`, das nichts verlangt und weggelassen wird ([neutrale Werte](sampling.md#neutrale-werte)). |
 | `user` | Hinweis | Eine Endbenutzer-ID zur Missbrauchsüberwachung; sie ändert nie die Ausgabe. Ein Anbieter, dessen Chat-Profil kein Feld für den Endbenutzer hat, erhält keine, auch nicht das `user` einer Chat-App neben `safety_identifier` ([Anbieterprofile](openai-chat-providers.md#anbieterprofile)). |
 | `stream` | semantisch | |
-| `output_modalities`, `audio_output.voice`, `.format` | semantisch | Nur Chat Completions und Gemini schreiben Audio, nur Gemini Bilder; Stimmen gehen nur an ein Ziel über, das sie nennt, und Formate werden nie umkodiert ([Audio- und Bildantworten](cross-format.md#audio--und-bildantworten)). |
+| `output_modalities`, `audio_output.voice`, `.format` | semantisch | Nur Chat Completions und Gemini schreiben Audio, nur Gemini Bilder; Stimmen gehen nur an ein Ziel über, das sie nennt, und Formate werden nie umkodiert ([Audio- und Bildantworten](media.md#audio--und-bildantworten)). |
 | `extras.fields` | semantisch | Wird nur in den Ursprungsdialekt zurückgeschrieben; anderswo `Unsupported`, außer das Feld steht auf der [Extras-Allowlist](cross-format.md#extras). |
 | `extras.form` | Hinweis | Form-Markierungen für die Darstellung; andere Dialekte ignorieren sie. |
 
@@ -192,8 +192,8 @@ Jedes KPP-Feld ist entweder semantisch oder ein Hinweis:
 | `Text.cache`, `Image.cache`, `Document.cache`, `Audio.cache`, `Video.cache`, `ToolCall.cache`, `ToolResult.cache` | Hinweis | Für OpenAI weggelassen, weil OpenAI selbst cacht ([Cache-Hinweise](cross-format.md#cache-hinweise)). |
 | `Image.source` | semantisch | Eine `FileId` funktioniert nur beim Anbieter, der sie ausgegeben hat ([Dateien](cross-format.md#dateien)). OpenAI Chat Completions nimmt Bilder nur als URL oder Base64. |
 | `Document.source` | semantisch | Textquellen nur für Anthropic. OpenAI Chat Completions lehnt auch URL-Quellen ab. |
-| `Audio.transcript` | semantisch | Als Text des Assistenten gesendet, wo das Ziel das Audio selbst nicht nimmt ([Audio- und Bildantworten](cross-format.md#audio--und-bildantworten)). |
-| `Audio.source`, `Video.source` | semantisch | Jedes Ziel nimmt, was seine Dokumentation nennt, oder lehnt es ab ([Audio und Video](cross-format.md#audio-und-video)). |
+| `Audio.transcript` | semantisch | Als Text des Assistenten gesendet, wo das Ziel das Audio selbst nicht nimmt ([Audio- und Bildantworten](media.md#audio--und-bildantworten)). |
+| `Audio.source`, `Video.source` | semantisch | Jedes Ziel nimmt, was seine Dokumentation nennt, oder lehnt es ab ([Audio und Video](media.md#audio-und-video)). |
 | `Document.title`, `.context` | semantisch | Nur Anthropic; für OpenAI `Unsupported`. |
 | `Document.citations` | semantisch | Nur Anthropic; für OpenAI `Unsupported`, da OpenAI keine Dokumente zitieren kann. |
 | `ToolCall.*` | semantisch | IDs und Namen bleiben erhalten; lehnt ein Ziel einen Wert wegen seiner Zeichen oder seiner Länge ab, wird er deterministisch umgeschrieben und auf dem Rückweg zurückübersetzt. |

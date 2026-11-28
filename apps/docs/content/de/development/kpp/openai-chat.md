@@ -110,7 +110,7 @@ Bei einem solchen Chat-Anbieter behalten Tool-Nachrichten ihr `name`, wie die au
 Für KPP aus anderen Dialekten lehnt `check()` ab:
 
 - Textdokumente, Dokument-URLs sowie `title`, `context` und `citations` von Dokumenten;
-- Bild-Datei-IDs sowie Bilder, Dokumente, Audio und Video in System- und Assistentennachrichten; solche in Tool-Ergebnissen wandern in die Benutzernachricht danach ([Medien in Tool-Ergebnissen](cross-format.md#medien-in-tool-ergebnissen));
+- Bild-Datei-IDs sowie Bilder, Dokumente, Audio und Video in System- und Assistentennachrichten; solche in Tool-Ergebnissen wandern in die Benutzernachricht danach ([Medien in Tool-Ergebnissen](media.md#medien-in-tool-ergebnissen));
 - Audio, das nicht base64 ist oder dessen Medientyp kein `input_audio.format` hat (`` audio media type `…` ``), und Video, außer das Profil nimmt `video_url`-Teile;
 - Audio in Assistentennachrichten außer OpenAIs Audio-IDs, es sei denn, der Block hat ein Transkript, das als Text der Nachricht gesendet wird;
 - eine Bild- oder andere Ausgabemodalität, Audio ohne Stimme, eine Stimme, die OpenAI nicht nennt, und Audioeinstellungen ohne Audioausgabe;

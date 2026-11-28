@@ -33,15 +33,15 @@ KPP, the Kaeso Provider Protocol, has a codec for each API format: OpenAI Chat C
 
 ## What carries across
 
-- **Conversations.** System instructions, user and assistant turns, text, images and documents, and audio and video where the target takes them ([audio and video](../development/kpp/cross-format.md#audio-and-video)). A system message in the middle of an Anthropic conversation reaches OpenAI as a later system message, and one in the middle of an OpenAI conversation reaches Anthropic as text of the next user turn.
-- **Tools.** Function tools, tool choice, parallel tool calls, tool calls and tool results. Images and files a tool returned reach a Chat Completions model in the user message after the results, because its tool messages hold only text ([media in tool results](../development/kpp/cross-format.md#media-in-tool-results)).
+- **Conversations.** System instructions, user and assistant turns, text, images and documents, and audio and video where the target takes them ([audio and video](../development/kpp/media.md#audio-and-video)). A system message in the middle of an Anthropic conversation reaches OpenAI as a later system message, and one in the middle of an OpenAI conversation reaches Anthropic as text of the next user turn.
+- **Tools.** Function tools, tool choice, parallel tool calls, tool calls and tool results. Images and files a tool returned reach a Chat Completions model in the user message after the results, because its tool messages hold only text ([media in tool results](../development/kpp/media.md#media-in-tool-results)).
 - **Tool names and call ids.** When the target doesn't accept a name or id, Kaeso rewrites it in a fixed way and maps it back in the reply. Other characters become `_`, the name is cut to fit, and a hash of the original is added. OpenAI accepts up to 64 letters, digits, `_` and `-`, Anthropic up to 128.
 - **Structured output.** JSON schemas, and JSON mode, which models without it, such as Claude, get as a sentence in the system prompt ([structured output](../development/kpp/cross-format.md#structured-output)).
 - **Sampling.** Temperature, top P, maximum tokens and stop sequences, where the target has them. A value keeps its meaning but is written as the target writes it, so `1` can arrive as `1.0`. For a model served through OpenAI Responses, such as Grok, Kaeso ends the reply itself at a stop sequence or at a limit below 16 tokens ([OpenAI Responses in the gateway](../development/kpp/sampling.md#openai-responses-in-the-gateway)).
 - **The end user's id.** Anthropic's `metadata.user_id` and OpenAI's `safety_identifier`. OpenAI takes at most 128 characters and asks for a hash of the user's id, so a longer Anthropic id, such as Claude Code's, reaches it as its SHA-256 hash, which the reply's `kaeso-adapted` header names.
 - **Reasoning.** Efforts and thinking budgets convert into each other ([reasoning](#reasoning)).
 - **Streams.** Kaeso translates them event by event into the app's format.
-- **Audio replies.** Between Chat Completions and Gemini: OpenAI's audio models answer Gemini apps, and Gemini's speech models Chat apps, when the voice and format exist on both sides ([audio and image replies](../development/kpp/cross-format.md#audio-and-image-replies)).
+- **Audio replies.** Between Chat Completions and Gemini: OpenAI's audio models answer Gemini apps, and Gemini's speech models Chat apps, when the voice and format exist on both sides ([audio and image replies](../development/kpp/media.md#audio-and-image-replies)).
 
 ## What Kaeso refuses
 
