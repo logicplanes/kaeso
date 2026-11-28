@@ -274,6 +274,7 @@ Structured output going to Anthropic uses Anthropic's native structured outputs,
 - Schemas going to OpenAI from Anthropic get the name `response`, because OpenAI requires one.
 - Gemini gets a schema as `responseJsonSchema` and `json_object` as `responseMimeType: "application/json"` alone; as for Anthropic, a schema's `name` is dropped, its `description` leads the schema's own, and `strict: false` is served strictly.
 - Amazon Bedrock Converse gets `json_object` the same way, as a sentence in the system prompt; schemas are `Unsupported`.
+- A model whose catalogue entry has no structured output, such as `deepseek-flash`, can't enforce a schema. Where its provider has a JSON mode ([`json_mode()`](openai-chat-providers.md#provider-profiles)), the gateway sends `response_format: {"type": "json_object"}` and one sentence at the end of the system prompt: "Answer with one JSON object that matches this JSON schema, and nothing else: …", followed by the schema's `description`. `kaeso-adapted` names the app's field. The reply is JSON, the schema is instructed, not enforced, and Kaeso doesn't check the reply against it. The schema's root must be an object, also through a local `$ref` or in every branch of an `anyOf` or `oneOf`. Finding the root's type follows at most 256 references and branches, a shared definition each time it's reached; past that the schema is refused. Elsewhere such a schema is refused.
 
 ## Stateful Responses features
 

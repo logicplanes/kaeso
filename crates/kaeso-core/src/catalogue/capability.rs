@@ -1,6 +1,6 @@
 use kaeso_kpp::{
-    DialectId, GenerateRequest, Modality, ModelFeature, ModelInfo, ModelPrices, ReasoningEffort,
-    ReasoningMode, Request, ToolChoice,
+    Block, DialectId, GenerateRequest, Modality, ModelFeature, ModelInfo, ModelPrices, OutputSpec,
+    ReasoningEffort, ReasoningMode, Request, ToolChoice,
 };
 
 use kaeso_codecs::cross::reasoning_map;
@@ -47,6 +47,7 @@ fn app_param(ingress: DialectId, field: &'static str) -> &'static str {
         ("effort", _) => "reasoning_effort",
         ("format", A) => "output_config.format",
         ("format", R) => "text.format",
+        ("format", G) => "generationConfig.responseJsonSchema",
         ("format", _) => "response_format",
         ("messages", R) => "input",
         ("messages", G) => "contents",
@@ -179,6 +180,7 @@ pub fn prepare(
             adapted.extend(lowest_effort_for_off(g, ingress, eff));
             adapted.extend(fit_end_user(g, ingress, eff));
             adapted.extend(fit_output_limit(g, ingress, eff));
+            adapted.extend(schema_by_instruction(g, ingress, eff));
             check_generation(g, ingress, eff)?;
             let dialect = eff.dialect;
             if dialect == DialectId::AnthropicMessages && g.sampling.max_output_tokens.is_none() {
@@ -942,6 +944,82 @@ pub struct ResponsesFit {
 // while apps in other formats send all three. Kaeso ends the reply itself at the first stop
 // sequence or at the app's limit, as it does for a ChatGPT plan, and leaves out `seed`, which
 // OpenAI only ever honoured on a best-effort basis.
+// A model without structured output can't enforce a schema, but where its provider has a JSON
+// mode (DeepSeek's: https://api-docs.deepseek.com/guides/json_mode) the reply is at least one
+// JSON object, and the schema is followed as instructed. No reply is checked against it.
+fn schema_by_instruction(
+    g: &mut GenerateRequest,
+    ingress: DialectId,
+    eff: &Effective,
+) -> Option<String> {
+    let OutputSpec::JsonSchema(spec) = &g.output else {
+        return None;
+    };
+    if eff.fields.structured_output == Some(true)
+        || eff.dialect != DialectId::OpenAiChat
+        || !eff.provider.chat().request.json_mode
+    {
+        return None;
+    }
+    let schema = kaeso_codecs::cross::output_json_schema(g)?;
+    // JSON mode answers with an object, so only a schema whose root is one can be followed.
+    let root = schema.to_value().ok()?;
+    let mut left = OBJECT_CHECK_NODES;
+    if !is_object_schema(&root, &root, &mut left) {
+        return None;
+    }
+    let purpose = spec
+        .description
+        .as_deref()
+        .map(|d| format!(" It is for: {d}"))
+        .unwrap_or_default();
+    let sentence = format!(
+        "Answer with one JSON object that matches this JSON schema, and nothing else: {}{purpose}",
+        schema.get()
+    );
+    let field = format_field(g, ingress);
+    g.output = OutputSpec::JsonObject;
+    g.system.push(Block::text(sentence));
+    Some(field.to_owned())
+}
+
+// A local `$ref` and every branch of an `anyOf` or `oneOf` count by what they describe. Shared
+// definitions could make the walk exponential, so it stops, refusing, after a fixed number of nodes.
+const OBJECT_CHECK_NODES: u16 = 256;
+
+fn is_object_schema(schema: &serde_json::Value, root: &serde_json::Value, left: &mut u16) -> bool {
+    use serde_json::Value;
+    let Some(rest) = left.checked_sub(1) else {
+        return false;
+    };
+    *left = rest;
+    if let Some(target) = schema.get("$ref").and_then(Value::as_str) {
+        return target
+            .strip_prefix('#')
+            .and_then(|pointer| root.pointer(pointer))
+            .is_some_and(|s| is_object_schema(s, root, left));
+    }
+    for key in ["anyOf", "oneOf"] {
+        if let Some(Value::Array(branches)) = schema.get(key) {
+            return !branches.is_empty()
+                && branches.iter().all(|b| is_object_schema(b, root, left));
+        }
+    }
+    match schema.get("type") {
+        Some(Value::String(t)) => t == "object",
+        Some(Value::Array(types)) => types.iter().any(|t| t == "object"),
+        None => schema.get("properties").is_some(),
+        Some(_) => false,
+    }
+}
+
+fn format_field(g: &GenerateRequest, ingress: DialectId) -> &'static str {
+    match g.extras.form_str(DialectId::Gemini, "schema") {
+        Some("responseSchema") if ingress == DialectId::Gemini => "generationConfig.responseSchema",
+        _ => app_param(ingress, "format"),
+    }
+}
+
 pub fn fit_responses(
     g: &mut GenerateRequest,
     ingress: DialectId,
@@ -1092,7 +1170,7 @@ fn check_generation(
     if caps.json_schema && eff.fields.structured_output != Some(true) {
         return Err(refuse(
             "structured output",
-            Some(app_param(ingress, "format")),
+            Some(format_field(g, ingress)),
             format!("The model `{name}` does not support structured output (a JSON schema)."),
         ));
     }

@@ -851,6 +851,147 @@ fn check(g: GenerateRequest, ingress: DialectId, e: &Effective) -> Result<Reques
 }
 
 #[test]
+fn a_schema_for_a_model_without_structured_output_goes_as_json_mode_where_its_provider_has_one() {
+    let deepseek = eff(&entry("deepseek", "deepseek-flash"));
+    let schema = r#"{"type":"object","properties":{"name":{"type":"string"}},"required":["name"]}"#;
+    let mut g = user(vec![Block::text("A cat?")]);
+    let mut spec = JsonSchemaSpec::new(RawJson::from_string(schema.into()).unwrap());
+    spec.description = Some("A pet.".into());
+    g.output = OutputSpec::JsonSchema(spec);
+    for (ingress, field) in [
+        (DialectId::OpenAiChat, "response_format"),
+        (DialectId::OpenAiResponses, "text.format"),
+        (DialectId::Gemini, "generationConfig.responseJsonSchema"),
+    ] {
+        let mut req = Request::Generate(g.clone());
+        let plan = prepare(&mut req, ingress, &deepseek).unwrap();
+        assert_eq!(plan.adapted, [field], "{ingress}");
+        let Request::Generate(sent) = &req else {
+            panic!()
+        };
+        assert_eq!(sent.output, OutputSpec::JsonObject);
+        let Some(Block::Text(t)) = sent.system.last() else {
+            panic!("{:?}", sent.system)
+        };
+        assert_eq!(
+            t.text,
+            format!(
+                "Answer with one JSON object that matches this JSON schema, and nothing else: {schema} It is for: A pet."
+            )
+        );
+    }
+
+    let mut native = entry("deepseek", "deepseek-flash");
+    native.overrides.egress_dialect = Some(DialectId::AnthropicMessages);
+    let err = check(g.clone(), DialectId::OpenAiChat, &eff(&native)).unwrap_err();
+    assert!(
+        err.contains("structured output"),
+        "DeepSeek's Messages API has no JSON mode: {err}"
+    );
+    let gpt35 = eff(&entry("openai", "gpt-3.5-turbo"));
+    let err = check(g, DialectId::OpenAiChat, &gpt35).unwrap_err();
+    assert!(
+        err.contains("structured output"),
+        "no JSON mode in the profile: {err}"
+    );
+}
+
+fn gemini(config: serde_json::Value) -> Request {
+    let body = serde_json::json!({
+        "contents": [{"role": "user", "parts": [{"text": "A cat?"}]}],
+        "generationConfig": config
+    });
+    let mut req = kaeso_codecs::dispatch::decode_request(
+        DialectId::Gemini,
+        kaeso_kpp::RequestKind::Generate,
+        body.to_string().as_bytes(),
+        &kaeso_codecs::HeaderList::new(),
+    )
+    .unwrap();
+    if let Request::Generate(g) = &mut req {
+        g.model = "deepseek-flash".into();
+    }
+    req
+}
+
+// Each definition branches twice into the next, so a walk without a bound visits 2^depth nodes.
+fn wide_and_deep(depth: usize) -> serde_json::Value {
+    let mut defs = serde_json::Map::new();
+    for i in 0..depth {
+        let next = serde_json::json!({"$ref": format!("#/$defs/D{}", i + 1)});
+        defs.insert(format!("D{i}"), serde_json::json!({"anyOf": [next, next]}));
+    }
+    defs.insert(
+        format!("D{depth}"),
+        serde_json::json!({"type": "object", "properties": {}}),
+    );
+    serde_json::json!({"$ref": "#/$defs/D0", "$defs": defs})
+}
+
+#[test]
+fn a_gemini_schema_reaches_json_mode_as_json_schema_and_only_with_an_object_root() {
+    let deepseek = eff(&entry("deepseek", "deepseek-flash"));
+    let mut req = gemini(serde_json::json!({
+        "responseMimeType": "application/json",
+        "responseSchema": {"type": "OBJECT", "properties": {"name": {"type": "STRING"}}}
+    }));
+    let plan = prepare(&mut req, DialectId::Gemini, &deepseek).unwrap();
+    assert_eq!(plan.adapted, ["generationConfig.responseSchema"]);
+    let Request::Generate(g) = &req else { panic!() };
+    let Some(Block::Text(t)) = g.system.last() else {
+        panic!("{:?}", g.system)
+    };
+    let (_, sent) = t.text.split_once("nothing else: ").unwrap();
+    assert_eq!(
+        serde_json::from_str::<serde_json::Value>(sent).unwrap(),
+        serde_json::json!({"type": "object", "properties": {"name": {"type": "string"}}}),
+        "OpenAPI types become JSON Schema's"
+    );
+
+    let mut list = gemini(serde_json::json!({
+        "responseMimeType": "application/json",
+        "responseJsonSchema": {"type": "array", "items": {"type": "string"}}
+    }));
+    let err = prepare(&mut list, DialectId::Gemini, &deepseek).unwrap_err();
+    assert_eq!(
+        err.capability, "structured output",
+        "JSON mode answers with an object"
+    );
+    assert_eq!(err.param, Some("generationConfig.responseJsonSchema"));
+
+    let pet = serde_json::json!({"type": "object", "properties": {"name": {"type": "string"}}});
+    let toy = serde_json::json!({"type": "object", "properties": {"price": {"type": "number"}}, "required": ["price"]});
+    for (schema, takes) in [
+        (
+            serde_json::json!({"$ref": "#/definitions/Pet", "definitions": {"Pet": pet}}),
+            true,
+        ),
+        (
+            serde_json::json!({"anyOf": [pet, {"$ref": "#/$defs/B"}], "$defs": {"B": pet}}),
+            true,
+        ),
+        (
+            serde_json::json!({"anyOf": [pet, {"type": "string"}]}),
+            false,
+        ),
+        (serde_json::json!({"$ref": "#/$defs/Missing"}), false),
+        (serde_json::json!({"$ref": "#"}), false),
+        (serde_json::json!({"oneOf": [pet, toy]}), true),
+        (wide_and_deep(24), false),
+    ] {
+        let mut req = gemini(serde_json::json!({
+            "responseMimeType": "application/json",
+            "responseJsonSchema": schema
+        }));
+        assert_eq!(
+            prepare(&mut req, DialectId::Gemini, &deepseek).is_ok(),
+            takes,
+            "{schema}"
+        );
+    }
+}
+
+#[test]
 fn capabilities_are_checked_before_sending() {
     let gpt35 = eff(&entry("openai", "gpt-3.5-turbo"));
     let gpt4o = eff(&entry("openai", "gpt-4o"));

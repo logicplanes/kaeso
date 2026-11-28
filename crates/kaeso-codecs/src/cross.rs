@@ -632,6 +632,18 @@ pub(crate) fn openai_image_detail(extras: &Extras, target: DialectId) -> Option<
     values.contains(&value.as_str()).then(|| detail.clone())
 }
 
+/// The request's output schema as JSON Schema, or `None` when it asks for no schema. A Gemini
+/// app's `responseSchema`, an OpenAPI `Schema`, is translated as for any other dialect.
+pub fn output_json_schema(r: &GenerateRequest) -> Option<RawJson> {
+    let OutputSpec::JsonSchema(spec) = &r.output else {
+        return None;
+    };
+    Some(match r.extras.form_str(DialectId::Gemini, "schema") {
+        Some("responseSchema") => crate::gemini::schema::to_json_schema(&spec.schema),
+        _ => spec.schema.clone(),
+    })
+}
+
 /// Refuses what `target` can't take from a request as it stands. [`crate::dispatch::check`] first
 /// adapts the request to the target, leaving out [`NEUTRAL_VALUES`] and the other data
 /// [cross-format](https://docs.kaeso.app/development/kpp/cross-format) names, so it accepts some
