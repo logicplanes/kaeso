@@ -1010,6 +1010,13 @@ const messages = (): Rule[] => [
       v,
     ),
   ),
+  rule("errors.modelApi.textNotKept", (v) =>
+    t(
+      "errors.modelApi.textNotKept",
+      "Kaeso keeps the text `{id}` points to only where the project allows responses stored at the provider; send the items themselves in `input`, as SDKs do with `store: false`.",
+      v,
+    ),
+  ),
   rule("errors.modelApi.itemReference", () =>
     t(
       "errors.modelApi.itemReference",

@@ -116,6 +116,14 @@ pub fn reference(block: &kaeso_kpp::Block) -> Option<&str> {
     }
 }
 
+/// Whether a Responses-format request points to earlier reasoning with `item_reference` items.
+pub fn has_reasoning_reference(req: &GenerateRequest) -> bool {
+    req.all_blocks().any(|block| match block {
+        kaeso_kpp::Block::Reasoning(r) => reasoning_reference(r).is_some(),
+        _ => false,
+    })
+}
+
 /// Whether a Responses-format request points to an earlier message with an `item_reference`.
 pub fn has_message_reference(req: &GenerateRequest) -> bool {
     req.all_blocks().any(|block| match block {

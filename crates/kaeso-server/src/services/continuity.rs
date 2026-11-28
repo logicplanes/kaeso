@@ -49,6 +49,19 @@ pub struct Carry {
     /// may point to them with an `item_reference`; otherwise only the reasoning a provider must
     /// get back signed, for an app whose format can't carry it.
     pub every: bool,
+    /// The text too, where the project allows responses stored at the provider.
+    pub text: bool,
+}
+
+impl Carry {
+    /// What of a whole reply is kept.
+    pub fn of_reply(&self, blocks: &[kaeso_kpp::Block]) -> Vec<CarriedReasoning> {
+        match (self.every, self.text) {
+            (true, true) => kaeso_codecs::continuity::items_for_tool_calls(blocks),
+            (true, false) => kaeso_codecs::continuity::every_reasoning_for_tool_calls(blocks),
+            (false, _) => kaeso_codecs::continuity::reasoning_for_tool_calls(blocks),
+        }
+    }
 }
 
 /// Whether Kaeso keeps the reasoning of this request's reply: for an OpenAI Chat Completions or
@@ -57,9 +70,9 @@ pub struct Carry {
 pub fn carry(
     state: &AppState,
     key_id: Option<Uuid>,
-    ingress: DialectId,
-    egress: DialectId,
+    (ingress, egress): (DialectId, DialectId),
     req: &Request,
+    text: bool,
 ) -> Option<Carry> {
     let key_id = key_id.filter(|_| enabled(state))?;
     let Request::Generate(g) = req else {
@@ -69,6 +82,7 @@ pub fn carry(
         DialectId::OpenAiChat | DialectId::Gemini if egress != ingress => Some(Carry {
             key_id,
             every: false,
+            text: false,
         }),
         DialectId::OpenAiResponses
             if kaeso_codecs::openai_responses::stored_state(g).store != Some(false) =>
@@ -76,6 +90,7 @@ pub fn carry(
             Some(Carry {
                 key_id,
                 every: true,
+                text,
             })
         }
         _ => None,
@@ -85,6 +100,7 @@ pub fn carry(
 pub struct StreamCarry {
     state: AppState,
     key_id: Uuid,
+    text: bool,
     collector: ReasoningCollector,
 }
 
@@ -93,6 +109,7 @@ impl StreamCarry {
         StreamCarry {
             state,
             key_id: carry.key_id,
+            text: carry.text,
             collector: if carry.every {
                 ReasoningCollector::every()
             } else {
@@ -106,7 +123,13 @@ impl StreamCarry {
     }
 
     pub async fn keep(mut self) {
-        let carried = self.collector.finish();
+        let mut carried = self.collector.finish();
+        if !self.text {
+            carried.retain_mut(|c| {
+                c.messages.clear();
+                !c.blocks.is_empty()
+            });
+        }
         keep(&self.state, self.key_id, &carried).await;
     }
 }

@@ -524,6 +524,7 @@
   "errors.modelApi.streamOnly": "Only streamed requests are served here; send `stream: true`.",
   "errors.modelApi.tagsHeader": "The header `kaeso-tags` takes up to 10 comma-separated tags of 1 to 64 lowercase letters, digits, `.`, `_`, `:` or `-`.",
   "errors.modelApi.taskUnfinished": "The provider's task didn't finish in time; try again later.",
+  "errors.modelApi.textNotKept": "Kaeso keeps the text `{id}` points to only where the project allows responses stored at the provider; send the items themselves in `input`, as SDKs do with `store: false`.",
   "errors.modelApi.timeout": "The provider did not answer in time ({stage}). Kaeso does not retry; try again or raise the model's timeout.",
   "errors.modelApi.timeoutHeader": "The header `kaeso-timeout` must be a whole number of seconds from 1 to 3600.",
   "errors.modelApi.transfer": "The connection to the provider failed before the response was complete.",

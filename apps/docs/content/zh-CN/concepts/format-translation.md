@@ -142,7 +142,7 @@ Kaeso 这样转换推理设置：
 
 Chat Completions 没有推理字段。当 Claude，或经由 Responses 的 OpenAI 模型，为 Chat Completions 应用提供服务时，网关会保存每次工具调用之前的推理。应用发送工具结果时，网关会把这段推理放回，让模型在工具循环中保持思路。
 
-- 网关把它保存在 Valkey 中，时长为 `KAESO_CONTINUITY_REASONING_TTL`，默认 1 小时，设为 `0s` 即关闭。它用主密钥加密，只有发出该请求的 API 密钥才能读取，并且从不记入日志。
+- 网关把它保存在 Valkey 中，时长为 `KAESO_CONTINUITY_REASONING_TTL`，默认 1 小时，设为 `0s` 即关闭。它用主密钥加密，只返还给使用发出该请求的 API 密钥的请求，并且从不记入日志。
 - 最后一次工具调用之后的推理不会保存，失败的流中的推理也不会保存。
 - 推理已不存在时（已过期、由其他密钥发送该轮次，或无法连接 Valkey），请求会在没有它的情况下继续。
 
@@ -156,7 +156,7 @@ Gemini 应用收不到其他服务商的推理，因为思考 part 无法承载�
 
 保持 `store` 开启的 Responses 应用（Vercel AI SDK 默认如此）会把回复中的推理和消息作为指向其 ID 的 `item_reference` 发回。Kaeso 不保留回复，因此网关会为这类应用保留工具循环会回指的内容。这包括每次工具调用之前的推理（与 Chat Completions 相同），以及模型在调用之前紧接着写下的文本，例如“我来查一下巴黎的天气。”两者都会被放回引用所指的位置。没有工具调用的轮次中指向推理的引用会被省略并在 `kaeso-left-out` 中注明，因为没有模型需要取回那里的推理。
 
-两者都以加密形式保留，只有发送该请求的 API 密钥才能读取，保留时间为 `continuity.reasoning_ttl`，默认一小时（[推理连续性](../self-hosting/configuration.md#推理连续性)）。Kaeso 不保留其他文本：指向工具轮次之外消息的引用（例如聊天中较早的回答）会以 `400` 被拒绝。推理或文本已不在时（已过期、由另一个密钥发送该轮次，或应用此前发送了 `store: false`），引用同样会被拒绝。拒绝信息会要求直接发送这些 item，就像 SDK 在 `store: false` 时那样。指向其他内容的引用仍会被拒绝（[存储的回复](../console/organizations-and-projects.md#存储的回复)）。
+两者都用主密钥加密保留，只返还给使用同一 API 密钥的请求，保留时间为 `continuity.reasoning_ttl`，默认一小时（[推理连续性](../self-hosting/configuration.md#推理连续性)）。只有在项目允许在服务商处存储回复时才会保留文本；设为 `0s` 即两者都关闭，Chat Completions 和 Gemini 应用的推理连续性也随之关闭。如果防护规则会在回复中恢复被遮盖的值，保留的文本就含有这些值。Kaeso 不保留其他文本：指向工具轮次之外消息的引用（例如聊天中较早的回答）会以 `400` 被拒绝。推理或文本已不在时（已过期、由另一个密钥发送该轮次，或应用此前发送了 `store: false`），引用同样会被拒绝。拒绝信息会要求直接发送这些 item，就像 SDK 在 `store: false` 时那样。指向其他内容的引用仍会被拒绝（[存储的回复](../console/organizations-and-projects.md#存储的回复)）。
 
 ### 可读的推理
 

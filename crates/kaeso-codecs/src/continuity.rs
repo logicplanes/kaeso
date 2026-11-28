@@ -135,6 +135,16 @@ pub fn items_for_tool_calls(blocks: &[Block]) -> Vec<CarriedReasoning> {
     carried(&blocks.iter().map(part).collect::<Vec<_>>(), |_| true, true)
 }
 
+/// Every reasoning block before each tool call, as an OpenAI Responses reply hands it to the app
+/// for the next turn. [`items_for_tool_calls`] also keeps the text before each call.
+pub fn every_reasoning_for_tool_calls(blocks: &[Block]) -> Vec<CarriedReasoning> {
+    carried(
+        &blocks.iter().map(part).collect::<Vec<_>>(),
+        |_| true,
+        false,
+    )
+}
+
 // What of a reply matters to what is kept before its tool calls.
 enum Part<'a> {
     Reasoning(&'a ReasoningBlock),
@@ -366,6 +376,28 @@ pub enum Unresolved {
     Message(String),
     /// A message outside a tool turn: Kaeso keeps only the text right before tool calls.
     Conversation(String),
+}
+
+impl Unresolved {
+    /// The id of the `item_reference`.
+    pub fn id(&self) -> &str {
+        match self {
+            Unresolved::Reasoning(id) | Unresolved::Message(id) | Unresolved::Conversation(id) => {
+                id
+            }
+        }
+    }
+}
+
+/// Puts what was kept for each turn's tool calls where an OpenAI Responses app's
+/// `item_reference` points to it, as [`resolve_kept_references`] does. The error is the id of the
+/// first reference it has nothing for.
+pub fn resolve_reasoning_references(
+    req: &mut GenerateRequest,
+    kept: &[CarriedReasoning],
+    stateless: bool,
+) -> Result<Resolved, String> {
+    resolve_kept_references(req, kept, stateless).map_err(|u| u.id().to_owned())
 }
 
 /// Puts the text kept before each turn's tool calls where an OpenAI Responses app's
@@ -1397,6 +1429,33 @@ mod tests {
         assert_eq!(
             resolve_message_references(&mut three, &kept),
             Err(Unresolved::Message("msg_1".into()))
+        );
+    }
+
+    #[test]
+    fn the_reasoning_only_functions_keep_their_meaning() {
+        let plain = ReasoningBlock::new(DialectId::OpenAiChat);
+        let blocks = vec![
+            Block::Reasoning(plain.clone()),
+            Block::text("I'll check."),
+            call("c1"),
+            Block::text("Then Tokyo."),
+            call("c2"),
+        ];
+        assert_eq!(
+            every_reasoning_for_tool_calls(&blocks),
+            [CarriedReasoning::new("c1", vec![plain])
+                .with_turn_calls(vec!["c1".into(), "c2".into()])],
+            "reasoning only, no text"
+        );
+        let mut req = GenerateRequest::new("m");
+        req.messages = vec![Message::new(
+            Role::Assistant,
+            vec![message_reference("msg_1"), call("c1")],
+        )];
+        assert_eq!(
+            resolve_reasoning_references(&mut req, &[], false),
+            Err("msg_1".to_owned())
         );
     }
 }

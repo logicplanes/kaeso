@@ -317,7 +317,7 @@ An organization admin chooses a guardrail's address, so the gateway guards it li
 
 | Variable<br>TOML key | Type | Default | What it does |
 | --- | --- | --- | --- |
-| `KAESO_CONTINUITY_REASONING_TTL`<br>`continuity.reasoning_ttl` | text | `1h` | How long the gateway keeps a model's reasoning before a tool call for an OpenAI Chat Completions or Gemini app whose model speaks another format. For an OpenAI Responses app that doesn't send `store: false`, it keeps the reasoning and text before a tool call. Encrypted, and readable only with the API key that sent the request. `0s` turns it off; otherwise 1m to 24h. |
+| `KAESO_CONTINUITY_REASONING_TTL`<br>`continuity.reasoning_ttl` | text | `1h` | How long the gateway keeps a model's reasoning before a tool call for an OpenAI Chat Completions or Gemini app whose model speaks another format. For an OpenAI Responses app that doesn't send `store: false`, it keeps the reasoning before a tool call, and the text where the project allows responses stored at the provider. Encrypted under the master key and given back only to requests with the same API key. `0s` turns it off; otherwise 1m to 24h. |
 
 [Format translation](../concepts/format-translation.md#chat-completions) explains how the gateway keeps it.
 

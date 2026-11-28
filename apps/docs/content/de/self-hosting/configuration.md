@@ -317,7 +317,7 @@ Die Adresse einer Guardrail wählt ein Organisations-Admin, deshalb schützt das
 
 | Variable<br>TOML-Schlüssel | Typ | Standard | Was sie bewirkt |
 | --- | --- | --- | --- |
-| `KAESO_CONTINUITY_REASONING_TTL`<br>`continuity.reasoning_ttl` | Text | `1h` | Wie lange das Gateway das Reasoning eines Modells vor einem Tool-Aufruf aufbewahrt, für eine OpenAI-Chat-Completions- oder Gemini-App, deren Modell ein anderes Format spricht. Für eine OpenAI-Responses-App, die kein `store: false` sendet, bewahrt es das Reasoning und den Text vor einem Tool-Aufruf auf. Verschlüsselt und nur mit dem API-Schlüssel lesbar, der die Anfrage gesendet hat. `0s` schaltet es ab; sonst 1m bis 24h. |
+| `KAESO_CONTINUITY_REASONING_TTL`<br>`continuity.reasoning_ttl` | Text | `1h` | Wie lange das Gateway das Reasoning eines Modells vor einem Tool-Aufruf aufbewahrt, für eine OpenAI-Chat-Completions- oder Gemini-App, deren Modell ein anderes Format spricht. Für eine OpenAI-Responses-App, die kein `store: false` sendet, bewahrt es das Reasoning vor einem Tool-Aufruf auf und den Text, wo das Projekt beim Anbieter gespeicherte Antworten erlaubt. Mit dem Hauptschlüssel verschlüsselt und nur an Anfragen mit demselben API-Schlüssel zurückgegeben. `0s` schaltet es ab; sonst 1m bis 24h. |
 
 [Formatübersetzung](../concepts/format-translation.md#chat-completions) erklärt, wie das Gateway es aufbewahrt.
 

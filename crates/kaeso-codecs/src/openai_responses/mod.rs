@@ -36,8 +36,8 @@ pub const INPUT_TOKENS_PATH: &str = "/v1/responses/input_tokens";
 pub use plan::{for_chatgpt_plan, without_store};
 pub use profile::{InputItems, ReasoningReplay, ResponsesProfile, WebSearchTool, XAI_INPUT_ITEMS};
 pub use stored::{
-    StoredState, has_item_reference, has_kept_reference, has_message_reference, message_reference,
-    reasoning_reference, reference, stored_state,
+    StoredState, has_item_reference, has_kept_reference, has_message_reference,
+    has_reasoning_reference, message_reference, reasoning_reference, reference, stored_state,
 };
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]

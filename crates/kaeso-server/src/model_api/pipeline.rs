@@ -7,7 +7,7 @@ use axum::http::{HeaderMap, HeaderValue, StatusCode, header};
 use axum::response::Response;
 use bytes::Bytes;
 use futures::StreamExt;
-use kaeso_codecs::continuity::{Unresolved, items_for_tool_calls, reasoning_for_tool_calls};
+use kaeso_codecs::continuity::Unresolved;
 use kaeso_codecs::gemini::GeminiAction;
 use kaeso_codecs::{EgressCtx, EncodeCtx, HeaderList, dispatch};
 use kaeso_core::catalogue::Entry;
@@ -944,6 +944,17 @@ fn unkept(unresolved: &Unresolved) -> KppError {
     error(ErrorKind::InvalidRequest, 400, message).with_param("input")
 }
 
+fn text_not_kept(id: &str) -> KppError {
+    error(
+        ErrorKind::InvalidRequest,
+        400,
+        format!(
+            "Kaeso keeps the text `{id}` points to only where the project allows responses stored at the provider; send the items themselves in `input`, as SDKs do with `store: false`."
+        ),
+    )
+    .with_param("input")
+}
+
 fn redacted(mut err: KppError) -> KppError {
     err.message = kaeso_core::secret::redact_tokens(&err.message);
     err.raw = None;
@@ -1463,9 +1474,21 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         && let Request::Generate(g) | Request::CountTokens(g) = &mut req
         && kaeso_codecs::openai_responses::has_message_reference(g)
     {
-        restored_text = continuity::resolve_messages(state, caller.key_id, g)
-            .await
-            .map_err(|u| Failure::new(unkept(&u), Stage::Request))?
+        let keeps_text =
+            crate::services::response_cache::stores_responses(state, caller.project_id).await;
+        let resolved = if keeps_text {
+            continuity::resolve_messages(state, caller.key_id, g).await
+        } else {
+            kaeso_codecs::continuity::resolve_message_references(g, &[])
+        };
+        restored_text = resolved
+            .map_err(|u| {
+                let e = match &u {
+                    Unresolved::Message(id) if !keeps_text => text_not_kept(id),
+                    _ => unkept(&u),
+                };
+                Failure::new(e, Stage::Request)
+            })?
             .restored_bytes;
     }
     let guards = Box::pin(guard_request(
@@ -2468,8 +2491,16 @@ async fn attempt(
     let streams_upstream = chatgpt.is_some() || output_cap.is_some();
 
     // Whether to keep reasoning follows what the app sent: Kaeso itself may send `store: false`.
-    let carry = continuity::carry(state, caller.key_id, ingress, plan.dialect, &app_req)
-        .filter(|_| kind == RequestKind::Generate);
+    let keeps_text = ingress == DialectId::OpenAiResponses
+        && crate::services::response_cache::stores_responses(state, caller.project_id).await;
+    let carry = continuity::carry(
+        state,
+        caller.key_id,
+        (ingress, plan.dialect),
+        &app_req,
+        keeps_text,
+    )
+    .filter(|_| kind == RequestKind::Generate);
     if let Some(c) = carry.filter(|c| !c.every)
         && let Request::Generate(g) = &mut req
     {
@@ -3846,12 +3877,7 @@ async fn answer_with(
     if let Some(c) = carry
         && let Reply::Generate(r) = &reply
     {
-        let kept = if c.every {
-            items_for_tool_calls(&r.blocks)
-        } else {
-            reasoning_for_tool_calls(&r.blocks)
-        };
-        continuity::keep(state, c.key_id, &kept).await;
+        continuity::keep(state, c.key_id, &c.of_reply(&r.blocks)).await;
     }
     let reply_kind = reply.kind();
     // Speech is audio and a transcript may be plain text or events: the app's codec names the

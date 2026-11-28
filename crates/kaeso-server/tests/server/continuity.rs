@@ -588,6 +588,7 @@ async fn kept_keys(env: &Env) -> Vec<String> {
 #[tokio::test]
 async fn a_responses_app_that_references_the_text_before_its_tool_call_gets_it_back() {
     let env = env(&[]).await;
+    common::v1::stored_responses(&env, true).await;
     let first = responses(&env, &env.key, responses_text_turn(false, None)).await;
     assert_eq!(first.status, StatusCode::OK, "{}", first.text());
     let (message, call_id) = message_and_call(first.json()["output"].as_array().unwrap());
@@ -634,6 +635,7 @@ async fn a_responses_app_that_references_the_text_before_its_tool_call_gets_it_b
 #[tokio::test]
 async fn a_streamed_responses_turn_keeps_its_text_for_the_next_step() {
     let env = env(&[]).await;
+    common::v1::stored_responses(&env, true).await;
     // The provider's stream stays open, its end unread, until the next step is answered, so the
     // text must be kept before the upstream body closes.
     let gate = common::v1::hold_back_the_end(&env, "anthropic_messages", "tools-single");
@@ -685,6 +687,7 @@ async fn a_reference_to_a_message_outside_a_tool_turn_is_refused() {
 #[tokio::test]
 async fn text_is_kept_only_for_responses_apps_that_leave_store_on() {
     let env = env(&[]).await;
+    common::v1::stored_responses(&env, true).await;
     let r = responses(&env, &env.key, responses_text_turn(false, Some(false))).await;
     assert_eq!(r.status, StatusCode::OK, "{}", r.text());
     let r = chat(
@@ -711,4 +714,38 @@ async fn text_is_kept_only_for_responses_apps_that_leave_store_on() {
     let r = responses(&env, &env.key, responses_text_turn(false, None)).await;
     assert_eq!(r.status, StatusCode::OK, "{}", r.text());
     assert_eq!(kept_keys(&env).await.len(), 1);
+}
+
+#[tokio::test]
+async fn a_project_without_stored_responses_keeps_no_text() {
+    let env = env(&[]).await;
+    let refused = |r: &Answer, message: &str| {
+        assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+        assert_eq!(
+            r.json()["error"]["message"],
+            format!(
+                "Kaeso keeps the text `{message}` points to only where the project allows responses stored at the provider; send the items themselves in `input`, as SDKs do with `store: false`."
+            )
+        );
+        assert_eq!(r.json()["error"]["param"], "input");
+    };
+    let first = responses(&env, &env.key, responses_text_turn(false, None)).await;
+    assert_eq!(first.status, StatusCode::OK, "{}", first.text());
+    assert!(
+        kept_keys(&env).await.is_empty(),
+        "the turn's text isn't kept"
+    );
+    let (message, call_id) = message_and_call(first.json()["output"].as_array().unwrap());
+    let before = env.mock.received().len();
+    let r = responses(&env, &env.key, responses_text_reference(&message, &call_id)).await;
+    refused(&r, &message);
+    assert_eq!(env.mock.received().len(), before, "nothing was sent");
+
+    common::v1::stored_responses(&env, true).await;
+    let kept = responses(&env, &env.key, responses_text_turn(false, None)).await;
+    let (message, call_id) = message_and_call(kept.json()["output"].as_array().unwrap());
+    assert_eq!(kept_keys(&env).await.len(), 1);
+    common::v1::stored_responses(&env, false).await;
+    let r = responses(&env, &env.key, responses_text_reference(&message, &call_id)).await;
+    refused(&r, &message);
 }

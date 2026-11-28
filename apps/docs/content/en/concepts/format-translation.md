@@ -142,7 +142,7 @@ When the app sends it back, KPP restores the original for the provider that wrot
 
 Chat Completions has no field for reasoning. When Claude, or an OpenAI model through Responses, serves a Chat Completions app, the gateway keeps the reasoning that came before each tool call. It puts that reasoning back when the app sends the tool result, so the model keeps its train of thought through tool loops.
 
-- The gateway keeps it in Valkey for `KAESO_CONTINUITY_REASONING_TTL`, 1 hour by default, and `0s` turns it off. It is encrypted under the master key, readable only with the API key that made the request, and never logged.
+- The gateway keeps it in Valkey for `KAESO_CONTINUITY_REASONING_TTL`, 1 hour by default, and `0s` turns it off. It is encrypted under the master key, given back only to requests with the API key that made the request, and never logged.
 - It keeps no reasoning after the last tool call, and none from a stream that failed.
 - When the reasoning is gone, because it expired, another key sends the turn or Valkey is unreachable, the request goes on without it.
 
@@ -156,7 +156,7 @@ A Gemini app gets no reasoning from another provider, because a thought part can
 
 A Responses app that leaves `store` on, as the Vercel AI SDK does by default, sends the reply's reasoning and messages back as `item_reference` items to their ids. Kaeso keeps no responses, so for such an app the gateway keeps what a tool loop points back to. That is the reasoning before each tool call, as for Chat Completions, and the text the model wrote right before the call, such as "I'll check the weather in Paris." It puts both where the references point. A reference to reasoning in a turn without tool calls, where no model needs it back, is left out and named in `kaeso-left-out`.
 
-Both are kept encrypted, readable only with the API key that sent the request, and for `continuity.reasoning_ttl`, an hour by default ([reasoning continuity](../self-hosting/configuration.md#reasoning-continuity)). Kaeso keeps no other text: a reference to a message outside a tool turn, such as an earlier answer in a chat, is refused with `400`. So is a reference whose reasoning or text is gone, because it expired, another key sends the turn or the app sent `store: false` before. The refusal asks for the items themselves, as SDKs send them with `store: false`. References to anything else stay refused ([stored responses](../console/organizations-and-projects.md#stored-responses)).
+Both are kept encrypted under the master key, given back only to requests with the same API key, for `continuity.reasoning_ttl`, an hour by default ([reasoning continuity](../self-hosting/configuration.md#reasoning-continuity)). The text is kept only where the project allows responses stored at the provider; `0s` turns both off, for Chat Completions and Gemini apps too. With a guardrail that restores masked values in the reply, the kept text holds those values. Kaeso keeps no other text: a reference to a message outside a tool turn, such as an earlier answer in a chat, is refused with `400`. So is a reference whose reasoning or text is gone, because it expired, another key sends the turn or the app sent `store: false` before. The refusal asks for the items themselves, as SDKs send them with `store: false`. References to anything else stay refused ([stored responses](../console/organizations-and-projects.md#stored-responses)).
 
 ### Readable reasoning
 

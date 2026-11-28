@@ -1011,6 +1011,7 @@ async fn a_project_admin_sees_the_project_guardrails_but_cannot_change_them() {
 #[tokio::test]
 async fn text_a_responses_app_points_back_to_is_checked_like_any_prompt() {
     let env = env().await;
+    common::v1::stored_responses(&env, true).await;
     let words = MockGuardrail::start().await;
     guard(&env, "Words", &words.url("/check"), json!({})).await;
     let tools = json!([{ "type": "function", "name": "get_weather", "parameters": { "type": "object", "properties": { "city": { "type": "string" } } } }]);
