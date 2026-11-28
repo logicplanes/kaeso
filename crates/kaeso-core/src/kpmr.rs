@@ -684,9 +684,7 @@ impl Catalogue {
 /// Claude Opus 4.6 with thinking on `claude-opus-4-6-thinking`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum IdSetting {
-    /// An effort level, such as `low`.
     Effort(&'static str),
-    /// Thinking on, at no level the id names.
     Thinking,
 }
 
