@@ -20,7 +20,10 @@ const entries: Record<string, string> = {
   i18n: resolve(src, "i18n/index.tsx"),
   "i18n-provider": resolve(src, "i18n/provider.tsx"),
   "i18n-locales": resolve(src, "i18n/locale-tags.ts"),
+  octicons: resolve(src, "icons/octicons.ts"),
 };
+// Each icon is an entry of its own, so a component's file brings only the icons it draws.
+for (const file of readdirSync(resolve(src, "icons/octicons"))) entries[`icons/${file.replace(/\.ts$/, "")}`] = resolve(src, "icons/octicons", file);
 for (const name of dirs(resolve(src, "components"))) {
   if (existsSync(resolve(src, "components", name, "index.ts"))) entries[`components/${name}`] = resolve(src, "components", name, "index.ts");
 }
@@ -62,12 +65,6 @@ function stripVariantDescriptions() {
 function directIcons() {
   const vocabulary = readFileSync(resolve(src, "icons/vocabulary.ts"), "utf8");
   const body = vocabulary.slice(vocabulary.indexOf("export const icons"));
-  const lucide = new Set(
-    /import \{([^}]*)\} from "lucide";/
-      .exec(vocabulary)![1]!
-      .split(",")
-      .map((name) => name.trim()),
-  );
   const meaning = new Map([...body.matchAll(/^\s+(\w+): (\w+),/gm)].map((m) => [m[1]!, m[2]!]));
   return {
     name: "kaeso-direct-icons",
@@ -76,20 +73,16 @@ function directIcons() {
       if (!id.includes("/src/components/")) return null;
       if (!/import \{ icons \} from "\.\.\/\.\.\/icons\/vocabulary\.js";/.test(code)) return null;
       const used = new Set<string>();
-      let own = false;
       let out = code.replace(/\bicons\.(\w+)\b/g, (whole, name: string) => {
         const icon = meaning.get(name);
         if (!icon) throw new Error(`${id}: icons.${name} is not in the vocabulary`);
-        if (!lucide.has(icon)) {
-          own = true;
-          return whole;
-        }
         used.add(icon);
         return `__icon_${icon}`;
       });
-      out = out.replace(
-        /import \{ icons \} from "\.\.\/\.\.\/icons\/vocabulary\.js";/,
-        (whole) => `${own ? `${whole}\n` : ""}import { ${[...used].map((i) => `${i} as __icon_${i}`).join(", ")} } from "lucide";`,
+      out = out.replace(/import \{ icons \} from "\.\.\/\.\.\/icons\/vocabulary\.js";/, () =>
+        [...used]
+          .map((i) => `import { ${i} as __icon_${i} } from "../../icons/octicons/${i.replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase()}.js";`)
+          .join("\n"),
       );
       return { code: out, map: null };
     },

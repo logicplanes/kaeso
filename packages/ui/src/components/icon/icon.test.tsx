@@ -16,18 +16,18 @@ describe("Icon", () => {
     expect(screen.getByRole("img", { name: "Key" })).not.toHaveAttribute("aria-hidden");
   });
 
-  it("draws a 1.5px stroke at every size, however large the icon", () => {
+  it("fills Octicons' 16px drawing in the text's color at every size", () => {
     const { container } = render(
       <>
         <Icon icon={icons.key} size="xs" />
         <Icon icon={icons.key} size="xl" />
       </>,
     );
-    const drawn = [...container.querySelectorAll("svg")].map((svg) => {
-      const grid = Number(svg.getAttribute("stroke-width"));
-      return Math.round(((grid * Number(svg.getAttribute("width"))) / 24) * 100) / 100;
-    });
-    expect(drawn).toEqual([1.5, 1.5]);
+    const drawn = [...container.querySelectorAll("svg")].map((svg) => [svg.getAttribute("width"), svg.getAttribute("viewBox"), svg.getAttribute("fill")]);
+    expect(drawn).toEqual([
+      ["14", "0 0 16 16", "currentColor"],
+      ["24", "0 0 16 16", "currentColor"],
+    ]);
   });
 
   it("files every name of the vocabulary under exactly one group of the reference", () => {
