@@ -895,6 +895,20 @@ fn gemini(config: serde_json::Value) -> Request {
     req
 }
 
+// Each definition branches twice into the next, so a walk without a bound visits 2^depth nodes.
+fn wide_and_deep(depth: usize) -> serde_json::Value {
+    let mut defs = serde_json::Map::new();
+    for i in 0..depth {
+        let next = serde_json::json!({"$ref": format!("#/$defs/D{}", i + 1)});
+        defs.insert(format!("D{i}"), serde_json::json!({"anyOf": [next, next]}));
+    }
+    defs.insert(
+        format!("D{depth}"),
+        serde_json::json!({"type": "object", "properties": {}}),
+    );
+    serde_json::json!({"$ref": "#/$defs/D0", "$defs": defs})
+}
+
 #[test]
 fn a_gemini_schema_reaches_json_mode_as_json_schema_and_only_with_an_object_root() {
     let deepseek = eff(&entry("deepseek", "deepseek-flash"));
@@ -941,6 +955,9 @@ fn a_gemini_schema_reaches_json_mode_as_json_schema_and_only_with_an_object_root
             false,
         ),
         (serde_json::json!({"$ref": "#/$defs/Missing"}), false),
+        (serde_json::json!({"$ref": "#"}), false),
+        (serde_json::json!({"oneOf": [pet, pet]}), true),
+        (wide_and_deep(24), false),
     ] {
         let mut req = gemini(serde_json::json!({
             "responseMimeType": "application/json",

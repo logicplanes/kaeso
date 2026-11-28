@@ -905,7 +905,8 @@ fn schema_by_instruction(
     let schema = kaeso_codecs::cross::output_json_schema(g)?;
     // JSON mode answers with an object, so only a schema whose root is one can be followed.
     let root = schema.to_value().ok()?;
-    if !is_object_schema(&root, &root, 0) {
+    let mut left = OBJECT_CHECK_NODES;
+    if !is_object_schema(&root, &root, &mut left) {
         return None;
     }
     let purpose = spec
@@ -923,24 +924,26 @@ fn schema_by_instruction(
     Some(field.to_owned())
 }
 
-// A local `$ref` and every branch of an `anyOf` or `oneOf` count by what they describe.
-fn is_object_schema(schema: &serde_json::Value, root: &serde_json::Value, depth: u8) -> bool {
+// A local `$ref` and every branch of an `anyOf` or `oneOf` count by what they describe. Shared
+// definitions could make the walk exponential, so it stops, refusing, after a fixed number of nodes.
+const OBJECT_CHECK_NODES: u16 = 256;
+
+fn is_object_schema(schema: &serde_json::Value, root: &serde_json::Value, left: &mut u16) -> bool {
     use serde_json::Value;
-    if depth > 32 {
+    let Some(rest) = left.checked_sub(1) else {
         return false;
-    }
+    };
+    *left = rest;
     if let Some(target) = schema.get("$ref").and_then(Value::as_str) {
         return target
             .strip_prefix('#')
             .and_then(|pointer| root.pointer(pointer))
-            .is_some_and(|s| is_object_schema(s, root, depth + 1));
+            .is_some_and(|s| is_object_schema(s, root, left));
     }
     for key in ["anyOf", "oneOf"] {
         if let Some(Value::Array(branches)) = schema.get(key) {
             return !branches.is_empty()
-                && branches
-                    .iter()
-                    .all(|b| is_object_schema(b, root, depth + 1));
+                && branches.iter().all(|b| is_object_schema(b, root, left));
         }
     }
     match schema.get("type") {
