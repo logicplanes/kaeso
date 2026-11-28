@@ -350,20 +350,6 @@ fn cross_format_refusals_name_the_field_the_app_sent() {
         ),
         (
             C,
-            chat(json!({"max_tokens": 64, "response_format": {"type": "json_object"}})),
-            A,
-            "response_format",
-        ),
-        (
-            R,
-            responses(
-                json!({"max_output_tokens": 64, "text": {"format": {"type": "json_object"}}}),
-            ),
-            A,
-            "text.format",
-        ),
-        (
-            C,
             chat(json!({"max_tokens": 64, "reasoning_effort": "minimal"})),
             A,
             "reasoning_effort",

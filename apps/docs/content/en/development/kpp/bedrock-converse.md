@@ -17,7 +17,7 @@ Look up how a generation request reaches Amazon Bedrock's Converse API here: whi
 - **Egress only.** No app sends Converse to Kaeso; the codec refuses to decode a request or write a reply in it.
 - **Which models.** KPMR names `bedrock_converse` as the egress dialect of the Bedrock chat models that answer neither Chat Completions nor Messages, such as Amazon Nova, Meta Llama and Mistral Pixtral. Claude models that Messages serves stay on Messages.
 - **Keys.** Converse takes a Bedrock API key as a bearer token, and AWS credentials signed with Signature Version 4.
-- **What a family needs of its own isn't written yet.** Reasoning settings, JSON output formats and other fields that go in `additionalModelRequestFields` are `Unsupported`, never dropped. `top_k`, a hint, is left out and named in `kaeso-left-out` ([top K](sampling.md#top-k)).
+- **What a family needs of its own isn't written yet.** Reasoning settings, a JSON schema output format and other fields that go in `additionalModelRequestFields` are `Unsupported`, never dropped; JSON mode goes as a sentence in the system prompt. `top_k`, a hint, is left out and named in `kaeso-left-out` ([top K](sampling.md#top-k)).
 
 ## Request
 
@@ -38,7 +38,7 @@ Look up how a generation request reaches Amazon Bedrock's Converse API here: whi
 
 Tool names and call ids that Converse's patterns refuse (names `[a-zA-Z0-9_-]`, ids `[a-zA-Z0-9_.:-]`, at most 64 characters) are rewritten on the way out and restored in the reply.
 
-Refused with `Unsupported`: images and documents by web link or file id, audio and video blocks, document citations, hosted tools, `tool_choice: none`, `parallel_tool_calls: false`, reasoning settings, structured output, `seed` and the penalties, except a penalty of `0`, which is left out ([neutral values](sampling.md#neutral-values)). Reasoning of another format isn't sent.
+Refused with `Unsupported`: images and documents by web link or file id, audio and video blocks, document citations, hosted tools, `tool_choice: none`, `parallel_tool_calls: false`, reasoning settings, a JSON schema output format, `seed` and the penalties, except a penalty of `0`, which is left out ([neutral values](sampling.md#neutral-values)). Reasoning of another format isn't sent. JSON mode goes as a sentence at the end of the system prompt, as for Anthropic ([structured output](cross-format.md#structured-output)).
 
 ## Reply
 

@@ -577,10 +577,73 @@ expression: outcomes
     "param": "messages[0].blocks[0]",
     "unsupported": "audio block"
   },
+  "instructor-json-mode": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Tokyo",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "claude-haiku-5-5",
+      "system": [
+        {
+          "text": "\n            As a genius expert, your task is to understand the content and provide\n            the parsed objects in json that match the following json_schema:\n\n\n            {\n  \"properties\": {\n    \"name\": {\n      \"title\": \"Name\",\n      \"type\": \"string\"\n    },\n    \"country\": {\n      \"title\": \"Country\",\n      \"type\": \"string\"\n    }\n  },\n  \"required\": [\n    \"name\",\n    \"country\"\n  ],\n  \"title\": \"City\",\n  \"type\": \"object\"\n}\n\n            Make sure to return an instance of the JSON, not the schema itself\n",
+          "type": "text"
+        },
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "text": "Answer with one JSON object and nothing else: no code fence, no text before or after it.",
+          "type": "text"
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
   "json-object": {
-    "message": "`json_object output` is not supported by Anthropic Messages. Anthropic has no JSON mode without a schema. Send a JSON schema (structured outputs) instead.",
-    "param": "response_format",
-    "unsupported": "json_object output"
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "What is the capital of France?",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-4.1-mini",
+      "system": [
+        {
+          "text": "Reply in JSON with the keys \"answer\" and \"confidence\".",
+          "type": "text"
+        },
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "text": "Answer with one JSON object and nothing else: no code fence, no text before or after it.",
+          "type": "text"
+        }
+      ]
+    },
+    "path": "/v1/messages"
   },
   "json-schema": {
     "body": {
@@ -2262,9 +2325,41 @@ expression: outcomes
     "path": "/v1/messages"
   },
   "providers/cerebras/stream-json-object": {
-    "message": "`json_object output` is not supported by Anthropic Messages. Anthropic has no JSON mode without a schema. Send a JSON schema (structured outputs) instead.",
-    "param": "response_format",
-    "unsupported": "json_object output"
+    "body": {
+      "max_tokens": 300,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Give a JSON object with one key, a, set to 1.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-oss-120b",
+      "output_config": {
+        "effort": "low"
+      },
+      "stream": true,
+      "system": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "text": "Answer with one JSON object and nothing else: no code fence, no text before or after it.",
+          "type": "text"
+        }
+      ],
+      "thinking": {
+        "type": "adaptive"
+      }
+    },
+    "path": "/v1/messages"
   },
   "providers/cerebras/stream-reasoning": {
     "body": {
@@ -2645,9 +2740,69 @@ expression: outcomes
     "path": "/v1/messages"
   },
   "providers/cerebras/tools-with-response-format": {
-    "message": "`json_object output` is not supported by Anthropic Messages. Anthropic has no JSON mode without a schema. Send a JSON schema (structured outputs) instead.",
-    "param": "response_format",
-    "unsupported": "json_object output"
+    "body": {
+      "max_tokens": 300,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "What's the weather in Paris right now?",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-oss-120b",
+      "output_config": {
+        "effort": "low"
+      },
+      "system": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "text": "Answer with one JSON object and nothing else: no code fence, no text before or after it.",
+          "type": "text"
+        }
+      ],
+      "thinking": {
+        "type": "adaptive"
+      },
+      "tools": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "description": "Get the current weather for a city.",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "city": {
+                "description": "City name, such as Paris",
+                "type": "string"
+              },
+              "unit": {
+                "enum": [
+                  "celsius",
+                  "fahrenheit"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "city"
+            ],
+            "type": "object"
+          },
+          "name": "get_weather"
+        }
+      ]
+    },
+    "path": "/v1/messages"
   },
   "providers/cerebras/unknown-model": {
     "body": {

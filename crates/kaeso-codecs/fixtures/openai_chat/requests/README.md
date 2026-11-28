@@ -23,6 +23,7 @@ Request bodies (`POST /v1/chat/completions`)
 | `input-audio.json` | `input_audio` part with `format: wav` (valid tiny WAV) next to text; `modalities: [text]` | schema: ChatCompletionRequestMessageContentPartAudio |
 | `input-audio-mp3.json` | `input_audio` part with `format: mp3` (the spoken clip of `gemini/requests/audio-input.json`) and a `prompt_cache_breakpoint`, after a developer message | schema: ChatCompletionRequestMessageContentPartAudio, PromptCacheBreakpointParam |
 | `json-object.json` | JSON mode `response_format: {type: json_object}` | schema: ResponseFormatJsonObject |
+| `instructor-json-mode.json` | Instructor 1.18.0 `Mode.JSON` with a Pydantic model: its system prompt quoting the JSON schema, then `response_format: {type: json_object}` | recorded: the request Instructor sent to a local endpoint, on 2026-11-27 |
 | `json-schema.json` | Structured Outputs `response_format: {type: json_schema, json_schema: {name, description, schema, strict: true}}` | schema: ResponseFormatJsonSchema |
 | `legacy-functions.json` | deprecated `functions` / `function_call` object, assistant `function_call`, `function` role message | schema: ChatCompletionFunctions, ChatCompletionFunctionCallOption, ChatCompletionRequestFunctionMessage |
 | `llm-schema.json` | llm 0.32.1 `--schema 'name, country'` with a streamed reply: a `json_schema` response format without `strict` whose object has no `additionalProperties` | recorded: the request llm sent to a local endpoint configured as an OpenAI-compatible model, on 2026-11-27 |

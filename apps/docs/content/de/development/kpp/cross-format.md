@@ -358,11 +358,11 @@ Der Encoder für OpenAI Chat sendet seinen Rollen-Chunk außerdem, sobald die An
 
 Strukturierte Ausgabe an Anthropic nutzt die nativen Structured Outputs von Anthropic, nie eine Nachbildung über ein erzwungenes Tool.
 
-- Das Ausgabeformat `json_object` hat bei Anthropic keine Entsprechung und ist `Unsupported`.
+- Anthropic hat keinen JSON-Modus, und seine Structured Outputs können kein offenes Objekt ausdrücken, weil jedes Objekt `additionalProperties: false` braucht. Das Ausgabeformat `json_object` geht deshalb als ein Satz am Ende des System-Prompts mit: "Answer with one JSON object and nothing else: no code fence, no text before or after it." `kaeso-adapted` nennt das Feld der App. Wie der JSON-Modus von OpenAI verspricht er kein Schema; anders als dort wird das Modell nicht Token für Token auf JSON festgelegt.
 - Das Ausgabeformat von Anthropic ist nur ein Schema: Der `name` eines Schemas wird weggelassen, seine `description` steht vor der eigenen des Schemas, und `strict: false` wird strikt bedient. Ein Schema aus einem anderen Format wird in die Teilmenge umgeschrieben, die Claude annimmt, wie es die SDKs von Anthropic tun ([Anfragen aus anderen Dialekten](anthropic-messages.md#anfragen-aus-anderen-dialekten)).
 - Schemas, die von Anthropic an OpenAI gehen, bekommen den Namen `response`, weil OpenAI einen verlangt.
 - Gemini bekommt ein Schema als `responseJsonSchema` und `json_object` als `responseMimeType: "application/json"` allein; wie bei Anthropic entfällt der `name` eines Schemas, seine `description` steht vor der eigenen des Schemas, und `strict: false` wird strikt bedient.
-- Amazon Bedrock Converse bekommt noch kein Ausgabeformat: `json_object` und Schemas sind `Unsupported`.
+- Amazon Bedrock Converse bekommt `json_object` ebenso, als Satz im System-Prompt; Schemas sind `Unsupported`.
 
 ## Zustandsbehaftete Responses-Funktionen
 
