@@ -17,6 +17,7 @@ export interface Point {
 export interface GroupRow {
   key: string;
   label: string;
+  source?: string | null;
   value: Value;
   requests: number;
 }
