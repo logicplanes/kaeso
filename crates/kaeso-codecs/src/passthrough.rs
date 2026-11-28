@@ -707,10 +707,8 @@ impl ChatState {
                 self.release_before_error(out);
                 self.inert = true;
                 step.error = Some(
-                    KppError::unsupported_by(
-                        "n",
-                        DialectId::OpenAiChat,
-                        "The provider streamed several choices, but Kaeso carries exactly one; do not request `n` > 1.",
+                    crate::codec::several_choices(
+                        "The provider streamed several choices for one request; Kaeso carries one.",
                     )
                     .with_origin(self.origin.clone()),
                 );
@@ -723,11 +721,7 @@ impl ChatState {
                         self.release_before_error(out);
                         self.inert = true;
                         step.error = Some(
-                            KppError::unsupported_by(
-                                "n",
-                                DialectId::OpenAiChat,
-                                "The provider streamed a choice other than the first; do not request `n` > 1.",
-                            )
+                            crate::codec::several_choices("The provider streamed a choice other than the first; Kaeso carries one.")
                             .with_origin(self.origin.clone()),
                         );
                         return;
@@ -2045,6 +2039,29 @@ mod tests {
         assert_eq!(last["usage"]["total_tokens"], 24, "{last}");
         let with_usage = finishing.iter().filter(|c| !c["usage"].is_null()).count();
         assert_eq!(with_usage, 1, "{finishing:?}");
+    }
+
+    #[test]
+    fn chat_passthrough_refuses_several_choices_as_the_providers_error() {
+        let ectx = EgressCtx::for_kind(RequestKind::Generate, StreamMode::on(false));
+        let enc = EncodeCtx::new(RequestKind::Generate, StreamMode::on(false));
+        for (chunk, message) in [
+            (
+                "data: {\"id\":\"c\",\"choices\":[{\"index\":0,\"delta\":{}},{\"index\":1,\"delta\":{}}]}\n\n",
+                "The provider streamed several choices for one request; Kaeso carries one.",
+            ),
+            (
+                "data: {\"id\":\"c\",\"choices\":[{\"index\":1,\"delta\":{}}]}\n\n",
+                "The provider streamed a choice other than the first; Kaeso carries one.",
+            ),
+        ] {
+            let mut pass = for_stream(DialectId::OpenAiChat, &ectx, &enc).unwrap();
+            let (out, errors, _) = feed_chunked(pass.as_mut(), chunk.as_bytes(), 64);
+            assert!(out.is_empty(), "{}", String::from_utf8_lossy(&out));
+            assert_eq!(errors.len(), 1, "{chunk}");
+            assert_eq!(errors[0].kind, kaeso_kpp::ErrorKind::ProviderError);
+            assert_eq!(errors[0].message, message);
+        }
     }
 
     #[test]

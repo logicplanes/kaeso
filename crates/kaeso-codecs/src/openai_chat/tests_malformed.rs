@@ -86,8 +86,8 @@ fn streams_that_cannot_be_read_end_with_one_error() {
     );
     let cases = [
         (unreadable.to_owned(), ErrorKind::ProviderError),
-        (second_choice, ErrorKind::unsupported("n")),
-        (two_choices, ErrorKind::unsupported("n")),
+        (second_choice, ErrorKind::ProviderError),
+        (two_choices, ErrorKind::ProviderError),
         (bad_usage, ErrorKind::ProviderError),
     ];
     for (sse, kind) in cases {

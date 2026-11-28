@@ -35,7 +35,7 @@ nav: OpenAI Chat
 | `stop` | `sampling.stop`（类型化） | 字符串写法：形式标记 `stop: "string"`；`[]`：形式标记 `"array"`。超过四个序列：`Unsupported`（`stop`）。 |
 | `seed` | `sampling.seed`（类型化） | 服务商的配置如此规定时，以 `random_seed` 发送（[服务商配置](openai-chat-providers.md#服务商配置)）。 |
 | `frequency_penalty`、`presence_penalty` | `sampling.*`（类型化） | 整数写法与 `temperature` 相同（形式标记 `integers`）。对没有惩罚参数的目标，`0` 会被省略（[中性值](sampling.md#中性值)）。 |
-| `n` | 为 `1` 时记为形式标记 `n` | `n > 1`：`Unsupported`（`n`，见[采样参数](sampling.md)）；`0`：`InvalidRequest`。 |
+| `n` | 为 `1` 时记为形式标记 `n` | `n > 1`：`Unsupported`（`n`，见[采样参数](sampling.md)），作为 Kaeso 自身的限制：每个请求一个选项，需要更多时由应用发送多个请求；`0`：`InvalidRequest`。 |
 | `reasoning_effort` | `reasoning.effort`（类型化） | 来自其他方言时（[推理强度与预算](reasoning.md#推理强度与预算)）：显式的推理强度保持不变；Anthropic `thinking.disabled` 变为 `none`；预算变为 `low`（低于 4,096）、`medium`（4,096 到 16,383）或 `high`（16,384 及以上）。取值为 `none` 到 `max`；未知值保留为 `ReasoningEffort::Other`，对 Chat 应用原样透传，而对来自其他方言的请求，`check()` 会拒绝规范枚举之外的值（`reasoning.effort`）。 |
 | `reasoning` `{effort, max_tokens, enabled, exclude}`（OpenRouter） | `reasoning`（类型化：`effort`、`budget_tokens`、`mode`、`exclude`） | OpenRouter 的统一推理对象。`max_tokens`（正整数）设置 `mode = Enabled` 和 `budget_tokens`；`enabled: true` 设置 `Adaptive` 而不强制指定强度；`enabled: false` 设置 `Disabled`；`exclude: true` 在回复和流中隐藏推理，同时保留 `reasoning_tokens`。冲突组合（`reasoning_effort` 与 `reasoning.effort` 不同、`effort` 与 `max_tokens` 共存、`enabled: false` 与强度或预算共存、`enabled: true` 与 `effort: "none"` 共存、`max_tokens: 0`）为 `InvalidRequest`。未知键为 extras `reasoning.<key>`，对没有 `with_reasoning_object()` 的服务商和跨方言时都会被拒绝。带 `with_reasoning_object()` 的服务商（OpenRouter、Vercel、Ollama Cloud）收回 `reasoning` 对象；OpenAI 和其他 Chat 服务商改为收到 `reasoning_effort`（或各自的思考开关）。 |
 | `response_format` `{type: text}` | `output = Text`（类型化） | 形式标记 `response_format_text`；未知键为 extras `response_format.<key>`。 |
@@ -163,7 +163,7 @@ OpenAI Responses 的 `custom_tool_call` 和 `local_shell_call` 项及其输出�
 | `id`、`model` | `Response.id`、`.model` | 来自其他格式时，保留服务商的 ID 不变（[回复 ID](cross-format.md#回复-id)）。 |
 | `object` | 无 | 始终为 `chat.completion`；其他值或没有该字段：形式标记 `object`。 |
 | `created`、`service_tier`、`system_fingerprint`、`metadata`、`moderation` | extras | extras 中没有 `created` 的回复（例如来自其他方言的回复）取 `EncodeCtx::created_at`，没有时为 `0`。 |
-| `choices` | `choices[0]` | 多于一个选项（choice）：`Unsupported`（`n`）；没有选项：`ProviderError`；`index` 不为 0：extras `choice.index`。带有 `error` 对象且没有 `choices` 的 200 响应体（OpenRouter 在服务商于 200 之后失败时发送，见 [Errors and debugging](https://openrouter.ai/docs/api_reference/errors-and-debugging)）会像流错误一样解码为该错误。 |
+| `choices` | `choices[0]` | 多于一个选项（choice）：`ProviderError`，因为 Kaeso 已拒绝请求中大于 1 的 `n`；没有选项：`ProviderError`；`index` 不为 0：extras `choice.index`。带有 `error` 对象且没有 `choices` 的 200 响应体（OpenRouter 在服务商于 200 之后失败时发送，见 [Errors and debugging](https://openrouter.ai/docs/api_reference/errors-and-debugging)）会像流错误一样解码为该错误。 |
 | `choices[0].logprobs` | extras `choice.logprobs` | `null`：verbatim。 |
 | `choices[0].finish_reason` | `Response.stop` | `stop` ⇄ `EndTurn`，`length` ⇄ `MaxTokens`，`tool_calls` ⇄ `ToolUse`，`content_filter` ⇄ `ContentFilter`，其他值（例如 `function_call`）⇄ `Other`。来自其他方言时：`StopSequence` 和 `PauseTurn` 变为 `stop`；`Refusal` 变为 `content_filter`，因为回答被拦下了。其他方言自有的值会变为最接近的 Chat 值：`max_tokens`、`max_output_tokens` 和 `model_context_window_exceeded` 变为 `length`，`tool_use` 变为 `tool_calls`，`refusal` 变为 `content_filter`，规范枚举之外的其他值变为 `stop`。非流式回复缺少规范要求的 `finish_reason`：`ProviderError`。 |
 | `message.content` | `Block::Text` | 来自其他方言时，所有文本块不加分隔符地拼接起来，因为 Chat 的回复中没有内容部分。不加分隔符，是因为 Anthropic 会围绕引用把一个回答拆成多个文本块，而同样不带分隔符的流式增量必须拼出相同的 `content`。与工具调用并列的 `content: ""`（DeepSeek 以此回答工具轮次）不是文本块：形式标记 `empty_content`，对 Chat 应用写回为 `""`。其他格式不会收到空消息：OpenAI 从不在调用前发送空消息，而开启 `store` 的 Responses 应用会按 ID 引用它（`providers/deepseek/responses/recorded-thinking-tools-auto.json`）。 |
@@ -225,7 +225,7 @@ KPP 字段遵循[用量](cross-format.md#用量)中的约定。
 | 一些兼容 OpenAI 的服务商发送的、带数据的 `event: error` 帧 | `Error` | 像不带状态码的错误体一样解码；编码为 `data:` 帧。没有数据时，这样的帧是一个 `Extra`。 |
 | 不是 JSON 的 `data:` 帧、Kaeso 无法读取的 chunk | `Error`（`ProviderError`） | 解码器停止。 |
 | SSE 注释、没有数据或数据为空的帧、其他具名事件、`[DONE]` 之后的帧 | `Extra`（`{"comment"}` 或 `{"event", "data", "text", "id", "retry", "other"}`，原帧没有数据时不含 `data`，数据不是 JSON 时带有 `text: true`） | 仅限同一方言；按收到时的样子写回。 |
-| 多个选项、`index` 不为 0 的选项 | 带 `Unsupported`（`n`）的 `Error` | |
+| 多个选项、`index` 不为 0 的选项 | 带 `ProviderError` 的 `Error` | |
 
 chunk 分组：每个 chunk 的第一个事件带有形式标记 `chunk`，其余事件带有 `in_chunk`，这样编码器会把它们重新写成一帧。该标记包含 `n`（来自该 chunk 的事件数），另加上面的结构标记。
 

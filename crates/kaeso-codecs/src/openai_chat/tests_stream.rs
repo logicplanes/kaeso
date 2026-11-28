@@ -465,7 +465,11 @@ fn truncated_and_malformed_streams_end_with_an_error() {
     let StreamEvent::Error(err) = events.last().unwrap() else {
         panic!()
     };
-    assert_eq!(err.unsupported_feature(), Some("n"));
+    assert_eq!(err.kind, ErrorKind::ProviderError);
+    assert_eq!(
+        err.message,
+        "The provider streamed several choices for one request; Kaeso carries one."
+    );
     let mut decoder = OpenAiChat::stream_decoder(&ectx());
     decoder.feed(b"data: {bad\n\n");
     assert!(

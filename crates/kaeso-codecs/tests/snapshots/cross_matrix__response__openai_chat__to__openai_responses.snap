@@ -557,7 +557,7 @@ expression: outcomes
     "user": null
   },
   "n-2": {
-    "rejected_by_source": "`n` is not supported by OpenAI Chat Completions. The provider returned several choices, but Kaeso carries exactly one; do not request `n` > 1."
+    "rejected_by_source": "The provider returned several choices for one request; Kaeso carries one."
   },
   "plain-developer-string": {
     "background": false,

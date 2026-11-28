@@ -8,6 +8,9 @@ expression: outcomes
     "param": "generationConfig.thinkingConfig.thinkingLevel",
     "unsupported": "reasoning effort `minimal`"
   },
+  "candidate-count-2": {
+    "rejected_by_source": "`generationConfig.candidateCount` above 1"
+  },
   "error-invalid-argument": {
     "message": "reasoning effort `ultra` is not supported by Anthropic Messages. Anthropic effort levels are low, medium, high, xhigh and max.",
     "param": "generationConfig.thinkingConfig.thinkingLevel",

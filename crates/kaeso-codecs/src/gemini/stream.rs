@@ -262,10 +262,8 @@ impl Decoder {
             && n > 1
         {
             out.push(StreamEvent::Error(
-                KppError::unsupported_by(
-                    "more than one candidate",
-                    D,
-                    "Kaeso reads one candidate per reply; leave `candidateCount` out or set it to 1.",
+                crate::codec::several_choices(
+                    "The provider streamed several candidates for one request; Kaeso carries one.",
                 )
                 .with_origin(self.origin.clone()),
             ));

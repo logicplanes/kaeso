@@ -350,6 +350,7 @@ The OpenAI and Anthropic SDKs, and the coding agents built on them, retry a 429,
 - a budget used up until it resets, or a request that could cost more than what's left of one;
 - a plan's usage limit, which lasts until the plan resets, and a provider's spend cap, such as Anthropic's monthly one;
 - a provider key the provider refused, a project without a provider key, a signed-out account and other problems only an organization admin can fix, each a 500 or 502;
+- a provider's reply with several choices or candidates, which Kaeso doesn't ask for and can't carry;
 - any error whose `Retry-After` is longer than a minute, which is longer than the SDKs wait by themselves.
 
 `Retry-After` says when a request can pass again, where Kaeso knows it: when a rate limit's window frees up, when a used-up budget's period resets, and how long Kaeso holds an account whose plan reached its usage limit in an [alias route](../concepts/alias-routes.md#fallbacks). A rate limit, a 503 or 529 and a provider's other failures carry no `x-should-retry`, so clients retry them as usual.

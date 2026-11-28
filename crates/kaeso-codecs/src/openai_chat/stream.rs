@@ -493,10 +493,8 @@ impl ChatStreamDecoder {
                 }
             }
             Some(_) => {
-                return Err(KppError::unsupported_by(
-                    "n",
-                    DIALECT,
-                    "The provider streamed several choices, but Kaeso carries exactly one; do not request `n` > 1.",
+                return Err(crate::codec::several_choices(
+                    "The provider streamed several choices for one request; Kaeso carries one.",
                 ));
             }
         }
@@ -562,10 +560,8 @@ impl ChatStreamDecoder {
             ..
         } = choice;
         if known.index != 0 {
-            return Err(KppError::unsupported_by(
-                "n",
-                DIALECT,
-                "The provider streamed a choice other than the first; do not request `n` > 1.",
+            return Err(crate::codec::several_choices(
+                "The provider streamed a choice other than the first; Kaeso carries one.",
             ));
         }
         nulls_to_verbatim(&mut extra, &mut verbatim);

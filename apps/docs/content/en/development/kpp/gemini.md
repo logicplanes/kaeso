@@ -57,7 +57,7 @@ Schema `GenerateContentRequest`.
 | `mode: VALIDATED`, `ANY` with several names, any other combination | `ToolChoice::Unknown` (raw) | Refused across dialects. |
 | `toolConfig.retrievalConfig`, `.includeServerSideToolInvocations` | fields `toolConfig.*` | |
 | `generationConfig.temperature`, `.topP`, `.topK`, `.maxOutputTokens`, `.stopSequences`, `.seed`, `.presencePenalty`, `.frequencyPenalty` | `sampling.*` | Numbers keep their spelling within the dialect (form `integers`). `topK` is left out for a target without top-k ([top K](sampling.md#top-k)). |
-| `generationConfig.candidateCount` | form `candidate_count` | Above 1 → `Unsupported` when decoded, as Chat's `n` ([sampling](sampling.md)). |
+| `generationConfig.candidateCount` | form `candidate_count` | Above 1 → `Unsupported` when decoded, as Chat's `n` ([sampling](sampling.md)): Kaeso returns one candidate per request, so the app sends several requests for more. |
 | `responseMimeType: application/json` with `responseJsonSchema` | `output = JsonSchema` | |
 | `responseMimeType: application/json` with `responseSchema` | `output = JsonSchema` | form `schema: "responseSchema"`; other dialects get it as JSON Schema ([schemas](#schemas)). |
 | `responseMimeType: application/json` alone | `output = JsonObject` | |
@@ -173,7 +173,7 @@ Schema `GenerateContentResponse`.
 | `responseId` | `id` | Absent → form `no_response_id`. |
 | `modelVersion` | `model` | Absent → form `no_model_version`. |
 | `candidates[0].content.parts` | `blocks` | As in requests. Image parts become `Block::Image`. |
-| More than one candidate | `Unsupported` | |
+| More than one candidate | `ProviderError`, since Kaeso refused any `candidateCount` above 1 in the request | |
 | `candidates[0].finishReason` | `stop` | See [finish reasons](#finish-reasons). |
 | `candidates[0]` other keys (`index`, `finishMessage`, `safetyRatings`, `citationMetadata`, `groundingMetadata`, `urlContextMetadata`, `avgLogprobs`, `logprobsResult`, `tokenCount`) | fields `candidate.*` | `citationMetadata` indexes the candidate's whole text, which KPP citations, bound to one block, can't express. |
 | `candidates[0].content.role` | — | Another value or none → form `no_role`. |

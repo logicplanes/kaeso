@@ -57,7 +57,7 @@ Schema `GenerateContentRequest`。
 | `mode: VALIDATED`、带多个名称的 `ANY`，以及其他任何组合 | `ToolChoice::Unknown`（原样） | 跨方言时被拒绝。 |
 | `toolConfig.retrievalConfig`、`.includeServerSideToolInvocations` | 字段 `toolConfig.*` | |
 | `generationConfig.temperature`、`.topP`、`.topK`、`.maxOutputTokens`、`.stopSequences`、`.seed`、`.presencePenalty`、`.frequencyPenalty` | `sampling.*` | 数字在方言内保留写法（形式标记 `integers`）。没有 top-k 的目标会省略 `topK`（[top K](sampling.md#top-k)）。 |
-| `generationConfig.candidateCount` | 形式标记 `candidate_count` | 大于 1 → 解码时为 `Unsupported`，与 Chat 的 `n` 相同（[采样参数](sampling.md)）。 |
+| `generationConfig.candidateCount` | 形式标记 `candidate_count` | 大于 1 → 解码时为 `Unsupported`，与 Chat 的 `n` 相同（[采样参数](sampling.md)）：Kaeso 每个请求返回一个候选，需要更多时由应用发送多个请求。 |
 | `responseMimeType: application/json` 加 `responseJsonSchema` | `output = JsonSchema` | |
 | `responseMimeType: application/json` 加 `responseSchema` | `output = JsonSchema` | 形式标记 `schema: "responseSchema"`；其他方言收到的是 JSON Schema（[schema](#schema)）。 |
 | 只有 `responseMimeType: application/json` | `output = JsonObject` | |
@@ -173,7 +173,7 @@ Schema `GenerateContentResponse`。
 | `responseId` | `id` | 缺失 → 形式标记 `no_response_id`。 |
 | `modelVersion` | `model` | 缺失 → 形式标记 `no_model_version`。 |
 | `candidates[0].content.parts` | `blocks` | 与请求中相同。图像 part 变为 `Block::Image`。 |
-| 多于一个 candidate | `Unsupported` | |
+| 多于一个 candidate | `ProviderError`，因为 Kaeso 已拒绝请求中大于 1 的 `candidateCount` | |
 | `candidates[0].finishReason` | `stop` | 见[结束原因](#结束原因)。 |
 | `candidates[0]` 的其他键（`index`、`finishMessage`、`safetyRatings`、`citationMetadata`、`groundingMetadata`、`urlContextMetadata`、`avgLogprobs`、`logprobsResult`、`tokenCount`） | 字段 `candidate.*` | `citationMetadata` 指向 candidate 的全部文本，而 KPP 引用绑定在单个块上，无法表达这一点。 |
 | `candidates[0].content.role` | — | 其他值或缺失 → 形式标记 `no_role`。 |

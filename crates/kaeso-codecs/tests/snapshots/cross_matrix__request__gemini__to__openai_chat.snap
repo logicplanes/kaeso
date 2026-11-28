@@ -28,6 +28,9 @@ expression: outcomes
     },
     "path": "/v1/chat/completions"
   },
+  "candidate-count-2": {
+    "rejected_by_source": "`generationConfig.candidateCount` above 1"
+  },
   "error-invalid-argument": {
     "message": "`reasoning.effort` is not supported by OpenAI Chat Completions. It does not know the effort `ultra`; use none, minimal, low, medium, high, xhigh or max.",
     "param": "generationConfig.thinkingConfig.thinkingLevel",

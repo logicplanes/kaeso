@@ -6,6 +6,7 @@ A `<name>.meta.json` names the model or the method of a request when the round-t
 |---|---|---|
 | `text-simple.json` | one user turn | schema: GenerateContentRequest (discovery v1beta revision 20261106) |
 | `system-instruction.json` | `systemInstruction`, temperature, `topP`, `topK`, `maxOutputTokens`, `stopSequences`, `seed`, `candidateCount: 1` | schema: GenerateContentRequest, GenerationConfig (discovery v1beta revision 20261106) |
+| `candidate-count-2.json` | `candidateCount: 2`, which the codec refuses as `Unsupported`: Kaeso returns one candidate per request | schema: GenerationConfig.candidateCount (discovery v1beta revision 20261106) |
 | `multi-turn.json` | user, model and user contents; `thinkingLevel: MINIMAL` | schema: Content, ThinkingConfig (discovery v1beta revision 20261106) |
 | `role-assistant.json` | a content with the role `assistant`, which Gemini answered | schema: Content (discovery v1beta revision 20261106); recorded |
 | `thinking-include-thoughts.json` | `includeThoughts` with `thinkingLevel: LOW` | doc: thinking, thought summaries |

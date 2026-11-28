@@ -8,6 +8,9 @@ expression: outcomes
     "param": "messages[0].blocks[0]",
     "unsupported": "audio block"
   },
+  "candidate-count-2": {
+    "rejected_by_source": "`generationConfig.candidateCount` above 1"
+  },
   "error-invalid-argument": {
     "body": {
       "include": [
