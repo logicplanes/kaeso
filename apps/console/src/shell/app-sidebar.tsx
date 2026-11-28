@@ -25,16 +25,10 @@ export function AppSidebar() {
       <Sidebar.Brand lead={org && project && !gone ? <ProjectSwitcher org={org} project={project} /> : org ? <OrgSwitcher org={org} /> : undefined}>
         <Sidebar.CollapseToggle />
       </Sidebar.Brand>
-      <Sidebar.Content>
-        <Sidebar.Group>
-          <Sidebar.Item icon={icons.search} shortcut={["mod", "k"]} onClick={openPalette}>
-            {t("common.search", "Search")}
-          </Sidebar.Item>
-        </Sidebar.Group>
-        {org && project && !gone ? <ProjectArea org={org} project={project} /> : org && <OrgArea org={org} />}
-      </Sidebar.Content>
+      <Sidebar.Content>{org && project && !gone ? <ProjectArea org={org} project={project} /> : org && <OrgArea org={org} />}</Sidebar.Content>
       <Sidebar.Footer>
         <AccountSwitcher />
+        <Sidebar.Action icon={icons.search} label={t("common.search", "Search")} shortcut={["mod", "k"]} onClick={openPalette} />
       </Sidebar.Footer>
     </Sidebar>
   );
