@@ -278,18 +278,11 @@ mod tests {
                 "messages": [{"role": "user", "content": "Hi"}]
             }),
         );
-        for target in [C, R, G, B] {
+        for target in [C, R, G, B, A] {
             let (body, left_out) = sent(target, &req).unwrap_or_else(|e| panic!("{target}: {e}"));
             assert_eq!(left_out, ["thread"], "{target}");
             assert!(body.get("thread").is_none(), "{target}: {body}");
         }
-        let (body, left_out) = sent(A, &req).unwrap();
-        assert!(left_out.is_empty(), "{left_out:?}");
-        assert_eq!(
-            body.get("thread"),
-            Some(&json!(null)),
-            "Anthropic gets it as written"
-        );
     }
 
     #[test]

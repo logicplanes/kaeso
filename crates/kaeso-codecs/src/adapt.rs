@@ -138,8 +138,7 @@ pub(crate) fn for_target<'a>(
             history::as_function_calls(&mut draft)?;
             object_arguments(&mut draft, target)?;
             fold_later_system(&mut draft, target)?;
-            let anthropic = ctx.provider.as_deref().is_none_or(|p| p == "anthropic");
-            crate::anthropic_messages::apply_profile(&mut draft, &ctx.messages_profile, anthropic)?;
+            crate::anthropic_messages::apply_profile(&mut draft, &ctx.messages_profile)?;
         }
         DialectId::OpenAiChat => {
             if ctx.chat_profile.request.forced_tool_without_thinking {

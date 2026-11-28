@@ -11,7 +11,13 @@ fn round_trip_requests(folder: &str, kind: RequestKind, path: &str) -> usize {
             .with_messages_profile(crate::test_support::messages_profile_for(&name));
         let enc = AnthropicMessages::encode_request(&req, &mut ctx)
             .unwrap_or_else(|e| panic!("{name}: encode failed: {e}"));
-        assert_json_eq(&name, &body, &enc.body);
+        // What the encoder names as left out is all that may differ.
+        let mut want: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        for field in &ctx.left_out {
+            want.as_object_mut().unwrap().remove(field);
+        }
+        let want = serde_json::to_vec(&want).unwrap();
+        assert_json_eq(&name, &want, &enc.body);
         assert_eq!(enc.path, path, "{name}");
         assert_eq!(enc.method, "POST");
         assert_eq!(
@@ -27,7 +33,9 @@ fn round_trip_requests(folder: &str, kind: RequestKind, path: &str) -> usize {
             "{name}"
         );
         let again = AnthropicMessages::decode_request(kind, &enc.body, &headers).unwrap();
-        assert_eq!(again, req, "{name}");
+        if ctx.left_out.is_empty() {
+            assert_eq!(again, req, "{name}");
+        }
         n += 1;
     }
     n

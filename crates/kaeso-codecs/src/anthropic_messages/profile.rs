@@ -188,11 +188,7 @@ impl Default for MessagesProfile {
 
 const D: DialectId = DialectId::AnthropicMessages;
 
-pub(crate) fn apply(
-    d: &mut Draft<'_>,
-    profile: &MessagesProfile,
-    anthropic: bool,
-) -> Result<(), KppError> {
+pub(crate) fn apply(d: &mut Draft<'_>, profile: &MessagesProfile) -> Result<(), KppError> {
     let r = d.get();
     for (field, value) in profile.fixed_sampling {
         let sent = match *field {
@@ -252,10 +248,9 @@ pub(crate) fn apply(
             _ => {}
         }
     }
-    // Only Anthropic's API has message threads, and a null `thread` asks for none: other
-    // providers don't get a field they may refuse as unknown.
+    // A null `thread` asks for no thread, and no provider documents it: Anthropic's message threads
+    // name only `create` and `continue`, and other providers may refuse a key they don't know.
     if own
-        && (!anthropic || profile.provider != MessagesProfile::ANTHROPIC.provider)
         && r.extras
             .fields
             .get(super::THREAD)
