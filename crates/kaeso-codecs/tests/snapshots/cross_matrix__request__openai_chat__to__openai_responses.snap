@@ -653,6 +653,48 @@ expression: outcomes
     },
     "path": "/v1/responses"
   },
+  "openai-python-parse-dict": {
+    "body": {
+      "input": [
+        {
+          "content": "Count the visitors by country for Tokyo.",
+          "role": "user"
+        }
+      ],
+      "model": "claude-haiku-5-5",
+      "store": false,
+      "text": {
+        "format": {
+          "name": "Report",
+          "schema": {
+            "additionalProperties": false,
+            "properties": {
+              "city": {
+                "title": "City",
+                "type": "string"
+              },
+              "totals": {
+                "additionalProperties": {
+                  "type": "integer"
+                },
+                "title": "Totals",
+                "type": "object"
+              }
+            },
+            "required": [
+              "city",
+              "totals"
+            ],
+            "title": "Report",
+            "type": "object"
+          },
+          "strict": true,
+          "type": "json_schema"
+        }
+      }
+    },
+    "path": "/v1/responses"
+  },
   "openrouter-reasoning": {
     "body": {
       "include": [
@@ -6790,6 +6832,113 @@ expression: outcomes
           "type": "function"
         }
       ]
+    },
+    "path": "/v1/responses"
+  },
+  "typebox-intersect": {
+    "body": {
+      "input": [
+        {
+          "content": "Tokyo",
+          "role": "user"
+        }
+      ],
+      "model": "claude-haiku-5-5",
+      "store": false,
+      "text": {
+        "format": {
+          "name": "city",
+          "schema": {
+            "allOf": [
+              {
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "name"
+                ],
+                "type": "object"
+              },
+              {
+                "properties": {
+                  "country": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "country"
+                ],
+                "type": "object"
+              }
+            ],
+            "type": "object"
+          },
+          "type": "json_schema"
+        }
+      }
+    },
+    "path": "/v1/responses"
+  },
+  "typebox-intersect-nested": {
+    "body": {
+      "input": [
+        {
+          "content": "Tokyo",
+          "role": "user"
+        }
+      ],
+      "model": "claude-haiku-5-5",
+      "store": false,
+      "text": {
+        "format": {
+          "name": "city",
+          "schema": {
+            "allOf": [
+              {
+                "allOf": [
+                  {
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "name"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "properties": {
+                      "country": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "country"
+                    ],
+                    "type": "object"
+                  }
+                ],
+                "type": "object"
+              },
+              {
+                "properties": {
+                  "population": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "population"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "type": "json_schema"
+        }
+      }
     },
     "path": "/v1/responses"
   },

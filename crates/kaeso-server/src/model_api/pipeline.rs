@@ -14,7 +14,7 @@ use kaeso_core::catalogue::Entry;
 use kaeso_core::catalogue::resolve::{Access, Alias, ResolveError, Resolved};
 use kaeso_core::catalogue::route::{self, Failure as RouteFailure};
 use kaeso_core::catalogue::{Availability, Effective, capability};
-use kaeso_core::estimate::{self, Tally};
+use kaeso_core::estimate::{self, OutputCap, Tally};
 use kaeso_core::id::{
     ApiKeyId, CatalogueModelId, OrgId, ProjectId, RequestId, ServiceAccountId, UserId,
 };
@@ -2641,6 +2641,7 @@ async fn attempt(
             not_found_in_request: false,
         }
     };
+    let cut_key = output_cap.as_ref().map(OutputCap::cache_key);
     // A retry or a stored response goes to its provider, which an answer from the cache would
     // skip; a stored one is counted as passing the cache by.
     let cached = if again.is_some() || keeping.is_some() {
@@ -2667,6 +2668,7 @@ async fn attempt(
                 entry: entry.id,
                 model: &eff.model_id,
                 encoded: &encoded,
+                cut: cut_key.as_deref(),
             },
             stream,
         )
@@ -2949,7 +2951,7 @@ async fn attempt(
                 }
                 stream::Gathered::Broken(err) => fail(Stage::Reply)(err),
             })?;
-            let mut reply = reply;
+            let (mut reply, read) = reply;
             if let Err(e) =
                 Box::pin(guard_reply(state, rec, sh, &started_req, &mut reply, false)).await
             {
@@ -2959,8 +2961,19 @@ async fn attempt(
             if let Some(g) = sh.guards {
                 g.restore(&mut reply);
             }
+            let estimated = !read.has_final_usage();
+            if estimated && let Reply::Generate(r) = &mut reply {
+                r.usage = estimate::complete(&r.usage, &read, None);
+            }
+            record_usage(rec, &reply, counter).await;
+            // A reply Kaeso ended before the provider's usage came answers with the estimate.
+            if estimated
+                && let (Reply::Generate(r), Some(usage)) = (&mut reply, &rec.outcome().usage)
+            {
+                r.usage = usage.clone();
+            }
             let out = dispatch::encode_response(ingress, &reply, &encode_ctx);
-            reply_with(state, rec, reply, out, counter, carry, &served)
+            keep_and_answer(state, rec, reply, out, carry, &served)
                 .await
                 .map_err(fail(Stage::Reply))
         }
@@ -3065,7 +3078,7 @@ async fn attempt(
                 .await;
                 // A stream that ends in an error or breaks off goes to the app as it came, and
                 // the app sees its end as without guardrails.
-                if let Ok(mut reply) = gathered
+                if let Ok((mut reply, _)) = gathered
                     && let Err(e) =
                         Box::pin(guard_reply(state, rec, sh, &started_req, &mut reply, true)).await
                 {
@@ -3801,6 +3814,17 @@ async fn reply_with(
     served: &Served,
 ) -> Result<Done, KppError> {
     record_usage(rec, &reply, counter).await;
+    keep_and_answer(state, rec, reply, out, carry, served).await
+}
+
+async fn keep_and_answer(
+    state: &AppState,
+    rec: &mut Recording,
+    reply: Reply,
+    out: Result<Vec<u8>, KppError>,
+    carry: Option<continuity::Carry>,
+    served: &Served,
+) -> Result<Done, KppError> {
     let out = out?;
     if let Some(slot) = rec.keep_in_cache.take() {
         let o = rec.outcome();

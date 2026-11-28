@@ -17,7 +17,7 @@ nav: Messages 服务商
 | `sampling_fixed_at(values)` | 拒绝与服务商始终使用的采样值（`FixedValue`，以千分之一为单位）不同的 `temperature` 或 `top_p`；该值本身按原样发送。 | 服务商忽略该字段，因此只有它自己的值会被遵守。 |
 | `auto_tool_choice_only()` | 拒绝任何格式中不为 `auto` 的 `tool_choice`。 | 无论应用要求什么，服务商都会自己选择工具。 |
 | `with_video(media_types)` | 把 `Block::Video` 作为 `video` 块发送；其他媒体类型的 base64 来源为 `Unsupported`。 | 只有在文档中写明该块的服务商才会收到它。 |
-| `forced_tool_without_thinking()` | 当请求的 `tool_choice` 强制使用某个工具（`any` 或指定的工具）时，以 `thinking: {"type": "disabled"}` 发送，并在 `kaeso-adapted` 中注明应用的推理字段。 | 该服务商会拒绝在模型思考时强制使用工具，而其模型除非被告知不要思考，否则都会思考。 |
+| `forced_tool_without_thinking()` | 当请求的 `tool_choice` 强制使用某个工具（`any` 或指定的工具）时，以 `thinking: {"type": "disabled"}` 发送，并在 `kaeso-adapted` 中注明应用的推理字段；来自其他格式的推理强度 `none` 也同样处理。声明了 `deepseek_web_search` 等服务端工具时的 `any` 按原样发送，因为 DeepSeek 在思考时将其视为 `auto`。 | 该服务商会拒绝在模型思考时强制使用工具，而其模型除非被告知不要思考，否则都会思考。 |
 | `without_custom_tool_type()` | 发送应用的工具时不带 `type: "custom"`，解码器把它保存为形式标记。 | 没有 `type` 的工具本来就是 `custom`；只把 `type` 当作服务端工具来读的服务商会拒绝它。 |
 | `raw_predict()` | 将生成请求发送到 `{base_path}/{model}:rawPredict`（流式时为 `:streamRawPredict`），不含 `model`；将 Token 计数发送到 `{base_path}/count-tokens:rawPredict`，保留 `model`；两者都带上 `anthropic_version` `vertex-2023-10-16`，除非应用自己发送了。Google 格式的错误按 Gemini 错误读取。 | Google 平台提供 Claude 的方式（[使用 Claude](https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/partner-models/claude/use-claude)、[计算 Token](https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/partner-models/claude/count-tokens)、Anthropic 的 SDK）。Gemini Enterprise Agent Platform 使用它，并拒绝 [Anthropic 列为](https://platform.claude.com/docs/en/build-with-claude/claude-models-on-google-cloud/google-managed)不可用的 `mcp_servers` 和 `container`。 |
 
