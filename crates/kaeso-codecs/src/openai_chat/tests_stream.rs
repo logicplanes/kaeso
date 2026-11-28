@@ -7,7 +7,7 @@ use proptest::prelude::*;
 use serde_json::{Value, json};
 
 use super::OpenAiChat;
-use crate::codec::{Codec, EgressCtx, EncodeCtx};
+use crate::codec::{Codec, EgressCtx, EncodeCtx, HeaderList};
 use crate::test_support::{assert_sse_eq, chat_usage_in_its_own_chunk, fixtures};
 use crate::testing::sse_items;
 
@@ -66,6 +66,46 @@ fn frames(bytes: &[u8]) -> Vec<Value> {
             crate::testing::ComparableItem::Comment(c) => Value::String(format!(": {c}")),
         })
         .collect()
+}
+
+// OpenAI's shape for `include_usage`: one chunk carries the usage, the last before `[DONE]`,
+// with empty `choices`. Clients such as LangChain add up every chunk's usage.
+fn assert_usage_once(name: &str, out: &[u8], total: u64) {
+    let chunks: Vec<Value> = frames(out).into_iter().filter(|c| c.is_object()).collect();
+    let with: Vec<&Value> = chunks.iter().filter(|c| !c["usage"].is_null()).collect();
+    let text = String::from_utf8_lossy(out);
+    assert_eq!(with.len(), 1, "{name}: {text}");
+    assert_eq!(Some(with[0]), chunks.last(), "{name}: {text}");
+    assert_eq!(with[0]["choices"], json!([]), "{name}: {text}");
+    assert_eq!(with[0]["usage"]["total_tokens"], total, "{name}: {text}");
+}
+
+#[test]
+fn every_stream_fixture_with_usage_reaches_an_app_that_asked_for_it_once() {
+    let mut checked = 0;
+    for (name, bytes) in fixtures(D, "streams", "sse") {
+        let sent = frames(&bytes);
+        let Some(newest) = sent
+            .iter()
+            .rfind(|c| c.is_object() && !c["usage"].is_null())
+        else {
+            continue;
+        };
+        let events = decode_whole(&bytes);
+        if events.iter().any(|e| matches!(e, StreamEvent::Error(_))) {
+            continue;
+        }
+        let out = encode(&events, true);
+        let chunks: Vec<Value> = frames(&out).into_iter().filter(Value::is_object).collect();
+        let with: Vec<&Value> = chunks.iter().filter(|c| !c["usage"].is_null()).collect();
+        let text = String::from_utf8_lossy(&out);
+        assert_eq!(with.len(), 1, "{name}: {text}");
+        assert_eq!(Some(with[0]), chunks.last(), "{name}: {text}");
+        assert_eq!(with[0]["choices"], json!([]), "{name}: {text}");
+        assert_eq!(with[0]["usage"], newest["usage"], "{name}");
+        checked += 1;
+    }
+    assert!(checked >= 10, "{checked}");
 }
 
 #[test]
@@ -1135,11 +1175,13 @@ fn running_usage_without_a_final_report_goes_out_before_the_stream_stops() {
         .collect();
     assert_eq!(stops, [Some(StopReason::EndTurn), None]);
     assert_eq!(usage_deltas(&events), [(None, 2)]);
-    assert_sse_eq("replay", sse.as_bytes(), &encode(&events, true));
+    let out = encode(&events, true);
+    assert_sse_eq("replay", &chat_usage_in_its_own_chunk(sse.as_bytes()), &out);
+    assert_usage_once("running usage", &out, 7);
 }
 
 #[test]
-fn a_stream_with_running_usage_replays_byte_for_byte() {
+fn running_usage_reaches_the_app_once_unless_it_asked_for_it_on_every_chunk() {
     let bytes = fixture("usage-every-chunk");
     let events = decode_whole(&bytes);
     let last_block_stop = events
@@ -1156,7 +1198,25 @@ fn a_stream_with_running_usage_replays_byte_for_byte() {
         with_usage.iter().all(|i| *i > last_block_stop),
         "{events:?}"
     );
-    assert_sse_eq("usage-every-chunk", &bytes, &encode(&events, true));
+    let out = encode(&events, true);
+    assert_sse_eq(
+        "usage-every-chunk",
+        &chat_usage_in_its_own_chunk(&bytes),
+        &out,
+    );
+    assert_usage_once("usage-every-chunk", &out, 17);
+    // vLLM's `continuous_usage_stats` asks for it on every chunk: the stream replays as sent.
+    let body = br#"{"model":"m","messages":[{"role":"user","content":"Hi"}],"stream":true,
+        "stream_options":{"include_usage":true,"continuous_usage_stats":true}}"#;
+    let req = OpenAiChat::decode_request(RequestKind::Generate, body, &HeaderList::new()).unwrap();
+    let ctx = EncodeCtx::for_request(req).with_created_at(1_700_000_000);
+    let mut encoder = OpenAiChat::stream_encoder(&ctx);
+    let mut asked = Vec::new();
+    for event in &events {
+        asked.extend(encoder.encode(event).unwrap());
+    }
+    asked.extend(encoder.finish().unwrap());
+    assert_sse_eq("continuous_usage_stats", &bytes, &asked);
     let hidden = String::from_utf8(encode(&events, false)).unwrap();
     assert!(!hidden.contains("usage"), "{hidden}");
     assert!(hidden.contains("help?"), "{hidden}");
@@ -1462,4 +1522,13 @@ fn a_recorded_stream_cut_by_an_error_after_its_usage_keeps_the_newest_counts() {
     let with_usage = finishing.iter().filter(|c| !c["usage"].is_null()).count();
     assert_eq!(with_usage, 1, "{}", String::from_utf8_lossy(&out));
     assert!(frames(&out).last().unwrap().get("error").is_some());
+    let mut before_error = frames(&out);
+    before_error.pop();
+    let anywhere: Vec<&Value> = before_error
+        .iter()
+        .filter(|c| !c["usage"].is_null())
+        .collect();
+    assert_eq!(anywhere.len(), 1, "{}", String::from_utf8_lossy(&out));
+    assert_eq!(Some(anywhere[0]), before_error.last());
+    assert_eq!(anywhere[0]["choices"], json!([]));
 }

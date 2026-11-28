@@ -237,7 +237,7 @@ Anthropic 和 Responses 在块开始时就要给出两者，因此解码器按�
 
 只有应用请求了用量时才会写入用量（`EncodeCtx::stream` 带 `include_usage`）。此时每个 chunk 都有 `usage: null`，最后一个 `choices: []` 的 chunk 携带用量。来自其他方言时，这是最新的用量；后面的报告没有输入计数时，输入计数取自 `ResponseStart`。
 
-像 DeepSeek 和 Mistral 那样把用量放在结束 chunk 上的 Chat 服务商，其自身的流也得到同样的形式：该 chunk 以 `usage: null` 发送，用量则放在 `[DONE]` 之前一个单独的 `choices: []` chunk 中。结束 chunk 会等待下一个 chunk，因此服务商自己的 `choices: []` 用量 chunk 以及更早 chunk 上的累计用量都按原样发送。`passthrough::for_stream`（不解码即转发同一方言的流）也这样处理，此类 fixture 的往返测试预期的就是这种形式（`test_support::chat_usage_in_its_own_chunk`）。
+Chat 服务商自身的流也得到同样的形式，不论服务商把用量放在哪里：DeepSeek 和 Mistral 放在结束 chunk 上，Groq 放在结束 chunk 上并另发一个单独的 chunk，Cloudflare 放在每个 chunk 上。带选项的 chunk 以 `usage: null` 发送，最新的用量放在 `[DONE]` 之前一个单独的 `choices: []` chunk 中；若服务商自己发送了 `choices: []` 用量 chunk，则按原样发送该 chunk。这样，像 LangChain 那样把每个 chunk 的用量相加的客户端只会计算一次。用 vLLM 的 `stream_options.continuous_usage_stats` 请求每个 chunk 都带用量的应用，会按原样收到这些 chunk。`passthrough::for_stream`（不解码即转发同一方言的流）也这样处理，此类 fixture 的往返测试预期的就是这种形式（`test_support::chat_usage_in_its_own_chunk`）。
 
 ## 错误（`ErrorResponse`）
 
