@@ -10,6 +10,7 @@ use crate::kpmr::{self, price};
 use crate::providers::{OrgProviders, ProviderRef};
 
 pub const MODALITIES: &[&str] = &["text", "image", "pdf", "audio", "video"];
+const OUTPUTS: &[&str] = &["text", "image", "pdf", "audio", "video", "embedding"];
 
 pub const EFFORTS: &[&str] = &["none", "minimal", "low", "medium", "high", "xhigh", "max"];
 
@@ -729,9 +730,9 @@ impl Fields {
                 "The display name must be 1 to 200 characters.",
             ));
         }
-        for (name, list) in [
-            ("input_modalities", &self.input_modalities),
-            ("output_modalities", &self.output_modalities),
+        for (name, list, allowed) in [
+            ("input_modalities", &self.input_modalities, MODALITIES),
+            ("output_modalities", &self.output_modalities, OUTPUTS),
         ] {
             if let Some(list) = list {
                 if list.is_empty() {
@@ -740,7 +741,7 @@ impl Fields {
                         format!("`{name}` must list at least one modality."),
                     ));
                 }
-                check_values(name, list, MODALITIES)?;
+                check_values(name, list, allowed)?;
             }
         }
         if let Some(efforts) = &self.efforts {
@@ -810,6 +811,20 @@ impl Fields {
             return Err(FieldError::new(
                 "unit_prices",
                 "`unit_prices` takes up to 32 prices of 0 to 1,000,000 USD per known unit.",
+            ));
+        }
+        let embeds = self
+            .output_modalities
+            .as_ref()
+            .is_some_and(|o| o.iter().any(|m| m == "embedding"));
+        if embeds
+            && self
+                .egress_dialect
+                .is_some_and(|d| !EMBEDDINGS.contains(&d))
+        {
+            return Err(FieldError::new(
+                "egress_dialect",
+                "An embeddings model needs an embeddings `egress_dialect`, such as `openai_embeddings`.",
             ));
         }
         // A rerank model goes to the provider's rerank API, whose format is a dialect too.
@@ -948,11 +963,12 @@ impl Fields {
             }
             return Ok(());
         }
+        let embeds = self.egress_dialect.is_some_and(|d| EMBEDDINGS.contains(&d));
         let missing: Vec<&str> = [
             ("input_modalities", self.input_modalities.is_none()),
             ("output_modalities", self.output_modalities.is_none()),
             ("context_limit", self.context_limit.is_none()),
-            ("output_limit", self.output_limit.is_none()),
+            ("output_limit", self.output_limit.is_none() && !embeds),
             ("input_price", self.input_price.is_none()),
             ("output_price", self.output_price.is_none()),
             ("egress_dialect", self.egress_dialect.is_none()),

@@ -133,6 +133,19 @@ describe("a refusal in English", () => {
   });
 });
 
+describe("a field of the wrong type", () => {
+  it("lists the values the field takes the language's way", async () => {
+    const message = "`auth` must be one of `bearer`, `x_api_key`, `none`, `null`.";
+    await speak("en");
+    expect((await errorFromResponse(refusal(message))).message).toBe(message);
+    await speak("de");
+    expect((await errorFromResponse(refusal(message))).message).toBe("`auth` muss `bearer`, `x_api_key`, `none` oder `null` sein.");
+    await speak("zh-CN");
+    expect((await errorFromResponse(refusal(message))).message).toBe("`auth` 必须是 `bearer`、`x_api_key`、`none` 或 `null` 之一。");
+    expect((await errorFromResponse(refusal("`modes` must be an array."))).message).toBe("`modes` 必须是数组。");
+  });
+});
+
 describe("a refusal from the Playground's capability checks", () => {
   it("joins the effort levels the language's way and keeps the codes", async () => {
     const message = "The model `gpt-5` supports the effort levels `low`, `medium`, `high`; `max` is not one of them.";
