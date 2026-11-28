@@ -1079,7 +1079,7 @@ async fn availability_of(env: &Env, model: &str) -> Value {
 }
 
 #[tokio::test]
-async fn a_transcription_model_refuses_chat_and_keeps_its_availability() {
+async fn a_transcription_model_refuses_chat_without_audio_and_keeps_its_availability() {
     let env = env().await;
     let refused =
         "The model `whisper-1` is a transcription model; send it to `/v1/audio/transcriptions`.";

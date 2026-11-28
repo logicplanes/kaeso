@@ -521,48 +521,43 @@ fn refuse_decision_only(eff: &Effective) -> Result<(), Unsupported> {
     ))
 }
 
-// Providers answer a generation for a transcription model with a 404, apart from those that serve
-// it at their generation endpoint (Gemini, QwenCloud), and those need audio to transcribe.
+// A transcription model needs audio. Some providers serve one at their generation endpoint too
+// (Gemini at `generateContent`, QwenCloud and Mistral at chat completions), and the others answer
+// with a 404, which doesn't cost the model its availability. So a generation without audio is
+// refused for every provider, and one with audio goes to the provider. Counts are refused.
 fn refuse_transcriber(
     eff: &Effective,
     generation: Option<&GenerateRequest>,
 ) -> Result<(), Unsupported> {
-    if !eff.transcribes_only {
+    if !eff.transcribes_only || generation.is_some_and(may_hold_audio) {
         return Ok(());
     }
-    let at_generation = eff
+    let name = eff.model_id.as_str();
+    // Point to the transcription endpoint only where Kaeso has one for the model, and where it
+    // isn't the endpoint the app already calls.
+    let elsewhere = eff
         .provider
-        .transcriptions(&eff.model_id)
-        .is_some_and(|t| t.dialect == eff.dialect);
-    if let Some(g) = generation.filter(|_| at_generation) {
-        // A user's part the decoder doesn't know, such as QwenCloud's `input_audio` without
-        // `format`, may be audio; the provider judges it.
-        let audio = g.required_capabilities().audio_input
-            || g.messages
-                .iter()
-                .filter(|m| m.role == kaeso_kpp::Role::User)
-                .flat_map(|m| &m.blocks)
-                .any(|b| matches!(b, kaeso_kpp::Block::Unknown(_)));
-        if audio {
-            return Ok(());
-        }
-        return Err(refuse(
-            "generation",
-            Some("model"),
-            format!(
-                "The model `{}` only transcribes; send it audio.",
-                eff.model_id
-            ),
-        ));
-    }
-    Err(refuse(
-        "generation",
-        Some("model"),
-        format!(
-            "The model `{}` is a transcription model; send it to `/v1/audio/transcriptions`.",
-            eff.model_id
+        .transcriptions(name)
+        .map(|t| t.dialect != eff.dialect);
+    let message = match (elsewhere, generation) {
+        (Some(true), _) | (Some(false), None) => format!(
+            "The model `{name}` is a transcription model; send it to `/v1/audio/transcriptions`."
         ),
-    ))
+        (_, Some(_)) => format!("The model `{name}` only transcribes; send it audio."),
+        (None, None) => format!("The model `{name}` cannot count tokens."),
+    };
+    Err(refuse("generation", Some("model"), message))
+}
+
+// A user's part the decoder doesn't know, such as QwenCloud's `input_audio` without `format`, may
+// be audio; the provider judges it.
+fn may_hold_audio(g: &GenerateRequest) -> bool {
+    g.required_capabilities().audio_input
+        || g.messages
+            .iter()
+            .filter(|m| m.role == kaeso_kpp::Role::User)
+            .flat_map(|m| &m.blocks)
+            .any(|b| matches!(b, kaeso_kpp::Block::Unknown(_)))
 }
 
 fn refuse_reranker(eff: &Effective) -> Result<(), Unsupported> {
