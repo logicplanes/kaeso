@@ -941,6 +941,7 @@ fn a_gemini_schema_reaches_json_mode_as_json_schema_and_only_with_an_object_root
     assert_eq!(err.param, Some("generationConfig.responseJsonSchema"));
 
     let pet = serde_json::json!({"type": "object", "properties": {"name": {"type": "string"}}});
+    let toy = serde_json::json!({"type": "object", "properties": {"price": {"type": "number"}}, "required": ["price"]});
     for (schema, takes) in [
         (
             serde_json::json!({"$ref": "#/definitions/Pet", "definitions": {"Pet": pet}}),
@@ -956,7 +957,7 @@ fn a_gemini_schema_reaches_json_mode_as_json_schema_and_only_with_an_object_root
         ),
         (serde_json::json!({"$ref": "#/$defs/Missing"}), false),
         (serde_json::json!({"$ref": "#"}), false),
-        (serde_json::json!({"oneOf": [pet, pet]}), true),
+        (serde_json::json!({"oneOf": [pet, toy]}), true),
         (wide_and_deep(24), false),
     ] {
         let mut req = gemini(serde_json::json!({
