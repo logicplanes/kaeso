@@ -2243,11 +2243,13 @@ mod tests {
                 // events must still be byte-for-byte identical.
                 let data_frames = |raw: &[u8]| -> Vec<String> {
                     String::from_utf8_lossy(raw)
+                        .lines()
+                        .filter(|l| *l != ": keepalive")
+                        .collect::<Vec<_>>()
+                        .join("\n")
                         .split("\n\n")
                         .filter(|f| {
-                            !f.is_empty()
-                                && *f != ": keepalive"
-                                && *f != "event: ping\ndata: {\"type\": \"ping\"}"
+                            !f.is_empty() && *f != "event: ping\ndata: {\"type\": \"ping\"}"
                         })
                         .map(str::to_owned)
                         .collect()

@@ -182,6 +182,57 @@ fn every_encoder_gives_the_gateway_a_keepalive_frame_until_the_stream_ends() {
     }
 }
 
+// openai-go's stream reader before v3.5x, such as v1.8.2 in mods: every blank line ends an
+// event, and an event's data is read as JSON, so an event without data fails.
+fn openai_go_v1(bytes: &[u8]) -> Result<Vec<serde_json::Value>, String> {
+    let text = std::str::from_utf8(bytes).map_err(|e| e.to_string())?;
+    let (mut out, mut data, mut done) = (Vec::new(), Vec::new(), false);
+    for line in text.lines() {
+        if line.is_empty() {
+            let d = std::mem::take(&mut data).join("\n");
+            if done {
+                continue;
+            }
+            if d.starts_with("[DONE]") {
+                done = true;
+                continue;
+            }
+            out.push(serde_json::from_str(&d).map_err(|e| format!("{e}: {d:?}"))?);
+        } else if let Some(d) = line.strip_prefix("data:") {
+            data.push(d.strip_prefix(' ').unwrap_or(d));
+        }
+    }
+    Ok(out)
+}
+
+#[test]
+fn keepalives_in_openai_formats_reach_older_openai_go_readers_as_nothing() {
+    assert!(
+        openai_go_v1(b"data: {}\n\n: keepalive\n\ndata: {}\n\n").is_err(),
+        "a comment with a blank line is an empty event there"
+    );
+    let events = decode(A, &fixture(A, "thinking-long-tool-loop"));
+    for target in [C, R] {
+        let ctx = EncodeCtx::new(RequestKind::Generate, mode()).with_created_at(1_760_000_000);
+        let mut enc = dispatch::stream_encoder(target, &ctx).unwrap();
+        let mut plain = dispatch::stream_encoder(target, &ctx).unwrap();
+        let (mut wire, mut without) = (enc.keepalive(), Vec::new());
+        for event in &events {
+            wire.extend(enc.encode(event).unwrap());
+            wire.extend(enc.keepalive());
+            without.extend(plain.encode(event).unwrap());
+        }
+        wire.extend(enc.finish().unwrap());
+        without.extend(plain.finish().unwrap());
+        assert!(
+            comments(&wire) >= events.len(),
+            "{target}: one around every event"
+        );
+        let read = openai_go_v1(&wire).unwrap_or_else(|e| panic!("{target}: {e}"));
+        assert_eq!(read, openai_go_v1(&without).unwrap(), "{target}");
+    }
+}
+
 #[test]
 fn gemini_apps_hear_blank_lines_that_their_sdk_skips() {
     let g = DialectId::Gemini;

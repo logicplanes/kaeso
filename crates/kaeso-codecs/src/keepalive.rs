@@ -1,6 +1,8 @@
 use kaeso_kpp::{Delta, DialectId, StreamEvent};
 
-pub(crate) const COMMENT_FRAME: &[u8] = b": keepalive\n\n";
+// A comment line without a blank line, which the next event's blank line ends: older openai-go
+// readers fail on an event without data (https://github.com/logicplanes/kaeso/issues/1537).
+pub(crate) const COMMENT_FRAME: &[u8] = b": keepalive\n";
 
 pub(crate) const PING_FRAME: &[u8] = b"event: ping\ndata: {\"type\": \"ping\"}\n\n";
 
@@ -26,9 +28,8 @@ impl Pacer {
         if is_own(event, target) {
             return;
         }
-        // A provider's keepalive, such as Anthropic's `ping` after `message_start`, weighs its size:
-        // a frame at once breaks clients that don't skip comments, such as openai-go's stream
-        // reader (https://github.com/logicplanes/kaeso/issues/1537); the interval covers silence.
+        // A provider's keepalive, such as Anthropic's `ping`, weighs its size instead of earning a
+        // frame at once, as the docs promise; the gateway's interval covers silence.
         let weight = match event {
             StreamEvent::Extra(item) => item.raw.get().len(),
             StreamEvent::BlockDelta(d) => match &d.delta {

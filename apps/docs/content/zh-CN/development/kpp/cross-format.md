@@ -341,13 +341,13 @@ Anthropic 和 Responses 模型会在工具结果中原样收到这些媒体，Ge
 
 | 方言 | 保活帧 | SDK 为何忽略它 |
 | --- | --- | --- |
-| OpenAI Chat Completions 和 Responses | SSE 注释 `: keepalive` 加一个空行 | 在 SSE 规范中，以冒号开头的行是注释，OpenAI SDK 的解析器会跳过它们 |
+| OpenAI Chat Completions 和 Responses | SSE 注释行 `: keepalive`，后面不加空行：下一个事件的空行结束它 | 在 SSE 规范中，以冒号开头的行是注释，SSE 解析器会跳过它们。若后面加空行，就会产生一个空事件，较旧的 openai-go 读取器（例如 mods 使用的 v1.8.2）会因此失败 |
 | Anthropic Messages | `event: ping` 加 `data: {"type": "ping"}`，与 Anthropic 发送的完全一致 | Anthropic SDK 会跳过 ping 事件 |
 | Gemini API | 两个换行符（`\n\n`） | Python、Go（`google.golang.org/genai`）和 JS（`@google/genai`）SDK 都会跳过以 `\n\n` 分隔的空 chunk，而注释会让 Python 出错、单个换行符会让 Go 出错 |
 
 保活帧以两种方式到达线路：
 
-- **带内。** 当来自另一方言的事件没有产生任何字节时，编码器把保活帧加入 `StreamEncoder::encode` 的返回值。一个不依赖时钟的节拍器对此加以限制。隐藏文本（例如应用看不到的思考或缓冲中的工具参数）累计满 `kaeso_codecs::HIDDEN_TEXT_PER_KEEPALIVE` 字节（即 1,024 字节）换来一帧。更大的单个事件也只换来一帧。另一方言的额外事件（例如 Anthropic 的 `ping`）按其大小同样计算。服务商自己的保活消息只有几十字节，本身不会换来保活帧，这很重要，因为有些客户端无法读取紧跟在第一个分块之后的注释。编码器写出任何内容都会重置计数。应用自身方言的事件从不换来保活帧，因此同一方言内的回放保持精确。
+- **带内。** 当来自另一方言的事件没有产生任何字节时，编码器把保活帧加入 `StreamEncoder::encode` 的返回值。一个不依赖时钟的节拍器对此加以限制。隐藏文本（例如应用看不到的思考或缓冲中的工具参数）累计满 `kaeso_codecs::HIDDEN_TEXT_PER_KEEPALIVE` 字节（即 1,024 字节）换来一帧。更大的单个事件也只换来一帧。另一方言的额外事件（例如 Anthropic 的 `ping`）按其大小同样计算。服务商自己的保活消息只有几十字节，本身不会换来保活帧；其前后的静默由网关的间隔覆盖。编码器写出任何内容都会重置计数。应用自身方言的事件从不换来保活帧，因此同一方言内的回放保持精确。
 - **由网关驱动。** `StreamEncoder::keepalive` 按需返回保活帧，用于编码器无法察觉的上游静默。网关在 `KAESO_STREAMS_KEEPALIVE_INTERVAL`（默认 15 秒）内没有向应用写出任何内容时，就会写出它。
 
 请求日志把这两种保活帧都计入 `stream_progress.keepalives`。服务商自己的保活消息（例如 Anthropic 的 `ping`）回放给同一方言的应用时，属于服务商的事件，不计入其中。

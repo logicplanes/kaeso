@@ -1000,7 +1000,7 @@ async fn streams_that_fail_after_their_headers_are_logged_as_failures() {
     .await;
     assert_eq!(r.status, StatusCode::OK);
     assert!(r.text().contains("\"error\""), "{}", r.text());
-    let keepalives = r.text().matches(": keepalive\n\n").count();
+    let keepalives = r.text().matches(": keepalive\n").count();
     assert!(keepalives > 0, "{}", r.text());
     flush(&env).await;
 

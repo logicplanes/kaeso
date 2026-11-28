@@ -341,13 +341,13 @@ A provider can stream for minutes without producing anything the app's format ca
 
 | Dialect | Keepalive frame | Why the SDKs ignore it |
 | --- | --- | --- |
-| OpenAI Chat Completions and Responses | The SSE comment `: keepalive` and a blank line | Lines starting with a colon are comments in the SSE specification, and the OpenAI SDK parsers skip them |
+| OpenAI Chat Completions and Responses | The SSE comment line `: keepalive`, without a blank line: the next event's blank line ends it | Lines starting with a colon are comments in the SSE specification, and SSE parsers skip them. A blank line after it would make an empty event, which older openai-go readers, such as v1.8.2 in mods, fail on |
 | Anthropic Messages | `event: ping` with `data: {"type": "ping"}`, exactly as Anthropic sends it | The Anthropic SDKs skip ping events |
 | Gemini API | Two newlines (`\n\n`) | The Python, Go (`google.golang.org/genai`) and JS (`@google/genai`) SDKs all skip empty `\n\n`-delimited chunks, while a comment breaks Python and a single newline breaks Go |
 
 Frames reach the wire in two ways:
 
-- **In band.** An encoder adds the frame to what `StreamEncoder::encode` returns when an event from another dialect produced no bytes. A pacer limits this without a clock. Hidden text, such as thinking the app can't see or buffered tool arguments, earns a frame once `kaeso_codecs::HIDDEN_TEXT_PER_KEEPALIVE` bytes, 1,024, have built up. One larger event earns one frame. Another dialect's extra event, such as Anthropic's `ping`, counts the same way by its size. So a provider's own keepalive, a few dozen bytes, earns no frame by itself, which matters because some clients can't read a comment right after the first chunk. Anything the encoder writes resets the count. Events of the app's own dialect never earn frames, so a same-dialect replay stays exact.
+- **In band.** An encoder adds the frame to what `StreamEncoder::encode` returns when an event from another dialect produced no bytes. A pacer limits this without a clock. Hidden text, such as thinking the app can't see or buffered tool arguments, earns a frame once `kaeso_codecs::HIDDEN_TEXT_PER_KEEPALIVE` bytes, 1,024, have built up. One larger event earns one frame. Another dialect's extra event, such as Anthropic's `ping`, counts the same way by its size. So a provider's own keepalive, a few dozen bytes, earns no frame by itself; the gateway's interval covers the silence around it. Anything the encoder writes resets the count. Events of the app's own dialect never earn frames, so a same-dialect replay stays exact.
 - **Driven by the gateway.** `StreamEncoder::keepalive` returns the frame on demand, for upstream silence the encoder can't see. The gateway writes it when it has written nothing to the app for `KAESO_STREAMS_KEEPALIVE_INTERVAL`, 15 seconds by default.
 
 The request log counts both kinds in `stream_progress.keepalives`. A provider's own keepalive that an app of the same dialect gets replayed, such as Anthropic's `ping`, is one of the provider's events and isn't counted.

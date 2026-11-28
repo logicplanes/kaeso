@@ -266,7 +266,7 @@ Kaeso 读取以 `Content-Encoding: gzip`、`x-gzip` 或 `zstd` 发送的请求�
 
 Gemini 应用则像 `google-genai` 那样调用 `:streamGenerateContent?alt=sse`。Kaeso 只以服务器发送事件的形式流式传输 Gemini 回复，因此不带 `alt=sse` 的流式请求返回 400。
 
-- **保活。** 15 秒内没有输出时，Kaeso 会写入一条 SDK 会忽略的保活消息：OpenAI 格式为 SSE 注释，Anthropic 格式为 `ping` 事件，Gemini 格式为一个空行，因为 `google-genai` 会把其他每一行都当作 JSON 读取。`KAESO_STREAMS_KEEPALIVE_INTERVAL` 可更改间隔或关闭保活（[发往应用的流](../self-hosting/configuration.md#发往应用的流)）。
+- **保活。** 15 秒内没有输出时，Kaeso 会写入一条 SDK 会忽略的保活消息：OpenAI 格式为 SSE 注释行，Anthropic 格式为 `ping` 事件，Gemini 格式为一个空行，因为 `google-genai` 会把其他每一行都当作 JSON 读取。`KAESO_STREAMS_KEEPALIVE_INTERVAL` 可更改间隔或关闭这类保活（[发往应用的流](../self-hosting/configuration.md#发往应用的流)）。服务商流式发送应用格式无法显示的内容时（例如发给 OpenAI Chat 应用的 Claude 思考），不论间隔如何，每累计 1,024 字节 Kaeso 也会写入一条保活消息。
 - **失败。** Kaeso 在服务商首次输出时，或第一个保活信号到期时开始流。服务商的流在此之前失败时，应用会收到带有其状态码（例如 429）的错误，与非流式请求相同。流一旦开始就无法再更改状态码：服务商之后出错，或在回复完成前结束流时，流会以采用应用所用格式的错误事件结束。
 - **断开。** 应用在流的最后一个事件之前断开连接时，Kaeso 会立即停止向服务商发出的请求，并按已用量计费。最后一个事件已到达应用的流视为已完成，即使应用随即断开连接也是如此。
 
