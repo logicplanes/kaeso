@@ -353,6 +353,7 @@ pub struct Data<'a> {
     pub days: &'a [Value],
     pub grouped: &'a [Value],
     pub key_names: &'a HashMap<String, String>,
+    pub source_names: &'a HashMap<String, String>,
 }
 
 pub fn totals(ask: &Ask, data: &Data<'_>) -> Value {
@@ -427,25 +428,44 @@ pub fn groups(ask: &Ask, data: &Data<'_>) -> Vec<Value> {
         .into_iter()
         .map(|(key, rows)| {
             let value = value_of(ask.metric, &rows);
-            let label = data
-                .key_names
-                .get(&key)
-                .cloned()
-                .unwrap_or_else(|| key.clone());
-            (
-                rank(&value),
-                key.clone(),
-                json!({
-                    "key": key,
-                    "label": label,
-                    "value": value,
-                    "requests": rows.iter().map(|r| int(r, "requests")).sum::<i64>(),
-                }),
-            )
+            let label = match ask.group {
+                Group::Key => key_label(&key, data),
+                _ => key.clone(),
+            };
+            let mut row = json!({
+                "key": key,
+                "label": label,
+                "value": value,
+                "requests": rows.iter().map(|r| int(r, "requests")).sum::<i64>(),
+            });
+            if let Some(id) = key.strip_prefix("source:")
+                && let Value::Object(fields) = &mut row
+            {
+                fields.insert("source".to_owned(), json!(data.source_names.get(id)));
+            }
+            (rank(&value), key.clone(), row)
         })
         .collect();
     out.sort_by(|a, b| b.0.cmp(&a.0).then_with(|| a.1.cmp(&b.1)));
     out.into_iter().take(TOP).map(|(_, _, v)| v).collect()
+}
+
+// Requests the Playground sent or a source reported have no key, so the breakdown by key names
+// them as the console does: "Playground", "{name} (source)", or "A source" for one not visible.
+fn key_label(key: &str, data: &Data<'_>) -> String {
+    if key == "playground" {
+        return "Playground".to_owned();
+    }
+    if let Some(id) = key.strip_prefix("source:") {
+        return data
+            .source_names
+            .get(id)
+            .map_or_else(|| "A source".to_owned(), |name| format!("{name} (source)"));
+    }
+    data.key_names
+        .get(key)
+        .cloned()
+        .unwrap_or_else(|| key.to_owned())
 }
 
 fn shown(metric: Metric, v: &Value) -> String {
@@ -705,6 +725,7 @@ mod tests {
             days: &[],
             grouped: &grouped,
             key_names: &names,
+            source_names: &names,
         };
         let a = Ask {
             metric: Metric::Cost,
@@ -751,6 +772,7 @@ mod tests {
             days: &days,
             grouped: &grouped,
             key_names: &names,
+            source_names: &names,
         };
         let a = Ask {
             metric: Metric::Cost,
@@ -769,5 +791,62 @@ mod tests {
         let g = groups(&a, &data);
         assert_eq!(g[0]["label"], "ci-runner");
         assert!(summary(&a, "Acme", &totals(&a, &data), &g).contains("not visible to you"));
+    }
+
+    #[test]
+    fn the_breakdown_by_key_names_the_playground_and_sources_as_the_console_does() {
+        let keys = HashMap::from([("key_1".to_owned(), "ci-runner".to_owned())]);
+        let sources = HashMap::from([("src_1".to_owned(), "Claude Code".to_owned())]);
+        let grouped = vec![
+            json!({ "key": "source:src_1", "requests": 9, "errors": 0, "cost": "0.30" }),
+            json!({ "key": "key_1", "requests": 7, "errors": 0, "cost": "0.20" }),
+            json!({ "key": "playground", "requests": 3, "errors": 0, "cost": "0.10" }),
+            json!({ "key": "source:src_2", "requests": 1, "errors": 0, "cost": "0.01" }),
+        ];
+        let data = Data {
+            hours: &[],
+            days: &[],
+            grouped: &grouped,
+            key_names: &keys,
+            source_names: &sources,
+        };
+        let a = Ask {
+            metric: Metric::Requests,
+            range: Range::Week,
+            group: Group::Key,
+            org: None,
+            project: Some("proj_1".to_owned()),
+        };
+        let g = groups(&a, &data);
+        assert_eq!(
+            g[0]["source"], "Claude Code",
+            "the view names it in its language"
+        );
+        assert_eq!(g[3]["source"], Value::Null);
+        assert!(g[1].get("source").is_none());
+        let labels: Vec<Value> = g.iter().map(|g| g["label"].clone()).collect();
+        assert_eq!(
+            labels,
+            [
+                json!("Claude Code (source)"),
+                json!("ci-runner"),
+                json!("Playground"),
+                json!("A source")
+            ]
+        );
+        let by_model = Ask {
+            group: Group::Model,
+            ..a
+        };
+        let model = vec![json!({ "key": "playground", "requests": 1, "errors": 0, "cost": "0" })];
+        let data = Data {
+            grouped: &model,
+            ..data
+        };
+        assert_eq!(
+            groups(&by_model, &data)[0]["label"],
+            "playground",
+            "only keys are renamed"
+        );
     }
 }
