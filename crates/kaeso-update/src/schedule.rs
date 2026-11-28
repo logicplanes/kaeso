@@ -121,14 +121,14 @@ impl Schedule {
         let hour = i8::try_from(self.hour.min(23)).ok()?;
         Some(
             date.at(hour, 0, 0, 0)
-                .to_zoned(self.zone.clone())
+                .to_zoned_datetime(self.zone.clone())
                 .ok()?
                 .timestamp(),
         )
     }
 
     fn starts_around(&self, at: Timestamp) -> Vec<Timestamp> {
-        let today = at.to_zoned(self.zone.clone()).date();
+        let today = at.to_zoned_datetime(self.zone.clone()).date();
         (-8_i64..=8)
             .filter_map(|days| today.checked_add(jiff::Span::new().days(days)).ok())
             .filter(|date| self.falls_on(*date))
