@@ -33,6 +33,8 @@ export function kaesoMergeConfig() {
   const rounded = ["", "none", "full", ...Object.keys(radius), ...arbitrary];
   const width = ["", isNumber, isArbitraryVariableLength, isArbitraryLength];
   const color = [isAny];
+  const paddings = ["px", "py", "pt", "pr", "pb", "pl", "ps", "pe"];
+  const margins = ["mx", "my", "ms", "me", "mt", "mr", "mb", "ml"];
   return {
     cacheSize: 500,
     theme: {},
@@ -65,7 +67,8 @@ export function kaesoMergeConfig() {
         "list-item",
         "hidden",
       ],
-      sr: ["sr-only", "not-sr-only"],
+      sr: ["sr-only"],
+      "not-sr": ["not-sr-only"],
       isolation: ["isolate", "isolation-auto"],
       "object-fit": [{ object: ["contain", "cover", "fill", "none", "scale-down"] }],
       overflow: [{ overflow }],
@@ -261,15 +264,16 @@ export function kaesoMergeConfig() {
       "inset-y": ["top", "bottom"],
       flex: ["basis", "grow", "shrink"],
       gap: ["gap-x", "gap-y"],
-      p: ["px", "py", "pt", "pr", "pb", "pl", "ps", "pe"],
+      p: paddings,
       px: ["pr", "pl", "ps", "pe"],
       py: ["pt", "pb"],
-      m: ["mx", "my", "ms", "me", "mt", "mr", "mb", "ml"],
+      m: margins,
       mx: ["ms", "me", "mr", "ml"],
       my: ["mt", "mb"],
       size: ["w", "h"],
-      "font-size": ["leading"],
       "line-clamp": ["display", "overflow"],
+      sr: ["not-sr", "position", "size", "w", "h", "p", ...paddings, "m", ...margins, "overflow", "overflow-x", "overflow-y", "whitespace"],
+      "not-sr": ["sr"],
       rounded: ["rounded-r", "rounded-l", "rounded-s", "rounded-e", "rounded-t", "rounded-b"],
     },
     conflictingClassGroupModifiers: { "font-size": ["leading"] },
