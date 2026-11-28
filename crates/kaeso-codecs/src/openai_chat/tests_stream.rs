@@ -117,15 +117,48 @@ fn an_empty_finish_reason_on_a_chunk_kept_whole_does_not_let_usage_out_early() {
         ))
     };
     let usage = r#"{"id":"c","choices":[],"usage":{"prompt_tokens":4,"completion_tokens":1,"total_tokens":5}}"#;
+    let chunk = |finish: &str| {
+        format!(
+            r#"{{"id":"c","choices":[{{"index":0,"delta":{{"content":"Hi"}},"finish_reason":{finish}}}]}}"#
+        )
+    };
+    let mut start = ResponseStart::new("c", "m");
+    start.extras = kaeso_kpp::Extras::new(DialectId::OpenAiChat);
+    let mut stop = ResponseStop::new();
+    stop.extras = kaeso_kpp::Extras::new(DialectId::OpenAiChat);
     for (finish, early) in [("\"\"", true), ("\"stop\"", false)] {
         let ctx = EncodeCtx::new(RequestKind::Generate, StreamMode::on(true));
         let mut encoder = OpenAiChat::stream_encoder(&ctx);
-        let chunk = format!(
-            r#"{{"id":"c","choices":[{{"index":0,"delta":{{"content":"Hi"}},"finish_reason":{finish}}}]}}"#
+        let mut out = encoder
+            .encode(&StreamEvent::ResponseStart(start.clone()))
+            .unwrap();
+        out.extend(encoder.encode(&frame(&chunk(finish))).unwrap());
+        let usage_out = encoder.encode(&frame(usage)).unwrap();
+        assert_eq!(usage_out.is_empty(), early, "finish_reason {finish}");
+        out.extend(usage_out);
+        // The provider's real finish, then the end: the app gets the usage once, last.
+        if early {
+            out.extend(encoder.encode(&frame(&chunk("\"stop\""))).unwrap());
+        }
+        out.extend(
+            encoder
+                .encode(&StreamEvent::ResponseStop(stop.clone()))
+                .unwrap(),
         );
-        assert!(!encoder.encode(&frame(&chunk)).unwrap().is_empty());
-        let out = encoder.encode(&frame(usage)).unwrap();
-        assert_eq!(out.is_empty(), early, "finish_reason {finish}");
+        out.extend(encoder.finish().unwrap());
+        assert_usage_once(&format!("finish_reason {finish}"), &out, 5);
+        if early {
+            let chunks: Vec<Value> = frames(&out).into_iter().filter(Value::is_object).collect();
+            let stopped = chunks
+                .iter()
+                .position(|c| c["choices"][0]["finish_reason"] == "stop")
+                .unwrap();
+            assert_eq!(
+                stopped,
+                chunks.len() - 2,
+                "the usage comes after the real finish"
+            );
+        }
     }
 }
 

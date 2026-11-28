@@ -273,18 +273,20 @@ impl RawSseFramer {
 // A provider's last frame may end without its blank line. Ending it keeps what Kaeso writes
 // after it, such as the usage chunk or an error, an event of its own instead of more lines of it.
 fn end_event(out: &mut Vec<u8>, from: usize) {
-    let strip = |t: &[u8]| -> Option<usize> {
+    // The line ending a line ends with, and where the line starts.
+    let ending = |t: &[u8]| -> Option<(usize, &'static [u8])> {
         [&b"\r\n"[..], b"\n", b"\r"]
             .into_iter()
             .find(|end| t.ends_with(end))
-            .map(|end| t.len() - end.len())
+            .map(|end| (t.len() - end.len(), end))
     };
     let Some(tail) = out.get(from..).filter(|t| !t.is_empty()) else {
         return;
     };
-    let missing: &[u8] = match strip(tail) {
+    // The same ending again makes the blank line, `\r\r` for a stream that ends lines with `\r`.
+    let missing: &[u8] = match ending(tail) {
         None => b"\n\n",
-        Some(rest) if rest > 0 && tail.get(..rest).and_then(strip).is_none() => b"\n",
+        Some((rest, end)) if rest > 0 && tail.get(..rest).and_then(ending).is_none() => end,
         Some(_) => b"",
     };
     out.extend_from_slice(missing);
@@ -2030,9 +2032,24 @@ mod tests {
 
         // A stream that ends right after a chunk, without its blank line: Kaeso's usage chunk
         // and errors stay events of their own.
-        let (_, out, errors) = run(&format!("{head}{}\n", finish.trim_end()));
-        assert!(errors.is_empty(), "{errors:?}");
-        assert_usage_once("unterminated", finish.as_bytes(), out.as_bytes());
+        // The finish chunk without usage goes as sent, after running usage that waits.
+        let running = format!(
+            "{head}data: {{\"id\":\"c\",\"choices\":[{{\"index\":0,\"delta\":{{\"content\":\"!\"}},\"finish_reason\":null}}],\"usage\":{{\"prompt_tokens\":5,\"completion_tokens\":2,\"total_tokens\":7}}}}\n\n"
+        );
+        for end in ["\n", "\r\n", "\r"] {
+            for sent in [
+                format!("{head}{}{end}", finish.trim_end()),
+                format!("{running}{}{end}", ends.trim_end()),
+            ] {
+                let (_, out, errors) = run(&sent);
+                assert!(errors.is_empty(), "{end:?}: {errors:?}");
+                assert_usage_once(
+                    &format!("unterminated {end:?}"),
+                    sent.as_bytes(),
+                    out.as_bytes(),
+                );
+            }
+        }
         let mut pass = for_stream(DialectId::OpenAiChat, &ectx, &enc).unwrap();
         let mut out = Vec::new();
         let _ = pass.feed(format!("{}\n", head.trim_end()).as_bytes(), &mut out);
