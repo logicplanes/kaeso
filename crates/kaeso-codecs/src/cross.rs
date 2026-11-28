@@ -629,6 +629,18 @@ pub(crate) fn openai_image_detail(extras: &Extras, target: DialectId) -> Option<
     values.contains(&value.as_str()).then(|| detail.clone())
 }
 
+/// The request's output schema as JSON Schema, or `None` when it asks for no schema. A Gemini
+/// app's `responseSchema`, an OpenAPI `Schema`, is translated as for any other dialect.
+pub fn output_json_schema(r: &GenerateRequest) -> Option<RawJson> {
+    let OutputSpec::JsonSchema(spec) = &r.output else {
+        return None;
+    };
+    Some(match r.extras.form_str(DialectId::Gemini, "schema") {
+        Some("responseSchema") => crate::gemini::schema::to_json_schema(&spec.schema),
+        _ => spec.schema.clone(),
+    })
+}
+
 pub fn check_foreign(req: &Request, target: &Origin) -> Result<(), KppError> {
     match req {
         Request::Generate(r) | Request::CountTokens(r) => check_generate(r, target),

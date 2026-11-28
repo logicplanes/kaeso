@@ -902,6 +902,11 @@ fn schema_by_instruction(
     {
         return None;
     }
+    let schema = kaeso_codecs::cross::output_json_schema(g)?;
+    // JSON mode answers with an object, so only a schema whose root is one can be followed.
+    if !object_root(&schema.to_value().ok()?) {
+        return None;
+    }
     let purpose = spec
         .description
         .as_deref()
@@ -909,11 +914,28 @@ fn schema_by_instruction(
         .unwrap_or_default();
     let sentence = format!(
         "Answer with one JSON object that matches this JSON schema, and nothing else: {}{purpose}",
-        spec.schema.get()
+        schema.get()
     );
+    let field = format_field(g, ingress);
     g.output = OutputSpec::JsonObject;
     g.system.push(Block::text(sentence));
-    Some(app_param(ingress, "format").to_owned())
+    Some(field.to_owned())
+}
+
+fn object_root(schema: &serde_json::Value) -> bool {
+    match schema.get("type") {
+        Some(serde_json::Value::String(t)) => t == "object",
+        Some(serde_json::Value::Array(types)) => types.iter().any(|t| t == "object"),
+        None => schema.get("properties").is_some(),
+        Some(_) => false,
+    }
+}
+
+fn format_field(g: &GenerateRequest, ingress: DialectId) -> &'static str {
+    match g.extras.form_str(DialectId::Gemini, "schema") {
+        Some("responseSchema") if ingress == DialectId::Gemini => "generationConfig.responseSchema",
+        _ => app_param(ingress, "format"),
+    }
 }
 
 pub fn fit_responses(
@@ -1065,7 +1087,7 @@ fn check_generation(
     if caps.json_schema && eff.fields.structured_output != Some(true) {
         return Err(refuse(
             "structured output",
-            Some(app_param(ingress, "format")),
+            Some(format_field(g, ingress)),
             format!("The model `{name}` does not support structured output (a JSON schema)."),
         ));
     }

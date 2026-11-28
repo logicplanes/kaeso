@@ -877,6 +877,56 @@ fn a_schema_for_a_model_without_structured_output_goes_as_json_mode_where_its_pr
     );
 }
 
+fn gemini(config: serde_json::Value) -> Request {
+    let body = serde_json::json!({
+        "contents": [{"role": "user", "parts": [{"text": "A cat?"}]}],
+        "generationConfig": config
+    });
+    let mut req = kaeso_codecs::dispatch::decode_request(
+        DialectId::Gemini,
+        kaeso_kpp::RequestKind::Generate,
+        body.to_string().as_bytes(),
+        &kaeso_codecs::HeaderList::new(),
+    )
+    .unwrap();
+    if let Request::Generate(g) = &mut req {
+        g.model = "deepseek-flash".into();
+    }
+    req
+}
+
+#[test]
+fn a_gemini_schema_reaches_json_mode_as_json_schema_and_only_with_an_object_root() {
+    let deepseek = eff(&entry("deepseek", "deepseek-flash"));
+    let mut req = gemini(serde_json::json!({
+        "responseMimeType": "application/json",
+        "responseSchema": {"type": "OBJECT", "properties": {"name": {"type": "STRING"}}}
+    }));
+    let plan = prepare(&mut req, DialectId::Gemini, &deepseek).unwrap();
+    assert_eq!(plan.adapted, ["generationConfig.responseSchema"]);
+    let Request::Generate(g) = &req else { panic!() };
+    let Some(Block::Text(t)) = g.system.last() else {
+        panic!("{:?}", g.system)
+    };
+    let (_, sent) = t.text.split_once("nothing else: ").unwrap();
+    assert_eq!(
+        serde_json::from_str::<serde_json::Value>(sent).unwrap(),
+        serde_json::json!({"type": "object", "properties": {"name": {"type": "string"}}}),
+        "OpenAPI types become JSON Schema's"
+    );
+
+    let mut list = gemini(serde_json::json!({
+        "responseMimeType": "application/json",
+        "responseJsonSchema": {"type": "array", "items": {"type": "string"}}
+    }));
+    let err = prepare(&mut list, DialectId::Gemini, &deepseek).unwrap_err();
+    assert_eq!(
+        err.capability, "structured output",
+        "JSON mode answers with an object"
+    );
+    assert_eq!(err.param, Some("generationConfig.responseJsonSchema"));
+}
+
 #[test]
 fn capabilities_are_checked_before_sending() {
     let gpt35 = eff(&entry("openai", "gpt-3.5-turbo"));
