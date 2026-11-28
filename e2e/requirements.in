@@ -1,10 +1,10 @@
-openai==3.50.0
-elevenlabs==2.78.0
-anthropic==2.8.0
-google-genai==3.3.0
+openai==3.57.0
+elevenlabs==2.79.0
+anthropic==2.11.0
+google-genai==3.6.1
 httpx==0.28.1
 mcp==2.3.0
 pytest==9.2.0
 typesafe-sdk==0.7.5
-cfn-lint==1.60.1
+cfn-lint==1.61.0
 pyyaml==6.0.3
