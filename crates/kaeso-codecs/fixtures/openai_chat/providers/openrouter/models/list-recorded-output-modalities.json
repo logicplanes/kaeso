@@ -1,0 +1,134 @@
+{
+  "data": [
+    {
+      "id": "perplexity/pplx-embed-v2-context-0.6b",
+      "canonical_slug": "perplexity/pplx-embed-v2-context-0.6b-20261120",
+      "hugging_face_id": "perplexity-ai/pplx-embed-v2-context-0.6b",
+      "name": "Perplexity: Embed V2 Context 0.6B",
+      "created": 1795210496,
+      "description": "pplx-embed-v2-context-0.6b is a compact multimodal contextual embedding model from Perplexity for retrieval over text, images, and visual documents. It is the cost-efficient sibling of [pplx-embed-v2-context-9b](https://openrouter.ai/perplexity/pplx-embed-v2-context-9b) and is suited for high-volume...",
+      "context_length": 32000,
+      "architecture": {
+        "modality": "text+image->embeddings",
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "embeddings"
+        ],
+        "tokenizer": "Other",
+        "instruct_type": null
+      },
+      "pricing": {
+        "prompt": "0.00000002",
+        "completion": "0",
+        "image_token": "0.0000004"
+      },
+      "top_provider": {
+        "context_length": 32000,
+        "max_completion_tokens": 28800,
+        "is_moderated": false
+      },
+      "per_request_limits": null,
+      "supported_parameters": [],
+      "default_parameters": {},
+      "supported_voices": null,
+      "knowledge_cutoff": null,
+      "expiration_date": null,
+      "links": {
+        "details": "/api/v1/models/perplexity/pplx-embed-v2-context-0.6b-20261120/endpoints"
+      },
+      "endpoints": [
+        "/api/v1/embeddings"
+      ]
+    },
+    {
+      "id": "cohere/rerank-5-fast",
+      "canonical_slug": "cohere/rerank-5-fast-20261028",
+      "hugging_face_id": null,
+      "name": "Cohere: Rerank 5 Fast",
+      "created": 1793738329,
+      "description": "Rerank 5 Fast is the low-latency tier of Cohere's Rerank 5 family of reranking models. It scores and reorders candidate documents against a query and is suited for high-throughput retrieval...",
+      "context_length": 32768,
+      "architecture": {
+        "modality": "text->rerank",
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "rerank"
+        ],
+        "tokenizer": "Cohere",
+        "instruct_type": null
+      },
+      "pricing": {
+        "prompt": "0",
+        "completion": "0"
+      },
+      "top_provider": {
+        "context_length": 32768,
+        "max_completion_tokens": 29491,
+        "is_moderated": true
+      },
+      "per_request_limits": null,
+      "supported_parameters": [],
+      "default_parameters": {},
+      "supported_voices": null,
+      "knowledge_cutoff": null,
+      "expiration_date": null,
+      "links": {
+        "details": "/api/v1/models/cohere/rerank-5-fast-20261028/endpoints"
+      },
+      "endpoints": [
+        "/api/v1/rerank"
+      ]
+    },
+    {
+      "id": "antdigital/lingdt-decision-fast-1.0:free",
+      "canonical_slug": "antdigital/lingdt-decision-fast-1.0-20261126",
+      "hugging_face_id": "antdigital-ai/LingDT-Decision-Fast-1.0",
+      "name": "Ant Digital: LingDT Decision Fast 1.0 (free)",
+      "created": 1795713319,
+      "description": "LingDT Decision Fast 1.0 is a Ling-based decision model from Ant Digital. It is suited for software engineering decision tasks such as classifying, scoring, and yes/no judgments over code and...",
+      "context_length": 32768,
+      "architecture": {
+        "modality": "text->decisions",
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "decisions"
+        ],
+        "tokenizer": "Other",
+        "instruct_type": null
+      },
+      "pricing": {
+        "prompt": "0",
+        "completion": "0"
+      },
+      "top_provider": {
+        "context_length": 32768,
+        "max_completion_tokens": 29491,
+        "is_moderated": false
+      },
+      "per_request_limits": null,
+      "supported_parameters": [],
+      "default_parameters": {},
+      "supported_voices": null,
+      "knowledge_cutoff": null,
+      "expiration_date": null,
+      "links": {
+        "details": "/api/v1/models/antdigital/lingdt-decision-fast-1.0-20261126/endpoints"
+      },
+      "endpoints": [
+        "/api/alpha/decisions",
+        "/api/alpha/extractions"
+      ]
+    }
+  ],
+  "total_count": 741,
+  "links": {
+    "next": null
+  }
+}

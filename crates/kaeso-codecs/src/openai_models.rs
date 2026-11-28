@@ -1,4 +1,7 @@
-use kaeso_kpp::{DialectId, Extras, KppError, ModelInfo, ModelList, ModelsQuery, Origin};
+use kaeso_kpp::{
+    DialectId, Extras, KppError, ModelFeature, ModelInfo, ModelList, ModelPrices, ModelsQuery,
+    Origin,
+};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -52,6 +55,153 @@ pub(crate) struct ModelWire {
     pub owned_by: Maybe<String>,
     #[serde(default, skip_serializing_if = "Maybe::is_absent")]
     pub shutdown_date: Maybe<String>,
+    // What the model is, in the fields OpenRouter's listing names (`GET /api/v1/models`,
+    // https://openrouter.ai/docs/api-reference/models/get-models), which apps that read OpenAI-
+    // format listings take a model's name, context window, modalities and prices from. Written
+    // only: a listing that sends them keeps them as extras, so they are written back as sent.
+    #[serde(default, skip_deserializing, skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    #[serde(default, skip_deserializing, skip_serializing_if = "Option::is_none")]
+    pub context_length: Option<u64>,
+    #[serde(default, skip_deserializing, skip_serializing_if = "Option::is_none")]
+    pub architecture: Option<ArchitectureWire>,
+    #[serde(default, skip_deserializing, skip_serializing_if = "Option::is_none")]
+    pub pricing: Option<PricingWire>,
+    #[serde(default, skip_deserializing, skip_serializing_if = "Option::is_none")]
+    pub top_provider: Option<TopProviderWire>,
+    #[serde(default, skip_deserializing, skip_serializing_if = "Option::is_none")]
+    pub supported_parameters: Option<Vec<&'static str>>,
+}
+
+#[derive(Clone, Debug, Default, Serialize)]
+pub(crate) struct ArchitectureWire {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub modality: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub input_modalities: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub output_modalities: Option<Vec<String>>,
+}
+
+// USD per token, as decimal strings.
+#[derive(Clone, Debug, Default, Serialize)]
+pub(crate) struct PricingWire {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub prompt: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub completion: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub input_cache_read: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub input_cache_write: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub internal_reasoning: Option<String>,
+}
+
+#[derive(Clone, Debug, Default, Serialize)]
+pub(crate) struct TopProviderWire {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub context_length: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_completion_tokens: Option<u64>,
+}
+
+fn architecture(m: &ModelInfo) -> Option<ArchitectureWire> {
+    let (input, output) = (&m.input_modalities, &m.output_modalities);
+    if input.is_none() && output.is_none() {
+        return None;
+    }
+    Some(ArchitectureWire {
+        modality: input
+            .as_ref()
+            .zip(output.as_ref())
+            .filter(|(i, o)| !i.is_empty() && !o.is_empty())
+            .map(|(i, o)| format!("{}->{}", i.join("+"), o.join("+"))),
+        input_modalities: input.clone(),
+        output_modalities: output.clone(),
+    })
+}
+
+fn pricing(prices: &ModelPrices) -> Option<PricingWire> {
+    let w = PricingWire {
+        prompt: prices.input.as_deref().and_then(per_token),
+        completion: prices.output.as_deref().and_then(per_token),
+        input_cache_read: prices.cache_read.as_deref().and_then(per_token),
+        input_cache_write: prices.cache_write.as_deref().and_then(per_token),
+        internal_reasoning: prices.reasoning.as_deref().and_then(per_token),
+    };
+    let any = [
+        &w.prompt,
+        &w.completion,
+        &w.input_cache_read,
+        &w.input_cache_write,
+        &w.internal_reasoning,
+    ]
+    .iter()
+    .any(|p| p.is_some());
+    any.then_some(w)
+}
+
+// A price per million tokens as a price per token, exactly: `"3.00"` is `"0.000003"`. A value
+// that is not a plain non-negative decimal gives `None`.
+pub(crate) fn per_token(per_million: &str) -> Option<String> {
+    let (int, frac) = per_million.split_once('.').unwrap_or((per_million, ""));
+    let plain = |s: &str| s.bytes().all(|b| b.is_ascii_digit());
+    if (int.is_empty() && frac.is_empty()) || !plain(int) || !plain(frac) {
+        return None;
+    }
+    let mut digits = format!("{int}{frac}");
+    let mut scale = frac.len() + 6;
+    while scale > 0 && digits.ends_with('0') {
+        digits.pop();
+        scale -= 1;
+    }
+    let digits = digits.trim_start_matches('0');
+    if digits.is_empty() {
+        return Some("0".to_owned());
+    }
+    if scale == 0 {
+        return Some(digits.to_owned());
+    }
+    match digits.len().checked_sub(scale) {
+        Some(0) | None => Some(format!("0.{}{digits}", "0".repeat(scale - digits.len()))),
+        Some(n) => {
+            let (whole, part) = digits.split_at_checked(n)?;
+            Some(format!("{whole}.{part}"))
+        }
+    }
+}
+
+// The request parameters of Kaeso's Chat Completions endpoint each feature stands for, in the
+// names OpenRouter's `supported_parameters` uses (`structured_outputs` means a `json_schema`
+// `response_format` is honoured).
+fn parameters(features: &[ModelFeature]) -> Vec<&'static str> {
+    let mut out = Vec::new();
+    for f in features {
+        out.extend_from_slice(match f {
+            ModelFeature::Tools => &["tools", "tool_choice"][..],
+            ModelFeature::Reasoning => &["reasoning"],
+            ModelFeature::ReasoningEffort => &["reasoning_effort"],
+            ModelFeature::StructuredOutput => &["response_format", "structured_outputs"],
+            ModelFeature::Temperature => &["temperature"],
+            _ => &[],
+        });
+    }
+    out
+}
+
+fn describe(w: &mut ModelWire, m: &ModelInfo) {
+    w.name.clone_from(&m.display_name);
+    w.context_length = m.context_window;
+    w.architecture = architecture(m);
+    w.pricing = m.prices.as_ref().and_then(pricing);
+    if m.context_window.is_some() || m.max_output_tokens.is_some() {
+        w.top_provider = Some(TopProviderWire {
+            context_length: m.context_window,
+            max_completion_tokens: m.max_output_tokens,
+        });
+    }
+    w.supported_parameters = m.features.as_deref().map(parameters);
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
@@ -117,7 +267,7 @@ fn decode_info(dialect: DialectId, w: Ext<ModelWire>) -> Result<ModelInfo, KppEr
 fn encode_info(m: &ModelInfo) -> Ext<ModelWire> {
     let ex = &m.extras;
     let Some(d) = source(ex) else {
-        return Ext::new(ModelWire {
+        let mut w = ModelWire {
             id: m.id.clone(),
             object: Maybe::Value("model".to_owned()),
             created: Maybe::Value(m.created_at.unwrap_or(0)),
@@ -127,9 +277,12 @@ fn encode_info(m: &ModelInfo) -> Ext<ModelWire> {
                     .unwrap_or_else(|| DEFAULT_OWNED_BY.to_owned()),
             ),
             shutdown_date: Maybe::from_option(m.retires_at.and_then(format_date), Maybe::Null),
-        });
+            ..ModelWire::default()
+        };
+        describe(&mut w, m);
+        return Ext::new(w);
     };
-    let w = ModelWire {
+    let mut w = ModelWire {
         id: m.id.clone(),
         object: encode_object(ex, d, "model"),
         created: Maybe::from_option(m.created_at, none_or(ex, d, "created", Maybe::Value(0))),
@@ -142,7 +295,9 @@ fn encode_info(m: &ModelInfo) -> Ext<ModelWire> {
                 .map_or(Maybe::Null, Maybe::Value),
             None => none_or(ex, d, "shutdown_date", Maybe::Null),
         },
+        ..ModelWire::default()
     };
+    describe(&mut w, m);
     Ext::with(w, extra_for(ex, d), verbatim_from_form(ex, d, ""))
 }
 
