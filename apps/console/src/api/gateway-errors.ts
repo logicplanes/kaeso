@@ -1009,6 +1009,7 @@ const messages = (): Rule[] => [
   rule("errors.modelApi.timeoutHeader", () =>
     t("errors.modelApi.timeoutHeader", "The header `kaeso-timeout` must be a whole number of seconds from 1 to 3600."),
   ),
+  rule("errors.modelApi.noThreads", () => t("errors.modelApi.noThreads", "Kaeso keeps no message threads; send the whole conversation without `thread`.")),
   rule("errors.modelApi.unkeptReasoning", (v) =>
     t(
       "errors.modelApi.unkeptReasoning",

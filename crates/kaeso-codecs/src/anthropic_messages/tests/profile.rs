@@ -202,3 +202,31 @@ fn a_provider_without_the_custom_tool_type_gets_an_apps_tools_without_it() {
         "Anthropic gets it as sent"
     );
 }
+
+#[test]
+fn a_null_thread_reaches_no_provider() {
+    let req = crate::dispatch::decode_request(
+        A,
+        RequestKind::Generate,
+        &std::fs::read(
+            crate::test_support::fixtures_dir()
+                .join("anthropic_messages/requests/thread-null.json"),
+        )
+        .unwrap(),
+        &HeaderList::new(),
+    )
+    .unwrap();
+    for (provider, profile) in [
+        ("anthropic", MessagesProfile::ANTHROPIC),
+        ("my-proxy", MessagesProfile::ANTHROPIC),
+        ("deepseek", MessagesProfile::compatible("DeepSeek")),
+    ] {
+        let mut ctx = EgressCtx::new(&req)
+            .with_provider(provider)
+            .with_messages_profile(profile);
+        let out = AnthropicMessages::encode_request(&req, &mut ctx).unwrap();
+        let body: Value = serde_json::from_slice(&out.body).unwrap();
+        assert!(body.get("thread").is_none(), "{provider}: {body}");
+        assert_eq!(ctx.left_out, ["thread"], "{provider}");
+    }
+}

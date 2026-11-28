@@ -248,6 +248,16 @@ pub(crate) fn apply(d: &mut Draft<'_>, profile: &MessagesProfile) -> Result<(), 
             _ => {}
         }
     }
+    // A null `thread` asks for no thread, and no provider documents it: Anthropic's message threads
+    // name only `create` and `continue`, and other providers may refuse a key they don't know.
+    if own
+        && r.extras
+            .fields
+            .get(super::THREAD)
+            .is_some_and(|thread| thread.get() == "null")
+    {
+        left_out.push(super::THREAD.to_owned());
+    }
     for field in left_out {
         d.edit().extras.fields.shift_remove(&field);
         d.leave_out(field);

@@ -323,6 +323,8 @@ pub(crate) struct ErrorObjectW {
     pub(crate) ty: String,
     #[serde(default)]
     pub(crate) message: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) details: Option<serde_json::Value>,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]

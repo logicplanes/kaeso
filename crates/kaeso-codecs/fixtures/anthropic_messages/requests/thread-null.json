@@ -1,0 +1,11 @@
+{
+  "model": "claude-sonnet-4-6",
+  "max_tokens": 256,
+  "thread": null,
+  "messages": [
+    {
+      "role": "user",
+      "content": "What is the capital of France?"
+    }
+  ]
+}

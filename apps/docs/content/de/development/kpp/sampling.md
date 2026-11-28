@@ -53,7 +53,8 @@ Chat-Apps wie NextChat senden die Sampling-Felder von OpenAI mit jeder Anfrage, 
 | `service_tier`, aus Chat und aus Anthropic | `"auto"` | ebenso, und Anthropic-Provider, die es ablehnen |
 | `verbosity` | `"medium"` | ebenso |
 | `modalities` | `["text"]` | Chat-Provider, die es ablehnen; andere Formate schreiben ohnehin Text |
+| `thread`, aus Anthropic | `null` | jedes Format, auch Anthropic Messages |
 
-Jeder Wert ist der `default` des Felds im OpenAPI-Dokument von OpenAI und in der API-Referenz von Anthropic; ein leeres `logit_bias` oder `metadata` bedeutet dasselbe wie ihr Default `null`. `service_tier: "default"` ist nicht neutral: Es verlangt Standardverarbeitung, wo die Einstellung eines Projekts eine andere Stufe wählen könnte. `web_search_options: {}` ebenso wenig: Damit sucht ein Suchmodell. Ein als `null` oder `[]` gesendetes Feld ist Form, die andere Formate nie erhalten; ein Chat-Provider, der das Feld ablehnt, erhält es ebenfalls nicht.
+Jeder Wert ist der `default` des Felds im OpenAPI-Dokument von OpenAI und in der API-Referenz von Anthropic; ein leeres `logit_bias` oder `metadata` bedeutet dasselbe wie ihr Default `null`. `thread: null` ist die Ausnahme: Kein Anbieter dokumentiert es, und es verlangt keinen Nachrichten-Thread, wie wenn `thread` fehlt. `service_tier: "default"` ist nicht neutral: Es verlangt Standardverarbeitung, wo die Einstellung eines Projekts eine andere Stufe wählen könnte. `web_search_options: {}` ebenso wenig: Damit sucht ein Suchmodell. Ein als `null` oder `[]` gesendetes Feld ist Form, die andere Formate nie erhalten; ein Chat-Provider, der das Feld ablehnt, erhält es ebenfalls nicht.
 
 Fixtures: `crates/kaeso-codecs/fixtures/openai_chat/requests/nextchat-defaults.json` (die Anfrage von NextChat), `crates/kaeso-codecs/fixtures/openai_chat/requests/neutral-defaults.json`.

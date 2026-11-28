@@ -2184,6 +2184,19 @@ expression: outcomes
     },
     "path": "/v1/chat/completions"
   },
+  "thread-null": {
+    "body": {
+      "max_completion_tokens": 256,
+      "messages": [
+        {
+          "content": "What is the capital of France?",
+          "role": "user"
+        }
+      ],
+      "model": "claude-sonnet-4-6"
+    },
+    "path": "/v1/chat/completions"
+  },
   "tool-choice-any-no-parallel": {
     "body": {
       "max_completion_tokens": 1024,

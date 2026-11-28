@@ -497,6 +497,7 @@
   "errors.modelApi.noRequestRight": "The owner of this API key may not call models in its project (the right `api.request` is missing).",
   "errors.modelApi.noRoute": "Kaeso does not serve `{path}`.",
   "errors.modelApi.noSuchModel": "The model `{model}` does not exist or this key may not use it.",
+  "errors.modelApi.noThreads": "Kaeso keeps no message threads; send the whole conversation without `thread`.",
   "errors.modelApi.notCached": "No cached reply answers this request, and `only-if-cached` keeps it from the provider.",
   "errors.modelApi.permissionRefused": "The provider doesn't allow this request with this project's provider key, for example for this model, plan or region. Ask an organization admin to check it under Providers.",
   "errors.modelApi.planUsageLimit": "Your {product} plan's usage limit is reached. Review it at {url}.",

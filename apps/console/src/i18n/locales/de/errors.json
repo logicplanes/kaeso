@@ -800,6 +800,7 @@
   "errors.keyEndpoint.path": "Der Endpunkt hat einen Pfad, den Kaeso nicht aufruft; nur die Adresse der Ressource angeben.",
   "errors.upstreamModel": "Die Modell-ID beim Anbieter hat 1 bis 256 Zeichen, ohne Leerzeichen.",
   "errors.modelApi.notCached": "Keine gespeicherte Antwort beantwortet diese Anfrage, und `only-if-cached` hält sie vom Anbieter fern.",
+  "errors.modelApi.noThreads": "Kaeso bewahrt keine Nachrichten-Threads auf; senden Sie die ganze Unterhaltung ohne `thread`.",
   "errors.modelApi.unkeptReasoning": "Kaeso hält das Reasoning, auf das `{id}` verweist, nicht mehr vor; senden Sie die Einträge selbst in `input`, wie SDKs es mit `store: false` tun.",
   "errors.modelApi.unkeptText": "Kaeso hält den Text, auf den `{id}` verweist, nicht mehr vor; senden Sie die Einträge selbst in `input`, wie SDKs es mit `store: false` tun.",
   "errors.modelApi.textNotKept": "Kaeso hält den Text, auf den `{id}` verweist, nur vor, wo das Projekt beim Anbieter gespeicherte Antworten erlaubt; senden Sie die Einträge selbst in `input`, wie SDKs es mit `store: false` tun.",

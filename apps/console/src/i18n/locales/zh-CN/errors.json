@@ -800,6 +800,7 @@
   "errors.keyEndpoint.path": "端点包含 Kaeso 不会调用的路径；请只提供资源的地址。",
   "errors.upstreamModel": "服务商模型 ID 为 1 到 256 个字符，不含空格。",
   "errors.modelApi.notCached": "缓存中没有可回答此请求的回复，而 `only-if-cached` 不允许将其发送给服务商。",
+  "errors.modelApi.noThreads": "Kaeso 不保留消息线程；请发送完整对话，不要带 `thread`。",
   "errors.modelApi.unkeptReasoning": "Kaeso 已不再保留 `{id}` 所指的推理内容；请在 `input` 中直接发送这些条目，就像 SDK 在 `store: false` 时那样。",
   "errors.modelApi.unkeptText": "Kaeso 已不再保留 `{id}` 所指的文本；请在 `input` 中直接发送这些条目，就像 SDK 在 `store: false` 时那样。",
   "errors.modelApi.textNotKept": "只有在项目允许在服务商处存储回复时，Kaeso 才会保留 `{id}` 所指的文本；请在 `input` 中直接发送这些条目，就像 SDK 在 `store: false` 时那样。",

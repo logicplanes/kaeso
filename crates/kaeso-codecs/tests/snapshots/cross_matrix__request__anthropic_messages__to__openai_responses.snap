@@ -2183,6 +2183,20 @@ expression: outcomes
     },
     "path": "/v1/responses"
   },
+  "thread-null": {
+    "body": {
+      "input": [
+        {
+          "content": "What is the capital of France?",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 256,
+      "model": "claude-sonnet-4-6",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
   "tool-choice-any-no-parallel": {
     "body": {
       "input": [
