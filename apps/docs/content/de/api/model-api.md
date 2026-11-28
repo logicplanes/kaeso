@@ -201,6 +201,27 @@ Unter `/v1beta` und für Gemini-Aufrufe unter `/v1` kommt jeder Fehler im Gemini
 | --- | --- | --- | --- |
 | Paginierung | Keine; eine Antwort enthält alle Modelle | `limit` (1 bis 1000, Standard 20), `after_id` oder `before_id` | `pageSize` (Standard 50) und `pageToken` mit dem `nextPageToken` der vorigen Seite |
 | Veraltete Modelle | Nicht gekennzeichnet | `lifecycle: "deprecated"`, wie KPMR sie kennzeichnet | Nicht gekennzeichnet |
+| Was ein Modell ist | `name`, `context_length`, `top_provider.max_completion_tokens`, `architecture`, `supported_parameters` und `pricing`, wie die Liste von OpenRouter sie nennt | `display_name`, `max_input_tokens`, `max_tokens` | `displayName`, `inputTokenLimit`, `outputTokenLimit` |
+
+Im OpenAI-Format beschreibt sich jedes Modell in den Feldern der [Modellliste von OpenRouter](https://openrouter.ai/docs/api-reference/models/get-models). Chat-Apps und Coding-Tools lesen sie, um Modelle zu benennen, ihren Kontext zu bemessen und Chat-Modelle von Bild- oder Sprachmodellen zu unterscheiden:
+
+```json
+{"id": "grok-4.7", "object": "model", "created": 1789948800, "owned_by": "xai", "shutdown_date": null,
+ "name": "Grok 4.7", "context_length": 500000,
+ "architecture": {"modality": "text+image+pdf->text", "input_modalities": ["text", "image", "pdf"], "output_modalities": ["text"]},
+ "pricing": {"prompt": "0.000002", "completion": "0.000006", "input_cache_read": "0.0000005"},
+ "top_provider": {"context_length": 500000, "max_completion_tokens": 500000},
+ "supported_parameters": ["tools", "tool_choice", "reasoning", "reasoning_effort", "response_format", "structured_outputs", "temperature"]}
+```
+
+Die Werte stammen aus dem Katalog des Projekts, Überschreibungen eingeschlossen; ein Alias zeigt die des Modells, mit dem er gelistet wird. `pricing` enthält die Grundpreise, mit denen Kaeso eine Anfrage berechnet, in USD pro Token: `prompt`, `completion`, `input_cache_read`, `input_cache_write` und `internal_reasoning`. Preise für lange Prompts und Preise pro Bild, Sekunde oder Zeichen stehen nicht darin. `supported_parameters` nennt die Anfragefelder, die das Modell laut Katalog nimmt:
+
+- `tools` und `tool_choice`;
+- `reasoning` für ein Modell, das Reasoning nutzt, und `reasoning_effort`, wenn es Aufwandsstufen hat;
+- `response_format` und `structured_outputs` (Ausgabe nach JSON Schema);
+- `temperature`.
+
+Ein Modell, das keine Inhalte erzeugt, nennt als Ausgabemodalität, was es erzeugt, mit den Worten von OpenRouter, wie dessen Modellliste mit `?output_modalities=all` sie schreibt: `embeddings`, `rerank` oder `decisions`. Ein Feld, das der Katalog nicht kennt, fehlt.
 
 `GET /v1/models/{model}` und `GET /v1beta/models/{model}` nehmen jeden [Modellnamen](#modellnamen). Die Antwort ist 404, wenn das Modell nicht im Katalog ist, der Schlüssel es nicht verwenden darf oder der Anbieter es nicht bereitstellt.
 

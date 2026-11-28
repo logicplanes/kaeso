@@ -201,6 +201,27 @@ console.log(response.text);
 | --- | --- | --- | --- |
 | 分页 | 无，一次响应包含所有模型 | `limit`（1 到 1000，默认 20）、`after_id` 或 `before_id` | `pageSize`（默认 50），以及值为上一页 `nextPageToken` 的 `pageToken` |
 | 已弃用的模型 | 不标注 | 按 KPMR 的标注带有 `lifecycle: "deprecated"` | 不标注 |
+| 模型的描述 | `name`、`context_length`、`top_provider.max_completion_tokens`、`architecture`、`supported_parameters` 和 `pricing`，与 OpenRouter 列表的命名相同 | `display_name`、`max_input_tokens`、`max_tokens` | `displayName`、`inputTokenLimit`、`outputTokenLimit` |
+
+在 OpenAI 格式中，每个模型用 [OpenRouter 模型列表](https://openrouter.ai/docs/api-reference/models/get-models)的字段描述自己。聊天应用和编程工具读取这些字段来显示模型名称、确定上下文大小，并区分聊天模型与图像或语音模型：
+
+```json
+{"id": "grok-4.7", "object": "model", "created": 1789948800, "owned_by": "xai", "shutdown_date": null,
+ "name": "Grok 4.7", "context_length": 500000,
+ "architecture": {"modality": "text+image+pdf->text", "input_modalities": ["text", "image", "pdf"], "output_modalities": ["text"]},
+ "pricing": {"prompt": "0.000002", "completion": "0.000006", "input_cache_read": "0.0000005"},
+ "top_provider": {"context_length": 500000, "max_completion_tokens": 500000},
+ "supported_parameters": ["tools", "tool_choice", "reasoning", "reasoning_effort", "response_format", "structured_outputs", "temperature"]}
+```
+
+这些值来自项目的目录（包括覆盖设置）；别名显示其列出时所用模型的值。`pricing` 是 Kaeso 计算请求费用所用的基础价格，单位为每 Token 美元：`prompt`、`completion`、`input_cache_read`、`input_cache_write` 和 `internal_reasoning`。长提示词的价格以及按图像、秒或字符计的价格不会列出。`supported_parameters` 列出目录中该模型接受的请求字段：
+
+- `tools` 和 `tool_choice`；
+- 会推理的模型列出 `reasoning`，有推理强度等级时还列出 `reasoning_effort`；
+- `response_format` 和 `structured_outputs`（按 JSON Schema 输出）；
+- `temperature`。
+
+不生成内容的模型以 OpenRouter 的命名（即其模型列表在 `?output_modalities=all` 时的写法）把它生成的东西列为输出模态：`embeddings`、`rerank` 或 `decisions`。目录中未知的字段会省略。
 
 `GET /v1/models/{model}` 和 `GET /v1beta/models/{model}` 接受任何[模型名称](#模型名称)。模型不在目录中、密钥无权使用或服务商不提供该模型时，返回 404。
 
