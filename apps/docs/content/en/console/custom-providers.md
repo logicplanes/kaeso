@@ -198,6 +198,29 @@ console.log(completion.choices[0].message.content);
 
 The reply's `kaeso-provider` header, the request logs and usage name the provider by its id. The install's metrics count all custom providers as `custom`.
 
+### Add an embeddings model
+
+A provider that **Also serves embeddings** answers `/v1/embeddings` with its embeddings models. Add one like any other model and set its **Outputs** to **Embeddings** and **Sends as** to **OpenAI Embeddings**. It needs its inputs, its context and its input price, and no output limit; set the output price to `0`. Through the [Platform API](../api/platform-api.md), the same model is:
+
+```bash
+curl -s "https://kaeso.example.com/platform/v1/orgs/$ORG/projects/$PROJECT/models" \
+  -H "Authorization: Bearer $KAESO_PLATFORM_KEY" \
+  -H "content-type: application/json" \
+  -d '{
+    "provider": "research-vllm",
+    "model_id": "bge-m3",
+    "custom": true,
+    "overrides": {
+      "input_modalities": ["text"],
+      "output_modalities": ["embedding"],
+      "context_limit": 8192,
+      "input_price": "0",
+      "output_price": "0",
+      "egress_dialect": "openai_embeddings"
+    }
+  }'
+```
+
 ## Addresses Kaeso reaches
 
 Kaeso checks the address of every connection to a custom provider after DNS resolution, not only when you add it. It refuses private, loopback, link-local and cloud metadata addresses, such as `10.0.0.5`, `127.0.0.1` and `169.254.169.254`, unless the install allows the network. Plain `http` reaches only the networks the install allows. Kaeso follows no redirects from a custom provider and calls it without a proxy.
