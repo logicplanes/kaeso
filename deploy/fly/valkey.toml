@@ -3,7 +3,7 @@
 primary_region = "fra"
 
 [build]
-  image = "valkey/valkey:9.1.3-alpine"
+  image = "valkey/valkey:9.2.0-alpine"
 
 [experimental]
   # Through a shell for the password from the app's secret, then the image's entrypoint, which runs Valkey as
