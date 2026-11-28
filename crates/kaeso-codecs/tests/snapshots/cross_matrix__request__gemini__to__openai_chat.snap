@@ -28,6 +28,9 @@ expression: outcomes
     },
     "path": "/v1/chat/completions"
   },
+  "candidate-count-2": {
+    "rejected_by_source": "`generationConfig.candidateCount` above 1"
+  },
   "error-invalid-argument": {
     "message": "`reasoning.effort` is not supported by OpenAI Chat Completions. It does not know the effort `ultra`; use none, minimal, low, medium, high, xhigh or max.",
     "param": "generationConfig.thinkingConfig.thinkingLevel",
@@ -350,6 +353,75 @@ expression: outcomes
     "message": "`safetySettings` comes from a Gemini API request and has no equivalent in OpenAI Chat Completions. Remove it, or send the request to a model served through its original format.",
     "param": null,
     "unsupported": "safetySettings"
+  },
+  "sdk-automatic-function-calling": {
+    "body": {
+      "max_completion_tokens": 800,
+      "messages": [
+        {
+          "content": "Weather in Paris? Use the tool, then answer in one sentence.",
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "tools": [
+        {
+          "function": {
+            "description": "Weather for a city.\n\nArgs:\n  city: The city name.\n  unit: celsius or fahrenheit.",
+            "name": "get_weather",
+            "parameters": {
+              "properties": {
+                "city": {
+                  "type": "string"
+                },
+                "unit": {
+                  "default": "celsius",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "city"
+              ],
+              "type": "object"
+            }
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/chat/completions"
+  },
+  "sdk-function-response-schema": {
+    "body": {
+      "messages": [
+        {
+          "content": "Weather?",
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "tools": [
+        {
+          "function": {
+            "description": "Weather for a city.",
+            "name": "get_weather",
+            "parameters": {
+              "properties": {
+                "city": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "city"
+              ],
+              "type": "object"
+            }
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/chat/completions"
   },
   "sdk-parameters-schema": {
     "body": {
@@ -1044,6 +1116,76 @@ expression: outcomes
                 "location"
               ],
               "type": "object"
+            }
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/chat/completions"
+  },
+  "tools-union-root": {
+    "body": {
+      "max_completion_tokens": 256,
+      "messages": [
+        {
+          "content": "What's the weather where I am?",
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "tools": [
+        {
+          "function": {
+            "description": "Returns the current time.",
+            "name": "get_time",
+            "parameters": {
+              "properties": {},
+              "type": "object"
+            }
+          },
+          "type": "function"
+        },
+        {
+          "function": {
+            "description": "Returns the user's city.",
+            "name": "get_location",
+            "parameters": {
+              "properties": {},
+              "type": "object"
+            }
+          },
+          "type": "function"
+        },
+        {
+          "function": {
+            "description": "Returns the weather for a city or a postal code.",
+            "name": "get_weather",
+            "parameters": {
+              "anyOf": [
+                {
+                  "properties": {
+                    "city": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "city"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "properties": {
+                    "zip": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "zip"
+                  ],
+                  "type": "object"
+                }
+              ]
             }
           },
           "type": "function"

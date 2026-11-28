@@ -309,7 +309,7 @@ Die Adresse einer Guardrail wählt ein Organisations-Admin, deshalb schützt das
 
 | Variable<br>TOML-Schlüssel | Typ | Standard | Was sie bewirkt |
 | --- | --- | --- | --- |
-| `KAESO_STREAMS_KEEPALIVE_INTERVAL`<br>`streams.keepalive_interval` | Text | `15s` | Nach so langer Zeit ohne Ausgabe ein Keepalive in einen offenen Stream schreiben, damit Proxys die Verbindung halten ([Lange Streams](domains-and-tls.md#lange-streams)). `0s` schaltet Keepalives ab; sonst 1s bis 300s. |
+| `KAESO_STREAMS_KEEPALIVE_INTERVAL`<br>`streams.keepalive_interval` | Text | `15s` | Nach so langer Zeit ohne Ausgabe ein Keepalive in einen offenen Stream schreiben, damit Proxys die Verbindung halten ([Lange Streams](domains-and-tls.md#lange-streams)). `0s` schaltet diese ab; Keepalives anstelle von Inhalten, die das Format der App nicht zeigen kann, kommen weiterhin ([Streaming](../api/model-api.md#streaming)). Sonst 1s bis 300s. |
 | `KAESO_STREAMS_MAX_DURATION`<br>`streams.max_duration` | Text | `0s` | Wie lange eine gestreamte Antwort höchstens laufen darf, bevor das Gateway sie mit einem Fehler-Event beendet. `0s` setzt keine Grenze. |
 | `KAESO_STREAMS_MAX_BYTES`<br>`streams.max_bytes` | Text | `0` | Wie viele Bytes, etwa `64MiB`, eine gestreamte Antwort höchstens an die App schreiben darf, bevor das Gateway sie mit einem Fehler-Event beendet. `0` setzt keine Grenze. |
 
@@ -317,7 +317,7 @@ Die Adresse einer Guardrail wählt ein Organisations-Admin, deshalb schützt das
 
 | Variable<br>TOML-Schlüssel | Typ | Standard | Was sie bewirkt |
 | --- | --- | --- | --- |
-| `KAESO_CONTINUITY_REASONING_TTL`<br>`continuity.reasoning_ttl` | Text | `1h` | Wie lange das Gateway das Reasoning eines Modells vor einem Tool-Aufruf aufbewahrt, für eine OpenAI-Chat-Completions- oder Gemini-App, deren Modell ein anderes Format spricht, und für eine OpenAI-Responses-App, die kein `store: false` sendet. `0s` schaltet es ab; sonst 1m bis 24h. |
+| `KAESO_CONTINUITY_REASONING_TTL`<br>`continuity.reasoning_ttl` | Text | `1h` | Wie lange das Gateway das Reasoning eines Modells vor einem Tool-Aufruf aufbewahrt, für eine OpenAI-Chat-Completions- oder Gemini-App, deren Modell ein anderes Format spricht. Für eine OpenAI-Responses-App, die kein `store: false` sendet, bewahrt es das Reasoning vor einem Tool-Aufruf auf und den Text, wo das Projekt beim Anbieter gespeicherte Antworten erlaubt. Mit dem Hauptschlüssel verschlüsselt und nur an Anfragen mit demselben API-Schlüssel zurückgegeben. `0s` schaltet es ab; sonst 1m bis 24h. |
 
 [Formatübersetzung](../concepts/format-translation.md#chat-completions) erklärt, wie das Gateway es aufbewahrt.
 

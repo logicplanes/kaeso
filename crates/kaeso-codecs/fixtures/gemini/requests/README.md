@@ -6,12 +6,14 @@ A `<name>.meta.json` names the model or the method of a request when the round-t
 |---|---|---|
 | `text-simple.json` | one user turn | schema: GenerateContentRequest (discovery v1beta revision 20261106) |
 | `system-instruction.json` | `systemInstruction`, temperature, `topP`, `topK`, `maxOutputTokens`, `stopSequences`, `seed`, `candidateCount: 1` | schema: GenerateContentRequest, GenerationConfig (discovery v1beta revision 20261106) |
+| `candidate-count-2.json` | `candidateCount: 2`, which the codec refuses as `Unsupported`: Kaeso returns one candidate per request | schema: GenerationConfig.candidateCount (discovery v1beta revision 20261106) |
 | `multi-turn.json` | user, model and user contents; `thinkingLevel: MINIMAL` | schema: Content, ThinkingConfig (discovery v1beta revision 20261106) |
 | `role-assistant.json` | a content with the role `assistant`, which Gemini answered | schema: Content (discovery v1beta revision 20261106); recorded |
 | `thinking-include-thoughts.json` | `includeThoughts` with `thinkingLevel: LOW` | doc: thinking, thought summaries |
 | `thinking-budget.json` | `thinkingBudget: 1024` with `includeThoughts` | doc: thinking, thinking budgets |
 | `tools-single.json` | one function declaration with OpenAPI `parameters`, `mode: AUTO` | doc: function calling |
 | `tools-parallel.json` | `parametersJsonSchema`, parallel calls with thoughts | doc: function calling, parallel function calling |
+| `tools-union-root.json` | two `tools` entries, the second with two declarations, one of them a `parametersJsonSchema` whose root is an `anyOf` of objects | schema: Tool, FunctionDeclaration.parametersJsonSchema (discovery v1beta revision 20261106) |
 | `tools-forced.json` | `mode: ANY` with one `allowedFunctionNames` entry | schema: FunctionCallingConfig (discovery v1beta revision 20261106) |
 | `tool-result-signature.json` | the model content of `responses/recorded-tools-parallel.json` sent back with its thought signature, and two function responses | doc: thought signatures, parallel function calling |
 | `tool-result-dummy-signature.json` | a function call from another model with the documented dummy signature and an id in Anthropic's pattern | doc: thought signatures, FAQ |
@@ -40,6 +42,8 @@ A `<name>.meta.json` names the model or the method of a request when the round-t
 | `error-invalid-key.json` | sent with a made-up key | schema: GenerateContentRequest (discovery v1beta revision 20261106) |
 | `error-unknown-model.json` | a model that doesn't exist | schema: GenerateContentRequest (discovery v1beta revision 20261106) |
 | `gemini-cli-turn.json` | a Gemini CLI turn: the `generationConfig` it sends with every request (`temperature: 1`, `topP: 0.95`, `topK: 64`, `includeThoughts`), its session context and two function declarations with `parametersJsonSchema` | Gemini CLI 0.71.1 (`gemini -p`), captured on 2026-11-27; the system instruction is cut to its first paragraph, the tool list to two declarations, and the paths in the session context are replaced |
+| `sdk-automatic-function-calling.json` | a Python function passed as a tool, as google-genai 3.6.1 declares it for automatic function calling: `parameters_json_schema` and the return type as `response_json_schema`, in snake case | sdk: google-genai 3.6.1, `models.generate_content` with `tools=[get_weather]` (a function returning `str`) |
+| `sdk-function-response-schema.json` | a declaration with the return type as a `response` `Schema` and an empty `generationConfig` | sdk: google-genai 3.6.1, `types.FunctionDeclaration.from_callable_with_api_option(callable=get_weather, api_option="ENTERPRISE")` sent through a Gemini API client |
 | `sdk-tools-snake-case.json` | a function declaration and `thinkingLevel` as google-genai 2.32.0 writes them: `parameters_json_schema` and `thinking_level` in snake case | sdk: google-genai 2.32.0, `models.generate_content` with a `FunctionDeclaration(parameters_json_schema=…)` and `ThinkingConfig(thinking_level=LOW)` |
 | `unknown-parts.json` | audio and video parts, `executableCode`, `codeExecutionResult`, `partMetadata`, `videoMetadata`, a Files API URI, `googleSearch` and `codeExecution` tools, `cachedContent`, `labels`; MADE-UP part `xFuturePart` and field `xFutureField` | schema: Part, Tool (discovery v1beta revision 20261106); invented on purpose (unknown-* rule) |
 | `count_tokens/contents.json` | `countTokens` with `contents` | schema: CountTokensRequest (discovery v1beta revision 20261106) |

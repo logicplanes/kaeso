@@ -391,12 +391,8 @@ mod tests {
                 .iter()
                 .filter(|e| matches!(e, StreamEvent::BlockDelta(_)))
                 .count();
-            let expected = if dialect == DialectId::OpenAiChat {
-                31
-            } else {
-                30
-            };
-            assert_eq!(deltas, expected, "{dialect:?}");
+            // OpenAI's opening chunk carries `content: ""`, which opens no text block.
+            assert_eq!(deltas, 30, "{dialect:?}");
             let usage = final_usage(&events);
             assert_eq!(usage.input_tokens, 260, "{dialect:?}");
             assert_eq!(usage.cache_read_tokens, 40, "{dialect:?}");
@@ -431,8 +427,7 @@ mod tests {
                 .iter()
                 .filter(|e| matches!(e, StreamEvent::BlockDelta(_)))
                 .count();
-            let opening = usize::from(dialect == DialectId::OpenAiChat);
-            assert_eq!(deltas, 500 + opening, "{dialect:?}");
+            assert_eq!(deltas, 500, "{dialect:?}");
             assert!(
                 !events.iter().any(|e| matches!(e, StreamEvent::Error(_))),
                 "{dialect:?}"

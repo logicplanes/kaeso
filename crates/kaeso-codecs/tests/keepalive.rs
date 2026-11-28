@@ -99,7 +99,7 @@ fn claude_thinking_keeps_a_chat_app_hearing_from_the_stream() {
         "{silence} bytes hidden in a row"
     );
     let all = outputs.concat();
-    assert_eq!(comments(&all), 4, "{}", String::from_utf8_lossy(&all));
+    assert_eq!(comments(&all), 3, "{}", String::from_utf8_lossy(&all));
     let back = decode(C, &all);
     let calls = back
         .iter()
@@ -114,24 +114,47 @@ fn claude_thinking_keeps_a_chat_app_hearing_from_the_stream() {
     ));
 }
 
+fn extra(origin: DialectId, json: &str) -> StreamEvent {
+    StreamEvent::Extra(RawItem::new(
+        origin,
+        RawJson::from_string(json.to_owned()).unwrap(),
+    ))
+}
+
+const PING: &str = r#"{"event":"ping","data":{"type":"ping"}}"#;
+
+fn large_extra(origin: DialectId) -> StreamEvent {
+    let pad = "x".repeat(HIDDEN_TEXT_PER_KEEPALIVE);
+    extra(
+        origin,
+        &format!(r#"{{"event":"x-future","data":{{"pad":"{pad}"}}}}"#),
+    )
+}
+
 #[test]
-fn foreign_extra_events_become_keepalives_in_every_dialect() {
-    let ping = |origin: DialectId| {
-        StreamEvent::Extra(RawItem::new(
-            origin,
-            RawJson::from_string(r#"{"event":"ping","data":{"type":"ping"}}"#.into()).unwrap(),
-        ))
-    };
+fn a_providers_ping_is_no_keepalive_for_apps_of_other_formats_but_large_extra_events_are() {
     let start = StreamEvent::ResponseStart(ResponseStart::new("x", "m"));
-    for (target, source) in [(C, A), (R, A), (A, R)] {
-        let outputs = encode_each(target, &[start.clone(), ping(source), ping(source)]);
-        let tail = [outputs[1].clone(), outputs[2].clone()].concat();
-        let frames = if target == A {
-            pings(&tail)
-        } else {
-            comments(&tail)
+    for (target, source) in [(C, A), (R, A), (A, R), (DialectId::Gemini, A)] {
+        let outputs = encode_each(
+            target,
+            &[start.clone(), extra(source, PING), extra(source, PING)],
+        );
+        assert!(
+            outputs[1].is_empty() && outputs[2].is_empty(),
+            "{target}: {outputs:?}"
+        );
+        let outputs = encode_each(target, &[start.clone(), large_extra(source)]);
+        let frames = match target {
+            A => pings(&outputs[1]),
+            DialectId::Gemini => usize::from(outputs[1] == b"\n\n"),
+            _ => comments(&outputs[1]),
         };
-        assert_eq!(frames, 2, "{target}: {}", String::from_utf8_lossy(&tail));
+        assert_eq!(
+            frames,
+            1,
+            "{target}: {}",
+            String::from_utf8_lossy(&outputs[1])
+        );
     }
 }
 
@@ -159,15 +182,77 @@ fn every_encoder_gives_the_gateway_a_keepalive_frame_until_the_stream_ends() {
     }
 }
 
+// openai-go's stream reader before v3.5x, such as v1.8.2 in mods: every blank line ends an
+// event, and an event's data is read as JSON, so an event without data fails.
+fn openai_go_v1(bytes: &[u8]) -> Result<Vec<serde_json::Value>, String> {
+    let text = std::str::from_utf8(bytes).map_err(|e| e.to_string())?;
+    let (mut out, mut data, mut done) = (Vec::new(), Vec::new(), false);
+    for line in text.lines() {
+        if line.is_empty() {
+            let d = std::mem::take(&mut data).join("\n");
+            if done {
+                continue;
+            }
+            if d.starts_with("[DONE]") {
+                done = true;
+                continue;
+            }
+            out.push(serde_json::from_str(&d).map_err(|e| format!("{e}: {d:?}"))?);
+        } else if let Some(d) = line.strip_prefix("data:") {
+            data.push(d.strip_prefix(' ').unwrap_or(d));
+        }
+    }
+    Ok(out)
+}
+
+#[test]
+fn keepalives_in_openai_formats_reach_older_openai_go_readers_as_nothing() {
+    assert!(
+        openai_go_v1(b"data: {}\n\n: keepalive\n\ndata: {}\n\n").is_err(),
+        "a comment with a blank line is an empty event there"
+    );
+    let events = decode(A, &fixture(A, "thinking-long-tool-loop"));
+    for target in [C, R] {
+        let ctx = EncodeCtx::new(RequestKind::Generate, mode()).with_created_at(1_760_000_000);
+        let mut enc = dispatch::stream_encoder(target, &ctx).unwrap();
+        let mut plain = dispatch::stream_encoder(target, &ctx).unwrap();
+        // The gateway's keepalive before the first event, after it and before the last, so the
+        // in-band ones for the hidden thinking between them still come.
+        let (mut wire, mut without) = (enc.keepalive(), Vec::new());
+        let mut gateway = usize::from(!wire.is_empty());
+        for (i, event) in events.iter().enumerate() {
+            wire.extend(enc.encode(event).unwrap());
+            if i == 0 || i + 2 == events.len() {
+                let frame = enc.keepalive();
+                gateway += usize::from(!frame.is_empty());
+                wire.extend(frame);
+            }
+            without.extend(plain.encode(event).unwrap());
+        }
+        wire.extend(enc.finish().unwrap());
+        without.extend(plain.finish().unwrap());
+        assert_eq!(gateway, 3, "{target}: every position gets one");
+        if target == C {
+            assert!(
+                comments(&without) > 0,
+                "Claude's thinking earns in-band keepalives"
+            );
+            assert_eq!(
+                comments(&wire),
+                gateway + comments(&without),
+                "the in-band ones come between the gateway's"
+            );
+        }
+        let read = openai_go_v1(&wire).unwrap_or_else(|e| panic!("{target}: {e}"));
+        assert_eq!(read, openai_go_v1(&without).unwrap(), "{target}");
+    }
+}
+
 #[test]
 fn gemini_apps_hear_blank_lines_that_their_sdk_skips() {
     let g = DialectId::Gemini;
-    let ping = StreamEvent::Extra(RawItem::new(
-        A,
-        RawJson::from_string(r#"{"event":"ping","data":{"type":"ping"}}"#.into()).unwrap(),
-    ));
     let start = StreamEvent::ResponseStart(ResponseStart::new("x", "m"));
-    let outputs = encode_each(g, &[start, ping.clone(), ping]);
+    let outputs = encode_each(g, &[start, large_extra(A), large_extra(A)]);
     assert_eq!(
         [outputs[1].clone(), outputs[2].clone()].concat(),
         b"\n\n\n\n"
@@ -202,7 +287,7 @@ fn claude_thinking_streams_to_a_responses_app_as_reasoning_summary_text() {
             .count(),
         40
     );
-    assert_eq!(comments(all.as_bytes()), 2);
+    assert_eq!(comments(all.as_bytes()), 0);
 }
 
 #[test]

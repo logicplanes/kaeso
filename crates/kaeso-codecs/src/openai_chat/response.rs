@@ -20,6 +20,9 @@ use crate::wire::{Ext, StringOr, to_body};
 
 pub(crate) const FORM_OBJECT: &str = "object";
 pub(crate) const FORM_CONTENT_PARTS: &str = "content_parts";
+
+// `content: ""` beside tool calls, as DeepSeek answers a tool turn, is no text block.
+pub(crate) const FORM_EMPTY_CONTENT: &str = "empty_content";
 pub(crate) const FORM_THINKING: &str = "thinking";
 pub(crate) const FORM_REASONING_FIELD: &str = "reasoning_field";
 pub(crate) const CHOICE: &str = "choice";
@@ -72,10 +75,9 @@ pub(crate) fn decode_response(body: &[u8], ctx: &EgressCtx) -> Result<Reply, Kpp
             ));
         }
         _ => {
-            return Err(KppError::unsupported_by(
-                "n",
-                DIALECT,
-                "The provider returned several choices, but Kaeso carries exactly one; do not request `n` > 1.",
+            // Kaeso refuses `n` above 1 when it decodes the request, so several choices are the provider's.
+            return Err(crate::codec::several_choices(
+                "The provider returned several choices for one request; Kaeso carries one.",
             ));
         }
     };
@@ -135,6 +137,13 @@ pub(crate) fn decode_response(body: &[u8], ctx: &EgressCtx) -> Result<Reply, Kpp
         .map(|a| Citation::new(origin.clone(), a.clone()))
         .collect();
     match message.content {
+        Some(StringOr::String(text))
+            if text.is_empty() && citations.is_empty() && !message.tool_calls.is_empty() =>
+        {
+            extras
+                .form
+                .insert(FORM_EMPTY_CONTENT.to_owned(), Value::Bool(true));
+        }
         Some(StringOr::String(text)) => {
             let mut block = TextBlock::new(text);
             block.citations = citations;
@@ -410,7 +419,10 @@ pub(crate) fn encode_response(reply: &Reply, ctx: &EncodeCtx) -> Result<Vec<u8>,
     let content = if as_parts {
         Some(StringOr::List(parts))
     } else {
-        text.map(StringOr::String)
+        text.map(StringOr::String).or_else(|| {
+            (own && resp.extras.form_flag(DIALECT, FORM_EMPTY_CONTENT))
+                .then(|| StringOr::String(String::new()))
+        })
     };
     let message = ResponseMessage {
         role: "assistant".to_owned(),

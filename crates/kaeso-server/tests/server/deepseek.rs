@@ -95,6 +95,30 @@ async fn an_openai_chat_app_gets_deepseeks_tool_call_and_reasoning_content() {
 }
 
 #[tokio::test]
+async fn a_responses_app_gets_deepseeks_tool_turn_without_an_empty_message() {
+    // A Responses app with `store` on would point back to an empty message by id on its next
+    // step, so it gets none, as OpenAI sends none before a call.
+    let (env, _deepseek) = env_with_deepseek().await;
+    let r = call(
+        &env,
+        "/v1/responses",
+        Some(&env.key),
+        false,
+        Some(json!({
+            "model": FLASH,
+            "input": "Weather in Paris? [mock:fixture=providers/deepseek/recorded-thinking-tools-auto]",
+            "tools": [{"type": "function", "name": "get_weather", "parameters": {"type": "object"}}]
+        })),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let output = r.json()["output"].as_array().unwrap().clone();
+    let types: Vec<&str> = output.iter().map(|o| o["type"].as_str().unwrap()).collect();
+    assert!(!types.contains(&"message"), "{types:?}");
+    assert!(types.contains(&"function_call"), "{types:?}");
+}
+
+#[tokio::test]
 async fn a_responses_apps_output_limit_reaches_deepseek_as_max_tokens() {
     let (env, deepseek) = env_with_deepseek().await;
     let r = call(

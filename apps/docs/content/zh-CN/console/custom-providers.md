@@ -198,6 +198,29 @@ console.log(completion.choices[0].message.content);
 
 回复的 `kaeso-provider` 响应头、请求日志和用量都以 ID 标识该服务商。实例的指标将所有自定义服务商统计为 `custom`。
 
+### 添加嵌入模型
+
+**同时提供嵌入**的服务商用它的嵌入模型响应 `/v1/embeddings`。像添加其他模型一样添加一个，并把它的**输出**设为**嵌入**、**发送格式**设为 **OpenAI Embeddings**。它需要输入、上下文和输入价格，不需要输出上限；把输出价格设为 `0`。通过 [Platform API](../api/platform-api.md)，同一个模型是这样的：
+
+```bash
+curl -s "https://kaeso.example.com/platform/v1/orgs/$ORG/projects/$PROJECT/models" \
+  -H "Authorization: Bearer $KAESO_PLATFORM_KEY" \
+  -H "content-type: application/json" \
+  -d '{
+    "provider": "research-vllm",
+    "model_id": "bge-m3",
+    "custom": true,
+    "overrides": {
+      "input_modalities": ["text"],
+      "output_modalities": ["embedding"],
+      "context_limit": 8192,
+      "input_price": "0",
+      "output_price": "0",
+      "egress_dialect": "openai_embeddings"
+    }
+  }'
+```
+
 ## Kaeso 可访问的地址
 
 Kaeso 会在 DNS 解析之后检查每一次连接自定义服务商的地址，而不只是在添加时检查。它会拒绝私有、环回、链路本地和云元数据地址，例如 `10.0.0.5`、`127.0.0.1` 和 `169.254.169.254`，除非实例允许该网络。明文 `http` 只能访问实例允许的网络。Kaeso 不会跟随自定义服务商的重定向，并且不通过代理调用它。

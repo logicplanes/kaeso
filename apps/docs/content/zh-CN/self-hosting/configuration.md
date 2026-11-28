@@ -309,7 +309,7 @@ Webhook 的地址由组织管理员选择，因此网关会像对待 MCP 服务�
 
 | 变量<br>TOML 键 | 类型 | 默认值 | 作用 |
 | --- | --- | --- | --- |
-| `KAESO_STREAMS_KEEPALIVE_INTERVAL`<br>`streams.keepalive_interval` | 文本 | `15s` | 流在这段时间内没有输出时，写入一条保活消息，让代理保持连接（[长时间的流](domains-and-tls.md#长时间的流)）。`0s` 关闭保活；否则为 1s 到 300s。 |
+| `KAESO_STREAMS_KEEPALIVE_INTERVAL`<br>`streams.keepalive_interval` | 文本 | `15s` | 流在这段时间内没有输出时，写入一条保活消息，让代理保持连接（[长时间的流](domains-and-tls.md#长时间的流)）。`0s` 关闭这类保活；代替应用格式无法显示的内容而写入的保活仍会发送（[流式传输](../api/model-api.md#流式传输)）。否则为 1s 到 300s。 |
 | `KAESO_STREAMS_MAX_DURATION`<br>`streams.max_duration` | 文本 | `0s` | 流式回复最长可运行的时间，超时后网关以错误事件结束它。`0s` 表示不限制。 |
 | `KAESO_STREAMS_MAX_BYTES`<br>`streams.max_bytes` | 文本 | `0` | 流式回复最多可写给应用的字节数，例如 `64MiB`，超出后网关以错误事件结束它。`0` 表示不限制。 |
 
@@ -317,7 +317,7 @@ Webhook 的地址由组织管理员选择，因此网关会像对待 MCP 服务�
 
 | 变量<br>TOML 键 | 类型 | 默认值 | 作用 |
 | --- | --- | --- | --- |
-| `KAESO_CONTINUITY_REASONING_TTL`<br>`continuity.reasoning_ttl` | 文本 | `1h` | 当 OpenAI Chat Completions 应用或 Gemini 应用调用的模型使用另一种格式时，以及 OpenAI Responses 应用未发送 `store: false` 时，网关保留该模型在工具调用前的推理内容的时间。`0s` 关闭此功能；否则为 1m 到 24h。 |
+| `KAESO_CONTINUITY_REASONING_TTL`<br>`continuity.reasoning_ttl` | 文本 | `1h` | 当 OpenAI Chat Completions 应用或 Gemini 应用调用的模型使用另一种格式时，网关保留该模型在工具调用前的推理内容的时间。对于未发送 `store: false` 的 OpenAI Responses 应用，网关保留工具调用前的推理，并在项目允许在服务商处存储回复时保留文本。用主密钥加密保存，只返还给使用同一 API 密钥的请求。`0s` 关闭此功能；否则为 1m 到 24h。 |
 
 [格式转换](../concepts/format-translation.md#chat-completions)说明了网关如何保存这段推理。
 

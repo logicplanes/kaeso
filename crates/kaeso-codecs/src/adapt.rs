@@ -122,18 +122,21 @@ pub(crate) fn for_target<'a>(
     let profile = ctx.responses_profile;
     let mut draft = Draft::new(r);
     if target != DialectId::Gemini {
+        crate::gemini::declarations::for_foreign(&mut draft);
         crate::gemini::schema::for_foreign(&mut draft);
     }
     neutral::left_out(&mut draft, target, ctx);
+    crate::openai_chat::names::left_out(&mut draft, target, ctx);
     inline_tools::for_foreign(&mut draft, target)?;
     top_k_left_out(&mut draft, target, ctx);
     match target {
         DialectId::AnthropicMessages => {
+            web_search::for_anthropic(&mut draft)?;
+            web_search::for_claude(&mut draft);
+            // After the search mapping, which decides whether the provider gets a server tool.
             if ctx.messages_profile.forced_tool_without_thinking {
                 tool_thinking::off_for_forced_tools(&mut draft, target);
             }
-            web_search::for_anthropic(&mut draft)?;
-            web_search::for_claude(&mut draft);
             history::agent_messages(&mut draft, "Anthropic")?;
             history::as_function_calls(&mut draft)?;
             object_arguments(&mut draft, target)?;
@@ -141,10 +144,10 @@ pub(crate) fn for_target<'a>(
             crate::anthropic_messages::apply_profile(&mut draft, &ctx.messages_profile)?;
         }
         DialectId::OpenAiChat => {
+            web_search::for_chat(&mut draft)?;
             if ctx.chat_profile.request.forced_tool_without_thinking {
                 tool_thinking::off_for_forced_tools(&mut draft, target);
             }
-            web_search::for_chat(&mut draft)?;
             history::agent_messages(&mut draft, ctx.chat_profile.provider)?;
             history::as_function_calls(&mut draft)?;
             if ctx.chat_profile.request.leading_system_only {
@@ -196,7 +199,7 @@ pub(crate) fn for_target<'a>(
     match target {
         DialectId::AnthropicMessages => {
             output_schema::json_mode_by_instruction(&mut draft, target);
-            output_schema::for_claude(&mut draft)?;
+            output_schema::for_claude(&mut draft, matches!(req, Request::CountTokens(_)))?;
         }
         DialectId::BedrockConverse => output_schema::json_mode_by_instruction(&mut draft, target),
         DialectId::Gemini => output_schema::for_gemini(&mut draft)?,

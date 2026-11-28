@@ -180,6 +180,7 @@ fn a_provider_without_the_custom_tool_type_gets_an_apps_tools_without_it() {
     let tools = json!({ "tools": [
         { "type": "custom", "name": "get_weather", "input_schema": { "type": "object" } },
         { "name": "plain", "input_schema": { "type": "object" } },
+        { "type": null, "name": "typed_null", "input_schema": { "type": "object" } },
         { "type": "web_search_20250305", "name": "web_search", "max_uses": 1 }
     ]});
     let untyped = MessagesProfile::compatible("Example Cloud").without_custom_tool_type();
@@ -189,9 +190,10 @@ fn a_provider_without_the_custom_tool_type_gets_an_apps_tools_without_it() {
         json!([
             { "name": "get_weather", "input_schema": { "type": "object" } },
             { "name": "plain", "input_schema": { "type": "object" } },
+            { "type": null, "name": "typed_null", "input_schema": { "type": "object" } },
             { "type": "web_search_20250305", "name": "web_search", "max_uses": 1 }
         ]),
-        "a server tool keeps its type"
+        "only `custom` goes; a server tool and a `null` keep their type"
     );
     assert!(left_out.is_empty(), "the type is form: {left_out:?}");
     let (body, _) = sent_with(A, request(tools), MessagesProfile::ANTHROPIC).unwrap();

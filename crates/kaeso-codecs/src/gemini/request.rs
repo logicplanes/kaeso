@@ -36,7 +36,7 @@ const FORM_INCLUDE: &str = "include_thoughts";
 const FORM_CANDIDATES: &str = "candidate_count";
 const FORM_STOP: &str = "stop";
 const FORM_MIME: &str = "response_mime_type";
-const FORM_SDK_NAMES: &str = "sdk_names";
+pub(crate) const FORM_SDK_NAMES: &str = "sdk_names";
 const FORM_TOP_K_FLOAT: &str = "top_k_float";
 const JSON_MIME: &str = "application/json";
 /// Gemini takes at most five stop sequences (`GenerationConfig.stopSequences`).
@@ -405,10 +405,9 @@ fn decode_generation(
     verbatim_into_form(&mut req.extras, GENERATION_CONFIG, verbatim);
     if let Some(n) = g.candidate_count {
         if n > 1 {
-            return Err(KppError::unsupported_by(
+            return Err(KppError::unsupported(
                 "`generationConfig.candidateCount` above 1",
-                D,
-                "Kaeso returns one candidate per request; send several requests instead.",
+                "Kaeso returns one candidate per request, so `generationConfig.candidateCount` must be 1 or left out; send several requests for more candidates.",
             )
             .with_param("generationConfig.candidateCount"));
         }

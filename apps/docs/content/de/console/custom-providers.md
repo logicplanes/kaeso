@@ -198,6 +198,29 @@ console.log(completion.choices[0].message.content);
 
 Der Header `kaeso-provider` der Antwort, die Anfrageprotokolle und die Nutzung nennen den Anbieter bei seiner ID. Die Metriken der Installation zählen alle eigenen Anbieter als `custom`.
 
+### Ein Embedding-Modell hinzufügen
+
+Ein Anbieter, der **Liefert auch Embeddings**, beantwortet `/v1/embeddings` mit seinen Embedding-Modellen. Fügen Sie eines wie jedes andere Modell hinzu und setzen Sie seine **Ausgaben** auf **Embeddings** und **Sendet als** auf **OpenAI Embeddings**. Es braucht seine Eingaben, seinen Kontext und seinen Eingabepreis, aber kein Ausgabelimit; setzen Sie den Ausgabepreis auf `0`. Über die [Platform API](../api/platform-api.md) sieht dasselbe Modell so aus:
+
+```bash
+curl -s "https://kaeso.example.com/platform/v1/orgs/$ORG/projects/$PROJECT/models" \
+  -H "Authorization: Bearer $KAESO_PLATFORM_KEY" \
+  -H "content-type: application/json" \
+  -d '{
+    "provider": "research-vllm",
+    "model_id": "bge-m3",
+    "custom": true,
+    "overrides": {
+      "input_modalities": ["text"],
+      "output_modalities": ["embedding"],
+      "context_limit": 8192,
+      "input_price": "0",
+      "output_price": "0",
+      "egress_dialect": "openai_embeddings"
+    }
+  }'
+```
+
 ## Adressen, die Kaeso erreicht
 
 Kaeso prüft die Adresse jeder Verbindung zu einem eigenen Anbieter nach der DNS-Auflösung, nicht nur beim Hinzufügen. Es lehnt private, Loopback-, Link-Local- und Cloud-Metadaten-Adressen ab, etwa `10.0.0.5`, `127.0.0.1` und `169.254.169.254`, außer die Installation erlaubt das Netz. Reines `http` erreicht nur die Netze, die die Installation erlaubt. Kaeso folgt keinen Weiterleitungen eines eigenen Anbieters und ruft ihn ohne Proxy auf.

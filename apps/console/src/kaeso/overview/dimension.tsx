@@ -72,8 +72,8 @@ export function DimensionView({ o, dim }: { o: Overview; dim: Dimension }) {
   const now = useQuery({ ...usage(o.from, o.to), enabled: o.canUsage, placeholderData: (p) => p });
   const prev = useQuery({ ...usage(before.from, before.to), enabled: o.canUsage && !!o.compare });
   const was = new Map((prev.data ?? []).map((r) => [r.key, r.requests]));
-  const nameOf = (key: string) =>
-    dim === "model" ? o.modelName(key) : dim === "key" ? o.keyName(key) : dim === "member" ? o.memberName(key) : (o.projectOf(key)?.name ?? key);
+  const nameOf = ({ key, name }: UsageRow) =>
+    dim === "model" ? o.modelName(key, name) : dim === "key" ? o.keyName(key) : dim === "member" ? o.memberName(key) : (o.projectOf(key)?.name ?? key);
   const phone = usePhone();
   const rows = now.data ?? [];
   const entities: Entity[] = rows
@@ -81,7 +81,7 @@ export function DimensionView({ o, dim }: { o: Overview; dim: Dimension }) {
       const b = prev.data ? (was.get(r.key) ?? 0) : undefined;
       return {
         key: r.key,
-        name: nameOf(r.key),
+        name: nameOf(r),
         requests: r.requests,
         errors: r.errors,
         tokens: totalTokens(r),
@@ -118,6 +118,7 @@ export function DimensionView({ o, dim }: { o: Overview; dim: Dimension }) {
           provider={provider}
           providerName={o.providers.name(provider)}
           model={model}
+          mark={!!provider}
           {...(e.name !== model ? { name: e.name } : {})}
         />
       );

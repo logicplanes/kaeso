@@ -469,6 +469,77 @@ async fn long_periods_go_by_week_or_month_from_the_first_day_with_usage() {
     assert_eq!(r.status, StatusCode::BAD_REQUEST, "{:?}", r.body);
 }
 
+#[tokio::test]
+async fn usage_by_model_names_the_models_kpmr_knows_and_models_named_at_a_setting() {
+    let env = common::v1::env(None, None).await;
+    let today = env.app.clock.now().date();
+    let (org, project) = (uuid(&env.owner.org_id), uuid(&env.project));
+    let rows = [
+        ("google", "gemini-4-carbon-high"),
+        ("google", "gemini-4-carbon"),
+        ("anthropic", "claude-opus-4-6-thinking"),
+        ("anthropic", "claude-opus-4-6-xhigh"),
+        ("azure", "gpt-5.1-codex-max"),
+        ("google", "made-up-model-high"),
+        ("alibaba", "qwen3-vl-235b-a22b-thinking"),
+        ("venice", "qwen3-vl-235b-a22b-thinking"),
+    ]
+    .map(|(provider, model)| kaeso_store::pg::limits::UsageRow {
+        provider: provider.into(),
+        model_id: model.into(),
+        ..usage_row(today, org, project, 1)
+    });
+    kaeso_store::pg::limits::add_usage(&env.app.state.pg, &rows)
+        .await
+        .unwrap();
+
+    for scope in [format!("/orgs/{}", env.owner.org_id), base(&env)] {
+        let r = env
+            .app
+            .get(&format!("{scope}/usage?group_by=model"), &env.owner.cookie)
+            .await;
+        assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+        let names: Vec<(&str, &Value)> = r.body["data"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|row| (row["key"].as_str().unwrap(), &row["name"]))
+            .collect();
+        assert_eq!(
+            names,
+            [
+                (
+                    "alibaba/qwen3-vl-235b-a22b-thinking",
+                    &json!("Qwen3-VL 235B-A22B (thinking)")
+                ),
+                (
+                    "anthropic/claude-opus-4-6-thinking",
+                    &json!("Claude Opus 4.6 (thinking)")
+                ),
+                ("anthropic/claude-opus-4-6-xhigh", &Value::Null),
+                ("azure/gpt-5.1-codex-max", &json!("GPT-5.1 Codex Max")),
+                ("google/gemini-4-carbon", &json!("Gemini 4 Carbon")),
+                (
+                    "google/gemini-4-carbon-high",
+                    &json!("Gemini 4 Carbon (high)")
+                ),
+                ("google/made-up-model-high", &Value::Null),
+                // Venice lists the model without reasoning, whatever Alibaba says.
+                ("venice/qwen3-vl-235b-a22b-thinking", &Value::Null),
+            ],
+            "{scope}"
+        );
+    }
+    let days = env
+        .app
+        .get(
+            &format!("{}/usage?group_by=day", base(&env)),
+            &env.owner.cookie,
+        )
+        .await;
+    assert_eq!(days.body["data"][0]["name"], Value::Null, "{:?}", days.body);
+}
+
 fn usage_row(
     day: time::Date,
     org: Uuid,

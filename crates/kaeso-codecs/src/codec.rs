@@ -668,6 +668,14 @@ pub fn parse_retry_after(headers: &HeaderList) -> Option<std::time::Duration> {
     parse("retry-after-ms", 1000.0).or_else(|| parse("retry-after", 1.0))
 }
 
+/// A reply with several choices or candidates. Kaeso refuses a request that asks for them, so
+/// they are the provider's fault: a gateway error, which a second try would only bill again.
+pub(crate) fn several_choices(message: &str) -> KppError {
+    KppError::provider(message)
+        .with_status(502)
+        .with_retry(Retry::Futile)
+}
+
 /// The header the OpenAI and Anthropic SDKs read before their own retry rules: `false` stops
 /// them retrying an error, `true` makes them retry it. Anthropic sends it on its own errors.
 pub const SHOULD_RETRY_HEADER: &str = "x-should-retry";

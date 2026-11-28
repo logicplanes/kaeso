@@ -8,15 +8,15 @@ order: 2
 
 | 来自其他格式的数据 | 在请求中 | 在回复中 |
 | --- | --- | --- |
-| extras 字段 | `Unsupported`，除非在[允许列表](#extras)中或为[中性值](sampling.md#中性值) | 省略 |
-| 未知块、工具和工具选择 | `Unsupported`，[工具命名空间](#工具命名空间)、[工具搜索](#工具搜索)、[托管网页搜索](#托管网页搜索)和 [Codex 工具历史](#codex-工具历史)除外 | 省略未知块，网页搜索除外 |
+| extras 字段 | `Unsupported`，除非在[允许列表](#extras)中、为[中性值](sampling.md#中性值)或是 Chat 消息的[参与者名称](openai-chat.md#参与者名称) | 省略 |
+| 未知块、工具和工具选择 | `Unsupported`，[工具命名空间](#工具命名空间)、[工具搜索](#工具搜索)、[托管网页搜索](hosted-web-search.md)和 [Codex 工具历史](#codex-工具历史)除外 | 省略未知块，网页搜索除外 |
 | 引用 | `Unsupported` | 省略 |
 | 服务商文件 ID | `Unsupported`，除非由目标服务商签发 | — |
 | 可读推理 | 丢弃；[推理数据块](reasoning.md#推理数据块)会在其来源处恢复它 | 应用有推理形态时，以该形态展示 |
 | 不透明推理 | 只回放给签发它的方言和服务商 | 包装在推理数据块中 |
 | 缓存提示 | 目标会自行缓存时丢弃 | — |
-| 音频和视频 | 目标格式和服务商接受时发送，否则为 `Unsupported`（[音频和视频](#音频和视频)） | 应用的格式无法承载时省略 |
-| 音频和图像输出 | 目标能生成时请求，否则为 `Unsupported`（[音频和图像回复](#音频和图像回复)） | Chat 和 Gemini 应用收到音频，Gemini 应用收到图像；其他情况省略 |
+| 音频和视频 | 目标格式和服务商接受时发送，否则为 `Unsupported`（[音频和视频](media.md#音频和视频)） | 应用的格式无法承载时省略 |
+| 音频和图像输出 | 目标能生成时请求，否则为 `Unsupported`（[音频和图像回复](media.md#音频和图像回复)） | Chat 和 Gemini 应用收到音频，Gemini 应用收到图像；其他情况省略 |
 | 目标没有的采样设置 | `Unsupported`，惩罚值为 0 时除外（[中性值](sampling.md#中性值)） | — |
 | 应用格式中没有的停止原因 | — | 映射为该格式中最接近的一个 |
 | 对始终推理的模型关闭思考 | 该模型的最低推理强度等级，并在 `kaeso-adapted` 中说明（见[始终推理的模型](reasoning.md#始终推理的模型)） | — |
@@ -92,6 +92,7 @@ OpenAI Chat 已弃用的函数调用在 Chat 内部可以往返，但不会转�
 | `model_id` | 仅助手消息，来自 `openai_chat` | 写出某条重放的助手消息的模型，由 Grok CLI 记在它自己的历史里。属于模型从不读取的簿记信息；记录下来的请求正文会保留它。它是 `cross::CHAT_ASSISTANT_BOOKKEEPING` 中唯一的键，Chat 提供商只有在 `with_message_bookkeeping()` 下才会收到（[Chat 提供商](openai-chat-providers.md)）；出现在其他消息上时，发往其他格式的请求会被拒绝；Chat 提供商按原样收到它。 | Grok CLI 在每条重放的助手消息上都会发送；`openai_chat/requests/grok-cli-model-id.json` |
 | `client_metadata` | request，来自 `openai_responses` | 请求元数据：轮次和线程 ID、W3C 追踪上下文以及 `x-codex-turn-metadata`。它从不到达模型，记录下来的请求正文会保留它。 | Codex 每一轮都会发送；`openai_responses/requests/codex-namespace-tools.json` |
 | `detail`（位于 `input_image` 上；Responses 把 `auto` 作为形式标记） | image，来自 `openai_responses`、`openai_decisions` | 图像分辨率提示，同 Chat 的 `image_url.detail`，并以该字段到达 Chat Completions；`original` 除外，Chat 不接受它。`input_file.detail`（PDF 渲染）**不**在允许列表中。 | `openai_responses/requests/image-base64-file-id.json` |
+| `response`、`responseJsonSchema` | tool，来自 `gemini` | 描述应用的函数的返回值，由应用读取，而不是模型；模型调用函数时不需要它们。会被省略，并按应用的写法在 `kaeso-left-out` 中注明，例如 google-genai 的 `tools[0].functionDeclarations[0].response_json_schema`。 | google-genai 为它自动调用的每个 Python 函数都附上 `response_json_schema`（`gemini/requests/sdk-automatic-function-calling.json`），用 `from_callable_with_api_option` 构建的函数则附上 `response`（`gemini/requests/sdk-function-response-schema.json`） |
 | `resolution` | image、video，来自 `gemini_decisions` | 分辨率提示，同 `detail`；`low` 和 `high` 以 `detail` 跨格式到达 OpenAI Decisions（[决策](decisions-across-formats.md)）。 | `gemini_decisions/requests/image.json` |
 | `prompt_cache_key`、`prompt_cache_options`、`safety_identifier` | request，来自 `openai_decisions` | 提示，类型化为 `DecideRequest.cache` 和 `user`（[决策](decisions-across-formats.md)）；这些条目涵盖 KPP 不做类型化的形式。 | `openai_decisions/requests/cache.json` |
 | `phase`（位于助手消息上：`commentary`、`final_answer`） | message，来自 `openai_responses` | 把助手消息标记为前言或最终回答，便于 OpenAI 在重放该轮时区分它们。两种情况下文本相同，其他格式没有这种标记。 | Codex 把 GPT-6 的消息连同它一起发回；切换到其他模型的会话会带上它们；`openai_responses/requests/codex-model-switch.json` |
@@ -168,54 +169,6 @@ Anthropic 的内联工具在对话中途改变工具列表：一条 `role: "syst
 
 Anthropic 模型按原样收到这些块，连同 `anthropic-beta` 中的 beta `inline-tools-2026-09-15`。Fixture：`anthropic_messages/requests/claude-code-inline-tools.json`。
 
-## 托管网页搜索
-
-OpenAI Responses 把它的托管搜索工具命名为 `web_search`，更早的名称是 `web_search_2025_08_26`、`web_search_preview` 和 `web_search_preview_2025_03_11`；Kaeso 对这四个名称一视同仁。发往 Anthropic 时，该工具变为 Anthropic 的服务端工具 `web_search_20250305`，名称为 `web_search`：
-
-| Responses | Anthropic |
-| --- | --- |
-| `filters.allowed_domains`、`filters.excluded_domains`（二选一；空列表视为没有） | `allowed_domains`、`blocked_domains` |
-| `enable_image_understanding`、`enable_image_search`（xAI 的字段） | 省略，为 `true` 时在 `kaeso-left-out` 中注明 |
-| `user_location`（`approximate`，含 `city`、`region`、`country`、`timezone`） | `user_location` |
-| `external_web_access: true`、`search_context_size: "medium"`（默认值）、`search_content_types: ["text"]` | 不写入；它们描述的正是 Anthropic 搜索的行为 |
-| 含 `image` 的 `search_content_types` | 省略，并在 `kaeso-left-out` 中注明；Anthropic 的搜索只返回文本结果 |
-| `external_web_access: false` | [省略](#省略的工具)该工具 |
-| 其他 `search_context_size`、任何其他字段 | `Unsupported` |
-
-发往 SpaceX 的 Responses API（`WebSearchTool::Xai`）时，该工具保留 xAI 为它记载的字段（[网页搜索](https://docs.x.ai/developers/tools/web-search)，2026-10-25 阅读）：
-
-| Responses | SpaceX |
-| --- | --- |
-| `filters.allowed_domains`、`filters.excluded_domains`（各最多五个，不能同时使用） | 原样发送 |
-| `enable_image_understanding`、`enable_image_search` | 原样发送 |
-| 含 `image` 的 `search_content_types` | `enable_image_search: true` |
-| `external_web_access: true`、`search_context_size: "medium"`、`search_content_types: ["text"]` | 不写入；SpaceX 拒绝 `external_web_access`，并且总是实时搜索 |
-| `external_web_access: false` | [省略](#省略的工具)该工具 |
-| 超过五个域名、同时使用两个列表、`user_location`、其他 `search_context_size`、任何其他字段 | `Unsupported` |
-
-`external_web_access: false` 要求 OpenAI 只读取其页面缓存，这是 Codex 默认设置 `web_search = "cached"` 发送的内容。Claude 和 SpaceX 总是实时搜索。实时搜索会读取应用要求 Kaeso 不去获取的页面，因此改为省略这次搜索。Chat Completions 没有托管搜索，因此在那里也会省略该工具。OpenAI 原样收到该工具。
-
-Anthropic 的网页搜索工具走相反的方向：Claude Code 的 `WebSearch` 发送的 `web_search_20250305`，以及 `web_search_20260209` 和 `web_search_20260318`。Responses 目标收到托管的 `web_search` 工具，搜索次数上限变为请求中的一个字段（[网页搜索工具](https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-search-tool)）：
-
-| Anthropic | OpenAI | SpaceX |
-| --- | --- | --- |
-| `allowed_domains` | `filters.allowed_domains` | `filters.allowed_domains` |
-| `blocked_domains` | `filters.blocked_domains` | `filters.excluded_domains` |
-| `user_location`（`approximate`，含 `city`、`region`、`country`、`timezone`） | `user_location` | `Unsupported` |
-| `max_uses` | `max_tool_calls` | `max_turns` |
-| 值为 `["direct"]` 或该版本默认值的 `allowed_callers` | 不写入；托管搜索就是直接搜索 | 不写入 |
-| `response_inclusion`（`web_search_20260318`） | 不写入；它只影响从代码执行中发起的搜索 | 不写入 |
-| `cache_control` | 不写入；Responses 会自行缓存（[缓存提示](#缓存提示)） | 不写入 |
-| 不是 `approximate` 的位置、任何其他字段 | `Unsupported` | `Unsupported` |
-
-- **两个域名列表**同时出现在一个工具中时为 `InvalidRequest`，使用 Claude 自己的消息（`anthropic_messages/errors/web-search-both-domain-lists.json`）。
-- **动态过滤。** 从 `web_search_20260209` 起，除非 `allowed_callers` 为 `["direct"]`，Claude 会通过运行代码来过滤结果。Responses 模型在两种情况下都直接读取结果。
-- **来源。** 请求会带上 `include: ["web_search_call.action.sources"]`，因为 OpenAI 只有在被要求时才会列出一次搜索找到的页面。
-- **上限。** OpenAI 的 `max_tool_calls` 也计入打开页面和在页面内搜索，因此比 `max_uses` 更严格。ChatGPT 套餐的路由会拒绝 `max_tool_calls`，因此在那里该上限会被省略（[ChatGPT 套餐用量](openai-responses.md#chatgpt-套餐用量)）。
-- **SpaceX** 会忽略 `max_tool_calls`，并且会不报错地丢弃 `blocked_domains`，因此它收到自己的字段名。它的 `max_turns` 限制的是工具调用的轮数，一轮可能搜索不止一次。它的其他限制同样适用：每个列表最多五个域名。
-- **强制搜索。** 强制使用 `web_search` 的 `tool_choice` 为 `Unsupported`；`auto` 和 `any` 让模型自行决定。
-- **Chat Completions** 没有托管搜索，因此该工具在那里会被省略。
-
 ## 省略的工具
 
 这些工具会从请求中省略，而不是被拒绝（`cross::TOOLS_LEFT_OUT`）。每个工具都只是向模型提供一项可用可不用的能力，而 Codex 这样的应用会把它加到每个请求中，且无法按模型关闭：如果拒绝它，所有不具备该工具的模型都无法在该应用中使用。模型的回答与没有该工具时相同。每个被省略的工具都会在回复的 `kaeso-left-out` 响应头（[响应头](../../api/model-api.md#响应头)）和网关日志中注明，记录的请求正文保留应用的工具。
@@ -280,48 +233,6 @@ Codex 运行子智能体时，智能体之间用 `agent_message` 输入 item 通
 - **对话中的其他值（发往 Anthropic 时）。** `tool_use.input` 必须是对象，只要历史中有一个不是，Anthropic 就会拒绝整个请求。因此，来自其他格式、参数为其他值的调用会变为对象：不是 JSON 的文本（例如被输出上限截断的参数）变为 `{"input": "<该文本>"}`，与[自由格式工具的输入](#codex-工具历史)相同；数组、数字或布尔值变为 `{"input": <该值>}`；`null` 变为 `{}`。模型能看到它写下的内容以及随后的工具结果。每个这样的调用都会在 `kaeso-adapted` 中以 `tool call` 加其 ID 注明，例如 `tool call call_abc`。Chat Completions 和 Responses 的提供商按原样收到参数。Anthropic 应用自己的 `tool_use` 若 `input` 不是对象，仍为 `Unsupported`。
 - **回复。** 发给 Anthropic 应用的回复中，若工具调用的参数不是对象，会被拒绝，因为应用会用模型从未写过的参数运行工具（[Anthropic 回复](anthropic-messages.md#回复)）。
 
-## 音频和视频
-
-`Block::Audio` 和 `Block::Video` 与图像一样，包含一个 `Source`、一个缓存提示和 extras。每种格式按其文档接受它们，并在发送前拒绝其余的内容：
-
-| 目标 | 音频 | 视频 |
-| --- | --- | --- |
-| Gemini | `inlineData` 或 `fileData`，媒体类型按发送时的写法 | `inlineData`、`fileData`，或不带 MIME 类型的 YouTube URL |
-| Chat Completions | 用户消息中的 `input_audio`，只接受 base64，格式取决于服务商：OpenAI 为 `wav` 和 `mp3`，OpenRouter 接受任何格式 | 在文档中写明 `video_url` 的服务商（OpenRouter、Moonshot）使用它；其他服务商为 `Unsupported` |
-| Anthropic Messages | `Unsupported`：请以文本发送转写稿 | MiniMax 使用 MiniMax 的 `video` 块；其他服务商为 `Unsupported`：请把视频帧作为图像发送 |
-| Responses | `Unsupported` | `Unsupported` |
-
-服务商的文件 ID 只能用于签发它的服务商（[文件](#文件)）。Gemini 的 `videoMetadata`（剪辑和帧率）和 `mediaResolution` 保留为所在 part 的 extras：只有 Gemini 有这些字段，而剪辑会改变模型看到的内容，因此其他格式会拒绝它们。网关不做转码：目标没有对应名称的媒体类型，例如 Chat Completions 的 `audio/webm`，为 `Unsupported`。
-
-对于目录条目的输入中没有 `audio` 或 `video` 的模型，网关也会拒绝音频和视频，与图像和 PDF 的处理相同：`` The model `gpt-4o` does not accept audio. ``
-
-## 音频和图像回复
-
-`GenerateRequest::output_modalities` 说明回复应包含什么（`Text`、`Image`、`Audio`），`audio_output` 说明音频的声音和格式。音频回复是一个 `Block::Audio`，包含 base64 数据、媒体类型，以及格式提供时的 `transcript`；流式回复以 `BlockStart(Audio)` 和携带数据与转写文本的 `Audio` 增量传输。
-
-| 应用的格式 | 请求方式 | 收到的内容 |
-| --- | --- | --- |
-| Chat Completions | `modalities: ["text", "audio"]`，加上 `audio.voice` 和 `audio.format` | `message.audio` 和 `delta.audio`，来自 OpenAI 或 Gemini 语音模型 |
-| Gemini | `responseModalities: ["AUDIO"]` 或 `["IMAGE"]`，加上 `speechConfig` 和 `responseFormat` | `inlineData` 音频和图像，来自 Gemini 或 OpenAI 音频模型 |
-| Anthropic Messages、Responses | 无：这些格式没有对应设置 | 只有文本；服务商未经请求发送的音频和图像会被省略 |
-
-- **声音**属于各自的服务商。只有目标列出的声音才会传过去：Chat Completions 为 OpenAI 的内置声音，Gemini 为其 30 个预置声音；其他声音为 `Unsupported`，`param` 中给出该声音。
-- **格式**从不转码。`wav`、`mp3` 和 `pcm16` 可在 Chat Completions 和 Gemini 之间传递（`AUDIO_WAV`、`AUDIO_MP3`、24 kHz 的 `AUDIO_L16`）；`flac`、`opus` 和 `aac` 只能发往 OpenAI。没有格式时，Chat Completions 目标收到 `wav`，流式请求收到 `pcm16`。
-- **Chat 的文本。** 在 `["text", "audio"]` 中，文本是音频的转写稿，因此 Gemini 收到 `["AUDIO"]`，这是其语音模型所要求的。
-- **回放。** OpenAI 会把音频回复保存一段时间，并以 `audio: {id}` 接收回放。这个 ID 只在那里有效，与文件 ID 一样；其他目标会拒绝它，除非音频块带有转写稿，这时 Chat Completions 把转写稿作为文本发送。
-- **图像。** Gemini 图像模型以 part 返回图像。只有 Gemini 应用会收到：Chat Completions 和 Messages 的回复中没有图像，而 Responses 的 `image_generation_call` 属于 OpenAI 的图像工具，Gemini 的图像会被理解为应用从未发起的工具调用。向这些格式请求图像输出为 `Unsupported`。
-- **目录。** 对于目录输出中没有 `audio` 的模型，网关拒绝音频输出；没有 `image` 的模型拒绝图像输出：`` The model `gemini-3.5-flash` does not produce audio. `` 不写文本的语音模型可以接受 Chat 的 `["text", "audio"]`。
-
-## 工具结果中的媒体
-
-Claude 的 `tool_result` 和 Responses 的 `function_call_output` 可以包含图像和文件，例如工具截取的屏幕截图，或 Claude Code 的 `Read` 与 Codex 的 `view_image` 打开的图像。Chat Completions 的 `tool` 消息只包含文本（`ChatCompletionToolMessageParam`），OpenAI 和 DeepSeek 会拒绝其中的图像。因此对于 Chat Completions 模型，Kaeso 会移动它们：
-
-- **工具消息**保留结果的文本，后接 `The rest of this result is in the next message.`
-- **结果之后的用户消息**对每个这样的结果，以 `` The rest of the result of tool call `<id>`: `` 开头，后接该结果的图像、文件和音频，保持原有顺序。应用在结果之后发送的文本跟在它们后面。
-- **响应头。** 每个结果都会在回复的 `kaeso-adapted` 头中以 `tool result` 加调用 ID 的形式列出，例如 `tool result call_abc`。
-
-Anthropic 和 Responses 模型会在工具结果中原样收到这些媒体，Gemini 模型则在 `functionResponse.parts` 中收到（[Gemini API](gemini.md)）。夹具：`anthropic_messages/requests/tool-result-multi-turn.json`、`openai_responses/requests/function-call-output-array.json`。
-
 ## 用量
 
 `Usage::input_tokens` 不含缓存读取和缓存写入，它们是单独的字段。这与 KPMR 目录中的价格一致，因此费用就是每项计数乘以其价格之和。服务商的原始用量对象总会保留。
@@ -341,13 +252,13 @@ Anthropic 和 Responses 模型会在工具结果中原样收到这些媒体，Ge
 
 | 方言 | 保活帧 | SDK 为何忽略它 |
 | --- | --- | --- |
-| OpenAI Chat Completions 和 Responses | SSE 注释 `: keepalive` 加一个空行 | 在 SSE 规范中，以冒号开头的行是注释，OpenAI SDK 的解析器会跳过它们 |
+| OpenAI Chat Completions 和 Responses | SSE 注释行 `: keepalive`，后面不加空行：下一个事件的空行结束它 | 在 SSE 规范中，以冒号开头的行是注释，SSE 解析器会跳过它们。若后面加空行，就会产生一个空事件，较旧的 openai-go 读取器（例如 mods 使用的 v1.8.2）会因此失败 |
 | Anthropic Messages | `event: ping` 加 `data: {"type": "ping"}`，与 Anthropic 发送的完全一致 | Anthropic SDK 会跳过 ping 事件 |
 | Gemini API | 两个换行符（`\n\n`） | Python、Go（`google.golang.org/genai`）和 JS（`@google/genai`）SDK 都会跳过以 `\n\n` 分隔的空 chunk，而注释会让 Python 出错、单个换行符会让 Go 出错 |
 
 保活帧以两种方式到达线路：
 
-- **带内。** 当来自另一方言的事件没有产生任何字节时，编码器把保活帧加入 `StreamEncoder::encode` 的返回值。一个不依赖时钟的节拍器对此加以限制。另一方言的额外事件（例如 `ping`）总能换来一帧，因为服务商已经控制了它的节奏。隐藏文本（例如应用看不到的思考或缓冲中的工具参数）每 `kaeso_codecs::HIDDEN_TEXT_PER_KEEPALIVE` 字节（即 1,024 字节）换来一帧。编码器写出任何内容都会重置计数。应用自身方言的事件从不换来保活帧，因此同一方言内的回放保持精确。
+- **带内。** 当来自另一方言的事件没有产生任何字节时，编码器把保活帧加入 `StreamEncoder::encode` 的返回值。一个不依赖时钟的节拍器对此加以限制。隐藏文本（例如应用看不到的思考或缓冲中的工具参数）累计满 `kaeso_codecs::HIDDEN_TEXT_PER_KEEPALIVE` 字节（即 1,024 字节）换来一帧。更大的单个事件也只换来一帧。另一方言的额外事件（例如 Anthropic 的 `ping`）按其大小同样计算。服务商自己的保活消息只有几十字节，本身不会换来保活帧；其前后的静默由网关的间隔覆盖。编码器写出任何内容都会重置计数。应用自身方言的事件从不换来保活帧，因此同一方言内的回放保持精确。
 - **由网关驱动。** `StreamEncoder::keepalive` 按需返回保活帧，用于编码器无法察觉的上游静默。网关在 `KAESO_STREAMS_KEEPALIVE_INTERVAL`（默认 15 秒）内没有向应用写出任何内容时，就会写出它。
 
 请求日志把这两种保活帧都计入 `stream_progress.keepalives`。服务商自己的保活消息（例如 Anthropic 的 `ping`）回放给同一方言的应用时，属于服务商的事件，不计入其中。

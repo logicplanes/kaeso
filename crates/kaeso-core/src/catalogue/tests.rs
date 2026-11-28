@@ -606,6 +606,25 @@ fn values_are_checked() {
         ..Fields::default()
     };
     assert_eq!(custom.validate_custom(), Ok(()));
+    let embeddings = Fields {
+        output_modalities: Some(vec!["embedding".into()]),
+        output_limit: None,
+        output_price: Some(dec!(0)),
+        egress_dialect: Some(DialectId::OpenAiEmbeddings),
+        ..custom.clone()
+    };
+    assert_eq!(embeddings.validate_custom(), Ok(()));
+    assert_eq!(embeddings.validate(openai), Ok(()));
+    let mixed = Fields {
+        egress_dialect: Some(DialectId::OpenAiChat),
+        ..embeddings.clone()
+    };
+    assert_eq!(mixed.validate(openai).unwrap_err().field, "egress_dialect");
+    let chat = Fields {
+        output_limit: None,
+        ..custom
+    };
+    assert_eq!(chat.validate_custom().unwrap_err().field, "output_limit");
 }
 
 fn alias(name: impl Into<String>, target: Uuid) -> Alias {
@@ -1600,6 +1619,232 @@ fn estimate_of(count: &Request) -> Option<u64> {
 
 fn eff_of(provider: &str, model: &str) -> Effective {
     eff(&entry(provider, model))
+}
+
+fn audio() -> Block {
+    Block::audio(kaeso_kpp::Source::bytes("audio/wav", b"RIFF".to_vec()))
+}
+
+fn refused_with(req: GenerateRequest, ingress: DialectId, eff: &Effective) -> String {
+    prepare(&mut Request::Generate(req), ingress, eff)
+        .unwrap_err()
+        .message
+}
+
+fn decoded(dialect: DialectId, body: &[u8]) -> GenerateRequest {
+    let Request::Generate(g) = kaeso_codecs::dispatch::decode_request(
+        dialect,
+        kaeso_kpp::RequestKind::Generate,
+        body,
+        &kaeso_codecs::HeaderList::new(),
+    )
+    .unwrap() else {
+        panic!("not a generation")
+    };
+    g
+}
+
+#[test]
+fn transcription_models_refuse_requests_without_audio_in_every_format() {
+    for (provider, model) in [
+        ("xai", "grok-voice-transcribe-2.0"),
+        ("openai", "whisper-1"),
+        ("openai", "gpt-4o-transcribe"),
+        ("mistral", "voxtral-small-transcribe-3-0"),
+    ] {
+        let voice = eff_of(provider, model);
+        assert!(voice.transcribes_only, "{model}");
+        for ingress in [
+            DialectId::OpenAiChat,
+            DialectId::OpenAiResponses,
+            DialectId::AnthropicMessages,
+            DialectId::Gemini,
+        ] {
+            let mut chat = Request::Generate(user(vec![Block::text("hi")]));
+            let u = prepare(&mut chat, ingress, &voice).unwrap_err();
+            assert_eq!(
+                u.message,
+                format!(
+                    "The model `{model}` is a transcription model; send it to `/v1/audio/transcriptions`."
+                ),
+                "{model} from {ingress:?}"
+            );
+            assert_eq!(u.param, Some("model"));
+        }
+    }
+}
+
+#[test]
+fn transcription_models_still_transcribe() {
+    let voice = eff_of("openai", "whisper-1");
+    let mut transcribe = Request::Transcription(kaeso_kpp::TranscriptionRequest::new(
+        "whisper-1",
+        kaeso_kpp::TranscriptionOperation::Transcribe,
+        kaeso_kpp::AudioInput::new(kaeso_kpp::Source::Url(
+            "https://example.com/memo.wav".into(),
+        )),
+    ));
+    prepare(&mut transcribe, DialectId::OpenAiTranscriptions, &voice)
+        .unwrap_or_else(|u| panic!("whisper-1 transcribes: {}", u.message));
+}
+
+#[test]
+fn a_generation_with_audio_reaches_transcription_models_in_formats_that_carry_audio() {
+    for (provider, model, ingress) in [
+        (
+            "mistral",
+            "voxtral-small-transcribe-3-0",
+            DialectId::OpenAiChat,
+        ),
+        ("google", "gemini-3.5-transcribe", DialectId::Gemini),
+        ("alibaba", "qwen3-asr-flash", DialectId::OpenAiChat),
+        ("nvidia", "openai/whisper-large-v3", DialectId::OpenAiChat),
+    ] {
+        let voice = eff_of(provider, model);
+        assert!(voice.transcribes_only, "{model}");
+        let mut listen = Request::Generate(user(vec![Block::text("What is said?"), audio()]));
+        prepare(&mut listen, ingress, &voice)
+            .unwrap_or_else(|u| panic!("{model} with audio: {}", u.message));
+    }
+}
+
+#[test]
+fn a_format_without_audio_points_to_the_transcription_endpoint_even_with_audio() {
+    for (provider, model) in [
+        ("openai", "whisper-1"),
+        ("xai", "grok-voice-transcribe-2.0"),
+        ("elevenlabs", "scribe_v2"),
+        ("deepgram", "nova-3"),
+    ] {
+        let voice = eff_of(provider, model);
+        for blocks in [
+            vec![Block::text("hi")],
+            vec![Block::text("What is said?"), audio()],
+        ] {
+            assert_eq!(
+                refused_with(user(blocks), DialectId::OpenAiChat, &voice),
+                format!(
+                    "The model `{model}` is a transcription model; send it to `/v1/audio/transcriptions`."
+                ),
+                "{model}"
+            );
+        }
+    }
+}
+
+#[test]
+fn transcription_models_refuse_token_counts() {
+    for (provider, model, ingress, message) in [
+        (
+            "openai",
+            "whisper-1",
+            DialectId::AnthropicMessages,
+            "The model `whisper-1` is a transcription model; send it to `/v1/audio/transcriptions`.",
+        ),
+        (
+            "google",
+            "gemini-3.5-transcribe",
+            DialectId::Gemini,
+            "The model `gemini-3.5-transcribe` is a transcription model; send it to `/v1/audio/transcriptions`.",
+        ),
+        (
+            "nvidia",
+            "openai/whisper-large-v3",
+            DialectId::OpenAiChat,
+            "The model `openai/whisper-large-v3` cannot count tokens.",
+        ),
+    ] {
+        let mut count = Request::CountTokens(user(vec![audio()]));
+        let u = prepare(&mut count, ingress, &eff_of(provider, model)).unwrap_err();
+        assert_eq!(u.message, message);
+    }
+}
+
+#[test]
+fn a_model_that_takes_only_audio_and_returns_text_transcribes_only() {
+    assert!(!eff_of("openai", "gpt-4o").transcribes_only);
+    let mut custom = entry("openai", "ears-1");
+    custom.custom = true;
+    custom.overrides.input_modalities = Some(vec!["audio".into()]);
+    custom.overrides.output_modalities = Some(vec!["text".into()]);
+    assert!(eff(&custom).transcribes_only);
+    custom.overrides.input_modalities = Some(vec!["audio".into(), "text".into()]);
+    assert!(!eff(&custom).transcribes_only);
+    custom.overrides.input_modalities = Some(vec!["audio".into()]);
+    custom.overrides.output_modalities = Some(vec!["audio".into()]);
+    assert!(
+        !eff(&custom).transcribes_only,
+        "speech to speech is no transcription"
+    );
+}
+
+#[test]
+fn apps_calling_a_transcription_model_at_its_own_endpoint_are_told_to_send_audio() {
+    let gemini = eff_of("google", "gemini-3.5-transcribe");
+    assert_eq!(
+        refused_with(user(vec![Block::text("hi")]), DialectId::Gemini, &gemini),
+        "The model `gemini-3.5-transcribe` only transcribes; send it audio."
+    );
+    let qwen = eff_of("alibaba", "qwen3-asr-flash");
+    assert_eq!(
+        refused_with(user(vec![Block::text("hi")]), DialectId::OpenAiChat, &qwen),
+        "The model `qwen3-asr-flash` only transcribes; send it audio."
+    );
+}
+
+#[test]
+fn providers_without_a_transcription_endpoint_are_not_pointed_to_one() {
+    for (provider, model) in [
+        ("nvidia", "openai/whisper-large-v3"),
+        ("stepfun-ai", "stepaudio-2.5-asr"),
+    ] {
+        let voice = eff_of(provider, model);
+        assert!(voice.provider.transcriptions(model).is_none(), "{model}");
+        assert_eq!(
+            refused_with(user(vec![Block::text("hi")]), DialectId::OpenAiChat, &voice),
+            format!("The model `{model}` only transcribes; send it audio.")
+        );
+    }
+}
+
+#[test]
+fn a_code_execution_result_is_no_audio() {
+    let g = decoded(
+        DialectId::Gemini,
+        br#"{"contents":[{"role":"user","parts":[{"text":"Run it."}]},{"role":"model","parts":[{"codeExecutionResult":{"outcome":"OUTCOME_OK","output":"4"}}]},{"role":"user","parts":[{"text":"And now?"}]}]}"#,
+    );
+    assert!(
+        g.all_blocks()
+            .any(|b| matches!(b, kaeso_kpp::Block::Unknown(_))),
+        "the result stays an unknown part"
+    );
+    assert_eq!(
+        refused_with(
+            g,
+            DialectId::Gemini,
+            &eff_of("google", "gemini-3.5-transcribe")
+        ),
+        "The model `gemini-3.5-transcribe` only transcribes; send it audio."
+    );
+}
+
+#[test]
+fn qwen_clouds_own_audio_part_reaches_its_asr_model() {
+    let g = decoded(
+        DialectId::OpenAiChat,
+        br#"{"model":"qwen3-asr-flash","messages":[{"role":"user","content":[{"type":"input_audio","input_audio":{"data":"https://example.com/memo.mp3"}}]}]}"#,
+    );
+    assert!(
+        g.all_blocks()
+            .any(|b| matches!(b, kaeso_kpp::Block::Unknown(_))),
+        "QwenCloud's `input_audio` without `format` is an unknown part"
+    );
+    prepare(
+        &mut Request::Generate(g),
+        DialectId::OpenAiChat,
+        &eff_of("alibaba", "qwen3-asr-flash"),
+    )
+    .unwrap_or_else(|u| panic!("QwenCloud's own audio part: {}", u.message));
 }
 
 #[test]

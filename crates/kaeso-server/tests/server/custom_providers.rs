@@ -419,7 +419,17 @@ async fn ids_and_addresses_are_checked_before_a_custom_provider_is_added() {
         (
             json!({ "generation": "openai_embeddings" }),
             "generation",
-            "`generation` has a value of the wrong type or form.",
+            "`generation` must be one of `openai_chat`, `openai_responses`, `anthropic_messages`.",
+        ),
+        (
+            json!({ "embeddings": true }),
+            "embeddings",
+            "`embeddings` must be one of `openai_embeddings`, `null`.",
+        ),
+        (
+            json!({ "auth": 5 }),
+            "auth",
+            "`auth` must be one of `bearer`, `x_api_key`, `none`.",
         ),
     ] {
         let mut body = ok.clone();
@@ -617,14 +627,14 @@ async fn a_request_reaches_a_custom_provider_in_each_generation_format_and_for_e
         .await
         .expect_status(StatusCode::CREATED);
     }
-    add_model(
-        app,
-        owner,
-        &env.project,
-        custom_model("lab-chat", "house-embed", "openai_embeddings"),
-    )
-    .await
-    .expect_status(StatusCode::CREATED);
+    let mut embed = custom_model("lab-chat", "house-embed", "openai_embeddings");
+    let overrides = embed["overrides"].as_object_mut().unwrap();
+    overrides.remove("output_limit");
+    overrides.insert("output_modalities".into(), json!(["embedding"]));
+    overrides.insert("output_price".into(), json!("0"));
+    add_model(app, owner, &env.project, embed)
+        .await
+        .expect_status(StatusCode::CREATED);
 
     for (model, path, anthropic, sent_to, header, secret) in [
         (
