@@ -53,8 +53,8 @@ Chat apps such as NextChat send OpenAI's sampling fields on every request, at th
 | `service_tier`, from Chat and from Anthropic | `"auto"` | the same, and Anthropic providers that refuse it |
 | `verbosity` | `"medium"` | the same |
 | `modalities` | `["text"]` | Chat providers that refuse it; other formats write text anyway |
-| `thread`, from Anthropic | `null` | every format, Anthropic Messages too; it asks for no message thread, as leaving it out does, and no provider documents it |
+| `thread`, from Anthropic | `null` | every format, Anthropic Messages too |
 
-Each value is the field's `default` in OpenAI's OpenAPI document and Anthropic's API reference; an empty `logit_bias` or `metadata` means the same as their default, `null`. `service_tier: "default"` isn't neutral: it asks for standard processing where a project's setting could choose another tier. `web_search_options: {}` isn't either: it makes a search model search. A field sent as `null` is form, which other formats never get; a Chat provider that refuses the field doesn't get the `null` either.
+Each value is the field's `default` in OpenAI's OpenAPI document and Anthropic's API reference; an empty `logit_bias` or `metadata` means the same as their default, `null`. `thread: null` is the exception: no provider documents it, and it asks for no message thread, as leaving `thread` out does. `service_tier: "default"` isn't neutral: it asks for standard processing where a project's setting could choose another tier. `web_search_options: {}` isn't either: it makes a search model search. A field sent as `null` is form, which other formats never get; a Chat provider that refuses the field doesn't get the `null` either.
 
 Fixtures: `crates/kaeso-codecs/fixtures/openai_chat/requests/nextchat-defaults.json` (NextChat's request), `crates/kaeso-codecs/fixtures/openai_chat/requests/neutral-defaults.json`.

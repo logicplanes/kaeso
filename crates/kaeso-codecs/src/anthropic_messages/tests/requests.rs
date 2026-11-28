@@ -1,6 +1,6 @@
 use super::*;
 
-// The fixtures whose fields the encoder leaves out, each with exactly those fields.
+// Declared here rather than read from the encoder, so a fixture can't lose a field unnoticed.
 const LEFT_OUT: &[(&str, &[&str])] = &[("thread-null", &["thread"])];
 
 fn round_trip_requests(folder: &str, kind: RequestKind, path: &str) -> usize {
