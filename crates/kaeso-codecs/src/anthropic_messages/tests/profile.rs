@@ -200,3 +200,18 @@ fn a_provider_without_the_custom_tool_type_gets_an_apps_tools_without_it() {
         "Anthropic gets it as sent"
     );
 }
+
+#[test]
+fn a_null_thread_reaches_only_anthropic() {
+    let (body, left_out) = sent(request(json!({ "thread": null }))).unwrap();
+    assert!(body.get("thread").is_none(), "{body}");
+    assert_eq!(left_out, ["thread"]);
+    let (body, left_out) = sent_with(
+        A,
+        request(json!({ "thread": null })),
+        MessagesProfile::ANTHROPIC,
+    )
+    .unwrap();
+    assert_eq!(body.get("thread"), Some(&Value::Null), "{body}");
+    assert!(left_out.is_empty());
+}

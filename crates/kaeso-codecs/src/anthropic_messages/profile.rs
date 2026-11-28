@@ -248,6 +248,17 @@ pub(crate) fn apply(d: &mut Draft<'_>, profile: &MessagesProfile) -> Result<(), 
             _ => {}
         }
     }
+    // Only Anthropic's API has message threads, and a null `thread` asks for none: other
+    // providers don't get a field they may refuse as unknown.
+    if own
+        && profile.provider != MessagesProfile::ANTHROPIC.provider
+        && r.extras
+            .fields
+            .get(super::THREAD)
+            .is_some_and(|thread| thread.get() == "null")
+    {
+        left_out.push(super::THREAD.to_owned());
+    }
     for field in left_out {
         d.edit().extras.fields.shift_remove(&field);
         d.leave_out(field);
